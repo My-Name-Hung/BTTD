@@ -1,0 +1,102 @@
+import { Router, Response } from 'express';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
+import {
+  layDanhSachThongBao,
+  laySoThongBaoChuaDoc,
+  danhDauDaDoc,
+  danhDauTatCaDaDoc,
+  xoaThongBao,
+} from '../services/thong-bao-service';
+import { ApiResponse } from '../models';
+
+const router = Router();
+
+// Lấy danh sách thông báo
+router.get('/', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const vaiTro = req.user?.vaiTro as string;
+    if (!vaiTro) {
+      return res.status(403).json({ success: false, message: 'Không xác định vai trò người dùng' });
+    }
+
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 20;
+    const isReadParam = req.query.isRead as string | undefined;
+    const isRead = isReadParam === undefined ? undefined : isReadParam === 'true';
+
+    const { data, total } = await layDanhSachThongBao(vaiTro, page, limit, isRead);
+
+    res.json({
+      success: true,
+      message: 'Lấy danh sách thông báo thành công',
+      data,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy thông báo';
+    console.error('[ThongBao]', message);
+    res.status(500).json({ success: false, message });
+  }
+});
+
+// Lấy số thông báo chưa đọc
+router.get('/unread-count', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const vaiTro = req.user?.vaiTro as string;
+    if (!vaiTro) {
+      return res.status(403).json({ success: false, message: 'Không xác định vai trò' });
+    }
+    const count = await laySoThongBaoChuaDoc(vaiTro);
+    res.json({ success: true, message: 'OK', data: { count } });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+// Đánh dấu 1 thông báo đã đọc
+router.patch('/:id/read', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+    }
+    await danhDauDaDoc(id);
+    res.json({ success: true, message: 'Đã đánh dấu đã đọc' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+// Đánh dấu tất cả thông báo đã đọc
+router.patch('/read-all', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const vaiTro = req.user?.vaiTro as string;
+    if (!vaiTro) {
+      return res.status(403).json({ success: false, message: 'Không xác định vai trò' });
+    }
+    await danhDauTatCaDaDoc(vaiTro);
+    res.json({ success: true, message: 'Đã đánh dấu tất cả đã đọc' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+// Xóa thông báo
+router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+    }
+    await xoaThongBao(id);
+    res.json({ success: true, message: 'Xóa thông báo thành công' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+export default router;

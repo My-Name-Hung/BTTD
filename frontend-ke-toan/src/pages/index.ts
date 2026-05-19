@@ -1,0 +1,15 @@
+export { default as ChiTietDonHangPage } from "./ChiTietDonHangPage";
+export { default as CongNoPage } from "./CongNoPage";
+export { default as DashboardPage } from "./DashboardPage";
+export { default as DieuPhoiPage } from "./DieuPhoiPage";
+export { default as KhachHangPage } from "./KhachHangPage";
+export { default as LoginPage } from "./LoginPage";
+export { default as NghiemThuPage } from "./NghiemThuPage";
+export { default as NotificationsPage } from "./NotificationsPage";
+export { default as QuanLyDonHangPage } from "./QuanLyDonHangPage";
+export { default as QuanLyNguoiDungPage } from "./QuanLyNguoiDungPage";
+export { default as QuanLyTramTronPage } from "./QuanLyTramTronPage";
+export { default as QuanLyXePage } from "./QuanLyXePage";
+export { default as TaoDonHangPage } from "./TaoDonHangPage";
+export { default as ThamSoPage } from "./ThamSoPage";
+export { default as ThanhToanPage } from "./ThanhToanPage";

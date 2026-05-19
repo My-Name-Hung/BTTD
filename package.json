@@ -1,0 +1,20 @@
+{
+  "name": "bttd-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Webapp Quản lý Bê Tông Tây Đô - Monorepo",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend1\" \"npm run dev:frontend2\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend1": "cd frontend-ke-toan && npm run dev",
+    "dev:frontend2": "cd frontend-lanh-dao && npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend-ke-toan && npm install && cd ../frontend-lanh-dao && npm install",
+    "build:all": "npm run build:backend && npm run build:frontend1 && npm run build:frontend2",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend1": "cd frontend-ke-toan && npm run build",
+    "build:frontend2": "cd frontend-lanh-dao && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

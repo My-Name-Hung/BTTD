@@ -1,0 +1,152 @@
+import { Router, Response } from 'express';
+import { body, query as queryValidator } from 'express-validator';
+import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import { ApiResponse } from '../models';
+import {
+  layTatCaDonHang,
+  layDonHangTheoId,
+  taoDonHang,
+  suaDonHang,
+  duyetDonHang,
+  tuChoiDonHang,
+  capNhatTrangThaiDon,
+  xoaDonHang,
+} from '../services/don-hang-service';
+
+const router = Router();
+
+router.get(
+  '/',
+  authMiddleware,
+  [
+    queryValidator('page').optional().isInt({ min: 1 }).toInt(),
+    queryValidator('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    queryValidator('trangThai').optional().trim(),
+    queryValidator('tuKhoa').optional().trim(),
+  ],
+  validate([]),
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    try {
+      const page = (req.query.page as unknown as number) || 1;
+      const limit = (req.query.limit as unknown as number) || 20;
+      const trangThai = req.query.trangThai as string | undefined;
+      const tuKhoa = req.query.tuKhoa as string | undefined;
+
+      const result = await layTatCaDonHang(page, limit, trangThai, tuKhoa);
+      res.json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Lỗi lấy danh sách đơn hàng';
+      res.status(500).json({ success: false, message });
+    }
+  }
+);
+
+router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const donHang = await layDonHangTheoId(id);
+    res.json({ success: true, message: 'Lấy đơn hàng thành công', data: donHang });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy đơn hàng';
+    res.status(404).json({ success: false, message });
+  }
+});
+
+router.post(
+  '/',
+  authMiddleware,
+  requireRole('admin', 'dieu_phoi'),
+  [
+    body('tenKhachHang').trim().notEmpty().withMessage('Tên khách hàng là bắt buộc'),
+    body('diaChiNhan').trim().notEmpty().withMessage('Địa chỉ nhận là bắt buộc'),
+    body('soDienThoai').trim().notEmpty().withMessage('Số điện thoại là bắt buộc'),
+    body('khoiLuongDat').isFloat({ min: 0.01 }).withMessage('Khối lượng đặt phải lớn hơn 0'),
+    body('donGia').isFloat({ min: 0 }).withMessage('Đơn giá không được âm'),
+  ],
+  validate([]),
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+        return;
+      }
+      const donHang = await taoDonHang(req.body, req.user.id);
+      res.status(201).json({ success: true, message: 'Tạo đơn hàng thành công', data: donHang });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Lỗi tạo đơn hàng';
+      res.status(500).json({ success: false, message });
+    }
+  }
+);
+
+router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const donHang = await suaDonHang(id, req.body);
+    res.json({ success: true, message: 'Cập nhật đơn hàng thành công', data: donHang });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi cập nhật đơn hàng';
+    res.status(400).json({ success: false, message });
+  }
+});
+
+router.put('/:id/duyet', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+      return;
+    }
+    const donHang = await duyetDonHang(id, req.user.id);
+    res.json({ success: true, message: 'Duyệt đơn hàng thành công', data: donHang });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi duyệt đơn hàng';
+    res.status(400).json({ success: false, message });
+  }
+});
+
+router.put('/:id/tu-choi', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { lyDo } = req.body;
+    if (!lyDo) {
+      res.status(400).json({ success: false, message: 'Lý do từ chối là bắt buộc' });
+      return;
+    }
+    const donHang = await tuChoiDonHang(id, lyDo);
+    res.json({ success: true, message: 'Từ chối đơn hàng thành công', data: donHang });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi từ chối đơn hàng';
+    res.status(400).json({ success: false, message });
+  }
+});
+
+router.put('/:id/trang-thai', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { trangThaiDon, ghiChu } = req.body;
+    if (!trangThaiDon) {
+      res.status(400).json({ success: false, message: 'Trạng thái là bắt buộc' });
+      return;
+    }
+    const donHang = await capNhatTrangThaiDon(id, trangThaiDon, ghiChu);
+    res.json({ success: true, message: 'Cập nhật trạng thái thành công', data: donHang });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi cập nhật trạng thái';
+    res.status(400).json({ success: false, message });
+  }
+});
+
+router.delete('/:id', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    await xoaDonHang(id);
+    res.json({ success: true, message: 'Xóa đơn hàng thành công' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi xóa đơn hàng';
+    res.status(400).json({ success: false, message });
+  }
+});
+
+export default router;

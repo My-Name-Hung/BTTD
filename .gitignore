@@ -1,0 +1,7 @@
+backend/node_modules/
+frontend-ke-toan/node_modules/
+frontend-lanh-dao/node_modules/
+.cursor/
+backend/.env
+frontend-ke-toan/.env
+frontend-lanh-dao/.env
