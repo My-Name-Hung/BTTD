@@ -14,6 +14,7 @@ import quanLyRoutes from "./routes/quan-ly-routes";
 import thamSoRoutes from "./routes/tham-so-routes";
 import thanhToanRoutes from "./routes/thanh-toan-routes";
 import thongBaoRoutes from "./routes/thong-bao-routes";
+import lanhDaoRoutes from "./routes/lanh-dao-routes";
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -51,6 +52,7 @@ app.use("/api/nghiem-thu", nghiemThuRoutes);
 app.use("/api/thanh-toan", thanhToanRoutes);
 app.use("/api/tham-so", thamSoRoutes);
 app.use("/api/notifications", thongBaoRoutes);
+app.use("/api/lanh-dao", lanhDaoRoutes);
 app.use("/api", quanLyRoutes);
 
 // Error handler

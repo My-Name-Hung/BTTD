@@ -1,3 +1,7 @@
+// ============================================================
+// Types cho Dashboard Lãnh đạo — Bê Tông Tây Đô
+// ============================================================
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
@@ -24,38 +28,6 @@ export interface NguoiDung {
   soDienThoai: string | null;
   vaiTro: 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao';
   trangThai: 'hoat_dong' | 'khong_hoat_dong';
-}
-
-export interface KhachHang {
-  id: number;
-  tenKhachHang: string;
-  diaChi: string | null;
-  soDienThoai: string | null;
-  email: string | null;
-  ghiChu: string | null;
-}
-
-export interface MacBeTong {
-  id: number;
-  tenMac: string;
-  donGia: number;
-  moTa: string | null;
-}
-
-export interface TramTron {
-  id: number;
-  tenTram: string;
-  diaChi: string | null;
-  soDienThoai: string | null;
-}
-
-export interface Xe {
-  id: number;
-  bienSo: string;
-  tenTaiXe: string | null;
-  soDienThoaiTaiXe: string | null;
-  taiTrong: number | null;
-  trangThai: 'san_sang' | 'dang_giao' | 'bao_tri';
 }
 
 export interface DonHang {
@@ -93,66 +65,8 @@ export interface DonHang {
   lyDoTuChoi: string | null;
   daThanhToan: number;
   conLai: number | null;
-}
-
-export interface LichSanXuat {
-  id: number;
-  idDonHang: number;
-  idXe: number | null;
-  kyThuatCongTrinh: string | null;
-  nguoiOmOng: string | null;
-  nguoiBatOng: string | null;
-  phuongAnDo: string | null;
-  bienSoXe: string | null;
-  thoiGianTron: string | null;
-  thoiGianXuatBen: string | null;
-  thoiGianDenCangDat: string | null;
-  thoiGianBatDauDo: string | null;
-  thoiGianKetThucDo: string | null;
-  ghiChu: string | null;
-  driveLink: string | null;
-  trangThai: 'chua_san_xuat' | 'dang_san_xuat' | 'da_xong';
-}
-
-export interface NghiemThu {
-  id: number;
-  idDonHang: number;
-  khoiLuongXacNhan: number | null;
-  khoiLuongThucTe: number | null;
-  chatLuong: 'dat' | 'khong_dat' | null;
-  bienBanSo: string | null;
-  ngayLapBienBan: string | null;
-  nguoiLap: string | null;
-  nguoiKy: string | null;
-  chucVu: string | null;
-  daGuiKhach: boolean;
-  ngayGuiKhach: string | null;
-  ghiChu: string | null;
-}
-
-export interface ThanhToan {
-  id: number;
-  idDonHang: number;
-  soTien: number;
-  hinhThuc: 'tien_mat' | 'chuyen_khoan' | 'truct_hop_dong' | null;
-  ngayThanhToan: string;
-  nguoiNhan: string | null;
-  ghiChu: string | null;
-}
-
-export interface CongNo {
-  id: number;
-  idDonHang: number;
-  tongTien: number;
-  daThanhToan: number;
-  conLai: number;
-  ngayBatDau: string | null;
-  hanThanhToan: string | null;
-  trangThai: 'chua_thanh_toan' | 'dang_thanh_toan' | 'da_thanh_toan' | 'qua_han';
-  ghiChu: string | null;
-  maDonHang?: string;
-  tenKhachHang?: string;
-  thanhTien?: number;
+  nguoiTaoHoTen?: string | null;
+  nguoiDuyetHoTen?: string | null;
 }
 
 export interface ThongKeDashboard {
@@ -176,6 +90,76 @@ export interface DonHangTheoTrangThai {
   soLuong: number;
 }
 
+export interface DoanhThuTheoMac {
+  tenMac: string;
+  tongDoanhThu: number;
+  soDonHang: number;
+}
+
+export interface DoanhThuTongHop {
+  tongDonHang: number;
+  tongDoanhThu: number;
+  tongCongNo: number;
+  soDonQuaHan: number;
+  doanhThuThangNay: number;
+  doanhThuThangTruoc: number;
+  tiLeTangTruong: number;
+}
+
+export interface DonHangGiaoHang {
+  id: number;
+  maDonHang: string;
+  tenKhachHang: string;
+  diaChiNhan: string;
+  soDienThoai: string;
+  tenMacBeTong: string | null;
+  khoiLuongDat: number;
+  khoiLuongThucTe: number | null;
+  thanhTien: number | null;
+  thoiGianGiaoDuKien: string | null;
+  ngayTaoDon: string;
+  trangThaiDon: string;
+  trangThaiLich: string | null;
+  bienSoXe: string | null;
+  tenTaiXe: string | null;
+  soDienThoaiTaiXe: string | null;
+}
+
+export interface CongNoTongHop {
+  id: number;
+  maDonHang: string;
+  tenKhachHang: string;
+  tongTien: number;
+  daThanhToan: number;
+  conLai: number;
+  ngayBatDau: string | null;
+  hanThanhToan: string | null;
+  trangThai: string;
+  soNgayQuaHan: number;
+  ghiChu: string | null;
+  ngayTao: string;
+}
+
+export interface CanhBaoDonHang {
+  id: number;
+  maDonHang: string;
+  tenKhachHang: string;
+  diaChiNhan: string;
+  tenMacBeTong: string | null;
+  khoiLuongDat: number;
+  thanhTien: number | null;
+  conLai: number;
+  ngayTaoDon: string;
+  thoiGianGiaoDuKien: string | null;
+  trangThaiDon: string;
+  loaiCanhBao: 'don_tre' | 'cong_no' | 'qua_han';
+  moTa: string;
+}
+
+// ============================================================
+// Labels & Colors
+// ============================================================
+
 export const TRANG_THAI_DON_LABELS: Record<string, string> = {
   cho_duyet: 'Chờ duyệt',
   da_duyet: 'Đã duyệt',
@@ -196,4 +180,30 @@ export const TRANG_THAI_DON_COLORS: Record<string, string> = {
   nghiem_thu: '#6366f1',
   da_thanh_toan: '#10b981',
   tu_choi: '#ef4444',
+};
+
+export const TRANG_THAI_LICH_SAN_XUAT_LABELS: Record<string, string> = {
+  chua_san_xuat: 'Chưa sản xuất',
+  dang_san_xuat: 'Đang sản xuất',
+  da_xong: 'Hoàn thành',
+};
+
+export const TRANG_THAI_LICH_COLORS: Record<string, string> = {
+  chua_san_xuat: '#94a3b8',
+  dang_san_xuat: '#f97316',
+  da_xong: '#10b981',
+};
+
+export const TRANG_THAI_CONG_NO_LABELS: Record<string, string> = {
+  chua_thanh_toan: 'Chưa thanh toán',
+  dang_thanh_toan: 'Đang thanh toán',
+  da_thanh_toan: 'Đã thanh toán',
+  qua_han: 'Quá hạn',
+};
+
+export const TRANG_THAI_CONG_NO_COLORS: Record<string, string> = {
+  chua_thanh_toan: '#f59e0b',
+  dang_thanh_toan: '#3b82f6',
+  da_thanh_toan: '#10b981',
+  qua_han: '#ef4444',
 };

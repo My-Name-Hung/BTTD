@@ -46,18 +46,18 @@ export function guiThongBao(
   const { tieuDe, noiDung } = NOTIFICATION_MESSAGES[type](data);
 
   const roleMap: Record<NotificationType, string[]> = {
-    NEW_ORDER: ['admin', 'ke_toan'],
-    ORDER_APPROVED: ['dieu_phoi', 'admin'],
-    ORDER_REJECTED: ['dieu_phoi', 'admin'],
-    PAYMENT_RECEIVED: ['admin', 'ke_toan'],
-    SCHEDULE_UPDATED: ['ke_toan', 'admin'],
-    ORDER_COMPLETED: ['admin', 'ke_toan', 'dieu_phoi'],
-    ORDER_LATE: ['admin', 'dieu_phoi'],
+    NEW_ORDER: ['admin', 'ke_toan', 'lanh_dao'],
+    ORDER_APPROVED: ['dieu_phoi', 'admin', 'lanh_dao'],
+    ORDER_REJECTED: ['dieu_phoi', 'admin', 'lanh_dao'],
+    PAYMENT_RECEIVED: ['admin', 'ke_toan', 'lanh_dao'],
+    SCHEDULE_UPDATED: ['ke_toan', 'admin', 'lanh_dao'],
+    ORDER_COMPLETED: ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao'],
+    ORDER_LATE: ['admin', 'dieu_phoi', 'lanh_dao'],
     NEED_APPROVAL: ['ke_toan'],
-    ACCEPTANCE_SUBMITTED: ['ke_toan', 'dieu_phoi'],
-    VOLUME_CONFIRMED: ['ke_toan', 'dieu_phoi'],
-    PAYMENT_NEEDED: ['ke_toan'],
-    DELIVERY_CONFIRMED: ['dieu_phoi', 'admin'],
+    ACCEPTANCE_SUBMITTED: ['ke_toan', 'dieu_phoi', 'lanh_dao'],
+    VOLUME_CONFIRMED: ['ke_toan', 'dieu_phoi', 'lanh_dao'],
+    PAYMENT_NEEDED: ['ke_toan', 'lanh_dao'],
+    DELIVERY_CONFIRMED: ['dieu_phoi', 'admin', 'lanh_dao'],
   };
 
   const roles = roleMap[type] || [];
@@ -70,7 +70,7 @@ export function guiThongBao(
       PAYMENT_RECEIVED: `/thanh-toan`,
       SCHEDULE_UPDATED: `/dieu-phoi`,
       ORDER_COMPLETED: `/quan-ly/don-hang`,
-      ORDER_LATE: `/quan-ly/don-hang`,
+      ORDER_LATE: `/canh-bao`,
       NEED_APPROVAL: `/quan-ly/don-hang`,
       ACCEPTANCE_SUBMITTED: `/nghiem-thu`,
       VOLUME_CONFIRMED: `/nghiem-thu`,

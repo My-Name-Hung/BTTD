@@ -1,9 +1,9 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt, { TokenExpiredError, JsonWebTokenError } from 'jsonwebtoken';
 import { config } from '../config';
 import { JwtPayload, ApiResponse } from '../models';
 
-export interface AuthRequest extends Express.Request {
+export interface AuthRequest extends Request {
   user?: JwtPayload;
 }
 

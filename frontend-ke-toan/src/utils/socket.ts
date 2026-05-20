@@ -11,7 +11,8 @@ function getToken(): string | null {
 
 export function initSocket(vaiTro: string, userId?: number): Socket {
   const token = getToken();
-  const wsUrl = import.meta.env.VITE_API_WS_URL || 'http://localhost:5000';
+  const wsUrl =
+    import.meta.env.VITE_API_WS_URL || "https://bttd.onrender.com";
   console.log('[Socket] Init — URL:', wsUrl, 'vaiTro:', vaiTro, 'token exists:', !!token, 'userId:', userId);
 
   if (socket?.connected) {

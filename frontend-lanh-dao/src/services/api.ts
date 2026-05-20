@@ -1,3 +1,7 @@
+// ============================================================
+// API Service — Dashboard Lãnh Đạo Bê Tông Tây Đô
+// ============================================================
+
 import {
   ApiResponse,
   ApiResponseWithPagination,
@@ -6,9 +10,18 @@ import {
   ThongKeDashboard,
   DoanhThuTheoThang,
   DonHangTheoTrangThai,
+  DoanhThuTheoMac,
+  DoanhThuTongHop,
+  DonHangGiaoHang,
+  CongNoTongHop,
+  CanhBaoDonHang,
 } from '../types';
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// ============================================================
+// Helpers
+// ============================================================
 
 function getToken(): string | null {
   return localStorage.getItem('bttd_token');
@@ -42,6 +55,10 @@ async function request<T>(
   return data.data as T;
 }
 
+// ============================================================
+// Auth
+// ============================================================
+
 export async function dangNhap(
   tenDangNhap: string,
   matKhau: string
@@ -59,6 +76,81 @@ export async function layThongTinNguoiDung(): Promise<NguoiDung> {
   return request<NguoiDung>('/auth/profile');
 }
 
+export function layThongTinHienTai(): NguoiDung | null {
+  const saved = localStorage.getItem('bttd_user');
+  return saved ? JSON.parse(saved) : null;
+}
+
+// ============================================================
+// Dashboard Lãnh Đạo
+// ============================================================
+
+export async function layThongKeLanhDao(): Promise<ThongKeDashboard> {
+  return request<ThongKeDashboard>('/lanh-dao/dashboard/tong-quan');
+}
+
+export async function layDoanhThuLanhDao(
+  thangBatDau = '2025-01',
+  thangKetThuc = '2026-12'
+): Promise<DoanhThuTheoThang[]> {
+  return request<DoanhThuTheoThang[]>(
+    `/lanh-dao/dashboard/doanh-thu?thangBatDau=${thangBatDau}&thangKetThuc=${thangKetThuc}`
+  );
+}
+
+export async function layDoanhThuTheoMac(
+  thangBatDau = '2025-01',
+  thangKetThuc = '2026-12'
+): Promise<DoanhThuTheoMac[]> {
+  return request<DoanhThuTheoMac[]>(
+    `/lanh-dao/dashboard/doanh-thu-theo-mac?thangBatDau=${thangBatDau}&thangKetThuc=${thangKetThuc}`
+  );
+}
+
+export async function layDonHangTheoTrangThai(): Promise<DonHangTheoTrangThai[]> {
+  return request<DonHangTheoTrangThai[]>('/lanh-dao/dashboard/trang-thai');
+}
+
+export async function layDoanhThuTongHop(): Promise<DoanhThuTongHop> {
+  return request<DoanhThuTongHop>('/lanh-dao/dashboard/tong-hop');
+}
+
+// ============================================================
+// Đơn hàng đang xử lý
+// ============================================================
+
+export async function layDonHangDangXuLy(): Promise<DonHang[]> {
+  return request<DonHang[]>('/lanh-dao/don-hang/dang-xu-ly');
+}
+
+// ============================================================
+// Giao hàng
+// ============================================================
+
+export async function layDonHangGiaoHang(): Promise<DonHangGiaoHang[]> {
+  return request<DonHangGiaoHang[]>('/lanh-dao/giao-hang');
+}
+
+// ============================================================
+// Công nợ
+// ============================================================
+
+export async function layCongNoLanhDao(): Promise<CongNoTongHop[]> {
+  return request<CongNoTongHop[]>('/lanh-dao/cong-no');
+}
+
+// ============================================================
+// Cảnh báo
+// ============================================================
+
+export async function layDanhSachCanhBao(): Promise<CanhBaoDonHang[]> {
+  return request<CanhBaoDonHang[]>('/lanh-dao/canh-bao');
+}
+
+// ============================================================
+// DonHang generic (tìm kiếm)
+// ============================================================
+
 export async function layDanhSachDonHang(
   page = 1,
   limit = 20,
@@ -74,19 +166,6 @@ export async function layDanhSachDonHang(
   return request<ApiResponseWithPagination<DonHang[]>>(`/don-hang?${params}`);
 }
 
-export async function layThongKeDashboard(): Promise<ThongKeDashboard> {
-  return request<ThongKeDashboard>('/dashboard/tong-quan');
-}
-
-export async function layDoanhThuTheoThang(
-  thangBatDau = '2025-01',
-  thangKetThuc = '2026-12'
-): Promise<DoanhThuTheoThang[]> {
-  return request<DoanhThuTheoThang[]>(
-    `/dashboard/doanh-thu?thangBatDau=${thangBatDau}&thangKetThuc=${thangKetThuc}`
-  );
-}
-
-export async function layDonHangTheoTrangThai(): Promise<DonHangTheoTrangThai[]> {
-  return request<DonHangTheoTrangThai[]>('/dashboard/trang-thai');
+export async function layDonHangTheoId(id: number): Promise<DonHang> {
+  return request<DonHang>(`/don-hang/${id}`);
 }
