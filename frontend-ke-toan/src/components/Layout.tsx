@@ -138,10 +138,8 @@ export function Layout({ children }: LayoutProps) {
 
   // Notifications
   const vaiTro = user?.vaiTro || "";
-  const { unreadCount, refreshUnreadCount, PopupContainer, currentPopupId } = useNotifications(
-    vaiTro,
-    user?.id,
-  );
+  const { unreadCount, refreshUnreadCount, PopupContainer, currentPopupId } =
+    useNotifications(vaiTro, user?.id);
 
   useEffect(() => {
     if (user?.id) {

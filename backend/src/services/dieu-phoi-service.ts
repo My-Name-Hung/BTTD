@@ -51,10 +51,37 @@ export async function layLichSanXuatTheoDonHang(idDonHang: number): Promise<Lich
   );
 }
 
-export async function layTatCaLichSanXuat(): Promise<LichSanXuat[]> {
-  return await query<LichSanXuat>(
-    `SELECT * FROM LichSanXuat ORDER BY ngayTao DESC`
+export async function layTatCaLichSanXuat(
+  page: number = 1,
+  limit: number = 50,
+  trangThai?: string
+): Promise<{ data: LichSanXuat[]; total: number }> {
+  const offset = (page - 1) * limit;
+  let whereClause = 'WHERE 1=1';
+  const params: Record<string, unknown> = { offset, limit };
+
+  if (trangThai) {
+    whereClause += ' AND ls.trangThai = @trangThai';
+    params.trangThai = trangThai;
+  }
+
+  const [countResult] = await query<{ total: number }>(
+    `SELECT COUNT(*) as total FROM LichSanXuat ls ${whereClause}`,
+    params
   );
+  const total = countResult?.total || 0;
+
+  const data = await query<LichSanXuat>(
+    `SELECT ls.*, dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat
+     FROM LichSanXuat ls
+     LEFT JOIN DonHang dh ON ls.idDonHang = dh.id
+     ${whereClause}
+     ORDER BY ls.ngayTao DESC
+     OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+    params
+  );
+
+  return { data, total };
 }
 
 export async function capNhatLichSanXuat(

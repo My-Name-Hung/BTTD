@@ -4,10 +4,8 @@ import { PiEyeSlashThin, PiEyeThin } from 'react-icons/pi';
 import { FiUser, FiLock } from 'react-icons/fi';
 import { dangNhap } from '../services/api';
 import { useAuth } from '../hooks';
+import { LogoIcon } from '../components/Logo';
 import styles from './LoginPage.module.css';
-
-const LOGO_URL =
-  "https://betongtaydo.com/wp-content/uploads/2024/06/Logo-Be-Tong-Tay-Do-xanh-duong-1024x1024.png";
 
 const REMEMBER_PASSWORD_KEY = 'bttd_remember';
 const SAVED_USERNAME_KEY = 'bttd_saved_user';
@@ -53,7 +51,7 @@ export default function LoginPage() {
       {/* Left panel */}
       <div className={styles.authIllustration}>
         <div className={styles.illustrationContent}>
-          <img src={LOGO_URL} alt="Bê Tông Tây Đô" className={styles.illustrationLogo} />
+          <LogoIcon size={100} />
           <h1>QUẢN LÝ ĐƠN HÀNG</h1>
           <p className={styles.introText}>Bê Tông Tây Đô - Chất lượng tạo niềm tin</p>
           <ul className={styles.illustrationContact}>
@@ -71,7 +69,7 @@ export default function LoginPage() {
       <div className={styles.loginContainer}>
         <div className={styles.loginCard}>
           <div className={styles.loginHeader}>
-            <img src={LOGO_URL} alt="Bê Tông Tây Đô" className={styles.loginLogo} />
+            <LogoIcon size={56} />
             <h1 className={styles.loginTitle}>Đăng nhập hệ thống</h1>
             <p className={styles.loginSubtitle}>Vui lòng sử dụng tài khoản được cấp để truy cập.</p>
           </div>

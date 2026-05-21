@@ -11,5 +11,6 @@ export { default as QuanLyNguoiDungPage } from "./QuanLyNguoiDungPage";
 export { default as QuanLyTramTronPage } from "./QuanLyTramTronPage";
 export { default as QuanLyXePage } from "./QuanLyXePage";
 export { default as TaoDonHangPage } from "./TaoDonHangPage";
+export { default as TaoLichSanXuatPage } from "./TaoLichSanXuatPage";
 export { default as ThamSoPage } from "./ThamSoPage";
 export { default as ThanhToanPage } from "./ThanhToanPage";

@@ -11,10 +11,18 @@ import {
 
 const router = Router();
 
-router.get('/', authMiddleware, async (_req: AuthRequest, res: Response<ApiResponse>) => {
+router.get('/', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
-    const data = await layTatCaLichSanXuat();
-    res.json({ success: true, message: 'Lấy danh sách lịch sản xuất thành công', data });
+    const page = parseInt(String(req.query.page || '1'), 10);
+    const limit = parseInt(String(req.query.limit || '50'), 10);
+    const trangThai = req.query.trangThai as string | undefined;
+    const { data, total } = await layTatCaLichSanXuat(page, limit, trangThai);
+    res.json({
+      success: true,
+      message: 'Lấy danh sách lịch sản xuất thành công',
+      data,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi lấy lịch sản xuất';
     res.status(500).json({ success: false, message });
