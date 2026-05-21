@@ -82,6 +82,9 @@ router.post(
       }
 
       const result = await importDonHang(rows, req.user.id, req.file.originalname);
+      console.log('[IMPORT DON HANG] Raw rows headers:', Object.keys(rows[0] || {}));
+      console.log('[IMPORT DON HANG] First row:', JSON.stringify(rows[0]));
+      console.log('[IMPORT DON HANG] Result:', JSON.stringify(result));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,

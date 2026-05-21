@@ -139,8 +139,8 @@ export async function importDonHang(
           nguoiTaoId,
           ghiChu: ghiChu || null,
       };
-      console.log(`[IMPORT] Row ${rowNum} - SQL:`, sql);
-      console.log(`[IMPORT] Row ${rowNum} - Params:`, JSON.stringify(params));
+      console.log(`[IMPORT DON HANG] Row ${rowNum} - Params keys:`, Object.keys(params));
+      console.log(`[IMPORT DON HANG] Row ${rowNum} - nguoiTaoId:`, nguoiTaoId, 'type:', typeof nguoiTaoId);
       await query(sql, params);
       success++;
     } catch (err) {
