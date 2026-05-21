@@ -247,27 +247,18 @@ export default function TaoDonHangPage() {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Mác bê tông</label>
-              {form.idMacBeTong ? (
-                <select
-                  className={styles.formSelect}
-                  value={form.idMacBeTong}
-                  onChange={(e) => handleMacChange(e.target.value)}
-                >
-                  <option value="">— Nhập tay —</option>
-                  {macBeTongs.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.tenMac} — {formatCurrency(m.donGia)}/m³
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  className={styles.formInput}
-                  value={form.tenMacBeTong}
-                  onChange={(e) => setForm({ ...form, tenMacBeTong: e.target.value })}
-                  placeholder="Nhập tên mác (VD: M250)"
-                />
-              )}
+              <select
+                className={styles.formSelect}
+                value={form.idMacBeTong}
+                onChange={(e) => handleMacChange(e.target.value)}
+              >
+                <option value="">— Chọn mác bê tông —</option>
+                {macBeTongs.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.tenMac} — {formatCurrency(m.donGia)}/m³
+                  </option>
+                ))}
+              </select>
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Trạm trộn</label>

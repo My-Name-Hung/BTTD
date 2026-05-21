@@ -37,6 +37,7 @@ const TABS: TabConfig[] = [
       { key: 'Tên mác bê tông', title: 'Tên mác bê tông', example: 'M250' },
       { key: 'Khối lượng đặt', title: 'Khối lượng đặt (m³)', example: '50' },
       { key: 'Đơn giá', title: 'Đơn giá (VNĐ)', example: '1500000' },
+      { key: 'Trạm trộn', title: 'Trạm trộn', example: 'Trạm trộn Tây Đô' },
       { key: 'Thời gian giao dự kiến', title: 'Thời gian giao dự kiến', example: '2026-06-01' },
       { key: 'Ghi chú', title: 'Ghi chú', example: 'Giao buổi sáng' },
     ],

@@ -96,8 +96,6 @@ router.post(
       }
 
       const nguoiTaiId = req.user.id ?? 1;
-      console.log('[IMPORT] File headers:', Object.keys(rows[0]).map(k => ({ original: k, normalized: k.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '') })));
-      console.log('[IMPORT] First row:', JSON.stringify(rows[0]));
       const result = await importDonHang(rows, nguoiTaiId, req.file.originalname);
       res.json({
         success: true,

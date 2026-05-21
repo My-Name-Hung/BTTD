@@ -90,7 +90,7 @@ export async function importDonHang(
     const r = rows[i];
     const rowNum = i + 2;
     try {
-      // Helper: tìm key gần đúng bằng cách normalize Unicode
+      // Helper: fuzzy match key bằng cách so sánh normalized substrings
       const getRowValFuzzy = (row: Record<string, unknown>, ...patterns: string[]): unknown => {
         const normalizedMap = new Map<string, string>();
         for (const key of Object.keys(row)) {
@@ -101,8 +101,17 @@ export async function importDonHang(
         }
         for (const pattern of patterns) {
           const normPattern = pattern.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-          const matchedKey = normalizedMap.get(normPattern);
-          if (matchedKey) return row[matchedKey];
+          for (const [normKey, origKey] of normalizedMap) {
+            // Match: key chứa pattern HOẶC pattern chứa key (substring match)
+            if (normKey.includes(normPattern) || normPattern.includes(normKey)) {
+              return row[origKey];
+            }
+            // Match từng từ trong pattern ( VD: "Khoi luong dat" match "Khoiluongatm" )
+            const patternWords = normPattern.split(/\s+/).filter(Boolean);
+            if (patternWords.length > 0 && patternWords.every(word => normKey.includes(word))) {
+              return row[origKey];
+            }
+          }
         }
         return undefined;
       };
@@ -119,6 +128,7 @@ export async function importDonHang(
       const donGia = parseNum(getRowValFuzzy(r, 'Đơn giá'));
       const thoiGianGiaoDuKien = getRowValFuzzy(r, 'Thời gian giao dự kiến') || null;
       const ghiChu = String(getRowValFuzzy(r, 'Ghi chú') || '').trim();
+      const tramTronTen = String(getRowValFuzzy(r, 'Trạm trộn') || '').trim();
 
       if (!tenKhachHang) {
         errors.push(`Dòng ${rowNum}: Thiếu tên khách hàng`);
@@ -135,20 +145,31 @@ export async function importDonHang(
       const thanhTien = khoiLuongDat * donGia;
       const conLai = thanhTien;
 
+      // Lookup idTramTron theo tên
+      let idTramTron: number | null = null;
+      if (tramTronTen) {
+        const tramRows = await query<{ id: number }[]>(
+          `SELECT TOP 1 id FROM TramTron WHERE tenTram = @tenTram`,
+          { tenTram: tramTronTen }
+        );
+        if (tramRows.length > 0) idTramTron = tramRows[0].id;
+      }
+
       await query(
         `INSERT INTO DonHang (
-          maDonHang, tenKhachHang, diaChiNhan, soDienThoai,
+          maDonHang, idTramTron, tenKhachHang, diaChiNhan, soDienThoai,
           tenMacBeTong, khoiLuongDat, donGia, thanhTien, conLai,
           thoiGianGiaoDuKien, trangThaiDon, trangThaiHoanThanh,
           nguoiTaoId, ghiChu
         ) VALUES (
-          @maDonHang, @tenKhachHang, @diaChiNhan, @soDienThoai,
+          @maDonHang, @idTramTron, @tenKhachHang, @diaChiNhan, @soDienThoai,
           @tenMacBeTong, @khoiLuongDat, @donGia, @thanhTien, @conLai,
           @thoiGianGiaoDuKien, N'cho_duyet', N'chua_hoan_thanh',
           @nguoiTaiId, @ghiChu
         )`,
         {
           maDonHang,
+          idTramTron,
           tenKhachHang,
           diaChiNhan,
           soDienThoai,
