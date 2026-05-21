@@ -58,6 +58,20 @@ router.get('/lich-su', authMiddleware, async (req: AuthRequest, res: Response<Ap
   }
 });
 
+// Debug: check actual column names in DonHang table
+router.get('/debug-columns', authMiddleware, requireRole('admin'), async (_req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const { query } = await import('../config/database');
+    const cols = await query<{ COLUMN_NAME: string }[]>(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'DonHang' ORDER BY ORDINAL_POSITION`
+    );
+    res.json({ success: true, data: { columns: cols.map(c => c.COLUMN_NAME) } });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi debug';
+    res.status(500).json({ success: false, message });
+  }
+});
+
 // Import đơn hàng
 router.post(
   '/don-hang',
@@ -81,6 +95,7 @@ router.post(
         return;
       }
 
+      console.log('[IMPORT DON HANG] req.user.id:', req.user.id);
       const result = await importDonHang(rows, req.user.id, req.file.originalname);
       console.log('[IMPORT DON HANG] Raw rows headers:', Object.keys(rows[0] || {}));
       console.log('[IMPORT DON HANG] First row:', JSON.stringify(rows[0]));
