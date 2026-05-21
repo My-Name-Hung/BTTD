@@ -112,6 +112,11 @@ export default function TaoDonHangPage() {
   }, [editingId, showToast]);
 
   const handleMacChange = (macId: string) => {
+    if (!macId) {
+      // Chọn "Nhập tay" → xóa id, giữ lại tenMacBeTong
+      setForm({ ...form, idMacBeTong: '', donGia: form.donGia });
+      return;
+    }
     const mac = macBeTongs.find((m) => m.id === parseInt(macId));
     setForm({
       ...form,
@@ -242,18 +247,27 @@ export default function TaoDonHangPage() {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Mác bê tông</label>
-              <select
-                className={styles.formSelect}
-                value={form.idMacBeTong}
-                onChange={(e) => handleMacChange(e.target.value)}
-              >
-                <option value="">— Chọn mác bê tông —</option>
-                {macBeTongs.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.tenMac} — {formatCurrency(m.donGia)}/m³
-                  </option>
-                ))}
-              </select>
+              {form.idMacBeTong ? (
+                <select
+                  className={styles.formSelect}
+                  value={form.idMacBeTong}
+                  onChange={(e) => handleMacChange(e.target.value)}
+                >
+                  <option value="">— Nhập tay —</option>
+                  {macBeTongs.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.tenMac} — {formatCurrency(m.donGia)}/m³
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className={styles.formInput}
+                  value={form.tenMacBeTong}
+                  onChange={(e) => setForm({ ...form, tenMacBeTong: e.target.value })}
+                  placeholder="Nhập tên mác (VD: M250)"
+                />
+              )}
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Trạm trộn</label>

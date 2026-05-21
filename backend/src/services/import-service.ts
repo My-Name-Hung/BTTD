@@ -90,14 +90,35 @@ export async function importDonHang(
     const r = rows[i];
     const rowNum = i + 2;
     try {
-      const tenKhachHang = String(r['Tên khách hàng'] || r['tenKhachHang'] || '').trim();
-      const diaChiNhan = String(r['Địa chỉ nhận'] || r['diaChiNhan'] || '').trim();
-      const soDienThoai = String(r['Số điện thoại'] || r['soDienThoai'] || '').trim();
-      const tenMacBeTong = String(r['Tên mác bê tông'] || r['tenMacBeTong'] || '').trim();
-      const khoiLuongDat = parseFloat(String(r['Khối lượng đặt'] || r['khoiLuongDat'] || '0').replace(/[^\d.,]/g, '').replace(',', '.'));
-      const donGia = parseFloat(String(r['Đơn giá'] || r['donGia'] || '0').replace(/[^\d.,]/g, '').replace(',', '.'));
-      const thoiGianGiaoDuKien = r['Thời gian giao dự kiến'] || r['thoiGianGiaoDuKien'] || null;
-      const ghiChu = String(r['Ghi chú'] || r['ghiChu'] || '').trim();
+      // Helper: tìm key gần đúng bằng cách normalize Unicode
+      const getRowValFuzzy = (row: Record<string, unknown>, ...patterns: string[]): unknown => {
+        const normalizedMap = new Map<string, string>();
+        for (const key of Object.keys(row)) {
+          normalizedMap.set(
+            key.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase(),
+            key
+          );
+        }
+        for (const pattern of patterns) {
+          const normPattern = pattern.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+          const matchedKey = normalizedMap.get(normPattern);
+          if (matchedKey) return row[matchedKey];
+        }
+        return undefined;
+      };
+      const parseNum = (v: unknown): number => {
+        const s = String(v ?? '0');
+        return parseFloat(s.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+      };
+
+      const tenKhachHang = String(getRowValFuzzy(r, 'Tên khách hàng') || '').trim();
+      const diaChiNhan = String(getRowValFuzzy(r, 'Địa chỉ nhận') || '').trim();
+      const soDienThoai = String(getRowValFuzzy(r, 'Số điện thoại') || '').trim();
+      const tenMacBeTong = String(getRowValFuzzy(r, 'Tên mác bê tông') || '').trim();
+      const khoiLuongDat = parseNum(getRowValFuzzy(r, 'Khối lượng đặt', 'Khối lượng'));
+      const donGia = parseNum(getRowValFuzzy(r, 'Đơn giá'));
+      const thoiGianGiaoDuKien = getRowValFuzzy(r, 'Thời gian giao dự kiến') || null;
+      const ghiChu = String(getRowValFuzzy(r, 'Ghi chú') || '').trim();
 
       if (!tenKhachHang) {
         errors.push(`Dòng ${rowNum}: Thiếu tên khách hàng`);
