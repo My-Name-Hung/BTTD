@@ -145,11 +145,11 @@ export async function importDonHang(
       const thanhTien = khoiLuongDat * donGia;
       const conLai = thanhTien;
 
-      // Lookup idTramTron theo tên
+      // Lookup idTramTron theo tên (case-insensitive)
       let idTramTron: number | null = null;
       if (tramTronTen) {
         const tramRows = await query<{ id: number }[]>(
-          `SELECT TOP 1 id FROM TramTron WHERE tenTram = @tenTram`,
+          `SELECT TOP 1 id FROM TramTron WHERE LOWER(tenTram) = LOWER(@tenTram)`,
           { tenTram: tramTronTen }
         );
         if (tramRows.length > 0) idTramTron = tramRows[0].id;

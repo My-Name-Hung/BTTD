@@ -252,7 +252,9 @@ export default function TaoDonHangPage() {
                 value={form.idMacBeTong}
                 onChange={(e) => handleMacChange(e.target.value)}
               >
-                <option value="">— Chọn mác bê tông —</option>
+                {!form.idMacBeTong && form.tenMacBeTong ? (
+                  <option value="">{form.tenMacBeTong} (đã nhập)</option>
+                ) : <option value="">— Chọn mác bê tông —</option>}
                 {macBeTongs.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.tenMac} — {formatCurrency(m.donGia)}/m³
@@ -268,9 +270,15 @@ export default function TaoDonHangPage() {
                 onChange={(e) => setForm({ ...form, idTramTron: e.target.value })}
               >
                 <option value="">— Chọn trạm trộn —</option>
-                {tramTrons.map((t) => (
-                  <option key={t.id} value={t.id}>{t.tenTram}</option>
-                ))}
+                {(() => {
+                  const selectedTram = tramTrons.find(t => String(t.id) === form.idTramTron);
+                  if (form.idTramTron && !selectedTram) {
+                    return <option value={form.idTramTron}>{form.idTramTron} (đã nhập)</option>;
+                  }
+                  return tramTrons.map((t) => (
+                    <option key={t.id} value={String(t.id)}>{t.tenTram}</option>
+                  ));
+                })()}
               </select>
             </div>
           </div>

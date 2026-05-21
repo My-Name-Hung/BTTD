@@ -67,6 +67,7 @@ export interface DonHang {
   idKhachHang: number | null;
   idMacBeTong: number | null;
   idTramTron: number | null;
+  tenTramTron: string | null;
   tenKhachHang: string;
   diaChiNhan: string;
   soDienThoai: string;

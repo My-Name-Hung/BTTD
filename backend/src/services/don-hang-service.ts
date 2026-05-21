@@ -32,8 +32,11 @@ export async function layTatCaDonHang(
   const total = countResult[0]?.total || 0;
 
   const donHangs = await query<DonHang>(
-    `SELECT * FROM DonHang ${whereClause}
-     ORDER BY ngayTao DESC
+    `SELECT d.*, t.tenTram as tenTramTron
+     FROM DonHang d
+     LEFT JOIN TramTron t ON d.idTramTron = t.id
+     ${whereClause}
+     ORDER BY d.ngayTao DESC
      OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
     { ...params, offset, limit }
   );
@@ -53,7 +56,10 @@ export async function layTatCaDonHang(
 
 export async function layDonHangTheoId(id: number): Promise<DonHang> {
   const donHangs = await query<DonHang>(
-    `SELECT * FROM DonHang WHERE id = @id`,
+    `SELECT d.*, t.tenTram as tenTramTron
+     FROM DonHang d
+     LEFT JOIN TramTron t ON d.idTramTron = t.id
+     WHERE d.id = @id`,
     { id }
   );
 
@@ -163,7 +169,7 @@ export async function suaDonHang(id: number, data: Partial<DonHang>): Promise<Do
     }
   );
 
-  return (await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id }))[0];
+  return (await query<DonHang>(`SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`, { id }))[0];
 }
 
 export async function duyetDonHang(id: number, nguoiDuyetId: number): Promise<DonHang> {
@@ -177,7 +183,7 @@ export async function duyetDonHang(id: number, nguoiDuyetId: number): Promise<Do
     { id, nguoiDuyetId }
   );
 
-  const donHang = (await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id }))[0];
+  const donHang = (await query<DonHang>(`SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`, { id }))[0];
 
   guiThongBao('ORDER_APPROVED', { id, maDonHang: donHang.maDonHang });
 
@@ -194,7 +200,7 @@ export async function tuChoiDonHang(id: number, lyDo: string): Promise<DonHang> 
     { id, lyDo }
   );
 
-  const donHang = (await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id }))[0];
+  const donHang = (await query<DonHang>(`SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`, { id }))[0];
 
   guiThongBao('ORDER_REJECTED', { id, maDonHang: donHang.maDonHang, lyDo });
 
@@ -211,7 +217,7 @@ export async function capNhatTrangThaiDon(
     { id, trangThaiDon, ghiChu: ghiChu || null }
   );
 
-  const donHang = (await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id }))[0];
+  const donHang = (await query<DonHang>(`SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`, { id }))[0];
 
   // Gửi thông báo khi đơn hoàn thành
   if (trangThaiDon === 'da_hoan_thanh') {
