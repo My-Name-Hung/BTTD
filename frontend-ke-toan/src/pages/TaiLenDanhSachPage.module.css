@@ -221,17 +221,14 @@
   height: 24px;
   border-radius: 50%;
   border: none;
-  background: var(--color-danger);
-  color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
 }
 
 .removeFile:hover {
-  background: var(--color-danger-dark);
+  border: 1px solid gray;
 }
 
 /* ── Upload button ─────────────────────────────────── */

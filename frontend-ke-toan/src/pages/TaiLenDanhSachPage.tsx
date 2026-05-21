@@ -10,7 +10,7 @@ import {
   ImportHistory,
   ImportResult,
 } from '../services/api';
-import { useToast, usePageRole } from '../hooks';
+import { useToast, usePageRole, VaiTro } from '../hooks';
 import { Loading } from '../components/Common';
 import styles from './TaiLenDanhSachPage.module.css';
 
@@ -98,7 +98,7 @@ function generateTemplate(tab: TabConfig): void {
 }
 
 export default function TaiLenDanhSachPage() {
-  const { hasPermission } = usePageRole();
+  const { hasPermission, hasAnyRole } = usePageRole();
   const { toasts, showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabKey>('don_hang');
@@ -116,7 +116,7 @@ export default function TaiLenDanhSachPage() {
   const limit = 10;
 
   const tab = TABS.find((t) => t.key === activeTab)!;
-  const canAccess = tab.canAccess.some((r) => hasPermission(`role.${r}`));
+  const canAccess = hasAnyRole(tab.canAccess as VaiTro[]);
 
   const loadHistory = useCallback(async (page = 1) => {
     setHistoryLoading(true);
@@ -197,7 +197,7 @@ export default function TaiLenDanhSachPage() {
       {/* Tabs */}
       <div className={styles.tabBar}>
         {TABS.map((t) => {
-          const accessible = t.canAccess.some((r) => hasPermission(`role.${r}`));
+          const accessible = hasAnyRole(t.canAccess as VaiTro[]);
           if (!accessible) return null;
           return (
             <button
@@ -251,7 +251,7 @@ export default function TaiLenDanhSachPage() {
                     className={styles.removeFile}
                     onClick={(e) => { e.stopPropagation(); setFile(null); setImportResult(null); }}
                   >
-                    <FiTrash2 size={14} />
+                    <FiTrash2 size={16} />
                   </button>
                 </div>
               ) : (
@@ -272,7 +272,7 @@ export default function TaiLenDanhSachPage() {
             >
               {uploading ? (
                 <>
-                  <Loading inline /> Đang xử lý...
+                  <Loading inline />
                 </>
               ) : (
                 <>

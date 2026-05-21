@@ -128,7 +128,7 @@ const MENU_SECTIONS: MenuSection[] = [
         path: "/tai-len-danh-sach",
         label: "Tải lên danh sách",
         icon: <FiUpload size={18} />,
-        roles: ["admin"],
+        roles: ["admin", "dieu_phoi"],
       },
     ],
   },

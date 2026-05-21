@@ -10,6 +10,9 @@ export const ROLE_LABELS: Record<VaiTro, string> = {
 };
 
 export const PERMISSIONS = {
+  // === ROLE ACCESS ===
+  'role': ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao'],
+
   // === DON HANG ===
   'donhang.create': ['admin', 'dieu_phoi'],
   'donhang.edit': ['admin', 'dieu_phoi'],

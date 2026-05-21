@@ -114,8 +114,7 @@ export async function importDonHang(
       const thanhTien = khoiLuongDat * donGia;
       const conLai = thanhTien;
 
-      await query(
-        `INSERT INTO DonHang (
+      const sql = `INSERT INTO DonHang (
           maDonHang, tenKhachHang, diaChiNhan, soDienThoai,
           tenMacBeTong, khoiLuongDat, donGia, thanhTien, conLai,
           thoiGianGiaoDuKien, trangThaiDon, trangThaiHoanThanh,
@@ -125,8 +124,8 @@ export async function importDonHang(
           @tenMacBeTong, @khoiLuongDat, @donGia, @thanhTien, @conLai,
           @thoiGianGiaoDuKien, N'cho_duyet', N'chua_hoan_thanh',
           @nguoiTaoId, @ghiChu
-        )`,
-        {
+        )`;
+      const params = {
           maDonHang,
           tenKhachHang,
           diaChiNhan,
@@ -139,8 +138,10 @@ export async function importDonHang(
           thoiGianGiaoDuKien: thoiGianGiaoDuKien ? new Date(String(thoiGianGiaoDuKien)) : null,
           nguoiTaoId,
           ghiChu: ghiChu || null,
-        }
-      );
+      };
+      console.log(`[IMPORT] Row ${rowNum} - SQL:`, sql);
+      console.log(`[IMPORT] Row ${rowNum} - Params:`, JSON.stringify(params));
+      await query(sql, params);
       success++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Lỗi không xác định';
