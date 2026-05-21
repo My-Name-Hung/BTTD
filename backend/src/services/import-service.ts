@@ -114,7 +114,8 @@ export async function importDonHang(
       const thanhTien = khoiLuongDat * donGia;
       const conLai = thanhTien;
 
-      const sql = `INSERT INTO DonHang (
+      await query(
+        `INSERT INTO DonHang (
           maDonHang, tenKhachHang, diaChiNhan, soDienThoai,
           tenMacBeTong, khoiLuongDat, donGia, thanhTien, conLai,
           thoiGianGiaoDuKien, trangThaiDon, trangThaiHoanThanh,
@@ -123,9 +124,9 @@ export async function importDonHang(
           @maDonHang, @tenKhachHang, @diaChiNhan, @soDienThoai,
           @tenMacBeTong, @khoiLuongDat, @donGia, @thanhTien, @conLai,
           @thoiGianGiaoDuKien, N'cho_duyet', N'chua_hoan_thanh',
-          @nguoiTaoId, @ghiChu
-        )`;
-      const params = {
+          @nguoiTaiId, @ghiChu
+        )`,
+        {
           maDonHang,
           tenKhachHang,
           diaChiNhan,
@@ -136,12 +137,10 @@ export async function importDonHang(
           thanhTien,
           conLai,
           thoiGianGiaoDuKien: thoiGianGiaoDuKien ? new Date(String(thoiGianGiaoDuKien)) : null,
-          nguoiTaoId,
+          nguoiTaiId,
           ghiChu: ghiChu || null,
-      };
-      console.log(`[IMPORT DON HANG] Row ${rowNum} - Params keys:`, Object.keys(params));
-      console.log(`[IMPORT DON HANG] Row ${rowNum} - nguoiTaoId:`, nguoiTaoId, 'type:', typeof nguoiTaoId);
-      await query(sql, params);
+        }
+      );
       success++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Lỗi không xác định';
