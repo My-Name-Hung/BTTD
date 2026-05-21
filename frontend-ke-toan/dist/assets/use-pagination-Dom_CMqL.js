@@ -1,0 +1,1 @@
+import{r as e}from"./index-Bp6nFsAN.js";function m(s=1,o=20){const[c,a]=e.useState(s),[n,r]=e.useState(o),u=e.useCallback(()=>a(t=>t+1),[]),l=e.useCallback(()=>a(t=>Math.max(1,t-1)),[]),g=e.useCallback(t=>a(t),[]),i=e.useCallback(()=>a(1),[]);return{page:c,limit:n,setLimit:r,nextPage:u,prevPage:l,goToPage:g,resetPage:i}}export{m as u};

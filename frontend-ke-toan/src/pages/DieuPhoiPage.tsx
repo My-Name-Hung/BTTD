@@ -106,16 +106,16 @@ export default function DieuPhoiPage() {
         <div className={styles.cardGrid}>
           {filteredDonHangs.map((dh) => {
             const lich = lichSanXuats[dh.id]?.[0];
-            const sxStatus = lich?.trangThai || 'chua_tao';
+            const sxStatus = lich?.trangThai || 'chua_san_xuat';
             const itemClass =
               sxStatus === 'da_xong' ? styles.cardGridItemSuccess :
               sxStatus === 'dang_san_xuat' ? styles.cardGridItemWarning :
+              sxStatus === 'chua_san_xuat' ? styles.cardGridItemInfo :
               styles.cardGridItemInfo;
             const dotClass =
               sxStatus === 'da_xong' ? styles.statusDotSuccess :
               sxStatus === 'dang_san_xuat' ? styles.statusDotWarning :
-              sxStatus === 'chua_tao' ? styles.statusDotDefault :
-              styles.statusDotInfo;
+              styles.statusDotDefault;
             return (
               <div key={dh.id} className={`${styles.cardGridItem} ${itemClass}`}>
                 <div className={styles.cardBody}>

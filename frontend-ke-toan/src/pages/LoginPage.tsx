@@ -1,46 +1,52 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PiEyeSlashThin, PiEyeThin } from 'react-icons/pi';
-import { FiUser, FiLock } from 'react-icons/fi';
-import { dangNhap } from '../services/api';
-import { useAuth } from '../hooks';
-import { LogoIcon } from '../components/Logo';
-import styles from './LoginPage.module.css';
+import React, { useState } from "react";
+import { FiLock, FiUser } from "react-icons/fi";
+import { PiEyeSlashThin, PiEyeThin } from "react-icons/pi";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks";
+import { dangNhap } from "../services/api";
+import styles from "./LoginPage.module.css";
 
-const REMEMBER_PASSWORD_KEY = 'bttd_remember';
-const SAVED_USERNAME_KEY = 'bttd_saved_user';
+const LOGO_URL =
+  "https://betongtaydo.com/wp-content/uploads/2024/06/Logo-Be-Tong-Tay-Do-xanh-duong-1024x1024.png";
+
+  const REMEMBER_PASSWORD_KEY = "bttd_remember";
+const SAVED_USERNAME_KEY = "bttd_saved_user";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setUser } = useAuth();
   const [username, setUsername] = useState(() => {
-    return localStorage.getItem(SAVED_USERNAME_KEY) || '';
+    return localStorage.getItem(SAVED_USERNAME_KEY) || "";
   });
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberPassword, setRememberPassword] = useState(
-    localStorage.getItem(REMEMBER_PASSWORD_KEY) === 'true'
+    localStorage.getItem(REMEMBER_PASSWORD_KEY) === "true",
   );
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
     try {
       const result = await dangNhap(username, password);
       setUser(result.user);
       if (rememberPassword) {
-        localStorage.setItem(REMEMBER_PASSWORD_KEY, 'true');
+        localStorage.setItem(REMEMBER_PASSWORD_KEY, "true");
         localStorage.setItem(SAVED_USERNAME_KEY, username);
       } else {
         localStorage.removeItem(REMEMBER_PASSWORD_KEY);
         localStorage.removeItem(SAVED_USERNAME_KEY);
       }
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Tài khoản hoặc mật khẩu không đúng, hãy thử lại.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Tài khoản hoặc mật khẩu không đúng, hãy thử lại.",
+      );
     } finally {
       setLoading(false);
     }
@@ -51,9 +57,15 @@ export default function LoginPage() {
       {/* Left panel */}
       <div className={styles.authIllustration}>
         <div className={styles.illustrationContent}>
-          <LogoIcon size={100} />
+          <img
+            src={LOGO_URL}
+            alt="Bê Tông Tây Đô"
+            className={styles.illustrationLogo}
+          />
           <h1>QUẢN LÝ ĐƠN HÀNG</h1>
-          <p className={styles.introText}>Bê Tông Tây Đô - Chất lượng tạo niềm tin</p>
+          <p className={styles.introText}>
+            Bê Tông Tây Đô - Chất lượng tạo niềm tin
+          </p>
           <ul className={styles.illustrationContact}>
             <li>SĐT: 0292 651 8375</li>
             <li>MST: 1801286137</li>
@@ -69,16 +81,24 @@ export default function LoginPage() {
       <div className={styles.loginContainer}>
         <div className={styles.loginCard}>
           <div className={styles.loginHeader}>
-            <LogoIcon size={56} />
+            <img
+              src={LOGO_URL}
+              alt="Bê Tông Tây Đô"
+              className={styles.loginLogo}
+            />
             <h1 className={styles.loginTitle}>Đăng nhập hệ thống</h1>
-            <p className={styles.loginSubtitle}>Vui lòng sử dụng tài khoản được cấp để truy cập.</p>
+            <p className={styles.loginSubtitle}>
+              Vui lòng sử dụng tài khoản được cấp để truy cập.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.loginForm}>
             {error && <div className={styles.errorMessage}>{error}</div>}
 
             <div className={styles.loginFormGroup}>
-              <label className={styles.loginLabel} htmlFor="username">Tên đăng nhập</label>
+              <label className={styles.loginLabel} htmlFor="username">
+                Tên đăng nhập
+              </label>
               <div className={styles.inputWithIcon}>
                 <FiUser className={styles.inputIcon} />
                 <input
@@ -94,11 +114,13 @@ export default function LoginPage() {
             </div>
 
             <div className={styles.loginFormGroup}>
-              <label className={styles.loginLabel} htmlFor="password">Mật khẩu</label>
+              <label className={styles.loginLabel} htmlFor="password">
+                Mật khẩu
+              </label>
               <div className={styles.inputWithIcon}>
                 <FiLock className={styles.inputIcon} />
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   placeholder="Nhập mật khẩu"
                   value={password}
@@ -109,7 +131,9 @@ export default function LoginPage() {
                   type="button"
                   className={styles.eyeButton}
                   onClick={() => setShowPassword((prev) => !prev)}
-                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
+                  aria-label={
+                    showPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"
+                  }
                 >
                   {showPassword ? <PiEyeSlashThin /> : <PiEyeThin />}
                 </button>
@@ -132,7 +156,7 @@ export default function LoginPage() {
               disabled={loading}
               className={styles.submitBtn}
             >
-              {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
           </form>
 

@@ -471,3 +471,62 @@ export async function danhDauTatCaDaDocThongBao(): Promise<void> {
 export async function xoaThongBao(id: number): Promise<void> {
   await request(`/notifications/${id}`, { method: "DELETE" });
 }
+
+// ===== IMPORT =====
+export interface ImportResult {
+  total: number;
+  success: number;
+  failed: number;
+  errors: string[];
+  details: { row: number; message: string; data: Record<string, unknown> }[];
+}
+
+export interface ImportHistory {
+  id: number;
+  loai: string;
+  tenFile: string;
+  tongSo: number;
+  thanhCong: number;
+  thatBai: number;
+  nguoiTaiHoTen: string;
+  ngayTai: string;
+}
+
+export async function layLichSuImport(
+  loai: string,
+  page = 1,
+  limit = 20,
+  tuNgay?: string,
+  denNgay?: string,
+): Promise<{ data: ImportHistory[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
+  const params = new URLSearchParams({ loai, page: String(page), limit: String(limit) });
+  if (tuNgay) params.append('tuNgay', tuNgay);
+  if (denNgay) params.append('denNgay', denNgay);
+  const res = await fetch(`${BASE_URL}/import/lich-su?${params}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return { data: json.data || [], pagination: json.pagination };
+}
+
+async function importFile(
+  endpoint: string,
+  file: File,
+): Promise<ImportResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: formData,
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data as ImportResult;
+}
+
+export const importDonHang = (file: File) => importFile('/import/don-hang', file);
+export const importKhachHang = (file: File) => importFile('/import/khach-hang', file);
+export const importNguoiDung = (file: File) => importFile('/import/nguoi-dung', file);
+export const importPhuongTien = (file: File) => importFile('/import/phuong-tien', file);

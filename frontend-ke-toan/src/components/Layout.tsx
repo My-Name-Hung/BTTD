@@ -6,6 +6,7 @@ import {
   FiMenu,
   FiShoppingBag,
   FiTruck,
+  FiUpload,
   FiUsers,
   FiX,
 } from "react-icons/fi";
@@ -121,6 +122,12 @@ const MENU_SECTIONS: MenuSection[] = [
         path: "/quan-ly/tram-tron",
         label: "Trạm trộn",
         icon: <MdSettings />,
+        roles: ["admin"],
+      },
+      {
+        path: "/tai-len-danh-sach",
+        label: "Tải lên danh sách",
+        icon: <FiUpload size={18} />,
         roles: ["admin"],
       },
     ],

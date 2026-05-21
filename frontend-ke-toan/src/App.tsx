@@ -20,6 +20,7 @@ const TaoDonHangPage = lazy(() => import("./pages/TaoDonHangPage"));
 const TaoLichSanXuatPage = lazy(() => import("./pages/TaoLichSanXuatPage"));
 const ThamSoPage = lazy(() => import("./pages/ThamSoPage"));
 const ThanhToanPage = lazy(() => import("./pages/ThanhToanPage"));
+const TaiLenDanhSachPage = lazy(() => import("./pages/TaiLenDanhSachPage"));
 
 function PageFallback() {
   return (
@@ -56,6 +57,7 @@ function App() {
                   <Route path="/quan-ly/nguoi-dung" element={<QuanLyNguoiDungPage />} />
                   <Route path="/quan-ly/xe" element={<QuanLyXePage />} />
                   <Route path="/quan-ly/tram-tron" element={<QuanLyTramTronPage />} />
+                  <Route path="/tai-len-danh-sach" element={<TaiLenDanhSachPage />} />
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
