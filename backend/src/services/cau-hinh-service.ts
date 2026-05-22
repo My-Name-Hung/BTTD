@@ -15,13 +15,21 @@ export async function layGiaTri(khoa: string): Promise<string | null> {
 }
 
 export async function datGiaTri(khoa: string, giaTri: string): Promise<void> {
-  await query(
-    `IF EXISTS (SELECT 1 FROM CauHinh WHERE khoa = @khoa)
-     UPDATE CauHinh SET giaTri = @giaTri, ngayCapNhat = GETDATE() WHERE khoa = @khoa
-     ELSE
-     INSERT INTO CauHinh (khoa, giaTri) VALUES (@khoa, @giaTri)`,
-    { khoa, giaTri }
+  const existing = await query<{ id: number }[]>(
+    `SELECT id FROM CauHinh WHERE khoa = @khoa`,
+    { khoa }
   );
+  if (existing.length > 0) {
+    await query(
+      `UPDATE CauHinh SET giaTri = @giaTri, ngayCapNhat = GETDATE() WHERE khoa = @khoa`,
+      { khoa, giaTri }
+    );
+  } else {
+    await query(
+      `INSERT INTO CauHinh (khoa, giaTri) VALUES (@khoa, @giaTri)`,
+      { khoa, giaTri }
+    );
+  }
 }
 
 export async function xoaKhoa(khoa: string): Promise<void> {
