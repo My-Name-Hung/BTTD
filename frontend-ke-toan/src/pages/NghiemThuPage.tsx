@@ -24,8 +24,7 @@ export default function NghiemThuPage() {
   const [tuKhoa, setTuKhoa] = useState('');
   const [tab, setTab] = useState<TabType>('can_nghiem_thu');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [confirmModalAction, setConfirmModalAction] = useState<'da' | 'chua'>('da');
+  const [hasFileModalOpen, setHasFileModalOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
   const [selectedNt, setSelectedNt] = useState<NghiemThu | null>(null);
@@ -75,32 +74,40 @@ export default function NghiemThuPage() {
 
   const handleDaNghiemThu = (dh: DonHang) => {
     setSelectedDonHang(dh);
-    setConfirmModalAction('da');
-    setConfirmModalOpen(true);
+    setHasFileModalOpen(true);
   };
 
-  const handleChuaNghiemThu = (dh: DonHang) => {
-    setSelectedDonHang(dh);
-    setConfirmModalAction('chua');
-    setConfirmModalOpen(true);
+  const handleCoUploadFile = async () => {
+    setHasFileModalOpen(false);
+    setUploadModalOpen(true);
   };
 
-  const handleConfirm = async () => {
+  const handleKhongUploadFile = async () => {
     if (!selectedDonHang) return;
     setConfirmLoading(true);
     try {
-      if (confirmModalAction === 'da') {
-        await xacNhanNghiemThu(selectedDonHang.id, 'da');
-        await taoCongNo(selectedDonHang.id);
-        showToast('Đã xác nhận đã nghiệm thu — đơn chuyển sang chờ thanh toán');
-      } else {
-        await xacNhanNghiemThu(selectedDonHang.id, 'chua');
-        showToast('Đã xác nhận chưa nghiệm thu');
-      }
-      setConfirmModalOpen(false);
+      await xacNhanNghiemThu(selectedDonHang.id, 'da');
+      await taoCongNo(selectedDonHang.id);
+      showToast('Đã xác nhận đã nghiệm thu — đơn chuyển sang chờ thanh toán');
+      setHasFileModalOpen(false);
       loadData();
     } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi', 'error'); }
     finally { setConfirmLoading(false); }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedDonHang) return;
+    setUploadLoading(true);
+    try {
+      await uploadBienBanNghiemThu(selectedDonHang.id, uploadFile!);
+      await xacNhanNghiemThu(selectedDonHang.id, 'da');
+      await taoCongNo(selectedDonHang.id);
+      showToast('Đã tải file và xác nhận nghiệm thu thành công');
+      setUploadModalOpen(false);
+      setUploadFile(null);
+      loadData();
+    } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi tải file', 'error'); }
+    finally { setUploadLoading(false); }
   };
 
   const openUploadFile = (dh: DonHang, nt: NghiemThu) => {
@@ -108,18 +115,6 @@ export default function NghiemThuPage() {
     setSelectedNt(nt);
     setUploadFile(null);
     setUploadModalOpen(true);
-  };
-
-  const handleUpload = async () => {
-    if (!selectedDonHang) return;
-    setUploadLoading(true);
-    try {
-      await uploadBienBanNghiemThu(selectedDonHang.id, uploadFile);
-      showToast('Tải file biên bản thành công');
-      setUploadModalOpen(false);
-      loadData();
-    } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi tải file', 'error'); }
-    finally { setUploadLoading(false); }
   };
 
   const getBaseUrl = () => {
@@ -193,54 +188,61 @@ export default function NghiemThuPage() {
                 key={dh.id}
                 className={`${styles.cardGridItem} ${isDaNT ? styles.cardGridItemSuccess : styles.cardGridItemInfo}`}
               >
-                <div className={styles.cardGridHeader}>
-                  <span className={styles.cardGridTitle}>{dh.maDonHang}</span>
-                  <span className={`${styles.badge} ${isDaNT ? styles.badgeDaNghiemThu : styles.badgeChoNghiemThu}`}>
-                    {isDaNT ? 'Đã nghiệm thu' : 'Cần nghiệm thu'}
-                  </span>
-                </div>
-                <div className={styles.cardGridMeta}><strong>{dh.tenKhachHang}</strong></div>
-                <div className={styles.cardGridMeta} style={{ color: 'var(--color-text-secondary)' }}>{dh.diaChiNhan}</div>
-                <div className={styles.cardGridValue} style={{ marginTop: 8 }}>
-                  KL đặt: <strong>{dh.khoiLuongDat} m³</strong>
-                  {dh.khoiLuongThucTe && (<> &bull; KL thực tế: <strong>{dh.khoiLuongThucTe} m³</strong></>)}
-                </div>
-                <div className={styles.cardGridValue}>
-                  {dh.tenMacBeTong} &bull; <strong>{formatCurrency(dh.thanhTien || 0)}</strong>
-                </div>
-
-                {nt && (
-                  <div className={styles.infoBox} style={{ marginTop: 12 }}>
-                    {nt.bienBanFile && (
-                      <div className={styles.infoBoxRow}>
-                        <span className={styles.infoBoxLabel}>File biên bản</span>
-                        <a
-                          href={`${baseUrl}${nt.bienBanFile}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.bienBanLink}
-                        >
-                          <FiExternalLink size={12} /> Mở file
-                        </a>
-                      </div>
-                    )}
-                    <div className={styles.infoBoxRow}>
-                      <span className={styles.infoBoxLabel}>Đã thanh toán</span>
-                      <span className={styles.infoBoxValueSuccess}>{formatCurrency(daTT)}</span>
+                <div className={styles.cardBody}>
+                  <div className={styles.cardGridHeader}>
+                    <span className={styles.cardGridTitle}>{dh.maDonHang}</span>
+                    <div className={styles.cardGridStatus}>
+                      <span className={`${styles.statusDot} ${isDaNT ? styles.statusDotSuccess : styles.statusDotWarning}`} />
+                      <span className={`${styles.badge} ${isDaNT ? styles.badgeDaNghiemThu : styles.badgeChoNghiemThu}`}>
+                        {isDaNT ? 'Đã nghiệm thu' : 'Cần nghiệm thu'}
+                      </span>
                     </div>
                   </div>
-                )}
+
+                  <div className={styles.cardGridMeta}><strong>{dh.tenKhachHang}</strong></div>
+                  <div className={styles.cardGridMetaSecondary}>{dh.diaChiNhan}</div>
+
+                  <div className={styles.cardGridDivider} />
+
+                  <div className={styles.cardGridValue}>
+                    {dh.tenMacBeTong} &bull; <strong>{formatCurrency(dh.thanhTien || 0)}</strong>
+                  </div>
+                  <div className={styles.cardGridValueSmall}>
+                    KL đặt: {dh.khoiLuongDat} m³
+                    {dh.khoiLuongThucTe && <> &bull; KL thực tế: <strong>{dh.khoiLuongThucTe} m³</strong></>}
+                  </div>
+
+                  {nt && (
+                    <div className={styles.infoBox}>
+                      <div className={styles.infoBoxRow}>
+                        <div>
+                          <div className={styles.infoBoxLabel}>Đã thanh toán</div>
+                          <div className={`${styles.infoBoxValue} ${styles.infoBoxValueSuccess}`}>{formatCurrency(daTT)}</div>
+                        </div>
+                        <div>
+                          <div className={styles.infoBoxLabel}>Giá trị đơn</div>
+                          <div className={`${styles.infoBoxValue} ${styles.infoBoxValueHighlight}`}>{formatCurrency(dh.thanhTien || 0)}</div>
+                        </div>
+                      </div>
+                      {nt.bienBanFile && (
+                        <div className={styles.infoBoxRow}>
+                          <div>
+                            <div className={styles.infoBoxLabel}>Biên bản</div>
+                            <a href={`${baseUrl}${nt.bienBanFile}`} target="_blank" rel="noopener noreferrer" className={styles.bienBanLink}>
+                              <FiExternalLink size={12} /> Mở file
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <div className={styles.cardGridFooter}>
                   {!isDaNT && canConfirm && (
-                    <>
-                      <button className="btn btn-save" onClick={() => handleDaNghiemThu(dh)}>
-                        <FiCheck /> Đã nghiệm thu
-                      </button>
-                      <button className="btn btn-secondary" onClick={() => handleChuaNghiemThu(dh)}>
-                        <FiX /> Chưa nghiệm thu
-                      </button>
-                    </>
+                    <button className="btn btn-save" onClick={() => handleDaNghiemThu(dh)}>
+                      <FiCheck /> Đã nghiệm thu
+                    </button>
                   )}
                   {isDaNT && (
                     <button className="btn btn-secondary" onClick={() => openUploadFile(dh, nt!)}>
@@ -304,21 +306,67 @@ export default function NghiemThuPage() {
         )}
       </Modal>
 
-      <ConfirmModal
-        isOpen={confirmModalOpen}
-        onClose={() => setConfirmModalOpen(false)}
-        onConfirm={handleConfirm}
-        title={confirmModalAction === 'da' ? 'Xác nhận đã nghiệm thu' : 'Xác nhận chưa nghiệm thu'}
-        message={
-          confirmModalAction === 'da'
-            ? `Bạn có chắc đã nghiệm thu đơn "${selectedDonHang?.maDonHang}"? Đơn sẽ chuyển sang chờ thanh toán.`
-            : `Bạn có chắc đơn "${selectedDonHang?.maDonHang}" chưa nghiệm thu? Đơn sẽ giữ nguyên trạng thái.`
+      {/* Modal hỏi có tải file biên bản không */}
+      <Modal
+        isOpen={hasFileModalOpen}
+        onClose={() => setHasFileModalOpen(false)}
+        title={`Nghiệm thu - ${selectedDonHang?.maDonHang}`}
+        footer={
+          <>
+            <button className="btn btn-cancel" onClick={() => setHasFileModalOpen(false)}>Hủy</button>
+            <button className="btn btn-cancel" onClick={handleKhongUploadFile} disabled={confirmLoading}>
+              Không
+            </button>
+            <button className="btn btn-save" onClick={handleCoUploadFile}>
+              Có, tải file biên bản
+            </button>
+          </>
         }
-        confirmText={confirmModalAction === 'da' ? 'Xác nhận đã nghiệm thu' : 'Xác nhận chưa nghiệm thu'}
-        cancelText="Hủy"
-        type={confirmModalAction === 'da' ? 'success' : 'warning'}
-        loading={confirmLoading}
-      />
+      >
+        <p style={{ fontSize: 14, color: 'var(--color-text)', marginBottom: 16 }}>
+          Bạn có muốn tải lên <strong>biên bản nghiệm thu</strong> (file Word, PDF hoặc hình ảnh) không?
+        </p>
+        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+          Nếu có sẽ chuyển đến trang tải lên file, nếu không sẽ hoàn thành nghiệm thu mà không cần tải lên file.
+        </p>
+      </Modal>
+
+      {/* Modal upload file biên bản nghiệm thu */}
+      <Modal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        title={`Tải file biên bản - ${selectedDonHang?.maDonHang}`}
+        footer={
+          <>
+            <button className="btn btn-cancel" onClick={() => setUploadModalOpen(false)}>Hủy</button>
+            <button
+              className="btn btn-save"
+              onClick={handleUpload}
+              disabled={!uploadFile || uploadLoading}
+            >
+              {uploadLoading ? 'Đang tải...' : 'Xác nhận nghiệm thu'}
+            </button>
+          </>
+        }
+      >
+        <div className={styles.uploadNote}>
+          Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .png</strong> (tối đa 50MB)
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Chọn file biên bản nghiệm thu *</label>
+          <input
+            type="file"
+            className={styles.formInput}
+            accept=".doc,.docx,.pdf,.jpg,.jpeg,.png"
+            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+          />
+        </div>
+        {uploadFile && (
+          <div className={styles.uploadFileName}>
+            <FiFileText size={14} /> {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
+          </div>
+        )}
+      </Modal>
 
       <div className={styles.toastContainer}>
         {toasts.map((t) => (

@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { ApiResponse } from '../models';
 import {
@@ -15,11 +16,17 @@ import { NghiemThu } from '../models';
 
 const router = Router();
 
+// Thư mục lưu file — đảm bảo tồn tại
+const BIEN_BAN_DIR = path.join(process.cwd(), 'uploads', 'bien-ban');
+if (!fs.existsSync(BIEN_BAN_DIR)) {
+  fs.mkdirSync(BIEN_BAN_DIR, { recursive: true });
+}
+
 // Cấu hình multer để lưu file biên bản nghiệm thu
 const uploadBienBan = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => {
-      cb(null, path.join(process.cwd(), 'uploads', 'bien-ban'));
+      cb(null, BIEN_BAN_DIR);
     },
     filename: (_req, file, cb) => {
       const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);

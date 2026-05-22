@@ -447,84 +447,30 @@ export default function ChiTietDonHangPage() {
         )}
       </div>
 
-      {/* Nghiệm thu */}
-      <div className={styles.sectionCard}>
-        <div className={styles.sectionHeader}>
-          <div className={styles.sectionTitle}>
-            <div className={`${styles.sectionAccent} ${styles.sectionAccentGreen}`} />
-            <FiCheckCircle size={16} style={{ color: 'var(--color-success)' }} />
-            Biên bản nghiệm thu
+      {/* Nghiệm thu — chỉ hiện khi có file biên bản */}
+      {nghiemThu && nghiemThu.bienBanFile && (
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitle}>
+              <div className={`${styles.sectionAccent} ${styles.sectionAccentGreen}`} />
+              <FiCheckCircle size={16} style={{ color: 'var(--color-success)' }} />
+              Biên bản nghiệm thu
+            </div>
           </div>
-          {nghiemThu && (
-            <span className={styles.sectionChip}
-              style={{
-                background: nghiemThu.chatLuong === 'dat'
-                  ? 'rgba(16,185,129,0.1)'
-                  : 'rgba(239,68,68,0.08)',
-                color: nghiemThu.chatLuong === 'dat' ? '#047857' : 'var(--color-danger)',
-              }}>
-              {nghiemThu.chatLuong === 'dat' ? 'Đạt' : 'Không đạt'}
-            </span>
-          )}
+          <div style={{ padding: '8px 0' }}>
+            <a
+              href={`${(import.meta.env.VITE_API_URL || 'https://bttd.onrender.com/api').replace('/api', '')}${nghiemThu.bienBanFile}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--color-primary)', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+            >
+              <FiFileText size={16} />
+              Mở biên bản nghiệm thu
+              <FiExternalLink size={13} />
+            </a>
+          </div>
         </div>
-
-        {nghiemThu ? (
-          <table className={styles.subTable}>
-            <tbody>
-              <tr>
-                <th style={{ width: 140 }}>Số BB</th>
-                <td>{nghiemThu.bienBanSo || '—'}</td>
-                <th style={{ width: 140 }}>Ngày lập</th>
-                <td>{formatDate(nghiemThu.ngayLapBienBan || '')}</td>
-              </tr>
-              <tr>
-                <th>KL xác nhận</th>
-                <td>{nghiemThu.khoiLuongXacNhan ? `${nghiemThu.khoiLuongXacNhan} m³` : '—'}</td>
-                <th>KL thực tế</th>
-                <td>{nghiemThu.khoiLuongThucTe ? `${nghiemThu.khoiLuongThucTe} m³` : '—'}</td>
-              </tr>
-              <tr>
-                <th>Người lập</th>
-                <td>{nghiemThu.nguoiLap || '—'}</td>
-                <th>Người ký</th>
-                <td>{nghiemThu.nguoiKy || '—'}</td>
-              </tr>
-              <tr>
-                <th>Chức vụ</th>
-                <td>{nghiemThu.chucVu || '—'}</td>
-                <th>Đã gửi khách</th>
-                <td>{nghiemThu.daGuiKhach ? '✓ Đã gửi' : '✗ Chưa gửi'}</td>
-              </tr>
-              {nghiemThu.bienBanFile && (
-                <tr>
-                  <th>File đính kèm</th>
-                  <td colSpan={3}>
-                    <a
-                      href={`${(import.meta.env.VITE_API_URL || 'https://bttd.onrender.com/api').replace('/api', '')}${nghiemThu.bienBanFile}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: 'var(--color-primary)', fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                    >
-                      <FiExternalLink size={13} /> Mở biên bản nghiệm thu
-                    </a>
-                  </td>
-                </tr>
-              )}
-              {nghiemThu.ghiChu && (
-                <tr>
-                  <th>Ghi chú</th>
-                  <td colSpan={3}>{nghiemThu.ghiChu}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        ) : (
-          <div className={styles.subTableEmpty}>
-            <FiFileText size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
-            <div>Chưa có biên bản nghiệm thu</div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Toast */}
       <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 300, display: 'flex', flexDirection: 'column', gap: 8 }}>
