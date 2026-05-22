@@ -6,6 +6,7 @@ import {
   importKhachHang,
   importNguoiDung,
   importPhuongTien,
+  importMacBeTong,
   layLichSuImport,
   ImportHistory,
   ImportResult,
@@ -14,7 +15,7 @@ import { useToast, usePageRole, VaiTro } from '../hooks';
 import { Loading } from '../components/Common';
 import styles from './TaiLenDanhSachPage.module.css';
 
-type TabKey = 'don_hang' | 'khach_hang' | 'nguoi_dung' | 'phuong_tien';
+type TabKey = 'don_hang' | 'khach_hang' | 'nguoi_dung' | 'phuong_tien' | 'mac_be_tong';
 
 interface TabConfig {
   key: TabKey;
@@ -79,6 +80,17 @@ const TABS: TabConfig[] = [
       { key: 'Tên tài xế', title: 'Tên tài xế', example: 'Lê Văn Bình' },
       { key: 'SĐT tài xế', title: 'SĐT tài xế', example: '0909123456' },
       { key: 'Tải trọng', title: 'Tải trọng (tấn)', example: '10' },
+    ],
+  },
+  {
+    key: 'mac_be_tong',
+    label: 'Mác bê tông',
+    importFn: importMacBeTong,
+    canAccess: ['admin', 'ke_toan', 'dieu_phoi'],
+    templateColumns: [
+      { key: 'Tên mác', title: 'Tên mác', example: 'M250' },
+      { key: 'Đơn giá', title: 'Đơn giá (VNĐ)', example: '1500000' },
+      { key: 'Mô tả', title: 'Mô tả', example: 'Mác bê tông 250' },
     ],
   },
 ];

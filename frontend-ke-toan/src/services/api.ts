@@ -530,3 +530,4 @@ export const importDonHang = (file: File) => importFile('/import/don-hang', file
 export const importKhachHang = (file: File) => importFile('/import/khach-hang', file);
 export const importNguoiDung = (file: File) => importFile('/import/nguoi-dung', file);
 export const importPhuongTien = (file: File) => importFile('/import/phuong-tien', file);
+export const importMacBeTong = (file: File) => importFile('/import/mac-be-tong', file);

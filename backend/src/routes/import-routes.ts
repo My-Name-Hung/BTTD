@@ -8,6 +8,7 @@ import {
   importKhachHang,
   importNguoiDung,
   importPhuongTien,
+  importMacBeTong,
   layLichSuImport,
 } from '../services/import-service';
 
@@ -212,6 +213,42 @@ router.post(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Lỗi import phương tiện';
+      res.status(500).json({ success: false, message });
+    }
+  }
+);
+
+// Import mác bê tông
+router.post(
+  '/mac-be-tong',
+  authMiddleware,
+  requireRole('admin', 'ke_toan', 'dieu_phoi'),
+  upload.single('file'),
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ success: false, message: 'Vui lòng chọn file Excel' });
+        return;
+      }
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+        return;
+      }
+
+      const rows = parseExcel(req.file.buffer);
+      if (rows.length === 0) {
+        res.status(400).json({ success: false, message: 'File không có dữ liệu' });
+        return;
+      }
+
+      const result = await importMacBeTong(rows, req.user.id, req.file.originalname);
+      res.json({
+        success: true,
+        message: `Import thành công ${result.success}/${result.total} dòng`,
+        data: result,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Lỗi import mác bê tông';
       res.status(500).json({ success: false, message });
     }
   }

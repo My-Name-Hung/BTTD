@@ -359,3 +359,57 @@ export async function importPhuongTien(
   await ghiLichSuImport('phuong_tien', tenFile, rows.length, success, failed, nguoiTaiId);
   return { total: rows.length, success, failed, errors, details };
 }
+
+// ===== Import mác bê tông =====
+export async function importMacBeTong(
+  rows: Record<string, unknown>[],
+  nguoiTaiId: number,
+  tenFile: string,
+): Promise<ImportResult> {
+  const errors: ImportResult['errors'] = [];
+  const details: ImportResult['details'] = [];
+  let success = 0;
+
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const rowNum = i + 2;
+    try {
+      const tenMac = String(r['Tên mác'] || r['tenMac'] || '').trim();
+      const donGiaRaw = String(r['Đơn giá'] || r['donGia'] || '0').replace(/[^\d.,]/g, '').replace(',', '.');
+      const donGia = parseFloat(donGiaRaw) || 0;
+      const moTa = String(r['Mô tả'] || r['moTa'] || '').trim();
+
+      if (!tenMac) {
+        errors.push(`Dòng ${rowNum}: Thiếu tên mác bê tông`);
+        details.push({ row: rowNum, message: 'Thiếu tên mác bê tông', data: r });
+        continue;
+      }
+
+      // Upsert: update nếu đã tồn tại, insert nếu chưa
+      const existing = await query<{ id: number }[]>(
+        `SELECT id FROM MacBeTong WHERE LOWER(tenMac) = LOWER(@tenMac)`,
+        { tenMac }
+      );
+      if (existing.length > 0) {
+        await query(
+          `UPDATE MacBeTong SET donGia = @donGia, moTa = @moTa WHERE id = @id`,
+          { donGia, moTa: moTa || null, id: existing[0].id }
+        );
+      } else {
+        await query(
+          `INSERT INTO MacBeTong (tenMac, donGia, moTa) VALUES (@tenMac, @donGia, @moTa)`,
+          { tenMac, donGia, moTa: moTa || null }
+        );
+      }
+      success++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Lỗi không xác định';
+      errors.push(`Dòng ${rowNum}: ${msg}`);
+      details.push({ row: rowNum, message: msg, data: r });
+    }
+  }
+
+  const failed = rows.length - success;
+  await ghiLichSuImport('mac_be_tong', tenFile, rows.length, success, failed, nguoiTaiId);
+  return { total: rows.length, success, failed, errors, details };
+}
