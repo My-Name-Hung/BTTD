@@ -6,6 +6,7 @@ import {
   danhDauDaDoc,
   danhDauTatCaDaDoc,
   xoaThongBao,
+  resetThongBaoQuaHan,
 } from '../services/thong-bao-service';
 import { ApiResponse } from '../models';
 
@@ -95,6 +96,19 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response<Api
     res.json({ success: true, message: 'Xóa thông báo thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+// Reset thông báo ngày hôm trước (auto gọi bởi cron hoặc frontend)
+router.post('/reset', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const deleted = await resetThongBaoQuaHan();
+    console.log(`[ThongBao] Đã reset ${deleted} thông báo ngày cũ`);
+    res.json({ success: true, message: `Đã xóa ${deleted} thông báo ngày cũ`, data: { deleted } });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi reset thông báo';
+    console.error('[ThongBao] Reset error:', message);
     res.status(500).json({ success: false, message });
   }
 });

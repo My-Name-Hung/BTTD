@@ -162,3 +162,22 @@ export async function danhDauTatCaDaDoc(role: string): Promise<void> {
 export async function xoaThongBao(id: number): Promise<void> {
   await query(`DELETE FROM ThongBao WHERE id = @id`, { id });
 }
+
+/**
+ * Xóa tất cả thông báo của ngày hôm qua (chạy tự động lúc 23:59:59)
+ * Trả về số bản ghi đã xóa
+ */
+export async function resetThongBaoQuaHan(): Promise<number> {
+  // Đếm trước
+  const countResult = await query<{ deleted: number }[]>(
+    `SELECT COUNT(*) as deleted FROM ThongBao WHERE CAST(ngayTao AS DATE) < CAST(GETDATE() AS DATE)`,
+    {}
+  );
+  const count = countResult[0]?.deleted ?? 0;
+  // Xóa
+  await query(
+    `DELETE FROM ThongBao WHERE CAST(ngayTao AS DATE) < CAST(GETDATE() AS DATE)`,
+    {}
+  );
+  return count;
+}

@@ -130,6 +130,43 @@ async function startServer() {
     console.log(
       `🔗 Database: ${config.db.server}:${config.db.port}/${config.db.database}\n`,
     );
+
+    // ─── Cron: reset thông báo ngày cũ lúc 23:59:59 ───
+    const SCHEDULE_HOUR = 23;
+    const SCHEDULE_MINUTE = 59;
+    const SCHEDULE_SECOND = 59;
+    let lastResetDate = '';
+
+    function checkAndReset() {
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+
+      if (
+        h === SCHEDULE_HOUR &&
+        m === SCHEDULE_MINUTE &&
+        s === SCHEDULE_SECOND &&
+        today !== lastResetDate
+      ) {
+        lastResetDate = today;
+        // Gọi reset ngay lập tức
+        import('./services/thong-bao-service')
+          .then(({ resetThongBaoQuaHan }) => resetThongBaoQuaHan())
+          .then((count) => {
+            console.log(`[Cron] Đã xóa ${count} thông báo ngày cũ lúc ${now.toISOString()}`);
+          })
+          .catch((err) => {
+            console.error('[Cron] Lỗi reset thông báo:', err);
+          });
+      }
+    }
+
+    setInterval(checkAndReset, 1000);
+    console.log(
+      `[Cron] Đã bật auto-reset thông báo: chạy lúc ${SCHEDULE_HOUR}:${SCHEDULE_MINUTE}:${SCHEDULE_SECOND} mỗi ngày`,
+    );
   });
 }
 

@@ -472,6 +472,11 @@ export async function xoaThongBao(id: number): Promise<void> {
   await request(`/notifications/${id}`, { method: "DELETE" });
 }
 
+export async function resetThongBaoNgayCu(): Promise<{ deleted: number }> {
+  const res = await request('/notifications/reset', { method: 'POST' });
+  return res.data as { deleted: number };
+}
+
 // ===== IMPORT =====
 export interface ImportResult {
   total: number;

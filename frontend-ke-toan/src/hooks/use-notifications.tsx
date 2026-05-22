@@ -3,7 +3,10 @@ import {
   NotificationPopup,
   PopupNotification,
 } from "../components/NotificationPopup/NotificationPopup";
-import { danhDauDaDocThongBao } from "../services/api";
+import {
+  danhDauDaDocThongBao,
+  resetThongBaoNgayCu,
+} from "../services/api";
 import { disconnectSocket, initSocket } from "../utils/socket";
 
 // ─── Âm thanh thông báo ───
@@ -186,6 +189,40 @@ export function useNotifications(
       fetchUnreadCount();
     }
   }, [vaiTro, fetchUnreadCount]);
+
+  // ─── Auto reset thông báo khi ngày mới bắt đầu (23:59:59) ───
+  const lastResetDateRef = useRef<string>('');
+
+  useEffect(() => {
+    function checkDailyReset() {
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+
+      if (
+        h === 23 &&
+        m === 59 &&
+        s === 59 &&
+        today !== lastResetDateRef.current
+      ) {
+        lastResetDateRef.current = today;
+        resetThongBaoNgayCu()
+          .then(({ deleted }) => {
+            console.log(`[Notifications] Đã reset ${deleted} thông báo ngày cũ`);
+            setUnreadCount(0);
+            window.dispatchEvent(new CustomEvent('bttd:notifications-refresh'));
+          })
+          .catch((err) => {
+            console.error('[Notifications] Lỗi reset thông báo:', err);
+          });
+      }
+    }
+
+    const interval = setInterval(checkDailyReset, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // ─── PopupContainer ───
   const PopupContainer = useCallback(() => {
