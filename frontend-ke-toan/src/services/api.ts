@@ -592,7 +592,7 @@ export async function xacNhanDaGiaoKho(
   idDonHang: number,
   khoiLuongThucTe?: number,
 ): Promise<any> {
-  return request<any>(`/kho/xac-nhan-da-giao/${idDonHang}`, {
+  return request<any>(`/kho/xac-nhan-giao/${idDonHang}`, {
     method: "PUT",
     body: JSON.stringify({ khoiLuongThucTe }),
   });
