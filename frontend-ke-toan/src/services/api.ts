@@ -295,6 +295,30 @@ export async function xacNhanNghiemThu(idDonHang: number): Promise<DonHang> {
   });
 }
 
+export async function uploadBienBanNghiemThu(
+  idDonHang: number,
+  file: File,
+): Promise<{ bienBanFile: string }> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(
+    `${BASE_URL}/nghiem-thu/upload/${idDonHang}`,
+    {
+      method: "POST",
+      headers: { Authorization: token ? `Bearer ${token}` : "" },
+      body: formData,
+    },
+  );
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || "Lỗi tải file biên bản nghiệm thu");
+  }
+  return result.data;
+}
+
 export async function layDanhSachCongNo(
   page = 1,
   limit = 20,

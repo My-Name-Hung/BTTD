@@ -26,7 +26,9 @@ export default function ThanhToanPage() {
     setLoading(true);
     try {
       const dhRes = await layDanhSachDonHang(page, 20, undefined, tuKhoa || undefined);
-      const dhs = (dhRes.data || []).filter((dh: DonHang) => dh.trangThaiDon !== 'cho_duyet' && dh.trangThaiDon !== 'tu_choi');
+      const dhs = (dhRes.data || []).filter((dh: DonHang) =>
+        ['nghiem_thu', 'da_thanh_toan'].includes(dh.trangThaiDon)
+      );
       setDonHangs(dhs);
       // Gọi song song tất cả lịch sử thanh toán
       const histories = await Promise.all(dhs.map((dh: DonHang) => layLichSuThanhToan(dh.id)));

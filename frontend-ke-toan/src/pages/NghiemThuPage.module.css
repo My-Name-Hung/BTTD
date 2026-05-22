@@ -122,6 +122,25 @@
 .formRow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .formTextarea { width: 100%; padding: 9px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 14px; font-family: inherit; color: var(--color-text); background: var(--color-white); resize: vertical; min-height: 80px; transition: border-color 0.2s ease; box-sizing: border-box; }
 .formTextarea:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.1); }
+
+/* Tabs */
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--color-border); padding-bottom: 0; }
+.tab { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; background: none; font-size: 13px; font-weight: 600; font-family: inherit; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s ease; border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.tab:hover { color: var(--color-primary); }
+.tabActive { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+/* Badge variants */
+.badgeChoNghiemThu { background: rgba(249, 115, 22, 0.12); color: #c2410c; }
+.badgeDaNghiemThu { background: rgba(16, 185, 129, 0.12); color: #047857; }
+
+/* Upload */
+.uploadNote { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 16px; padding: 10px; background: var(--color-bg); border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+.uploadCurrentFile { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--color-text-secondary); margin-bottom: 16px; }
+.uploadCurrentFile span { flex-shrink: 0; }
+.uploadFileName { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-success); font-weight: 600; margin-top: 8px; }
+.bienBanLink { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--color-primary); text-decoration: none; }
+.bienBanLink:hover { text-decoration: underline; }
+
 .modalOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
 .modal { background: var(--color-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
 .modalHeader { padding: 16px 20px; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between; }

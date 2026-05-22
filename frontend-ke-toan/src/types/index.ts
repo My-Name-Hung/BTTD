@@ -132,6 +132,7 @@ export interface NghiemThu {
   khoiLuongXacNhan: number | null;
   khoiLuongThucTe: number | null;
   chatLuong: "dat" | "khong_dat" | null;
+  bienBanFile: string | null;
   bienBanSo: string | null;
   ngayLapBienBan: string | null;
   nguoiLap: string | null;

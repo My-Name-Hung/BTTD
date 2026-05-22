@@ -81,7 +81,8 @@ export async function capNhatNghiemThu(id: number, data: Partial<NghiemThu>): Pr
 export async function xacNhanNghiemThu(idDonHang: number): Promise<DonHang> {
   await query(
     `UPDATE DonHang SET
-      trangThaiHoanThanh = N'dang_hoan_thanh',
+      trangThaiDon = N'da_thanh_toan',
+      trangThaiHoanThanh = N'da_hoan_thanh',
       ngayCapNhat = GETDATE()
      WHERE id = @id`,
     { id: idDonHang }
@@ -91,4 +92,8 @@ export async function xacNhanNghiemThu(idDonHang: number): Promise<DonHang> {
   guiThongBao('VOLUME_CONFIRMED', { id: idDonHang, maDonHang: donHang.maDonHang, khoiLuong: donHang.khoiLuongThucTe || donHang.khoiLuongDat });
 
   return donHang;
+}
+
+export async function xoaNghiemThu(id: number): Promise<void> {
+  await query(`DELETE FROM NghiemThu WHERE id = @id`, { id });
 }

@@ -1,6 +1,7 @@
 import cors from "cors";
 import { createServer } from "http";
 import express, { Application, NextFunction, Request, Response } from "express";
+import path from "path";
 import { config } from "./config";
 import { initDatabase } from "./config/init-database";
 import { ApiResponse } from "./models";
@@ -40,6 +41,9 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files (biên bản nghiệm thu, etc.)
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Health check
 app.get("/api/health", (_req: Request, res: Response<ApiResponse>) => {

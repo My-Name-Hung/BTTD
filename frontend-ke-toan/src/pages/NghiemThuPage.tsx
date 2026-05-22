@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiSearch, FiCheck, FiFileText, FiX } from 'react-icons/fi';
+import { FiSearch, FiCheck, FiFileText, FiX, FiUpload, FiExternalLink, FiCheckCircle, FiClock } from 'react-icons/fi';
 import {
   layDanhSachDonHang, layNghiemThu, taoNghiemThu,
   xacNhanNghiemThu, layLichSuThanhToan, taoCongNo,
+  uploadBienBanNghiemThu,
 } from '../services/api';
 import { DonHang, NghiemThu, ThanhToan, TRANG_THAI_DON_LABELS } from '../types';
 import { useToast, usePageRole } from '../hooks';
@@ -10,6 +11,8 @@ import { Modal, Loading, EmptyState } from '../components/Common';
 import styles from './NghiemThuPage.module.css';
 
 function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' || '0 đ'; }
+
+type TabType = 'can_nghiem_thu' | 'da_nghiem_thu';
 
 export default function NghiemThuPage() {
   const { hasPermission } = usePageRole();
@@ -19,8 +22,13 @@ export default function NghiemThuPage() {
   const [lichSuTT, setLichSuTT] = useState<Record<number, ThanhToan[]>>({});
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState('');
+  const [tab, setTab] = useState<TabType>('can_nghiem_thu');
   const [modalOpen, setModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
+  const [selectedNghiemThu, setSelectedNghiemThu] = useState<NghiemThu | null>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
   const [form, setForm] = useState({
     khoiLuongThucTe: '', bienBanSo: '', nguoiLap: '', nguoiKy: '',
     chucVu: '', ghiChu: '',
@@ -32,21 +40,45 @@ export default function NghiemThuPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      // Chỉ lấy đơn đã giao (đã đến bước nghiệm thu)
       const dhRes = await layDanhSachDonHang(1, 100, 'da_giao');
       const dhs = dhRes.data || [];
       setDonHangs(dhs);
+      const ntMap: Record<number, NghiemThu | null> = {};
+      const ttMap: Record<number, ThanhToan[]> = {};
       for (const dh of dhs) {
         const [nt, tt] = await Promise.all([layNghiemThu(dh.id), layLichSuThanhToan(dh.id)]);
-        setNghiemThus((prev) => ({ ...prev, [dh.id]: nt }));
-        setLichSuTT((prev) => ({ ...prev, [dh.id]: tt }));
+        ntMap[dh.id] = nt;
+        ttMap[dh.id] = tt || [];
       }
+      setNghiemThus(ntMap);
+      setLichSuTT(ttMap);
     } catch { showToast('Lỗi tải dữ liệu', 'error'); }
     finally { setLoading(false); }
   }, [showToast]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const openNghiemThu = (dh: DonHang) => {
+  // Phân tách đơn đã giao thành 2 nhóm
+  const canNghiemThu = donHangs.filter((dh) => {
+    const nt = nghiemThus[dh.id];
+    return !nt || dh.trangThaiDon === 'da_giao';
+  });
+
+  const daNghiemThu = donHangs.filter((dh) => {
+    const nt = nghiemThus[dh.id];
+    return nt && dh.trangThaiDon !== 'da_giao';
+  });
+
+  const filteredCan = canNghiemThu.filter((dh) =>
+    !tuKhoa || dh.maDonHang.toLowerCase().includes(tuKhoa.toLowerCase()) || dh.tenKhachHang.toLowerCase().includes(tuKhoa.toLowerCase())
+  );
+
+  const filteredDa = daNghiemThu.filter((dh) =>
+    !tuKhoa || dh.maDonHang.toLowerCase().includes(tuKhoa.toLowerCase()) || dh.tenKhachHang.toLowerCase().includes(tuKhoa.toLowerCase())
+  );
+
+  const openTaoBienBan = (dh: DonHang) => {
     setSelectedDonHang(dh);
     const existing = nghiemThus[dh.id];
     setForm({
@@ -58,6 +90,13 @@ export default function NghiemThuPage() {
       ghiChu: existing?.ghiChu || '',
     });
     setModalOpen(true);
+  };
+
+  const openUploadFile = (dh: DonHang, nt: NghiemThu) => {
+    setSelectedDonHang(dh);
+    setSelectedNghiemThu(nt);
+    setUploadFile(null);
+    setUploadModalOpen(true);
   };
 
   const handleSubmit = async () => {
@@ -79,33 +118,143 @@ export default function NghiemThuPage() {
   };
 
   const handleXacNhan = async (dh: DonHang) => {
-    if (!window.confirm('Xác nhận nghiệm thu đơn hàng này?')) return;
+    if (!window.confirm('Xác nhận nghiệm thu? Đơn hàng sẽ chuyển sang bước thanh toán.')) return;
     try {
       await xacNhanNghiemThu(dh.id);
       await taoCongNo(dh.id);
-      showToast('Xác nhận nghiệm thu thành công');
+      showToast('Xác nhận nghiệm thu thành công — đơn hàng đã chuyển sang thanh toán');
       loadData();
     } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi', 'error'); }
   };
 
-  const filteredDonHangs = donHangs.filter((dh) =>
-    !tuKhoa || dh.maDonHang.toLowerCase().includes(tuKhoa.toLowerCase()) || dh.tenKhachHang.toLowerCase().includes(tuKhoa.toLowerCase())
-  );
+  const handleUpload = async () => {
+    if (!selectedDonHang || !uploadFile) return;
+    setUploadLoading(true);
+    try {
+      const result = await uploadBienBanNghiemThu(selectedDonHang.id, uploadFile);
+      showToast('Tải file biên bản thành công');
+      setUploadModalOpen(false);
+      loadData();
+    } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi tải file', 'error'); }
+    finally { setUploadLoading(false); }
+  };
+
+  const getBaseUrl = () => {
+    return import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://bttd.onrender.com';
+  };
+
+  const renderCard = (dh: DonHang, nt: NghiemThu | null, isDaNT: boolean) => {
+    const thanhToans = lichSuTT[dh.id] || [];
+    const daTT = thanhToans.reduce((sum, t) => sum + t.soTien, 0);
+    const baseUrl = getBaseUrl();
+
+    return (
+      <div
+        key={dh.id}
+        className={`${styles.cardGridItem} ${isDaNT ? styles.cardGridItemSuccess : styles.cardGridItemInfo}`}
+      >
+        <div className={styles.cardGridHeader}>
+          <span className={styles.cardGridTitle}>{dh.maDonHang}</span>
+          <span className={`${styles.badge} ${isDaNT ? styles.badgeDaNghiemThu : styles.badgeChoNghiemThu}`}>
+            {isDaNT ? 'Đã nghiệm thu' : 'Cần nghiệm thu'}
+          </span>
+        </div>
+        <div className={styles.cardGridMeta}><strong>{dh.tenKhachHang}</strong></div>
+        <div className={styles.cardGridMeta} style={{ color: 'var(--color-text-secondary)' }}>{dh.diaChiNhan}</div>
+        <div className={styles.cardGridValue} style={{ marginTop: 8 }}>
+          KL đặt: <strong>{dh.khoiLuongDat} m³</strong>
+          {dh.khoiLuongThucTe && (<> &bull; KL thực tế: <strong>{dh.khoiLuongThucTe} m³</strong></>)}
+        </div>
+        <div className={styles.cardGridValue}>
+          {dh.tenMacBeTong} &bull; <strong>{formatCurrency(dh.thanhTien || 0)}</strong>
+        </div>
+
+        {nt && (
+          <div className={styles.infoBox} style={{ marginTop: 12 }}>
+            <div className={styles.infoBoxRow}><span className={styles.infoBoxLabel}>BB số</span><span className={styles.infoBoxValue}>{nt.bienBanSo || '—'}</span></div>
+            <div className={styles.infoBoxRow}><span className={styles.infoBoxLabel}>Người lập</span><span className={styles.infoBoxValue}>{nt.nguoiLap || '—'}</span></div>
+            <div className={styles.infoBoxRow}><span className={styles.infoBoxLabel}>Người ký</span><span className={styles.infoBoxValue}>{nt.nguoiKy || '—'}</span></div>
+            <div className={styles.infoBoxRow}>
+              <span className={styles.infoBoxLabel}>Chất lượng</span>
+              <span className={`${styles.infoBoxValue} ${nt.chatLuong === 'dat' ? styles.infoBoxValueSuccess : styles.infoBoxValueDanger}`}>
+                {nt.chatLuong === 'dat' ? 'Đạt' : nt.chatLuong === 'khong_dat' ? 'Không đạt' : '—'}
+              </span>
+            </div>
+            <div className={styles.infoBoxRow}><span className={styles.infoBoxLabel}>Đã thanh toán</span><span className={styles.infoBoxValueSuccess}>{formatCurrency(daTT)}</span></div>
+            {nt.bienBanFile && (
+              <div className={styles.infoBoxRow}>
+                <span className={styles.infoBoxLabel}>File đính kèm</span>
+                <a
+                  href={`${baseUrl}${nt.bienBanFile}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.bienBanLink}
+                >
+                  <FiExternalLink size={12} /> Mở biên bản
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className={styles.cardGridFooter}>
+          {!isDaNT && canCreate && (
+            <button className="btn btn-edit" onClick={() => openTaoBienBan(dh)}>
+              <FiFileText /> {nt ? 'Sửa biên bản' : 'Tạo biên bản NT'}
+            </button>
+          )}
+          {isDaNT && nt && (
+            <button className="btn btn-secondary" onClick={() => openUploadFile(dh, nt)}>
+              <FiUpload /> Tải file biên bản
+            </button>
+          )}
+          {isDaNT && canConfirm && dh.trangThaiDon === 'nghiem_thu' && (
+            <button className="btn btn-save" onClick={() => handleXacNhan(dh)}>
+              <FiCheck /> Xác nhận NT
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const currentList = tab === 'can_nghiem_thu' ? filteredCan : filteredDa;
 
   return (
     <div>
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageHeaderTitle}>Nghiệm thu đơn hàng</div>
-          <div className={styles.pageHeaderDesc}>Xác nhận khối lượng và chất lượng bê tông đã giao</div>
+          <div className={styles.pageHeaderDesc}>Chỉ hiển thị đơn hàng đã giao thành công</div>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${tab === 'can_nghiem_thu' ? styles.tabActive : ''}`}
+          onClick={() => setTab('can_nghiem_thu')}
+        >
+          <FiClock size={14} /> Cần nghiệm thu ({filteredCan.length})
+        </button>
+        <button
+          className={`${styles.tab} ${tab === 'da_nghiem_thu' ? styles.tabActive : ''}`}
+          onClick={() => setTab('da_nghiem_thu')}
+        >
+          <FiCheckCircle size={14} /> Đã nghiệm thu ({filteredDa.length})
+        </button>
       </div>
 
       <div className={styles.filterBar}>
         <div className={styles.filterBarLeft}>
           <div className={styles.filterSearch}>
             <FiSearch className={styles.filterSearchIcon} />
-            <input className={styles.filterSearchInput} placeholder="Tìm đơn hàng..." value={tuKhoa} onChange={(e) => setTuKhoa(e.target.value)} />
+            <input
+              className={styles.filterSearchInput}
+              placeholder="Tìm đơn hàng..."
+              value={tuKhoa}
+              onChange={(e) => setTuKhoa(e.target.value)}
+            />
           </div>
           {tuKhoa && (
             <button className={styles.filterClearBtn} onClick={() => setTuKhoa('')}>
@@ -115,71 +264,125 @@ export default function NghiemThuPage() {
         </div>
       </div>
 
-      {loading ? <Loading /> : filteredDonHangs.length === 0 ? (
-        <div className={styles.card}><EmptyState icon="📋" text="Không có đơn hàng cần nghiệm thu" /></div>
+      {loading ? <Loading /> : currentList.length === 0 ? (
+        <div className={styles.card}>
+          <EmptyState
+            icon={tab === 'can_nghiem_thu' ? '📋' : '✅'}
+            text={tab === 'can_nghiem_thu' ? 'Không có đơn cần nghiệm thu' : 'Không có đơn đã nghiệm thu'}
+          />
+        </div>
       ) : (
         <div className={styles.cardGrid}>
-          {filteredDonHangs.map((dh) => {
+          {currentList.map((dh) => {
             const nt = nghiemThus[dh.id];
-            const thanhToans = lichSuTT[dh.id] || [];
-            const daTT = thanhToans.reduce((sum, t) => sum + t.soTien, 0);
-            return (
-              <div key={dh.id} className={`${styles.cardGridItem} ${styles.cardGridItemInfo}`}>
-                <div className={styles.cardGridHeader}>
-                  <span className={styles.cardGridTitle}>{dh.maDonHang}</span>
-                  <span className={`${styles.badge}`}>{TRANG_THAI_DON_LABELS[dh.trangThaiDon]}</span>
-                </div>
-                <div className={styles.cardGridMeta}><strong>{dh.tenKhachHang}</strong></div>
-                <div className={styles.cardGridMeta} style={{ color: 'var(--color-text-secondary)' }}>{dh.diaChiNhan}</div>
-                <div className={styles.cardGridValue} style={{ marginTop: 8 }}>
-                  KL đặt: <strong>{dh.khoiLuongDat} m³</strong>
-                  {dh.khoiLuongThucTe && (<> &bull; KL thực tế: <strong>{dh.khoiLuongThucTe} m³</strong></>)}
-                </div>
-                <div className={styles.cardGridValue}>
-                  {dh.tenMacBeTong} &bull; <strong>{formatCurrency(dh.thanhTien || 0)}</strong>
-                </div>
-
-                {nt ? (
-                  <div className={styles.infoBox} style={{ marginTop: 12 }}>
-                    <div className={styles.infoBoxRow}><span className={styles.infoBoxLabel}>BB số</span><span className={styles.infoBoxValue}>{nt.bienBanSo || '—'}</span></div>
-                    <div className={styles.infoBoxRow}><span className={styles.infoBoxLabel}>Người lập</span><span className={styles.infoBoxValue}>{nt.nguoiLap || '—'}</span></div>
-                    <div className={styles.infoBoxRow}><span className={styles.infoBoxLabel}>Người ký</span><span className={styles.infoBoxValue}>{nt.nguoiKy || '—'}</span></div>
-                    <div className={styles.infoBoxRow}><span className={styles.infoBoxLabel}>Chất lượng</span><span className={`${styles.infoBoxValue} ${nt.chatLuong === 'dat' ? styles.infoBoxValueSuccess : styles.infoBoxValueDanger}`}>{nt.chatLuong === 'dat' ? 'Đạt' : nt.chatLuong === 'khong_dat' ? 'Không đạt' : '—'}</span></div>
-                    <div className={styles.infoBoxRow}><span className={styles.infoBoxLabel}>Đã thanh toán</span><span className={styles.infoBoxValueSuccess}>{formatCurrency(daTT)}</span></div>
-                  </div>
-                ) : null}
-
-                <div className={styles.cardGridFooter}>
-                  {canCreate && (
-                    <button className="btn btn-edit" onClick={() => openNghiemThu(dh)}><FiFileText /> {nt ? 'Sửa biên bản' : 'Tạo biên bản NT'}</button>
-                  )}
-                  {canConfirm && nt && nt.chatLuong === 'dat' && dh.trangThaiDon === 'nghiem_thu' && (
-                    <button className="btn btn-save" onClick={() => handleXacNhan(dh)}><FiCheck /> Xác nhận NT</button>
-                  )}
-                </div>
-              </div>
-            );
+            return renderCard(dh, nt, tab === 'da_nghiem_thu');
           })}
         </div>
       )}
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={`Biên bản nghiệm thu - ${selectedDonHang?.maDonHang}`}
-        footer={<><button className="btn btn-cancel" onClick={() => setModalOpen(false)}>Hủy</button><button className="btn btn-save" onClick={handleSubmit}>Lưu biên bản</button></>}
+      {/* Modal tạo/sửa biên bản */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={`Biên bản nghiệm thu - ${selectedDonHang?.maDonHang}`}
+        footer={
+          <>
+            <button className="btn btn-cancel" onClick={() => setModalOpen(false)}>Hủy</button>
+            <button className="btn btn-save" onClick={handleSubmit}>Lưu biên bản</button>
+          </>
+        }
       >
         <div className={styles.formRow}>
-          <div className={styles.formGroup}><label className={styles.formLabel}>Khối lượng xác nhận (m³)</label><input type="number" step="0.01" className={styles.formInput} value={form.khoiLuongThucTe} onChange={(e) => setForm({ ...form, khoiLuongThucTe: e.target.value })} /></div>
-          <div className={styles.formGroup}><label className={styles.formLabel}>Số biên bản</label><input className={styles.formInput} value={form.bienBanSo} onChange={(e) => setForm({ ...form, bienBanSo: e.target.value })} /></div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Khối lượng xác nhận (m³)</label>
+            <input
+              type="number" step="0.01"
+              className={styles.formInput}
+              value={form.khoiLuongThucTe}
+              onChange={(e) => setForm({ ...form, khoiLuongThucTe: e.target.value })}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Số biên bản</label>
+            <input className={styles.formInput} value={form.bienBanSo} onChange={(e) => setForm({ ...form, bienBanSo: e.target.value })} />
+          </div>
         </div>
         <div className={styles.formRow}>
-          <div className={styles.formGroup}><label className={styles.formLabel}>Người lập biên bản</label><input className={styles.formInput} value={form.nguoiLap} onChange={(e) => setForm({ ...form, nguoiLap: e.target.value })} /></div>
-          <div className={styles.formGroup}><label className={styles.formLabel}>Người ký</label><input className={styles.formInput} value={form.nguoiKy} onChange={(e) => setForm({ ...form, nguoiKy: e.target.value })} /></div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Người lập biên bản</label>
+            <input className={styles.formInput} value={form.nguoiLap} onChange={(e) => setForm({ ...form, nguoiLap: e.target.value })} />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Người ký</label>
+            <input className={styles.formInput} value={form.nguoiKy} onChange={(e) => setForm({ ...form, nguoiKy: e.target.value })} />
+          </div>
         </div>
-        <div className={styles.formGroup}><label className={styles.formLabel}>Chức vụ</label><input className={styles.formInput} value={form.chucVu} onChange={(e) => setForm({ ...form, chucVu: e.target.value })} /></div>
-        <div className={styles.formGroup}><label className={styles.formLabel}>Ghi chú</label><textarea className={styles.formTextarea} value={form.ghiChu} onChange={(e) => setForm({ ...form, ghiChu: e.target.value })} /></div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Chức vụ</label>
+          <input className={styles.formInput} value={form.chucVu} onChange={(e) => setForm({ ...form, chucVu: e.target.value })} />
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Ghi chú</label>
+          <textarea className={styles.formTextarea} value={form.ghiChu} onChange={(e) => setForm({ ...form, ghiChu: e.target.value })} />
+        </div>
+      </Modal>
+
+      {/* Modal upload file */}
+      <Modal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        title={`Tải file biên bản - ${selectedDonHang?.maDonHang}`}
+        footer={
+          <>
+            <button className="btn btn-cancel" onClick={() => setUploadModalOpen(false)}>Hủy</button>
+            <button
+              className="btn btn-save"
+              onClick={handleUpload}
+              disabled={!uploadFile || uploadLoading}
+            >
+              {uploadLoading ? 'Đang tải...' : 'Tải lên'}
+            </button>
+          </>
+        }
+      >
+        <div className={styles.uploadNote}>
+          Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .png</strong> (tối đa 50MB)
+        </div>
+        {selectedNghiemThu?.bienBanFile && (
+          <div className={styles.uploadCurrentFile}>
+            <span>File hiện tại:</span>
+            <a
+              href={`${getBaseUrl()}${selectedNghiemThu.bienBanFile}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.bienBanLink}
+            >
+              <FiExternalLink size={12} /> Mở file đang có
+            </a>
+          </div>
+        )}
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Chọn file biên bản (tùy chọn)</label>
+          <input
+            type="file"
+            className={styles.formInput}
+            accept=".doc,.docx,.pdf,.jpg,.jpeg,.png"
+            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+          />
+        </div>
+        {uploadFile && (
+          <div className={styles.uploadFileName}>
+            <FiFileText size={14} /> {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
+          </div>
+        )}
       </Modal>
 
       <div className={styles.toastContainer}>
-        {toasts.map((t) => <div key={t.id} className={`${styles.toast} ${t.type === 'error' ? styles.toastError : styles.toastSuccess}`}>{t.message}</div>)}
+        {toasts.map((t) => (
+          <div key={t.id} className={`${styles.toast} ${t.type === 'error' ? styles.toastError : styles.toastSuccess}`}>
+            {t.message}
+          </div>
+        ))}
       </div>
     </div>
   );

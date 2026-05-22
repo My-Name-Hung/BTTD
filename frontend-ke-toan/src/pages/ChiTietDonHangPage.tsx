@@ -4,7 +4,7 @@ import {
   FiArrowLeft, FiCheck, FiX, FiEdit2, FiTrash2,
   FiUser, FiMapPin, FiPhone, FiPackage,
   FiDollarSign, FiClock, FiTruck, FiCheckCircle,
-  FiAlertTriangle, FiFileText, FiCheckSquare,
+  FiAlertTriangle, FiFileText, FiCheckSquare, FiExternalLink,
 } from 'react-icons/fi';
 import {
   layDonHang,
@@ -493,6 +493,21 @@ export default function ChiTietDonHangPage() {
                 <th>Đã gửi khách</th>
                 <td>{nghiemThu.daGuiKhach ? '✓ Đã gửi' : '✗ Chưa gửi'}</td>
               </tr>
+              {nghiemThu.bienBanFile && (
+                <tr>
+                  <th>File đính kèm</th>
+                  <td colSpan={3}>
+                    <a
+                      href={`${(import.meta.env.VITE_API_URL || 'https://bttd.onrender.com/api').replace('/api', '')}${nghiemThu.bienBanFile}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--color-primary)', fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                    >
+                      <FiExternalLink size={13} /> Mở biên bản nghiệm thu
+                    </a>
+                  </td>
+                </tr>
+              )}
               {nghiemThu.ghiChu && (
                 <tr>
                   <th>Ghi chú</th>
