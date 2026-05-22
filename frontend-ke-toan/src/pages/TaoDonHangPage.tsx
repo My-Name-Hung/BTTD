@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiSave, FiCalendar, FiArrowLeft } from 'react-icons/fi';
 import DatePicker from 'react-datepicker';
@@ -57,11 +57,13 @@ export default function TaoDonHangPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const [macSearchOpen, setMacSearchOpen] = useState(false);
+  const [macSearchQuery, setMacSearchQuery] = useState('');
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [thoiGianGiaoDuKien, setThoiGianGiaoDuKien] = useState<Date | null>(null);
 
-  const thanhTien = (parseFloat(form.khoiLuongDat) || 0) * (parseFloat(form.donGia) || 0);
+  const thanhTien = (parseFloat(form.khoiLuongDat) || 0) * (parseFloat(form.donGia.replace(/[^\d]/g, '')) || 0);
 
   // Track initial state for change detection
   const [initialForm, setInitialForm] = useState(EMPTY_FORM);
@@ -70,6 +72,19 @@ export default function TaoDonHangPage() {
   const hasChanges =
     JSON.stringify(form) !== JSON.stringify(initialForm) ||
     thoiGianGiaoDuKien?.getTime() !== initialThoiGian?.getTime();
+
+  const macDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (macDropdownRef.current && !macDropdownRef.current.contains(e.target as Node)) {
+        setMacSearchOpen(false);
+        setMacSearchQuery('');
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -92,7 +107,7 @@ export default function TaoDonHangPage() {
             soDienThoai: dh.soDienThoai,
             tenMacBeTong: dh.tenMacBeTong || '',
             khoiLuongDat: String(dh.khoiLuongDat),
-            donGia: String(dh.donGia),
+            donGia: dh.donGia ? Number(dh.donGia).toLocaleString('vi-VN') : '',
             ghiChu: dh.ghiChu || '',
             idKhachHang: String(dh.idKhachHang || ''),
             idMacBeTong: String(dh.idMacBeTong || ''),
@@ -113,7 +128,6 @@ export default function TaoDonHangPage() {
 
   const handleMacChange = (macId: string) => {
     if (!macId) {
-      // Chọn "Nhập tay" → xóa id, giữ lại tenMacBeTong
       setForm({ ...form, idMacBeTong: '', donGia: form.donGia });
       return;
     }
@@ -122,8 +136,10 @@ export default function TaoDonHangPage() {
       ...form,
       idMacBeTong: macId,
       tenMacBeTong: mac?.tenMac || '',
-      donGia: mac ? String(mac.donGia) : form.donGia,
+      donGia: mac ? Number(mac.donGia).toLocaleString('vi-VN') : form.donGia,
     });
+    setMacSearchOpen(false);
+    setMacSearchQuery('');
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -137,7 +153,7 @@ export default function TaoDonHangPage() {
       showToast('Khối lượng phải lớn hơn 0', 'error');
       return;
     }
-    if (!form.donGia || parseFloat(form.donGia) <= 0) {
+    if (!form.donGia || parseFloat(form.donGia.replace(/[^\d]/g, '')) <= 0) {
       showToast('Đơn giá phải lớn hơn 0', 'error');
       return;
     }
@@ -150,7 +166,7 @@ export default function TaoDonHangPage() {
         soDienThoai: form.soDienThoai,
         tenMacBeTong: form.tenMacBeTong,
         khoiLuongDat: parseFloat(form.khoiLuongDat),
-        donGia: parseFloat(form.donGia),
+        donGia: parseFloat(form.donGia.replace(/[^\d]/g, '')),
         thoiGianGiaoDuKien: thoiGianGiaoDuKien ? toLocalDatetimeInput(thoiGianGiaoDuKien) : null,
         ghiChu: form.ghiChu || null,
         idKhachHang: form.idKhachHang ? parseInt(form.idKhachHang) : null,
@@ -247,20 +263,57 @@ export default function TaoDonHangPage() {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Mác bê tông</label>
-              <select
-                className={styles.formSelect}
-                value={form.idMacBeTong}
-                onChange={(e) => handleMacChange(e.target.value)}
-              >
-                {!form.idMacBeTong && form.tenMacBeTong ? (
-                  <option value="">{form.tenMacBeTong} (đã nhập)</option>
-                ) : <option value="">— Chọn mác bê tông —</option>}
-                {macBeTongs.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.tenMac} — {formatCurrency(m.donGia)}/m³
-                  </option>
-                ))}
-              </select>
+              <div className={styles.searchDropdownWrap} ref={macDropdownRef}>
+                <div
+                  className={styles.searchDropdownDisplay}
+                  onClick={() => setMacSearchOpen((o) => !o)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && setMacSearchOpen((o) => !o)}
+                >
+                  {form.idMacBeTong ? (
+                    <span>
+                      {(macBeTongs.find(m => m.id === parseInt(form.idMacBeTong)) || { tenMac: form.tenMacBeTong }).tenMac}
+                      <span className={styles.searchDropdownPrice}>
+                        — {formatCurrency(macBeTongs.find(m => m.id === parseInt(form.idMacBeTong))?.donGia || 0)}/m³
+                      </span>
+                    </span>
+                  ) : (
+                    <span className={styles.searchDropdownPlaceholder}>— Chọn mác bê tông —</span>
+                  )}
+                  <svg className={`${styles.searchDropdownArrow} ${macSearchOpen ? styles.searchDropdownArrowOpen : ''}`} width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                {macSearchOpen && (
+                  <div className={styles.searchDropdownPanel}>
+                    <input
+                      className={styles.searchDropdownInput}
+                      placeholder="Tìm tên mác bê tông..."
+                      value={macSearchQuery}
+                      onChange={(e) => setMacSearchQuery(e.target.value)}
+                      autoFocus
+                    />
+                    <div className={styles.searchDropdownList}>
+                      {macBeTongs
+                        .filter(m => m.tenMac.toLowerCase().includes(macSearchQuery.toLowerCase()))
+                        .map((m) => (
+                          <div
+                            key={m.id}
+                            className={`${styles.searchDropdownItem} ${parseInt(form.idMacBeTong) === m.id ? styles.searchDropdownItemActive : ''}`}
+                            onClick={() => handleMacChange(String(m.id))}
+                          >
+                            <span className={styles.searchDropdownItemName}>{m.tenMac}</span>
+                            <span className={styles.searchDropdownItemPrice}>{formatCurrency(m.donGia)}/m³</span>
+                          </div>
+                        ))}
+                      {macBeTongs.filter(m => m.tenMac.toLowerCase().includes(macSearchQuery.toLowerCase())).length === 0 && (
+                        <div className={styles.searchDropdownEmpty}>Không tìm thấy mác bê tông</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Trạm trộn</label>
@@ -299,12 +352,14 @@ export default function TaoDonHangPage() {
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Đơn giá (VNĐ) *</label>
               <input
-                type="number"
-                min="0"
+                type="text"
                 className={styles.formInput}
                 value={form.donGia}
-                onChange={(e) => setForm({ ...form, donGia: e.target.value })}
-                placeholder="VD: 1500000"
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^\d]/g, '');
+                  setForm({ ...form, donGia: raw ? Number(raw).toLocaleString('vi-VN') : '' });
+                }}
+                placeholder="VD: 1.500.000"
                 required
               />
             </div>

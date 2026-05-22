@@ -24,6 +24,9 @@ const ThanhToanPage = lazy(() => import("./pages/ThanhToanPage"));
 const TaiLenDanhSachPage = lazy(() => import("./pages/TaiLenDanhSachPage"));
 const BaoTriPage = lazy(() => import("./pages/BaoTriPage"));
 const MaintenanceBlockPage = lazy(() => import("./pages/MaintenanceBlockPage"));
+const KhoDashboardPage = lazy(() => import("./pages/KhoDashboardPage"));
+const KhoLichSanXuatPage = lazy(() => import("./pages/KhoLichSanXuatPage"));
+const KhoDonHangPage = lazy(() => import("./pages/KhoDonHangPage"));
 
 function PageFallback() {
   return (
@@ -39,8 +42,8 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const { maintenanceStatus, loading } = useMaintenanceCheck();
   const vaiTro = user?.vaiTro;
 
-  // Admin không bị block
-  if (vaiTro === 'admin') return <>{children}</>;
+  // Admin và Kho không bị block
+  if (vaiTro === 'admin' || vaiTro === 'kho') return <>{children}</>;
 
   if (loading) return <PageFallback />;
 
@@ -88,6 +91,9 @@ function App() {
                     <Route path="/quan-ly/tram-tron" element={<QuanLyTramTronPage />} />
                     <Route path="/tai-len-danh-sach" element={<TaiLenDanhSachPage />} />
                     <Route path="/bao-tri" element={<BaoTriPage />} />
+                    <Route path="/kho/dashboard" element={<KhoDashboardPage />} />
+                    <Route path="/kho/lich-san-xuat" element={<KhoLichSanXuatPage />} />
+                    <Route path="/kho/don-hang/:id" element={<KhoDonHangPage />} />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                   </Routes>

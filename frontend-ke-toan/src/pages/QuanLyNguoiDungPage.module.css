@@ -309,6 +309,11 @@
   color: #7c3aed;
 }
 
+.roleBadgeKho {
+  background: rgba(3, 105, 161, 0.08);
+  color: #0369a1;
+}
+
 .statusBadge {
   display: inline-flex;
   align-items: center;

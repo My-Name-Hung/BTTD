@@ -22,6 +22,7 @@ const VAI_TRO_SORT_ORDER: Record<string, number> = {
   lanh_dao: 2,
   ke_toan: 3,
   dieu_phoi: 4,
+  kho: 5,
 };
 
 const VAI_TRO_LABELS: Record<string, string> = {
@@ -29,6 +30,7 @@ const VAI_TRO_LABELS: Record<string, string> = {
   ke_toan: "Kế toán",
   dieu_phoi: "Điều phối",
   lanh_dao: "Lãnh đạo",
+  kho: "Kho",
 };
 
 const VAI_TRO_CLASS: Record<string, string> = {
@@ -36,6 +38,7 @@ const VAI_TRO_CLASS: Record<string, string> = {
   ke_toan: styles.roleBadgeKeToan,
   dieu_phoi: styles.roleBadgeDieuPhoi,
   lanh_dao: styles.roleBadgeLanhDao,
+  kho: styles.roleBadgeKho,
 };
 
 const VAI_TRO_COLORS: Record<string, string> = {
@@ -43,6 +46,7 @@ const VAI_TRO_COLORS: Record<string, string> = {
   ke_toan: "#047857",
   dieu_phoi: "#ea6b00",
   lanh_dao: "#7c3aed",
+  kho: "#0369a1",
 };
 
 export default function QuanLyNguoiDungPage() {
@@ -268,6 +272,7 @@ export default function QuanLyNguoiDungPage() {
               <option value="ke_toan">Kế toán</option>
               <option value="dieu_phoi">Điều phối</option>
               <option value="lanh_dao">Lãnh đạo</option>
+              <option value="kho">Kho</option>
             </select>
             <span className={styles.selectArrow}>▼</span>
           </div>
@@ -509,6 +514,7 @@ export default function QuanLyNguoiDungPage() {
             <option value="ke_toan">Kế toán</option>
             <option value="dieu_phoi">Điều phối</option>
             <option value="lanh_dao">Lãnh đạo</option>
+            <option value="kho">Kho</option>
           </select>
         </div>
         {editingUser && (

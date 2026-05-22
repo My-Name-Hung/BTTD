@@ -473,8 +473,8 @@ export async function xoaThongBao(id: number): Promise<void> {
 }
 
 export async function resetThongBaoNgayCu(): Promise<{ deleted: number }> {
-  const res = await request('/notifications/reset', { method: 'POST' });
-  return res.data as { deleted: number };
+  const res = await request<{ data: { deleted: number } }>('/notifications/reset', { method: 'POST' });
+  return res.data;
 }
 
 // ===== IMPORT =====
@@ -567,4 +567,23 @@ export async function tatBaoTri(): Promise<void> {
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message);
+}
+
+// ===== KHO =====
+export async function layLichSanXuatKho(): Promise<LichSanXuat[]> {
+  return request<LichSanXuat[]>("/kho/lich-san-xuat");
+}
+
+export async function layDonHangKho(idDonHang: number): Promise<DonHang> {
+  return request<DonHang>(`/kho/don-hang/${idDonHang}`);
+}
+
+export async function xacNhanGiaoThanhCong(
+  idDonHang: number,
+  khoiLuongThucTe?: number,
+): Promise<DonHang> {
+  return request<DonHang>(`/kho/xac-nhan-giao/${idDonHang}`, {
+    method: "PUT",
+    body: JSON.stringify({ khoiLuongThucTe }),
+  });
 }

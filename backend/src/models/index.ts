@@ -14,7 +14,7 @@ export interface NguoiDung {
   hoTen: string;
   email: string | null;
   soDienThoai: string | null;
-  vaiTro: 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao';
+  vaiTro: 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho';
   trangThai: 'hoat_dong' | 'khong_hoat_dong';
   ngayTao: Date;
   ngayCapNhat: Date;

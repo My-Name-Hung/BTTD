@@ -236,3 +236,17 @@ export async function xoaDonHang(id: number): Promise<void> {
 
   await query(`DELETE FROM DonHang WHERE id = @id`, { id });
 }
+
+export async function xacNhanGiaoThanhCong(idDonHang: number, khoiLuongThucTe?: number): Promise<DonHang> {
+  await query(
+    `UPDATE DonHang SET
+      trangThaiDon = N'da_giao',
+      khoiLuongThucTe = @khoiLuongThucTe,
+      ngayGiao = GETDATE(),
+      ngayCapNhat = GETDATE()
+     WHERE id = @id`,
+    { id: idDonHang, khoiLuongThucTe: khoiLuongThucTe || null }
+  );
+
+  return (await query<DonHang>(`SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`, { id: idDonHang }))[0];
+}

@@ -285,7 +285,7 @@ export default function TaiLenDanhSachPage() {
             >
               {uploading ? (
                 <>
-                  <Loading inline />
+                  <Loading />
                 </>
               ) : (
                 <>

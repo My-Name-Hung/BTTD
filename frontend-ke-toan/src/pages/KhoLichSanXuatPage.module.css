@@ -1,0 +1,177 @@
+/* KhoLichSanXuatPage */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Page header ── */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pageTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.pageDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+/* ── Table Card ── */
+.tableCard {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th {
+  background: var(--color-bg);
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.table tr:hover td {
+  background: rgba(7, 60, 235, 0.02);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table cells */
+.tableCode {
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tableName {
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.tableAddress {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tableMac {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.tableXe {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tableDate {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* ── Row Actions ── */
+.rowActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.actionBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.actionBtnView {
+  background: rgba(7, 60, 235, 0.08);
+  color: var(--color-primary);
+  border-color: rgba(7, 60, 235, 0.2);
+}
+
+.actionBtnView:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* ── Empty State ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--color-text-secondary);
+  gap: 12px;
+  font-size: 14px;
+}
+
+.empty svg {
+  opacity: 0.3;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .pageHeader {
+    flex-direction: column;
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 12px;
+  }
+}

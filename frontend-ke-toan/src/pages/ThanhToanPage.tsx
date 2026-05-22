@@ -28,10 +28,11 @@ export default function ThanhToanPage() {
       const dhRes = await layDanhSachDonHang(page, 20, undefined, tuKhoa || undefined);
       const dhs = (dhRes.data || []).filter((dh: DonHang) => dh.trangThaiDon !== 'cho_duyet' && dh.trangThaiDon !== 'tu_choi');
       setDonHangs(dhs);
-      for (const dh of dhs) {
-        const tt = await layLichSuThanhToan(dh.id);
-        setThanhToans((prev) => ({ ...prev, [dh.id]: tt }));
-      }
+      // Gọi song song tất cả lịch sử thanh toán
+      const histories = await Promise.all(dhs.map((dh: DonHang) => layLichSuThanhToan(dh.id)));
+      const map: Record<number, ThanhToan[]> = {};
+      dhs.forEach((dh: DonHang, i: number) => { map[dh.id] = histories[i] || []; });
+      setThanhToans(map);
     } catch { showToast('Lỗi tải dữ liệu', 'error'); }
     finally { setLoading(false); }
   }, [page, tuKhoa, showToast]);
@@ -40,7 +41,8 @@ export default function ThanhToanPage() {
 
   const openThanhToan = (dh: DonHang) => {
     setSelectedDonHang(dh);
-    setForm({ soTien: '', hinhThuc: 'tien_mat', nguoiNhan: '', ghiChu: '' });
+    const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
+    setForm({ soTien: conLai > 0 ? Number(Math.round(conLai)).toLocaleString('vi-VN') : '', hinhThuc: 'tien_mat', nguoiNhan: '', ghiChu: '' });
     setModalOpen(true);
   };
 
@@ -49,7 +51,7 @@ export default function ThanhToanPage() {
     try {
       await taoThanhToan({
         idDonHang: selectedDonHang.id,
-        soTien: parseFloat(form.soTien),
+        soTien: parseFloat(form.soTien.replace(/[^\d]/g, '')),
         hinhThuc: form.hinhThuc as 'tien_mat' | 'chuyen_khoan' | 'truct_hop_dong',
         nguoiNhan: form.nguoiNhan || undefined,
         ghiChu: form.ghiChu || undefined,
@@ -196,10 +198,14 @@ export default function ThanhToanPage() {
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Số tiền thanh toán (VNĐ) *</label>
           <input
-            type="number"
+            type="text"
             className={styles.formInput}
             value={form.soTien}
-            onChange={(e) => setForm({ ...form, soTien: e.target.value })}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/[^\d]/g, '');
+              const formatted = raw ? Number(raw).toLocaleString('vi-VN') : '';
+              setForm({ ...form, soTien: formatted });
+            }}
             placeholder="Nhập số tiền..."
           />
         </div>

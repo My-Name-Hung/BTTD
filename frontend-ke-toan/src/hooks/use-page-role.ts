@@ -1,12 +1,13 @@
 import { useAuth } from './use-auth';
 
-export type VaiTro = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao';
+export type VaiTro = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho';
 
 export const ROLE_LABELS: Record<VaiTro, string> = {
   admin: 'Quản trị viên',
   ke_toan: 'Kế toán',
   dieu_phoi: 'Điều phối',
   lanh_dao: 'Lãnh đạo',
+  kho: 'Kho',
 };
 
 export const PERMISSIONS = {
@@ -45,6 +46,11 @@ export const PERMISSIONS = {
   'khachhang.create': ['admin', 'ke_toan', 'dieu_phoi'],
   'khachhang.edit': ['admin', 'ke_toan'],
   'khachhang.delete': ['admin'],
+
+  // === KHO ===
+  'kho.access': ['admin', 'kho'],
+  'kho.confirm_delivery': ['admin', 'kho'],
+  'kho.confirm_complete': ['admin', 'kho'],
 
   // === THAM SO ===
   'thamso.access': ['admin'],

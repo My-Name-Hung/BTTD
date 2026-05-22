@@ -74,7 +74,7 @@ router.post(
       .withMessage("Mật khẩu phải ít nhất 6 ký tự"),
     body("hoTen").trim().notEmpty().withMessage("Họ tên là bắt buộc"),
     body("vaiTro")
-      .isIn(["admin", "ke_toan", "dieu_phoi", "lanh_dao"])
+      .isIn(["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho"])
       .withMessage("Vai trò không hợp lệ"),
   ],
   async (req: AuthRequest, res: Response<ApiResponse>) => {

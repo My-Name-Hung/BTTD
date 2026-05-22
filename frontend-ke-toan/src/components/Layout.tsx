@@ -4,6 +4,7 @@ import {
   FiChevronRight,
   FiLogOut,
   FiMenu,
+  FiPackage,
   FiSettings,
   FiShoppingBag,
   FiTruck,
@@ -101,6 +102,23 @@ const MENU_SECTIONS: MenuSection[] = [
         label: "Công nợ",
         icon: <MdPayments />,
         roles: ["admin", "ke_toan"],
+      },
+    ],
+  },
+  {
+    title: "Kho",
+    items: [
+      {
+        path: "/kho/dashboard",
+        label: "Tổng quan kho",
+        icon: <MdDashboard />,
+        roles: ["admin", "kho"],
+      },
+      {
+        path: "/kho/lich-san-xuat",
+        label: "Lịch sản xuất",
+        icon: <FiPackage size={18} />,
+        roles: ["admin", "kho"],
       },
     ],
   },

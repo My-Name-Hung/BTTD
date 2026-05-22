@@ -50,6 +50,7 @@ router.post(
       if (io) {
         io.to('role:ke_toan').emit('maintenance', payload);
         io.to('role:dieu_phoi').emit('maintenance', payload);
+        io.to('role:kho').emit('maintenance', payload);
       }
 
       console.log('[Maintenance] Đã bật bảo trì:', noiDung);
@@ -83,6 +84,7 @@ router.post(
       if (io) {
         io.to('role:ke_toan').emit('maintenance_end', payload);
         io.to('role:dieu_phoi').emit('maintenance_end', payload);
+        io.to('role:kho').emit('maintenance_end', payload);
       }
 
       console.log('[Maintenance] Đã tắt bảo trì');

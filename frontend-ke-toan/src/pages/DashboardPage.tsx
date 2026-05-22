@@ -84,20 +84,14 @@ function getDateRange(period: FilterPeriod): {
       start.setDate(start.getDate() - 7);
       const sd = String(start.getDate()).padStart(2, "0");
       const sm = String(start.getMonth() + 1).padStart(2, "0");
-      return {
-        tuNgay: `${start.getFullYear()}-${sm}-${sd}`,
-        denNgay: `${year}-${month}-${day}`,
-      };
+      return { tuNgay: `${start.getFullYear()}-${sm}-${sd}`, denNgay: `${year}-${month}-${day}` };
     }
     case "tuan": {
       const start = new Date(today);
       start.setDate(start.getDate() - 30);
       const sd = String(start.getDate()).padStart(2, "0");
       const sm = String(start.getMonth() + 1).padStart(2, "0");
-      return {
-        tuNgay: `${start.getFullYear()}-${sm}-${sd}`,
-        denNgay: `${year}-${month}-${day}`,
-      };
+      return { tuNgay: `${start.getFullYear()}-${sm}-${sd}`, denNgay: `${year}-${month}-${day}` };
     }
     case "thang":
     default: {
@@ -112,9 +106,19 @@ const FILTER_LABELS: Record<FilterPeriod, string> = {
   thang: "Năm nay",
 };
 
+interface KpiItem {
+  label: string;
+  value: number | string;
+  icon: React.ReactNode;
+  color: string;
+  bg: string;
+  isCurrency?: boolean;
+  roles?: string[];
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { vaiTro } = usePageRole();
+  const vaiTro = usePageRole().vaiTro;
   const navigate = useNavigate();
 
   const [dashboard, setDashboard] = useState<ThongKeDashboard | null>(null);
@@ -144,16 +148,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("bttd_token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+    if (!token) { navigate("/login"); return; }
     loadData(filterPeriod);
   }, [navigate, filterPeriod, loadData]);
 
   const roleLabel = vaiTro ? ROLE_LABELS[vaiTro] : "";
 
-  const kpiCards = [
+  const showRevenueChart = vaiTro === "admin" || vaiTro === "ke_toan";
+  const showStatusChart = trangThai.length > 0;
+
+  // ── KPI Cards theo vai trò ──────────────────────────────────────────────
+  const kpiCards: KpiItem[] = [
     {
       label: "Tổng đơn hàng",
       value: dashboard?.tongDonHang || 0,
@@ -189,6 +194,7 @@ export default function DashboardPage() {
       color: "#10b981",
       bg: "rgba(16,185,129,0.1)",
       isCurrency: true,
+      roles: ["admin", "ke_toan"],
     },
     {
       label: "Công nợ",
@@ -197,6 +203,7 @@ export default function DashboardPage() {
       color: "#ef4444",
       bg: "rgba(239,68,68,0.08)",
       isCurrency: true,
+      roles: ["admin", "ke_toan"],
     },
     {
       label: "Qúa hạn",
@@ -204,31 +211,30 @@ export default function DashboardPage() {
       icon: <FiPackage size={20} />,
       color: "#ef4444",
       bg: "rgba(239,68,68,0.08)",
+      roles: ["admin", "ke_toan"],
     },
-  ];
+  ].filter(k => !k.roles || k.roles.includes(vaiTro!));
 
+  // ── Chart data ─────────────────────────────────────────────────────────
   const pieData = trangThai.map((item) => ({
     name: TRANG_THAI_DON_LABELS[item.trangThai] || item.trangThai,
     value: item.soLuong,
     color: TRANG_THAI_DON_COLORS[item.trangThai] || "#64748b",
   }));
 
-  const chartLabels = doanhThu.map((d) => d.thang);
-  const revenueDatasets = [
-    {
-      label: "Doanh thu (triệu)",
-      data: doanhThu.map((d) => d.doanhThu / 1_000_000),
-      backgroundColor: "rgba(7, 60, 235, 0.85)",
-      borderColor: "#073ceb",
-      borderWidth: 1,
-      borderRadius: 6,
-      barThickness: 32,
-    },
-  ];
-
   const barChartData = {
-    labels: chartLabels,
-    datasets: revenueDatasets,
+    labels: doanhThu.map((d) => d.thang),
+    datasets: [
+      {
+        label: "Doanh thu (triệu)",
+        data: doanhThu.map((d) => d.doanhThu / 1_000_000),
+        backgroundColor: "rgba(7, 60, 235, 0.85)",
+        borderColor: "#073ceb",
+        borderWidth: 1,
+        borderRadius: 6,
+        barThickness: 32,
+      },
+    ],
   };
 
   const barChartOptions = {
@@ -256,16 +262,10 @@ export default function DashboardPage() {
       },
     },
     scales: {
-      x: {
-        grid: { display: false },
-        ticks: { font: { size: 11 } },
-      },
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
       y: {
         grid: { color: "rgba(226,232,240,0.6)" },
-        ticks: {
-          font: { size: 11 },
-          callback: (v: unknown) => `${v}M`,
-        },
+        ticks: { font: { size: 11 }, callback: (v: unknown) => `${v}M` },
       },
     },
   };
@@ -290,12 +290,7 @@ export default function DashboardPage() {
     plugins: {
       legend: {
         position: "bottom" as const,
-        labels: {
-          padding: 16,
-          usePointStyle: true,
-          pointStyle: "circle",
-          font: { size: 12 },
-        },
+        labels: { padding: 16, usePointStyle: true, pointStyle: "circle", font: { size: 12 } },
       },
       tooltip: {
         callbacks: {
@@ -310,8 +305,7 @@ export default function DashboardPage() {
           const total = pieData.reduce((s, d) => s + d.value, 0);
           const n = v as number;
           if (n === 0 || total === 0) return "";
-          const pct = ((n / total) * 100).toFixed(0);
-          return `${pct}%`;
+          return `${((n / total) * 100).toFixed(0)}%`;
         },
       },
     },
@@ -328,8 +322,7 @@ export default function DashboardPage() {
             Xin chào, <span className={styles.dashUserName}>{user?.hoTen}</span>
           </h2>
           <p className={styles.dashSubtitle}>
-            {roleLabel ? `Vai trò: ${roleLabel}` : ""} — Tổng quan hoạt động
-            kinh doanh
+            {roleLabel ? `Vai trò: ${roleLabel}` : ""} — Tổng quan hoạt động kinh doanh
           </p>
         </div>
         <div className={styles.dashHeaderRight}>
@@ -353,17 +346,11 @@ export default function DashboardPage() {
           <div key={idx} className={styles.kpiCard}>
             <div className={styles.kpiCardLeft}>
               <div className={styles.kpiLabel}>{kpi.label}</div>
-              <div
-                className={styles.kpiValue}
-                style={kpi.isCurrency ? { fontSize: 18 } : {}}
-              >
+              <div className={styles.kpiValue} style={kpi.isCurrency ? { fontSize: 18 } : {}}>
                 {kpi.value}
               </div>
             </div>
-            <div
-              className={styles.kpiIconWrap}
-              style={{ background: kpi.bg, color: kpi.color }}
-            >
+            <div className={styles.kpiIconWrap} style={{ background: kpi.bg, color: kpi.color }}>
               {kpi.icon}
             </div>
           </div>
@@ -372,51 +359,53 @@ export default function DashboardPage() {
 
       {/* Charts */}
       <div className={styles.chartGrid}>
-        {/* Bar Chart */}
-        <div className={styles.chartCard}>
-          <div className={styles.chartCardHeader}>
-            <div>
-              <h3 className={styles.chartCardTitle}>Doanh thu theo tháng</h3>
-              <p className={styles.chartCardDesc}>
-                {FILTER_LABELS[filterPeriod]} · Đơn vị: triệu đồng
-              </p>
+        {/* Biểu đồ doanh thu — chỉ admin & kế toán */}
+        {showRevenueChart && (
+          <div className={styles.chartCard}>
+            <div className={styles.chartCardHeader}>
+              <div>
+                <h3 className={styles.chartCardTitle}>Doanh thu theo tháng</h3>
+                <p className={styles.chartCardDesc}>
+                  {FILTER_LABELS[filterPeriod]} · Đơn vị: triệu đồng
+                </p>
+              </div>
+            </div>
+            <div className={styles.chartArea}>
+              {doanhThu.length > 0 ? (
+                <Bar data={barChartData} options={barChartOptions} />
+              ) : (
+                <div className={styles.chartEmpty}>
+                  <FiTrendingUp size={40} />
+                  <p>Không có dữ liệu doanh thu</p>
+                </div>
+              )}
             </div>
           </div>
-          <div className={styles.chartArea}>
-            {doanhThu.length > 0 ? (
-              <Bar data={barChartData} options={barChartOptions} />
-            ) : (
-              <div className={styles.chartEmpty}>
-                <FiTrendingUp size={40} />
-                <p>Không có dữ liệu doanh thu</p>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
 
-        {/* Donut Chart */}
-        <div className={styles.chartCard}>
-          <div className={styles.chartCardHeader}>
-            <div>
-              <h3 className={styles.chartCardTitle}>
-                Đơn hàng theo trạng thái
-              </h3>
-              <p className={styles.chartCardDesc}>
-                Tổng {trangThai.reduce((sum, d) => sum + d.soLuong, 0)} đơn hàng
-              </p>
+        {/* Biểu đồ trạng thái đơn hàng */}
+        {showStatusChart && (
+          <div className={styles.chartCard}>
+            <div className={styles.chartCardHeader}>
+              <div>
+                <h3 className={styles.chartCardTitle}>Đơn hàng theo trạng thái</h3>
+                <p className={styles.chartCardDesc}>
+                  Tổng {trangThai.reduce((sum, d) => sum + d.soLuong, 0)} đơn hàng
+                </p>
+              </div>
+            </div>
+            <div className={styles.chartArea}>
+              {pieData.length > 0 ? (
+                <Pie data={donutChartData} options={donutChartOptions} />
+              ) : (
+                <div className={styles.chartEmpty}>
+                  <FiShoppingCart size={40} />
+                  <p>Không có dữ liệu trạng thái</p>
+                </div>
+              )}
             </div>
           </div>
-          <div className={styles.chartArea}>
-            {pieData.length > 0 ? (
-              <Pie data={donutChartData} options={donutChartOptions} />
-            ) : (
-              <div className={styles.chartEmpty}>
-                <FiShoppingCart size={40} />
-                <p>Không có dữ liệu trạng thái</p>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
