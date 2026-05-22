@@ -61,10 +61,14 @@ export async function taoThanhToan(
   if (conLaiMoi > 0) {
     await query(
       `IF EXISTS (SELECT * FROM CongNo WHERE idDonHang = @idDonHang)
-       UPDATE CongNo SET daThanhToan = @daThanhToan, conLai = @conLai, ngayCapNhat = GETDATE() WHERE idDonHang = @idDonHang
+       BEGIN
+         UPDATE CongNo SET daThanhToan = @daThanhToan, conLai = @conLai, ngayCapNhat = GETDATE() WHERE idDonHang = @idDonHang;
+       END
        ELSE
-       INSERT INTO CongNo (idDonHang, tongTien, daThanhToan, conLai, trangThai)
-       VALUES (@idDonHang, @tongTien, @daThanhToan, @conLai, @trangThai_cn)`,
+       BEGIN
+         INSERT INTO CongNo (idDonHang, tongTien, daThanhToan, conLai, trangThai)
+         VALUES (@idDonHang, @tongTien, @daThanhToan, @conLai, @trangThai_cn);
+       END`,
       {
         idDonHang: data.idDonHang,
         daThanhToan: daThanhToanMoi,
@@ -154,13 +158,17 @@ export async function taoCongNo(
 
   const result = await query<CongNo>(
     `IF EXISTS (SELECT * FROM CongNo WHERE idDonHang = @idDonHang)
-     UPDATE CongNo SET tongTien = @tongTien, conLai = @conLai, ngayBatDau = @ngayBatDau, hanThanhToan = @hanThanhToan, ngayCapNhat = GETDATE()
-     WHERE idDonHang = @idDonHang
-     SELECT * FROM CongNo WHERE idDonHang = @idDonHang
+     BEGIN
+       UPDATE CongNo SET tongTien = @tongTien, conLai = @conLai, ngayBatDau = @ngayBatDau, hanThanhToan = @hanThanhToan, ngayCapNhat = GETDATE()
+       WHERE idDonHang = @idDonHang;
+       SELECT * FROM CongNo WHERE idDonHang = @idDonHang;
+     END
      ELSE
-     INSERT INTO CongNo (idDonHang, tongTien, daThanhToan, conLai, ngayBatDau, hanThanhToan, trangThai)
-     VALUES (@idDonHang, @tongTien, @daThanhToan, @conLai, @ngayBatDau, @hanThanhToan, @trangThai_cn2);
-     SELECT * FROM CongNo WHERE id = SCOPE_IDENTITY()`,
+     BEGIN
+       INSERT INTO CongNo (idDonHang, tongTien, daThanhToan, conLai, ngayBatDau, hanThanhToan, trangThai)
+       VALUES (@idDonHang, @tongTien, @daThanhToan, @conLai, @ngayBatDau, @hanThanhToan, @trangThai_cn2);
+       SELECT * FROM CongNo WHERE id = SCOPE_IDENTITY();
+     END`,
     {
       idDonHang,
       tongTien: dh.thanhTien,
