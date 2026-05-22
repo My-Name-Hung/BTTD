@@ -570,19 +570,29 @@ export async function tatBaoTri(): Promise<void> {
 }
 
 // ===== KHO =====
-export async function layLichSanXuatKho(): Promise<LichSanXuat[]> {
-  return request<LichSanXuat[]>("/kho/lich-san-xuat");
+// Lấy danh sách lịch sản xuất (tất cả đơn có lịch sx)
+export async function layLichSanXuatKho(): Promise<any[]> {
+  return request<any[]>("/kho/lich-san-xuat");
 }
 
-export async function layDonHangKho(idDonHang: number): Promise<DonHang> {
-  return request<DonHang>(`/kho/don-hang/${idDonHang}`);
+// Lấy chi tiết đơn hàng cho kho (kèm lịch sx)
+export async function layDonHangKho(idDonHang: number): Promise<{ donHang: any; lichSanXuat: any | null }> {
+  return request<{ donHang: any; lichSanXuat: any | null }>(`/kho/don-hang/${idDonHang}`);
 }
 
-export async function xacNhanGiaoThanhCong(
+// Kho xác nhận bắt đầu giao (dang_san_xuat -> dang_giao)
+export async function xacNhanBatDauGiao(idDonHang: number): Promise<any> {
+  return request<any>(`/kho/xac-nhan-bat-dau-giao/${idDonHang}`, {
+    method: "PUT",
+  });
+}
+
+// Kho xác nhận đã giao thành công (dang_giao -> da_giao)
+export async function xacNhanDaGiaoKho(
   idDonHang: number,
   khoiLuongThucTe?: number,
-): Promise<DonHang> {
-  return request<DonHang>(`/kho/xac-nhan-giao/${idDonHang}`, {
+): Promise<any> {
+  return request<any>(`/kho/xac-nhan-da-giao/${idDonHang}`, {
     method: "PUT",
     body: JSON.stringify({ khoiLuongThucTe }),
   });

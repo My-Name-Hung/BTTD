@@ -109,27 +109,39 @@
   white-space: nowrap;
 }
 
+/* Status Badge */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 /* ── Row Actions ── */
 .rowActions {
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .actionBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  gap: 5px;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   border: 1.5px solid transparent;
   transition: all 0.18s ease;
-  padding: 0;
+  white-space: nowrap;
 }
 
 .actionBtn:disabled {
@@ -141,11 +153,49 @@
   background: rgba(7, 60, 235, 0.08);
   color: var(--color-primary);
   border-color: rgba(7, 60, 235, 0.2);
+  padding: 6px;
+  width: 32px;
+  height: 32px;
 }
 
 .actionBtnView:hover:not(:disabled) {
   background: var(--color-primary);
   color: white;
+}
+
+.actionBtnSuccess {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.actionBtnSuccess:hover:not(:disabled) {
+  background: #059669;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.actionBtnWarning {
+  background: #f97316;
+  color: white;
+  border-color: #f97316;
+}
+
+.actionBtnWarning:hover:not(:disabled) {
+  background: #ea580c;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.completedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* ── Empty State ── */

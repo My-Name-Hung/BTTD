@@ -9,9 +9,10 @@ import {
   FiClock,
   FiTruck,
   FiCheckCircle,
+  FiExternalLink,
 } from "react-icons/fi";
-import { layDonHangKho, xacNhanGiaoThanhCong } from "../services/api";
-import { DonHang, TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from "../types";
+import { layDonHangKho, xacNhanBatDauGiao, xacNhanDaGiaoKho } from "../services/api";
+import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from "../types";
 import { useToast } from "../hooks";
 import { Loading } from "../components/Common";
 import styles from "./KhoDonHangPage.module.css";
@@ -63,7 +64,43 @@ function hexToRgb(hex: string) {
 
 function statusBg(key: string) {
   const c = statusColor(key);
-  return `rgba(${hexToRgb(c)}, 0.1)`;
+  return `rgba(${hexToRgb(c)}, 0.12)`;
+}
+
+interface DonHangData {
+  id: number;
+  maDonHang?: string;
+  tenKhachHang?: string;
+  soDienThoai?: string;
+  diaChiNhan?: string;
+  tenMacBeTong?: string;
+  khoiLuongDat?: number;
+  khoiLuongThucTe?: number;
+  donGia?: number;
+  thanhTien?: number;
+  daThanhToan?: number;
+  thoiGianGiaoDuKien?: string;
+  ngayTaoDon?: string;
+  ngayDuyet?: string;
+  ngayGiao?: string;
+  ghiChu?: string;
+  trangThaiDon?: string;
+}
+
+interface LichSanXuatData {
+  bienSoXe?: string;
+  tenTaiXe?: string;
+  kyThuatCongTrinh?: string;
+  nguoiOmOng?: string;
+  nguoiBatOng?: string;
+  phuongAnDo?: string;
+  thoiGianTron?: string;
+  thoiGianXuatBen?: string;
+  thoiGianDenCangDat?: string;
+  thoiGianBatDauDo?: string;
+  thoiGianKetThucDo?: string;
+  ghiChu?: string;
+  driveLink?: string;
 }
 
 export default function KhoDonHangPage() {
@@ -71,16 +108,22 @@ export default function KhoDonHangPage() {
   const navigate = useNavigate();
   const { toasts, showToast } = useToast();
 
-  const [donHang, setDonHang] = useState<DonHang | null>(null);
+  const [donHang, setDonHang] = useState<DonHangData | null>(null);
+  const [lichSanXuat, setLichSanXuat] = useState<LichSanXuatData | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [khoiLuongThucTe, setKhoiLuongThucTe] = useState<string>("");
 
   const loadData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const dh = await layDonHangKho(parseInt(id));
-      setDonHang(dh);
+      const res = await layDonHangKho(parseInt(id));
+      setDonHang(res.donHang);
+      setLichSanXuat(res.lichSanXuat);
+      if (res.donHang?.khoiLuongThucTe) {
+        setKhoiLuongThucTe(String(res.donHang.khoiLuongThucTe));
+      }
     } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
     } finally {
@@ -92,16 +135,30 @@ export default function KhoDonHangPage() {
     loadData();
   }, [loadData]);
 
-  const handleXacNhanGiao = async () => {
+  const handleXacNhanBatDauGiao = async () => {
     if (!donHang) return;
     setConfirmLoading(true);
     try {
-      const updated = await xacNhanGiaoThanhCong(donHang.id);
-      setDonHang(updated);
-      showToast("Xác nhận giao hàng thành công");
+      await xacNhanBatDauGiao(donHang.id);
+      showToast("Đã xác nhận bắt đầu giao hàng");
       loadData();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Lỗi xác nhận giao hàng", "error");
+      showToast(err instanceof Error ? err.message : "Lỗi xác nhận", "error");
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const handleXacNhanDaGiao = async () => {
+    if (!donHang) return;
+    setConfirmLoading(true);
+    try {
+      const kltt = khoiLuongThucTe ? parseFloat(khoiLuongThucTe) : undefined;
+      await xacNhanDaGiaoKho(donHang.id, kltt);
+      showToast("Đã xác nhận giao hàng thành công");
+      loadData();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xác nhận", "error");
     } finally {
       setConfirmLoading(false);
     }
@@ -122,6 +179,7 @@ export default function KhoDonHangPage() {
     (s) => s.key === donHang.trangThaiDon
   );
   const connLai = (donHang.thanhTien || 0) - (donHang.daThanhToan || 0);
+  const trangThai = donHang.trangThaiDon || "cho_duyet";
 
   return (
     <div className={styles.detailPage}>
@@ -135,16 +193,16 @@ export default function KhoDonHangPage() {
             <FiArrowLeft size={18} />
           </button>
           <div>
-            <div className={styles.pageTitle}>{donHang.maDonHang}</div>
+            <div className={styles.pageTitle}>{donHang.maDonHang || `#${donHang.id}`}</div>
             <div className={styles.pageSubtitle}>
-              Ngày tạo: {formatDate(donHang.ngayTaoDon)} ·{" "}
+              Ngày tạo: {formatDate(donHang.ngayTaoDon || "")} ·{" "}
               <span
                 style={{
-                  color: statusColor(donHang.trangThaiDon),
+                  color: statusColor(trangThai),
                   fontWeight: 600,
                 }}
               >
-                {TRANG_THAI_DON_LABELS[donHang.trangThaiDon]}
+                {TRANG_THAI_DON_LABELS[trangThai]}
               </span>
             </div>
           </div>
@@ -152,17 +210,42 @@ export default function KhoDonHangPage() {
 
         {/* Action buttons for Kho */}
         <div className={styles.pageActions}>
-          {donHang.trangThaiDon === "dang_giao" && (
+          {trangThai === "dang_san_xuat" && (
             <button
-              className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
-              onClick={handleXacNhanGiao}
+              className={`${styles.actionBtn} ${styles.actionBtnWarning}`}
+              onClick={handleXacNhanBatDauGiao}
               disabled={confirmLoading}
             >
-              <FiCheck />{" "}
-              {confirmLoading
-                ? "Đang xác nhận..."
-                : "Xác nhận giao hàng thành công"}
+              <FiTruck size={16} />
+              {confirmLoading ? "Đang xử lý..." : "Xác nhận bắt đầu giao"}
             </button>
+          )}
+          {trangThai === "dang_giao" && (
+            <>
+              <input
+                type="number"
+                className={styles.khoiLuongInput}
+                placeholder="Khối lượng thực tế (m³)"
+                value={khoiLuongThucTe}
+                onChange={(e) => setKhoiLuongThucTe(e.target.value)}
+                step="0.1"
+                min="0"
+              />
+              <button
+                className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
+                onClick={handleXacNhanDaGiao}
+                disabled={confirmLoading}
+              >
+                <FiCheck size={16} />
+                {confirmLoading ? "Đang xử lý..." : "Xác nhận đã giao thành công"}
+              </button>
+            </>
+          )}
+          {trangThai === "da_giao" && (
+            <span className={styles.completedBadge}>
+              <FiCheckCircle size={16} />
+              Đã hoàn thành giao hàng
+            </span>
           )}
         </div>
       </div>
@@ -216,11 +299,11 @@ export default function KhoDonHangPage() {
           </div>
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Khách hàng</span>
-            <span className={styles.infoValue}>{donHang.tenKhachHang}</span>
+            <span className={styles.infoValue}>{donHang.tenKhachHang || "—"}</span>
           </div>
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Số điện thoại</span>
-            <span className={styles.infoValue}>{donHang.soDienThoai}</span>
+            <span className={styles.infoValue}>{donHang.soDienThoai || "—"}</span>
           </div>
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Địa chỉ nhận</span>
@@ -228,7 +311,7 @@ export default function KhoDonHangPage() {
               className={styles.infoValue}
               style={{ maxWidth: 220 }}
             >
-              {donHang.diaChiNhan}
+              {donHang.diaChiNhan || "—"}
             </span>
           </div>
         </div>
@@ -243,13 +326,13 @@ export default function KhoDonHangPage() {
             <span
               className={`${styles.infoValue} ${styles.infoValuePrimary}`}
             >
-              {donHang.tenMacBeTong}
+              {donHang.tenMacBeTong || "—"}
             </span>
           </div>
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Khối lượng đặt</span>
             <span className={styles.infoValue}>
-              {donHang.khoiLuongDat} m³
+              {donHang.khoiLuongDat ? `${donHang.khoiLuongDat} m³` : "—"}
             </span>
           </div>
           {donHang.khoiLuongThucTe && (
@@ -265,7 +348,7 @@ export default function KhoDonHangPage() {
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Đơn giá</span>
             <span className={styles.infoValue}>
-              {formatCurrency(donHang.donGia)}/m³
+              {donHang.donGia ? formatCurrency(donHang.donGia) + "/m³" : "—"}
             </span>
           </div>
           <div className={styles.infoRow}>
@@ -323,39 +406,130 @@ export default function KhoDonHangPage() {
           </div>
         </div>
 
-        {/* Card: Trạng thái */}
+        {/* Card: Giao hàng */}
         <div className={styles.infoCard}>
           <div className={styles.infoCardTitle}>
-            <FiClock size={14} /> Trạng thái & Ghi chú
+            <FiTruck size={14} /> Thông tin giao hàng
           </div>
           <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Trạng thái</span>
-            <span>
-              <span
-                className={styles.infoBadge}
-                style={{
-                  background: statusBg(donHang.trangThaiDon),
-                  color: statusColor(donHang.trangThaiDon),
-                }}
-              >
-                {TRANG_THAI_DON_LABELS[donHang.trangThaiDon]}
-              </span>
+            <span className={styles.infoLabel}>Biển số xe</span>
+            <span className={styles.infoValue}>
+              {lichSanXuat?.bienSoXe || "—"}
             </span>
           </div>
-          <div
-            className={styles.infoRow}
-            style={{ flexDirection: "column", gap: 4 }}
-          >
-            <span className={styles.infoLabel}>Ghi chú</span>
-            <span
-              className={styles.infoValue}
-              style={{ textAlign: "left", fontSize: 13 }}
-            >
-              {donHang.ghiChu || "—"}
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>Tài xế</span>
+            <span className={styles.infoValue}>
+              {lichSanXuat?.tenTaiXe || "—"}
+            </span>
+          </div>
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>Thời gian trộn</span>
+            <span className={styles.infoValue}>
+              {formatDateTime(lichSanXuat?.thoiGianTron || "")}
+            </span>
+          </div>
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>Xuất bến</span>
+            <span className={styles.infoValue}>
+              {formatDateTime(lichSanXuat?.thoiGianXuatBen || "")}
+            </span>
+          </div>
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>Đến công trình</span>
+            <span className={styles.infoValue}>
+              {formatDateTime(lichSanXuat?.thoiGianDenCangDat || "")}
+            </span>
+          </div>
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>Bắt đầu đổ</span>
+            <span className={styles.infoValue}>
+              {formatDateTime(lichSanXuat?.thoiGianBatDauDo || "")}
+            </span>
+          </div>
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>Kết thúc đổ</span>
+            <span className={styles.infoValue}>
+              {formatDateTime(lichSanXuat?.thoiGianKetThucDo || "")}
             </span>
           </div>
         </div>
       </div>
+
+      {/* Lịch sản xuất chi tiết */}
+      {lichSanXuat && (
+        <div className={styles.infoCard} style={{ marginBottom: 20 }}>
+          <div className={styles.infoCardTitle}>
+            <FiClock size={14} /> Thông tin lịch sản xuất
+          </div>
+          <div className={styles.infoGrid} style={{ marginBottom: 0 }}>
+            <div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Kỹ thuật công trình</span>
+                <span className={styles.infoValue}>
+                  {lichSanXuat.kyThuatCongTrinh || "—"}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Người ôm ống</span>
+                <span className={styles.infoValue}>
+                  {lichSanXuat.nguoiOmOng || "—"}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Người bắt ống</span>
+                <span className={styles.infoValue}>
+                  {lichSanXuat.nguoiBatOng || "—"}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Phương án đổ</span>
+                <span className={styles.infoValue}>
+                  {lichSanXuat.phuongAnDo || "—"}
+                </span>
+              </div>
+            </div>
+            <div>
+              {lichSanXuat.ghiChu && (
+                <div className={styles.infoRow} style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+                  <span className={styles.infoLabel}>Ghi chú</span>
+                  <span className={styles.infoValue} style={{ textAlign: "left", fontSize: 13 }}>
+                    {lichSanXuat.ghiChu}
+                  </span>
+                </div>
+              )}
+              {lichSanXuat.driveLink && (
+                <div className={styles.infoRow} style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+                  <span className={styles.infoLabel}>Link lịch sản xuất</span>
+                  <a
+                    href={lichSanXuat.driveLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.driveLink}
+                  >
+                    <FiExternalLink size={13} />
+                    Mở lịch sản xuất
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ghi chú đơn hàng */}
+      {donHang.ghiChu && (
+        <div className={styles.infoCard}>
+          <div className={styles.infoCardTitle}>
+            <FiClock size={14} /> Ghi chú đơn hàng
+          </div>
+          <div className={styles.infoRow} style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+            <span className={styles.infoValue} style={{ textAlign: "left", fontSize: 13 }}>
+              {donHang.ghiChu}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       <div

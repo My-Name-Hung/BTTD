@@ -130,15 +130,13 @@ export async function capNhatLichSanXuat(
   return updated;
 }
 
-export async function xacNhanDaGiao(idDonHang: number, khoiLuongThucTe?: number): Promise<DonHang> {
+export async function xacNhanDaGiao(idDonHang: number): Promise<DonHang> {
   await query(
     `UPDATE DonHang SET
-      trangThaiDon = N'da_giao',
-      khoiLuongThucTe = @khoiLuongThucTe,
-      ngayGiao = GETDATE(),
+      trangThaiDon = N'dang_giao',
       ngayCapNhat = GETDATE()
      WHERE id = @id`,
-    { id: idDonHang, khoiLuongThucTe: khoiLuongThucTe || null }
+    { id: idDonHang }
   );
 
   return (await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: idDonHang }))[0];

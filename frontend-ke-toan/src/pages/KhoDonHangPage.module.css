@@ -346,6 +346,71 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Action Button Warning */
+.actionBtnWarning {
+  background: #f97316;
+  color: white;
+  border-color: #f97316;
+}
+
+.actionBtnWarning:hover:not(:disabled) {
+  background: #ea580c;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+/* Completed Badge */
+.completedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Khối lượng input */
+.khoiLuongInput {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-border);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 160px;
+}
+
+.khoiLuongInput:focus {
+  border-color: var(--color-primary);
+}
+
+.khoiLuongInput::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+/* Drive Link */
+.driveLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.driveLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
 /* ── Responsive ─────────────────────────────────────── */
 @media (max-width: 768px) {
   .infoGrid {
@@ -368,10 +433,15 @@
 
   .pageActions {
     width: 100%;
+    flex-direction: column;
   }
 
   .actionBtn {
     flex: 1;
     justify-content: center;
+  }
+
+  .khoiLuongInput {
+    width: 100%;
   }
 }

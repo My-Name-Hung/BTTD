@@ -38,3 +38,4 @@ Admin: admin / Admin@123
 Kế toán: ketoan / Ketoan@123
 Điều phối: dieuphoi / Dieuphoi@123
 Lãnh đạo: lanhdao / Lanhdao@123
+Quản lý kho: kho / Kho@123

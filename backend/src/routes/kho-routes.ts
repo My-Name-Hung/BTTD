@@ -6,36 +6,37 @@ import { xacNhanGiaoThanhCong, layDonHangTheoId } from '../services/don-hang-ser
 
 const router = Router();
 
-// Lấy danh sách lịch sản xuất đã hoàn thành (trangThai='da_xong') - dành cho kho
-router.get('/lich-san-xuat', authMiddleware, requireRole('kho'), async (req: AuthRequest, res: Response<ApiResponseWithPagination<LichSanXuat & {
+interface LichSanXuatWithDonHang extends LichSanXuat {
   maDonHang: string;
   tenKhachHang: string;
   diaChiNhan: string;
   tenMacBeTong: string;
   khoiLuongDat: number;
-}>>) => {
+  trangThaiDon: string;
+  ngayTaoDon: Date | null;
+  ngayGiao: Date | null;
+}
+
+// Lấy danh sách lịch sản xuất - tất cả đơn có lịch sản xuất (dang_san_xuat, dang_giao, da_giao)
+router.get('/lich-san-xuat', authMiddleware, requireRole('kho'), async (req: AuthRequest, res: Response<ApiResponseWithPagination<LichSanXuatWithDonHang>>) => {
   try {
     const page = parseInt(String(req.query.page || '1'), 10);
     const limit = parseInt(String(req.query.limit || '50'), 10);
     const offset = (page - 1) * limit;
 
     const countResult = await query<{ total: number }>(
-      `SELECT COUNT(*) as total FROM LichSanXuat WHERE trangThai = N'da_xong'`,
+      `SELECT COUNT(*) as total FROM LichSanXuat ls
+       INNER JOIN DonHang dh ON ls.idDonHang = dh.id
+       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')`,
       {}
     );
     const total = countResult[0]?.total || 0;
 
-    const data = await query<(LichSanXuat & {
-      maDonHang: string;
-      tenKhachHang: string;
-      diaChiNhan: string;
-      tenMacBeTong: string;
-      khoiLuongDat: number;
-    })>(
-      `SELECT ls.*, dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat
+    const data = await query<LichSanXuatWithDonHang>(
+      `SELECT ls.*, dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao
        FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
-       WHERE ls.trangThai = N'da_xong'
+       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
        ORDER BY ls.ngayCapNhat DESC
        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
       { offset, limit }
@@ -53,50 +54,114 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('kho'), async (req: Aut
   }
 });
 
-// Lấy chi tiết đơn hàng - chỉ đơn có LichSanXuat với trangThai='da_xong'
+// Lấy chi tiết đơn hàng - đơn có lịch sản xuất (bất kỳ trạng thái nào)
 router.get('/don-hang/:id', authMiddleware, requireRole('kho'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.id, 10);
 
-    // Kiểm tra đơn hàng có LichSanXuat với trangThai='da_xong' không
-    const lichSanXuat = await query<LichSanXuat>(
-      `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai = N'da_xong'`,
+    // Kiểm tra đơn hàng có LichSanXuat không (bất kỳ trạng thái nào)
+    const lichSanXuatList = await query<LichSanXuat>(
+      `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang`,
       { idDonHang }
     );
 
-    if (lichSanXuat.length === 0) {
-      res.status(403).json({ success: false, message: 'Đơn hàng này không có lịch sản xuất đã hoàn thành hoặc không thuộc quyền truy cập của kho' });
+    if (lichSanXuatList.length === 0) {
+      res.status(403).json({ success: false, message: 'Đơn hàng này không có lịch sản xuất hoặc không thuộc quyền truy cập của kho' });
       return;
     }
 
     const donHang = await layDonHangTheoId(idDonHang);
 
-    res.json({ success: true, message: 'Lấy chi tiết đơn hàng thành công', data: { donHang, lichSanXuat: lichSanXuat[0] } });
+    res.json({ success: true, message: 'Lấy chi tiết đơn hàng thành công', data: { donHang, lichSanXuat: lichSanXuatList[0] } });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi lấy chi tiết đơn hàng';
     res.status(500).json({ success: false, message });
   }
 });
 
-// Xác nhận giao hàng thành công - kho xác nhận đã giao
+// Xác nhận bắt đầu giao - kho xác nhận đơn bắt đầu được giao (dang_san_xuat -> dang_giao)
+router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('kho'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const idDonHang = parseInt(req.params.idDonHang, 10);
+
+    // Kiểm tra đơn hàng tồn tại
+    const donHang = await query<DonHang>(
+      `SELECT * FROM DonHang WHERE id = @id`,
+      { id: idDonHang }
+    );
+
+    if (donHang.length === 0) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
+      return;
+    }
+
+    // Kiểm tra trạng thái phải là dang_san_xuat
+    if (donHang[0].trangThaiDon !== 'dang_san_xuat') {
+      res.status(400).json({ success: false, message: 'Chỉ có thể xác nhận bắt đầu giao đơn hàng đang sản xuất' });
+      return;
+    }
+
+    // Kiểm tra có lịch sản xuất không
+    const lichSanXuat = await query<LichSanXuat>(
+      `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang`,
+      { idDonHang }
+    );
+
+    if (lichSanXuat.length === 0) {
+      res.status(403).json({ success: false, message: 'Đơn hàng này không có lịch sản xuất' });
+      return;
+    }
+
+    // Cập nhật trạng thái sang dang_giao
+    await query(
+      `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = GETDATE() WHERE id = @id`,
+      { id: idDonHang }
+    );
+
+    const updatedDonHang = await layDonHangTheoId(idDonHang);
+    res.json({ success: true, message: 'Xác nhận bắt đầu giao hàng thành công', data: updatedDonHang });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi xác nhận bắt đầu giao hàng';
+    res.status(400).json({ success: false, message });
+  }
+});
+
+// Xác nhận giao hàng thành công - kho xác nhận đã giao xong (dang_giao -> da_giao)
 router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('kho'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const { khoiLuongThucTe } = req.body;
 
-    // Kiểm tra đơn hàng có LichSanXuat với trangThai='da_xong' không
+    // Kiểm tra đơn hàng tồn tại
+    const donHang = await query<DonHang>(
+      `SELECT * FROM DonHang WHERE id = @id`,
+      { id: idDonHang }
+    );
+
+    if (donHang.length === 0) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
+      return;
+    }
+
+    // Kiểm tra trạng thái phải là dang_giao
+    if (donHang[0].trangThaiDon !== 'dang_giao') {
+      res.status(400).json({ success: false, message: 'Chỉ có thể xác nhận giao hàng thành công đơn hàng đang giao' });
+      return;
+    }
+
+    // Kiểm tra có lịch sản xuất không
     const lichSanXuat = await query<LichSanXuat>(
-      `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai = N'da_xong'`,
+      `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang`,
       { idDonHang }
     );
 
     if (lichSanXuat.length === 0) {
-      res.status(403).json({ success: false, message: 'Đơn hàng này không có lịch sản xuất đã hoàn thành hoặc không thuộc quyền truy cập của kho' });
+      res.status(403).json({ success: false, message: 'Đơn hàng này không có lịch sản xuất' });
       return;
     }
 
-    const donHang = await xacNhanGiaoThanhCong(idDonHang, khoiLuongThucTe);
-    res.json({ success: true, message: 'Xác nhận giao hàng thành công', data: donHang });
+    const updatedDonHang = await xacNhanGiaoThanhCong(idDonHang, khoiLuongThucTe);
+    res.json({ success: true, message: 'Xác nhận giao hàng thành công', data: updatedDonHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận giao hàng';
     res.status(400).json({ success: false, message });
