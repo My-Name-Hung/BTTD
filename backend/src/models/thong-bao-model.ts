@@ -78,8 +78,8 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, (data: Record<strin
     noiDung: `Biên bản nghiệm thu cho đơn hàng ${d.maDonHang || ''} đã được gửi.`,
   }),
   VOLUME_CONFIRMED: (d) => ({
-    tieuDe: 'Khách hàng xác nhận khối lượng',
-    noiDung: `Khối lượng đơn hàng ${d.maDonHang || ''} đã được khách xác nhận: ${d.khoiLuong || 0}m³.`,
+    tieuDe: 'Đơn hàng đã nghiệm thu',
+    noiDung: `Kế toán đã xác nhận nghiệm thu đơn hàng ${d.maDonHang || ''} — chờ thanh toán.`,
   }),
   PAYMENT_NEEDED: (d) => ({
     tieuDe: 'Cần xác nhận thanh toán',

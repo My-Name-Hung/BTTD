@@ -55,7 +55,7 @@ export function guiThongBao(
     ORDER_LATE: ['admin', 'dieu_phoi', 'lanh_dao'],
     NEED_APPROVAL: ['ke_toan'],
     ACCEPTANCE_SUBMITTED: ['ke_toan', 'dieu_phoi', 'lanh_dao'],
-    VOLUME_CONFIRMED: ['ke_toan', 'dieu_phoi', 'lanh_dao'],
+    VOLUME_CONFIRMED: ['dieu_phoi', 'lanh_dao'],
     PAYMENT_NEEDED: ['ke_toan', 'lanh_dao'],
     DELIVERY_CONFIRMED: ['dieu_phoi', 'admin', 'lanh_dao'],
   PRODUCTION_SCHEDULED: ['kho', 'admin', 'lanh_dao'],

@@ -36,8 +36,12 @@ export default function NghiemThuPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const dhRes = await layDanhSachDonHang(1, 100, 'da_giao');
-      const dhs = dhRes.data || [];
+      // Fetch cả đơn đang giao + đã nghiệm thu (chờ thanh toán)
+      const [dangGiaoRes, nghiemThuRes] = await Promise.all([
+        layDanhSachDonHang(1, 100, 'da_giao'),
+        layDanhSachDonHang(1, 100, 'nghiem_thu'),
+      ]);
+      const dhs = [...(dangGiaoRes.data || []), ...(nghiemThuRes.data || [])];
       setDonHangs(dhs);
       const ntMap: Record<number, NghiemThu | null> = {};
       const ttMap: Record<number, ThanhToan[]> = {};
