@@ -7,7 +7,7 @@ npm install
 npm run dev
 ```
 
-### Frontend Kế toán – Điều phối
+### Frontend Kế toán – Điều phối - Kho
 
 ```bash
 cd frontend-ke-toan
@@ -23,14 +23,6 @@ npm install
 npm run dev
 ```
 
-## Phân quyền
-
-| Vai trò      | Quyền                        |
-|-------------|-------------------------------|
-| Lãnh đạo    | Đọc toàn bộ                  |
-| Kế toán     | Xem & duyệt                  |
-| Điều phối   | Xem & chỉnh sửa              |
-| Admin       | Full quyền                    |
 
 Tài khoản mặc định:
 

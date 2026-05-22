@@ -58,6 +58,9 @@ export function guiThongBao(
     VOLUME_CONFIRMED: ['ke_toan', 'dieu_phoi', 'lanh_dao'],
     PAYMENT_NEEDED: ['ke_toan', 'lanh_dao'],
     DELIVERY_CONFIRMED: ['dieu_phoi', 'admin', 'lanh_dao'],
+  PRODUCTION_SCHEDULED: ['kho', 'admin', 'lanh_dao'],
+  DELIVERY_STARTED: ['dieu_phoi', 'admin', 'lanh_dao'],
+  DELIVERY_COMPLETED: ['dieu_phoi', 'admin', 'lanh_dao'],
   };
 
   const roles = roleMap[type] || [];
@@ -76,6 +79,9 @@ export function guiThongBao(
       VOLUME_CONFIRMED: `/nghiem-thu`,
       PAYMENT_NEEDED: `/thanh-toan`,
       DELIVERY_CONFIRMED: `/dieu-phoi`,
+      PRODUCTION_SCHEDULED: `/kho/lich-san-xuat`,
+      DELIVERY_STARTED: `/dieu-phoi`,
+      DELIVERY_COMPLETED: `/dieu-phoi`,
     };
 
     taoThongBao({

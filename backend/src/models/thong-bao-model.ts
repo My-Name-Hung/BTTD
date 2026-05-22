@@ -33,7 +33,10 @@ export type NotificationType =
   | 'ACCEPTANCE_SUBMITTED'
   | 'VOLUME_CONFIRMED'
   | 'PAYMENT_NEEDED'
-  | 'DELIVERY_CONFIRMED';
+  | 'DELIVERY_CONFIRMED'
+  | 'PRODUCTION_SCHEDULED'
+  | 'DELIVERY_STARTED'
+  | 'DELIVERY_COMPLETED';
 
 export type UserRole = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao';
 
@@ -85,5 +88,17 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, (data: Record<strin
   DELIVERY_CONFIRMED: (d) => ({
     tieuDe: 'Xe đã giao xong',
     noiDung: `Xe ${d.bienSoXe || ''} đã giao xong đơn hàng ${d.maDonHang || ''}.`,
+  }),
+  PRODUCTION_SCHEDULED: (d) => ({
+    tieuDe: 'Có đơn hàng cần giao',
+    noiDung: `Điều phối đã tạo lịch sản xuất cho đơn hàng ${d.maDonHang || ''} (${d.tenKhachHang || ''}). Khối lượng: ${d.khoiLuong || 0}m³.`,
+  }),
+  DELIVERY_STARTED: (d) => ({
+    tieuDe: 'Đơn hàng bắt đầu giao',
+    noiDung: `Kho đã xác nhận bắt đầu giao đơn hàng ${d.maDonHang || ''}. Xe ${d.bienSoXe || ''} đang trên đường giao.`,
+  }),
+  DELIVERY_COMPLETED: (d) => ({
+    tieuDe: 'Đơn hàng đã giao thành công',
+    noiDung: `Kho đã xác nhận đã giao thành công đơn hàng ${d.maDonHang || ''}. Khối lượng thực tế: ${d.khoiLuong || 0}m³.`,
   }),
 };

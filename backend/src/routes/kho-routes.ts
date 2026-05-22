@@ -3,6 +3,7 @@ import { query } from '../config/database';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { ApiResponse, ApiResponseWithPagination, LichSanXuat, DonHang } from '../models';
 import { xacNhanGiaoThanhCong, layDonHangTheoId } from '../services/don-hang-service';
+import { guiThongBao } from '../services/thong-bao-service';
 
 const router = Router();
 
@@ -119,6 +120,14 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('kho
     );
 
     const updatedDonHang = await layDonHangTheoId(idDonHang);
+
+    // Thông báo cho điều phối: kho bắt đầu giao
+    guiThongBao('DELIVERY_STARTED', {
+      id: idDonHang,
+      maDonHang: updatedDonHang.maDonHang,
+      bienSoXe: lichSanXuat[0].bienSoXe || '',
+    });
+
     res.json({ success: true, message: 'Xác nhận bắt đầu giao hàng thành công', data: updatedDonHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận bắt đầu giao hàng';
@@ -161,6 +170,14 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('kho'), asyn
     }
 
     const updatedDonHang = await xacNhanGiaoThanhCong(idDonHang, khoiLuongThucTe);
+
+    // Thông báo cho điều phối: kho đã giao thành công
+    guiThongBao('DELIVERY_COMPLETED', {
+      id: idDonHang,
+      maDonHang: updatedDonHang.maDonHang,
+      khoiLuong: khoiLuongThucTe || updatedDonHang.khoiLuongThucTe || 0,
+    });
+
     res.json({ success: true, message: 'Xác nhận giao hàng thành công', data: updatedDonHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận giao hàng';

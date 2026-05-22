@@ -1,5 +1,6 @@
 import { query } from '../config/database';
 import { LichSanXuat, DonHang } from '../models';
+import { guiThongBao } from './thong-bao-service';
 
 export async function taoLichSanXuat(
   data: Partial<LichSanXuat>,
@@ -40,6 +41,36 @@ export async function taoLichSanXuat(
       driveLink: data.driveLink || null,
     }
   );
+
+  const result = await query<LichSanXuat>(
+    `INSERT INTO LichSanXuat (
+      idDonHang, idXe, kyThuatCongTrinh, nguoiOmOng, nguoiBatOng,
+      phuongAnDo, bienSoXe, trangThai, ghiChu, driveLink
+    ) VALUES (
+      @idDonHang, @idXe, @kyThuatCongTrinh, @nguoiOmOng, @nguoiBatOng,
+      @phuongAnDo, @bienSoXe, N'chua_san_xuat', @ghiChu, @driveLink
+    );
+    SELECT * FROM LichSanXuat WHERE id = SCOPE_IDENTITY();`,
+    {
+      idDonHang: data.idDonHang,
+      idXe: data.idXe || null,
+      kyThuatCongTrinh: data.kyThuatCongTrinh || null,
+      nguoiOmOng: data.nguoiOmOng || null,
+      nguoiBatOng: data.nguoiBatOng || null,
+      phuongAnDo: data.phuongAnDo || null,
+      bienSoXe: data.bienSoXe || null,
+      ghiChu: data.ghiChu || null,
+      driveLink: data.driveLink || null,
+    }
+  );
+
+  // Thông báo cho kho: có đơn hàng cần giao
+  guiThongBao('PRODUCTION_SCHEDULED', {
+    id: data.idDonHang,
+    maDonHang: donHang[0].maDonHang,
+    tenKhachHang: donHang[0].tenKhachHang,
+    khoiLuong: donHang[0].khoiLuongDat,
+  });
 
   return result[0];
 }
