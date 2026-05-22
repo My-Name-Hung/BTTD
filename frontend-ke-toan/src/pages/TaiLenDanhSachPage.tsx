@@ -88,9 +88,9 @@ const TABS: TabConfig[] = [
     importFn: importMacBeTong,
     canAccess: ['admin', 'ke_toan', 'dieu_phoi'],
     templateColumns: [
-      { key: 'Tên mác', title: 'Tên mác', example: 'M250' },
-      { key: 'Đơn giá', title: 'Đơn giá (VNĐ)', example: '1500000' },
-      { key: 'Mô tả', title: 'Mô tả', example: 'Mác bê tông 250' },
+      { key: 'Tên mác', title: 'Tên mác', example: 'M251' },
+      { key: 'DonGia', title: 'DonGia', example: '1500000' },
+      { key: 'MoTa', title: 'MoTa', example: 'Mác bê tông 250' },
     ],
   },
 ];

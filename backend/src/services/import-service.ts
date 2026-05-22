@@ -375,9 +375,9 @@ export async function importMacBeTong(
     const rowNum = i + 2;
     try {
       const tenMac = String(r['Tên mác'] || r['tenMac'] || '').trim();
-      const donGiaRaw = String(r['Đơn giá'] || r['donGia'] || '0').replace(/[^\d.,]/g, '').replace(',', '.');
+      const donGiaRaw = String(r['DonGia'] || r['Đơn giá'] || r['donGia'] || '0').replace(/[^\d.,]/g, '').replace(',', '.');
       const donGia = parseFloat(donGiaRaw) || 0;
-      const moTa = String(r['Mô tả'] || r['moTa'] || '').trim();
+      const moTa = String(r['MoTa'] || r['Mô tả'] || r['moTa'] || '').trim();
 
       if (!tenMac) {
         errors.push(`Dòng ${rowNum}: Thiếu tên mác bê tông`);
