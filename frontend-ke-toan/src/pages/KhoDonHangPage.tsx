@@ -255,8 +255,10 @@ export default function KhoDonHangPage() {
             />
           </div>
           {TRANG_THAI_STEPS.map((step, idx) => {
-            const done = idx < currentStepIdx;
-            const active = idx === currentStepIdx;
+            const lastStepIdx = TRANG_THAI_STEPS.length - 1;
+            const isLastDone = idx === lastStepIdx && currentStepIdx === lastStepIdx;
+            const done = idx < currentStepIdx || isLastDone;
+            const active = idx === currentStepIdx && !isLastDone;
             let circleClass = styles.stepCirclePending;
             if (done) circleClass = styles.stepCircleDone;
             else if (active) circleClass = styles.stepCircleActive;

@@ -289,8 +289,9 @@ export async function layNghiemThu(
   return request<NghiemThu | null>(`/nghiem-thu/don-hang/${idDonHang}`);
 }
 
-export async function xacNhanNghiemThu(idDonHang: number): Promise<DonHang> {
-  return request<DonHang>(`/nghiem-thu/xac-nhan/${idDonHang}`, {
+export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 'da'): Promise<DonHang> {
+  const params = loai === 'chua' ? '?loai=chua' : '';
+  return request<DonHang>(`/nghiem-thu/xac-nhan/${idDonHang}${params}`, {
     method: "PUT",
   });
 }

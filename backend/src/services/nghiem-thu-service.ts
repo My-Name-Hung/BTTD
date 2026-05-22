@@ -78,11 +78,22 @@ export async function capNhatNghiemThu(id: number, data: Partial<NghiemThu>): Pr
   return (await query<NghiemThu>(`SELECT * FROM NghiemThu WHERE id = @id`, { id }))[0];
 }
 
-export async function xacNhanNghiemThu(idDonHang: number): Promise<DonHang> {
+export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 'da'): Promise<DonHang> {
+  if (loai === 'chua') {
+    // Chưa nghiệm thu: chỉ tạo record NghiemThu, giữ nguyên trạng thái đơn
+    await query(
+      `IF NOT EXISTS (SELECT * FROM NghiemThu WHERE idDonHang = @idDonHang)
+       INSERT INTO NghiemThu (idDonHang, chatLuong, bienBanSo) VALUES (@idDonHang, N'chua', NULL)`,
+      { idDonHang }
+    );
+    return (await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: idDonHang }))[0];
+  }
+
+  // Đã nghiệm thu: chuyển sang chờ thanh toán (bước nghiệm thu)
   await query(
     `UPDATE DonHang SET
-      trangThaiDon = N'da_thanh_toan',
-      trangThaiHoanThanh = N'da_hoan_thanh',
+      trangThaiDon = N'nghiem_thu',
+      trangThaiHoanThanh = N'dang_hoan_thanh',
       ngayCapNhat = GETDATE()
      WHERE id = @id`,
     { id: idDonHang }

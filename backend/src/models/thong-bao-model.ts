@@ -98,7 +98,7 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, (data: Record<strin
     noiDung: `Kho đã xác nhận bắt đầu giao đơn hàng ${d.maDonHang || ''}. Xe ${d.bienSoXe || ''} đang trên đường giao.`,
   }),
   DELIVERY_COMPLETED: (d) => ({
-    tieuDe: 'Đơn hàng đã giao thành công',
-    noiDung: `Kho đã xác nhận đã giao thành công đơn hàng ${d.maDonHang || ''}. Khối lượng thực tế: ${d.khoiLuong || 0}m³.`,
+    tieuDe: 'Đơn hàng chờ nghiệm thu',
+    noiDung: `Kho đã xác nhận giao thành công đơn hàng ${d.maDonHang || ''}. Khối lượng thực tế: ${d.khoiLuong || 0}m³. Vui lòng nghiệm thu.`,
   }),
 };

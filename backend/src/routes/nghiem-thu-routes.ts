@@ -74,7 +74,8 @@ router.put('/:id', authMiddleware, requireRole('admin', 'ke_toan', 'dieu_phoi'),
 router.put('/xac-nhan/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
-    const dh = await xacNhanNghiemThu(idDonHang);
+    const loai = (req.query.loai as string) === 'chua' ? 'chua' : 'da';
+    const dh = await xacNhanNghiemThu(idDonHang, loai);
     res.json({ success: true, message: 'Xác nhận nghiệm thu thành công', data: dh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận nghiệm thu';
