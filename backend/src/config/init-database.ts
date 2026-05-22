@@ -78,7 +78,7 @@ async function initDatabase(): Promise<void> {
       const cols = await db.query<{ COLUMN_NAME: string }[]>(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'NguoiDung' ORDER BY ORDINAL_POSITION`
       );
-      console.log('  📋 NguoiDung columns:', cols.map(c => c.COLUMN_NAME).join(', '));
+      console.log('  📋 NguoiDung columns:', cols.recordset.map(c => c.COLUMN_NAME).join(', '));
     }
 
     // Tạo bảng KhachHang
@@ -227,11 +227,11 @@ async function initDatabase(): Promise<void> {
       const dhCols = await db.query<{ COLUMN_NAME: string }[]>(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'DonHang' ORDER BY ORDINAL_POSITION`
       );
-      console.log('  📋 DonHang columns:', dhCols.map(c => c.COLUMN_NAME).join(', '));
+      console.log('  📋 DonHang columns:', dhCols.recordset.map(c => c.COLUMN_NAME).join(', '));
 
       // Migration: fix column name if wrong (l -> I)
-      const hasNguoiTaold = dhCols.some(c => c.COLUMN_NAME === 'nguoiTaold');
-      const hasNguoiTaoId = dhCols.some(c => c.COLUMN_NAME === 'nguoiTaoId');
+      const hasNguoiTaold = dhCols.recordset.some(c => c.COLUMN_NAME === 'nguoiTaold');
+      const hasNguoiTaoId = dhCols.recordset.some(c => c.COLUMN_NAME === 'nguoiTaoId');
       if (hasNguoiTaold && !hasNguoiTaoId) {
         console.log('  🔧 Fixing column name: nguoiTaold -> nguoiTaoId');
         await db.query(`EXEC sp_rename 'DonHang.nguoiTaold', 'nguoiTaoId', 'COLUMN'`);
@@ -325,9 +325,9 @@ async function initDatabase(): Promise<void> {
       const ttCols = await db.query<{ COLUMN_NAME: string }[]>(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ThanhToan' ORDER BY ORDINAL_POSITION`
       );
-      console.log('  📋 ThanhToan columns:', ttCols.map(c => c.COLUMN_NAME).join(', '));
-      const hasTTTaold = ttCols.some(c => c.COLUMN_NAME === 'nguoiTaold');
-      const hasTTTaoId = ttCols.some(c => c.COLUMN_NAME === 'nguoiTaoId');
+      console.log('  📋 ThanhToan columns:', ttCols.recordset.map(c => c.COLUMN_NAME).join(', '));
+      const hasTTTaold = ttCols.recordset.some(c => c.COLUMN_NAME === 'nguoiTaold');
+      const hasTTTaoId = ttCols.recordset.some(c => c.COLUMN_NAME === 'nguoiTaoId');
       if (hasTTTaold && !hasTTTaoId) {
         console.log('  🔧 Fixing ThanhToan column: nguoiTaold -> nguoiTaoId');
         await db.query(`EXEC sp_rename 'ThanhToan.nguoiTaold', 'nguoiTaoId', 'COLUMN'`);
