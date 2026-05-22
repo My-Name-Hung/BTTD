@@ -101,23 +101,30 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const fileUrl = `/uploads/bien-ban/${req.file.filename}`;
 
-    // Tìm nghiệm thu của đơn hàng
+    // Tạo record NghiemThu nếu chưa có
+    let nghiemThuId: number;
     const existing = await query<NghiemThu>(
       `SELECT * FROM NghiemThu WHERE idDonHang = @idDonHang`,
       { idDonHang }
     );
 
     if (existing.length === 0) {
-      res.status(404).json({ success: false, message: 'Chưa có biên bản nghiệm thu cho đơn hàng này' });
-      return;
+      const result = await query<NghiemThu>(
+        `INSERT INTO NghiemThu (idDonHang, chatLuong, bienBanFile, ngayTao)
+         OUTPUT INSERTED.id
+         VALUES (@idDonHang, N'dat', @bienBanFile, GETDATE())`,
+        { idDonHang, bienBanFile: fileUrl }
+      );
+      nghiemThuId = result[0].id;
+    } else {
+      await query(
+        `UPDATE NghiemThu SET bienBanFile = @bienBanFile, ngayCapNhat = GETDATE() WHERE id = @id`,
+        { bienBanFile: fileUrl, id: existing[0].id }
+      );
+      nghiemThuId = existing[0].id;
     }
 
-    await query(
-      `UPDATE NghiemThu SET bienBanFile = @bienBanFile, ngayCapNhat = GETDATE() WHERE id = @id`,
-      { bienBanFile: fileUrl, id: existing[0].id }
-    );
-
-    res.json({ success: true, message: 'Tải file thành công', data: { bienBanFile: fileUrl } });
+    res.json({ success: true, message: 'Tải file thành công', data: { bienBanFile: fileUrl, id: nghiemThuId } });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tải file';
     res.status(500).json({ success: false, message });

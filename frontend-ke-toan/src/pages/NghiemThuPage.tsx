@@ -99,9 +99,10 @@ export default function NghiemThuPage() {
     if (!selectedDonHang) return;
     setUploadLoading(true);
     try {
-      await uploadBienBanNghiemThu(selectedDonHang.id, uploadFile!);
+      // Tạo record nghiệm thu TRƯỚC rồi mới upload file
       await xacNhanNghiemThu(selectedDonHang.id, 'da');
       await taoCongNo(selectedDonHang.id);
+      await uploadBienBanNghiemThu(selectedDonHang.id, uploadFile!);
       showToast('Đã tải file và xác nhận nghiệm thu thành công');
       setUploadModalOpen(false);
       setUploadFile(null);
