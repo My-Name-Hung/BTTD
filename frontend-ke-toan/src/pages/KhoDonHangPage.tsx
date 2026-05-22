@@ -6,10 +6,9 @@ import {
   FiUser,
   FiPackage,
   FiDollarSign,
-  FiClock,
   FiTruck,
   FiCheckCircle,
-  FiExternalLink,
+  FiClock,
 } from "react-icons/fi";
 import { layDonHangKho, xacNhanBatDauGiao, xacNhanDaGiaoKho } from "../services/api";
 import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from "../types";
@@ -90,17 +89,6 @@ interface DonHangData {
 interface LichSanXuatData {
   bienSoXe?: string;
   tenTaiXe?: string;
-  kyThuatCongTrinh?: string;
-  nguoiOmOng?: string;
-  nguoiBatOng?: string;
-  phuongAnDo?: string;
-  thoiGianTron?: string;
-  thoiGianXuatBen?: string;
-  thoiGianDenCangDat?: string;
-  thoiGianBatDauDo?: string;
-  thoiGianKetThucDo?: string;
-  ghiChu?: string;
-  driveLink?: string;
 }
 
 export default function KhoDonHangPage() {
@@ -423,99 +411,8 @@ export default function KhoDonHangPage() {
               {lichSanXuat?.tenTaiXe || "—"}
             </span>
           </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Thời gian trộn</span>
-            <span className={styles.infoValue}>
-              {formatDateTime(lichSanXuat?.thoiGianTron || "")}
-            </span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Xuất bến</span>
-            <span className={styles.infoValue}>
-              {formatDateTime(lichSanXuat?.thoiGianXuatBen || "")}
-            </span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Đến công trình</span>
-            <span className={styles.infoValue}>
-              {formatDateTime(lichSanXuat?.thoiGianDenCangDat || "")}
-            </span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Bắt đầu đổ</span>
-            <span className={styles.infoValue}>
-              {formatDateTime(lichSanXuat?.thoiGianBatDauDo || "")}
-            </span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Kết thúc đổ</span>
-            <span className={styles.infoValue}>
-              {formatDateTime(lichSanXuat?.thoiGianKetThucDo || "")}
-            </span>
-          </div>
         </div>
       </div>
-
-      {/* Lịch sản xuất chi tiết */}
-      {lichSanXuat && (
-        <div className={styles.infoCard} style={{ marginBottom: 20 }}>
-          <div className={styles.infoCardTitle}>
-            <FiClock size={14} /> Thông tin lịch sản xuất
-          </div>
-          <div className={styles.infoGrid} style={{ marginBottom: 0 }}>
-            <div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Kỹ thuật công trình</span>
-                <span className={styles.infoValue}>
-                  {lichSanXuat.kyThuatCongTrinh || "—"}
-                </span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Người ôm ống</span>
-                <span className={styles.infoValue}>
-                  {lichSanXuat.nguoiOmOng || "—"}
-                </span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Người bắt ống</span>
-                <span className={styles.infoValue}>
-                  {lichSanXuat.nguoiBatOng || "—"}
-                </span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Phương án đổ</span>
-                <span className={styles.infoValue}>
-                  {lichSanXuat.phuongAnDo || "—"}
-                </span>
-              </div>
-            </div>
-            <div>
-              {lichSanXuat.ghiChu && (
-                <div className={styles.infoRow} style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-                  <span className={styles.infoLabel}>Ghi chú</span>
-                  <span className={styles.infoValue} style={{ textAlign: "left", fontSize: 13 }}>
-                    {lichSanXuat.ghiChu}
-                  </span>
-                </div>
-              )}
-              {lichSanXuat.driveLink && (
-                <div className={styles.infoRow} style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-                  <span className={styles.infoLabel}>Link lịch sản xuất</span>
-                  <a
-                    href={lichSanXuat.driveLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.driveLink}
-                  >
-                    <FiExternalLink size={13} />
-                    Mở lịch sản xuất
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Ghi chú đơn hàng */}
       {donHang.ghiChu && (

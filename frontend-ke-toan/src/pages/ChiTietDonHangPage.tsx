@@ -414,9 +414,9 @@ export default function ChiTietDonHangPage() {
           <table className={styles.subTable}>
             <tbody>
               <tr>
-                <th style={{ width: 140 }}>Biển số xe</th>
+                <th style={{ width: 160 }}>Biển số xe</th>
                 <td>{lichSX.bienSoXe || '—'}</td>
-                <th style={{ width: 140 }}>Kỹ thuật</th>
+                <th style={{ width: 160 }}>Kỹ thuật</th>
                 <td>{lichSX.kyThuatCongTrinh || '—'}</td>
               </tr>
               <tr>
@@ -428,31 +428,6 @@ export default function ChiTietDonHangPage() {
               <tr>
                 <th>Phương án đổ</th>
                 <td colSpan={3}>{lichSX.phuongAnDo || '—'}</td>
-              </tr>
-              <tr>
-                <th>Giờ trộn</th>
-                <td>{formatDateTime(lichSX.thoiGianTron || '')}</td>
-                <th>Giờ xuất bến</th>
-                <td>{formatDateTime(lichSX.thoiGianXuatBen || '')}</td>
-              </tr>
-              <tr>
-                <th>Đến công trình</th>
-                <td>{formatDateTime(lichSX.thoiGianDenCangDat || '')}</td>
-                <th>Bắt đầu đổ</th>
-                <td>{formatDateTime(lichSX.thoiGianBatDauDo || '')}</td>
-              </tr>
-              <tr>
-                <th>Kết thúc đổ</th>
-                <td>{formatDateTime(lichSX.thoiGianKetThucDo || '')}</td>
-                <th>Drive Link</th>
-                <td>
-                  {lichSX.driveLink ? (
-                    <a href={lichSX.driveLink} target="_blank" rel="noreferrer"
-                      style={{ color: 'var(--color-primary)', fontSize: 13 }}>
-                      Mở link →
-                    </a>
-                  ) : '—'}
-                </td>
               </tr>
               {lichSX.ghiChu && (
                 <tr>

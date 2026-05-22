@@ -84,7 +84,7 @@ const MENU_SECTIONS: MenuSection[] = [
         path: "/nghiem-thu",
         label: "Nghiệm thu",
         icon: <MdAssignment />,
-        roles: ["admin", "ke_toan", "dieu_phoi"],
+        roles: ["admin", "ke_toan"],
       },
     ],
   },

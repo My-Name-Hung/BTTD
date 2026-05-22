@@ -42,28 +42,6 @@ export async function taoLichSanXuat(
     }
   );
 
-  const result = await query<LichSanXuat>(
-    `INSERT INTO LichSanXuat (
-      idDonHang, idXe, kyThuatCongTrinh, nguoiOmOng, nguoiBatOng,
-      phuongAnDo, bienSoXe, trangThai, ghiChu, driveLink
-    ) VALUES (
-      @idDonHang, @idXe, @kyThuatCongTrinh, @nguoiOmOng, @nguoiBatOng,
-      @phuongAnDo, @bienSoXe, N'chua_san_xuat', @ghiChu, @driveLink
-    );
-    SELECT * FROM LichSanXuat WHERE id = SCOPE_IDENTITY();`,
-    {
-      idDonHang: data.idDonHang,
-      idXe: data.idXe || null,
-      kyThuatCongTrinh: data.kyThuatCongTrinh || null,
-      nguoiOmOng: data.nguoiOmOng || null,
-      nguoiBatOng: data.nguoiBatOng || null,
-      phuongAnDo: data.phuongAnDo || null,
-      bienSoXe: data.bienSoXe || null,
-      ghiChu: data.ghiChu || null,
-      driveLink: data.driveLink || null,
-    }
-  );
-
   // Thông báo cho kho: có đơn hàng cần giao
   guiThongBao('PRODUCTION_SCHEDULED', {
     id: data.idDonHang,
