@@ -1,8 +1,9 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components";
-import { AuthProvider } from "./hooks";
+import { AuthProvider, useAuth } from "./hooks";
 import { Loading } from "./components/Common";
+import { useMaintenanceCheck } from "./hooks/useMaintenanceCheck";
 
 const ChiTietDonHangPage = lazy(() => import("./pages/ChiTietDonHangPage"));
 const CongNoPage = lazy(() => import("./pages/CongNoPage"));
@@ -21,6 +22,8 @@ const TaoLichSanXuatPage = lazy(() => import("./pages/TaoLichSanXuatPage"));
 const ThamSoPage = lazy(() => import("./pages/ThamSoPage"));
 const ThanhToanPage = lazy(() => import("./pages/ThanhToanPage"));
 const TaiLenDanhSachPage = lazy(() => import("./pages/TaiLenDanhSachPage"));
+const BaoTriPage = lazy(() => import("./pages/BaoTriPage"));
+const MaintenanceBlockPage = lazy(() => import("./pages/MaintenanceBlockPage"));
 
 function PageFallback() {
   return (
@@ -28,6 +31,31 @@ function PageFallback() {
       <Loading />
     </div>
   );
+}
+
+/** Kiểm tra maintenance cho kế toán & điều phối */
+function MaintenanceGate({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const { maintenanceStatus, loading } = useMaintenanceCheck();
+  const vaiTro = user?.vaiTro;
+
+  // Admin không bị block
+  if (vaiTro === 'admin') return <>{children}</>;
+
+  if (loading) return <PageFallback />;
+
+  if (maintenanceStatus?.isMaintenance) {
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <MaintenanceBlockPage
+          noiDung={maintenanceStatus.noiDung}
+          thoiGianKetThuc={maintenanceStatus.thoiGianKetThuc}
+        />
+      </Suspense>
+    );
+  }
+
+  return <>{children}</>;
 }
 
 function App() {
@@ -39,29 +67,32 @@ function App() {
           <Route
             path="/*"
             element={
-              <Layout>
-                <Routes>
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/dieu-phoi" element={<DieuPhoiPage />} />
-                  <Route path="/dieu-phoi/lich-san-xuat/:id" element={<TaoLichSanXuatPage />} />
-                  <Route path="/nghiem-thu" element={<NghiemThuPage />} />
-                  <Route path="/thanh-toan" element={<ThanhToanPage />} />
-                  <Route path="/thong-bao" element={<NotificationsPage />} />
-                  <Route path="/cong-no" element={<CongNoPage />} />
-                  <Route path="/khach-hang" element={<KhachHangPage />} />
-                  <Route path="/tham-so" element={<ThamSoPage />} />
-                  <Route path="/quan-ly/don-hang" element={<QuanLyDonHangPage />} />
-                  <Route path="/quan-ly/don-hang/chi-tiet/:id" element={<ChiTietDonHangPage />} />
-                  <Route path="/quan-ly/don-hang/tao" element={<TaoDonHangPage />} />
-                  <Route path="/quan-ly/don-hang/sua/:id" element={<TaoDonHangPage />} />
-                  <Route path="/quan-ly/nguoi-dung" element={<QuanLyNguoiDungPage />} />
-                  <Route path="/quan-ly/xe" element={<QuanLyXePage />} />
-                  <Route path="/quan-ly/tram-tron" element={<QuanLyTramTronPage />} />
-                  <Route path="/tai-len-danh-sach" element={<TaiLenDanhSachPage />} />
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </Layout>
+              <MaintenanceGate>
+                <Layout>
+                  <Routes>
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/dieu-phoi" element={<DieuPhoiPage />} />
+                    <Route path="/dieu-phoi/lich-san-xuat/:id" element={<TaoLichSanXuatPage />} />
+                    <Route path="/nghiem-thu" element={<NghiemThuPage />} />
+                    <Route path="/thanh-toan" element={<ThanhToanPage />} />
+                    <Route path="/thong-bao" element={<NotificationsPage />} />
+                    <Route path="/cong-no" element={<CongNoPage />} />
+                    <Route path="/khach-hang" element={<KhachHangPage />} />
+                    <Route path="/tham-so" element={<ThamSoPage />} />
+                    <Route path="/quan-ly/don-hang" element={<QuanLyDonHangPage />} />
+                    <Route path="/quan-ly/don-hang/chi-tiet/:id" element={<ChiTietDonHangPage />} />
+                    <Route path="/quan-ly/don-hang/tao" element={<TaoDonHangPage />} />
+                    <Route path="/quan-ly/don-hang/sua/:id" element={<TaoDonHangPage />} />
+                    <Route path="/quan-ly/nguoi-dung" element={<QuanLyNguoiDungPage />} />
+                    <Route path="/quan-ly/xe" element={<QuanLyXePage />} />
+                    <Route path="/quan-ly/tram-tron" element={<QuanLyTramTronPage />} />
+                    <Route path="/tai-len-danh-sach" element={<TaiLenDanhSachPage />} />
+                    <Route path="/bao-tri" element={<BaoTriPage />} />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                  </Routes>
+                </Layout>
+              </MaintenanceGate>
             }
           />
         </Routes>

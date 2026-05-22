@@ -1,5 +1,12 @@
 // Mô hình dữ liệu cho toàn bộ hệ thống Bê Tông Tây Đô
 
+export interface CauHinhHeThong {
+  id: number;
+  khoa: string;
+  giaTri: string;
+  ngayCapNhat: Date | string;
+}
+
 export interface NguoiDung {
   id: number;
   tenDangNhap: string;

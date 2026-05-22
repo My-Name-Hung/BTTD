@@ -103,6 +103,25 @@ async function initDatabase(): Promise<void> {
       console.log('  ✅ Bảng KhachHang đã tồn tại');
     }
 
+    // Tạo bảng CauHinh (key/value store cho cấu hình hệ thống)
+    const cauHinhExists = await db.query<{ name: string }[]>(
+      `SELECT name FROM sys.tables WHERE name = 'CauHinh'`
+    );
+    if (cauHinhExists.recordset.length === 0) {
+      console.log('  ➕ Tạo bảng CauHinh...');
+      await db.query(`
+        CREATE TABLE CauHinh (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          khoa NVARCHAR(100) NOT NULL UNIQUE,
+          giaTri NVARCHAR(MAX) NOT NULL,
+          ngayCapNhat DATETIME DEFAULT GETDATE()
+        )
+      `);
+      console.log('  ✅ Bảng CauHinh đã tạo');
+    } else {
+      console.log('  ✅ Bảng CauHinh đã tồn tại');
+    }
+
     // Tạo bảng MacBeTong
     const macBeTongExists = await db.query<{ name: string }[]>(
       `SELECT name FROM sys.tables WHERE name = 'MacBeTong'`

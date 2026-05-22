@@ -61,6 +61,14 @@ export interface Xe {
   trangThai: "san_sang" | "dang_giao" | "bao_tri";
 }
 
+export interface MaintenanceStatus {
+  isMaintenance: boolean;
+  noiDung: string | null;
+  thoiGianBatDau: string | null;
+  thoiGianKetThuc: string | null;
+  daLich: boolean;
+}
+
 export interface DonHang {
   id: number;
   maDonHang: string;

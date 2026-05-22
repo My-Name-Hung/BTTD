@@ -536,3 +536,35 @@ export const importKhachHang = (file: File) => importFile('/import/khach-hang', 
 export const importNguoiDung = (file: File) => importFile('/import/nguoi-dung', file);
 export const importPhuongTien = (file: File) => importFile('/import/phuong-tien', file);
 export const importMacBeTong = (file: File) => importFile('/import/mac-be-tong', file);
+
+// ===== CẤU HÌNH HỆ THỐNG =====
+export async function layTrangThaiBaoTri(): Promise<import('../types').MaintenanceStatus> {
+  const res = await fetch(`${BASE_URL}/cau-hinh/trang-thai`);
+  const json = await res.json();
+  return json.data as import('../types').MaintenanceStatus;
+}
+
+export async function batBaoTri(payload: {
+  noiDung: string;
+  thoiGianBatDau?: string | null;
+  thoiGianKetThuc?: string | null;
+}): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}/cau-hinh/bat-bao-tri`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+}
+
+export async function tatBaoTri(): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}/cau-hinh/tat-bao-tri`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+}

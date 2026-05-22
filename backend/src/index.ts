@@ -14,6 +14,7 @@ import quanLyRoutes from "./routes/quan-ly-routes";
 import thamSoRoutes from "./routes/tham-so-routes";
 import thanhToanRoutes from "./routes/thanh-toan-routes";
 import thongBaoRoutes from "./routes/thong-bao-routes";
+import cauHinhRoutes from "./routes/cau-hinh-routes";
 import lanhDaoRoutes from "./routes/lanh-dao-routes";
 import importRoutes from "./routes/import-routes";
 
@@ -53,6 +54,7 @@ app.use("/api/nghiem-thu", nghiemThuRoutes);
 app.use("/api/thanh-toan", thanhToanRoutes);
 app.use("/api/tham-so", thamSoRoutes);
 app.use("/api/notifications", thongBaoRoutes);
+app.use("/api/cau-hinh", cauHinhRoutes);
 app.use("/api/lanh-dao", lanhDaoRoutes);
 app.use("/api", quanLyRoutes);
 app.use("/api/import", importRoutes);
