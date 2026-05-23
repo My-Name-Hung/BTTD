@@ -108,6 +108,7 @@ export interface LichSanXuat {
   id: number;
   idDonHang: number;
   idXe: number | null;
+  idTaiXe: number | null;
   kyThuatCongTrinh: string | null;
   nguoiOmOng: string | null;
   nguoiBatOng: string | null;

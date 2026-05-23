@@ -111,6 +111,7 @@ async function initDatabase(): Promise<void> {
 
   await create('LichSanXuat', `CREATE TABLE LichSanXuat (
     id INT IDENTITY(1,1) PRIMARY KEY, idDonHang INT NOT NULL, idXe INT,
+    idTaiXe INT,
     kyThuatCongTrinh NVARCHAR(200), nguoiOmOng NVARCHAR(200), nguoiBatOng NVARCHAR(200),
     phuongAnDo NVARCHAR(500), bienSoXe NVARCHAR(50),
     thoiGianTron DATETIME, thoiGianXuatBen DATETIME, thoiGianDenCangDat DATETIME,
@@ -118,6 +119,14 @@ async function initDatabase(): Promise<void> {
     ghiChu NVARCHAR(MAX), driveLink NVARCHAR(500),
     trangThai NVARCHAR(50) DEFAULT N'chua_san_xuat',
     ngayTao DATETIME DEFAULT GETDATE(), ngayCapNhat DATETIME DEFAULT GETDATE())`);
+
+  // Alter table: add idTaiXe if missing (for existing tables)
+  try {
+    await db.query(`ALTER TABLE LichSanXuat ADD idTaiXe INT`);
+    console.log(`  + Cột idTaiXe đã được thêm vào LichSanXuat`);
+  } catch {
+    // column already exists, ignore
+  }
 
   await create('NghiemThu', `CREATE TABLE NghiemThu (
     id INT IDENTITY(1,1) PRIMARY KEY, idDonHang INT NOT NULL,
@@ -181,6 +190,10 @@ async function seedData(): Promise<void> {
   const keToanPass = bcrypt.hashSync('Ketoan@123', 10);
   const dieuPhoiPass = bcrypt.hashSync('Dieuphoi@123', 10);
   const lanhDaoPass = bcrypt.hashSync('Lanhdao@123', 10);
+  const khoPass = bcrypt.hashSync('Kho@123', 10);
+  const salesPass = bcrypt.hashSync('Sales@123', 10);
+  const taiXePass = bcrypt.hashSync('Taixe@123', 10);
+  const kyThuatPass = bcrypt.hashSync('Kythuat@123', 10);
 
   const userIds = await getIds([
     `INSERT NguoiDung (tenDangNhap,matKhau,hoTen,email,soDienThoai,vaiTro,trangThai) VALUES
@@ -191,9 +204,17 @@ async function seedData(): Promise<void> {
      ('dieuphoi','${dieuPhoiPass}',N'Lê Văn Điều Phối','dieuphoi@bttd.com','0901000003','dieu_phoi','hoat_dong')`,
     `INSERT NguoiDung (tenDangNhap,matKhau,hoTen,email,soDienThoai,vaiTro,trangThai) VALUES
      ('lanhdao','${lanhDaoPass}',N'Phạm Văn Lãnh Đạo','lanhdao@bttd.com','0901000004','lanh_dao','hoat_dong')`,
+    `INSERT NguoiDung (tenDangNhap,matKhau,hoTen,email,soDienThoai,vaiTro,trangThai) VALUES
+     ('kho','${khoPass}',N'Võ Thị Kho','kho@bttd.com','0901000005','kho','hoat_dong')`,
+    `INSERT NguoiDung (tenDangNhap,matKhau,hoTen,email,soDienThoai,vaiTro,trangThai) VALUES
+     ('sales','${salesPass}',N'Huỳnh Minh Sales','sales@bttd.com','0901000006','sale','hoat_dong')`,
+    `INSERT NguoiDung (tenDangNhap,matKhau,hoTen,email,soDienThoai,vaiTro,trangThai) VALUES
+     ('taixe','${taiXePass}',N'Nguyễn Văn Tài Xế','taixe@bttd.com','0901000007','tai_xe','hoat_dong')`,
+    `INSERT NguoiDung (tenDangNhap,matKhau,hoTen,email,soDienThoai,vaiTro,trangThai) VALUES
+     ('kythuat','${kyThuatPass}',N'Đặng Văn Kỹ Thuật','kythuat@bttd.com','0901000008','ky_thuat','hoat_dong')`,
   ]);
-  const [_adminId, keToanId, dieuPhoiId, _lanhDaoId] = userIds;
-  console.log(`  ✓ 4 tài khoản: admin, ketoan(id=${keToanId}), dieuphoi(id=${dieuPhoiId}), lanhdao\n`);
+  const [_adminId, keToanId, dieuPhoiId, _lanhDaoId, khoId, salesId, taiXeId, kyThuatId] = userIds;
+  console.log(`  ✓ 8 tài khoản: admin, ketoan(id=${keToanId}), dieuphoi(id=${dieuPhoiId}), kho(id=${khoId}), sales(id=${salesId}), taixe(id=${taiXeId}), kythuat(id=${kyThuatId})\n`);
 
   // ── Khách hàng ──────────────────────────────────────────────────────────
   console.log('🟢 SEED KHÁCH HÀNG...');
@@ -234,7 +255,7 @@ async function seedData(): Promise<void> {
   ]);
   console.log(`  ✓ 3 trạm trộn: ids ${tramIds.join(', ')}\n`);
 
-  // ── Xe ──────────────────────────────────────────────────────────────────
+  // ── Xe (gán thêm tài xế) ───────────────────────────────────────────
   console.log('🟢 SEED XE...');
   const xeIds = await getIds([
     `INSERT Xe (bienSo,tenTaiXe,soDienThoaiTaiXe,taiTrong,trangThai) VALUES
@@ -248,33 +269,33 @@ async function seedData(): Promise<void> {
   ]);
   console.log(`  ✓ 4 xe: ids ${xeIds.join(', ')}\n`);
 
-  // ── Đơn hàng ─────────────────────────────────────────────────────────────
+  // ── Đơn hàng (sales tạo) ─────────────────────────────────────────────
   const D = sqlDate;
   console.log('🟢 SEED ĐƠN HÀNG...');
   const dhIds = await getIds([
     `INSERT DonHang (maDonHang,idKhachHang,idMacBeTong,idTramTron,tenKhachHang,diaChiNhan,soDienThoai,tenMacBeTong,khoiLuongDat,donGia,thanhTien,thoiGianGiaoDuKien,ngayTaoDon,trangThaiDon,trangThaiHoanThanh,nguoiTaoId,ghiChu,daThanhToan,conLai)
-     VALUES ('DH-TEST-001',${khIds[0]},${macIds[1]},${tramIds[0]},N'Công Ty TNHH Xây Dựng Minh Tiến',N'123 Đường 3/2, Q.Ninh Kiều, Cần Thơ','0902000001','M300',20.0,1300000,26000000,'${D(1)}','${D(0)}','cho_duyet','chua_hoan_thanh',${dieuPhoiId},N'Đơn mới - chờ kế toán duyệt',0,26000000)`,
+     VALUES ('DH-TEST-001',${khIds[0]},${macIds[1]},${tramIds[0]},N'Công Ty TNHH Xây Dựng Minh Tiến',N'123 Đường 3/2, Q.Ninh Kiều, Cần Thơ','0902000001','M300',20.0,1300000,26000000,'${D(1)}','${D(0)}','cho_duyet','chua_hoan_thanh',${salesId},N'Đơn mới - chờ kế toán duyệt',0,26000000)`,
 
     `INSERT DonHang (maDonHang,idKhachHang,idMacBeTong,idTramTron,tenKhachHang,diaChiNhan,soDienThoai,tenMacBeTong,khoiLuongDat,donGia,thanhTien,thoiGianGiaoDuKien,ngayTaoDon,ngayDuyet,trangThaiDon,trangThaiHoanThanh,nguoiTaoId,nguoiDuyetId,ghiChu,daThanhToan,conLai)
-     VALUES ('DH-TEST-002',${khIds[1]},${macIds[0]},${tramIds[1]},N'Ông Trần Văn B',N'456 Đường Nguyễn Văn Cừ, Q.Bình Thủy, Cần Thơ','0902000002','M250',15.0,1200000,18000000,'${D(0)}','${D(-2)}','${D(-1)}','dang_san_xuat','dang_hoan_thanh',${dieuPhoiId},${keToanId},N'Đơn đã duyệt - cần điều phối xe',0,18000000)`,
+     VALUES ('DH-TEST-002',${khIds[1]},${macIds[0]},${tramIds[1]},N'Ông Trần Văn B',N'456 Đường Nguyễn Văn Cừ, Q.Bình Thủy, Cần Thơ','0902000002','M250',15.0,1200000,18000000,'${D(0)}','${D(-2)}','${D(-1)}','dang_san_xuat','dang_hoan_thanh',${salesId},${keToanId},N'Đơn đã duyệt - cần điều phối xe',0,18000000)`,
 
     `INSERT DonHang (maDonHang,idKhachHang,idMacBeTong,idTramTron,tenKhachHang,diaChiNhan,soDienThoai,tenMacBeTong,khoiLuongDat,donGia,thanhTien,thoiGianGiaoDuKien,ngayTaoDon,ngayDuyet,trangThaiDon,trangThaiHoanThanh,nguoiTaoId,nguoiDuyetId,ghiChu,daThanhToan,conLai)
-     VALUES ('DH-TEST-003',${khIds[2]},${macIds[2]},${tramIds[0]},N'Công Ty CP Đầu Tư Hùng Vương',N'789 Đường Mậu Thân, Q.Cái Khế, Cần Thơ','0902000003','M350',30.0,1400000,42000000,'${D(0)}','${D(-5)}','${D(-4)}','dang_giao','dang_hoan_thanh',${dieuPhoiId},${keToanId},N'Xe đang giao, chờ khách xác nhận',0,42000000)`,
+     VALUES ('DH-TEST-003',${khIds[2]},${macIds[2]},${tramIds[0]},N'Công Ty CP Đầu Tư Hùng Vương',N'789 Đường Mậu Thân, Q.Cái Khế, Cần Thơ','0902000003','M350',30.0,1400000,42000000,'${D(0)}','${D(-5)}','${D(-4)}','dang_giao','dang_hoan_thanh',${salesId},${keToanId},N'Xe đang giao, chờ khách xác nhận',0,42000000)`,
 
     `INSERT DonHang (maDonHang,idKhachHang,idMacBeTong,idTramTron,tenKhachHang,diaChiNhan,soDienThoai,tenMacBeTong,khoiLuongDat,khoiLuongThucTe,donGia,thanhTien,thoiGianGiaoDuKien,ngayTaoDon,ngayDuyet,ngayGiao,trangThaiDon,trangThaiHoanThanh,nguoiTaoId,nguoiDuyetId,ghiChu,daThanhToan,conLai)
-     VALUES ('DH-TEST-004',${khIds[3]},${macIds[3]},${tramIds[2]},N'Bà Nguyễn Thị C',N'321 Đường Lê Lợi, Q.Ô Môn, Cần Thơ','0902000004','M400',25.0,25.5,1500000,38250000,'${D(-3)}','${D(-10)}','${D(-9)}','${D(-6)}','nghiem_thu','dang_hoan_thanh',${dieuPhoiId},${keToanId},N'Đã giao, chờ nghiệm thu',0,38250000)`,
+     VALUES ('DH-TEST-004',${khIds[3]},${macIds[3]},${tramIds[2]},N'Bà Nguyễn Thị C',N'321 Đường Lê Lợi, Q.Ô Môn, Cần Thơ','0902000004','M400',25.0,25.5,1500000,38250000,'${D(-3)}','${D(-10)}','${D(-9)}','${D(-6)}','nghiem_thu','dang_hoan_thanh',${salesId},${keToanId},N'Đã giao, chờ nghiệm thu',0,38250000)`,
 
     `INSERT DonHang (maDonHang,idKhachHang,idMacBeTong,idTramTron,tenKhachHang,diaChiNhan,soDienThoai,tenMacBeTong,khoiLuongDat,khoiLuongThucTe,donGia,thanhTien,thoiGianGiaoDuKien,ngayTaoDon,ngayDuyet,ngayGiao,ngayNghiemThu,trangThaiDon,trangThaiHoanThanh,nguoiTaoId,nguoiDuyetId,ghiChu,daThanhToan,conLai)
-     VALUES ('DH-TEST-005',${khIds[0]},${macIds[4]},${tramIds[1]},N'Công Ty TNHH Xây Dựng Minh Tiến',N'123 Đường 3/2, Q.Ninh Kiều, Cần Thơ','0902000001','M450',18.0,18.2,1600000,29120000,'${D(-7)}','${D(-15)}','${D(-14)}','${D(-10)}','${D(-5)}','da_thanh_toan','dang_hoan_thanh',${dieuPhoiId},${keToanId},N'Đã nghiệm thu - công nợ 29.120.000đ',0,29120000)`,
+     VALUES ('DH-TEST-005',${khIds[0]},${macIds[4]},${tramIds[1]},N'Công Ty TNHH Xây Dựng Minh Tiến',N'123 Đường 3/2, Q.Ninh Kiều, Cần Thơ','0902000001','M450',18.0,18.2,1600000,29120000,'${D(-7)}','${D(-15)}','${D(-14)}','${D(-10)}','${D(-5)}','da_thanh_toan','dang_hoan_thanh',${salesId},${keToanId},N'Đã nghiệm thu - công nợ 29.120.000đ',0,29120000)`,
 
     `INSERT DonHang (maDonHang,idKhachHang,idMacBeTong,idTramTron,tenKhachHang,diaChiNhan,soDienThoai,tenMacBeTong,khoiLuongDat,khoiLuongThucTe,donGia,thanhTien,thoiGianGiaoDuKien,ngayTaoDon,ngayDuyet,ngayGiao,ngayNghiemThu,trangThaiDon,trangThaiHoanThanh,nguoiTaoId,nguoiDuyetId,ghiChu,daThanhToan,conLai)
-     VALUES ('DH-TEST-006',${khIds[4]},${macIds[0]},${tramIds[0]},N'Công Ty TNHH MTV XD Thành Đạt',N'555 Đường Phạm Ngũ Lão, Q.Ninh Kiều, Cần Thơ','0902000005','M250',10.0,10.0,1200000,12000000,'${D(-10)}','${D(-20)}','${D(-19)}','${D(-15)}','${D(-12)}','da_thanh_toan','da_hoan_thanh',${dieuPhoiId},${keToanId},N'Hoàn thành - đã thanh toán đủ',12000000,0)`,
+     VALUES ('DH-TEST-006',${khIds[4]},${macIds[0]},${tramIds[0]},N'Công Ty TNHH MTV XD Thành Đạt',N'555 Đường Phạm Ngũ Lão, Q.Ninh Kiều, Cần Thơ','0902000005','M250',10.0,10.0,1200000,12000000,'${D(-10)}','${D(-20)}','${D(-19)}','${D(-15)}','${D(-12)}','da_thanh_toan','da_hoan_thanh',${salesId},${keToanId},N'Hoàn thành - đã thanh toán đủ',12000000,0)`,
 
     `INSERT DonHang (maDonHang,idKhachHang,idMacBeTong,idTramTron,tenKhachHang,diaChiNhan,soDienThoai,tenMacBeTong,khoiLuongDat,donGia,thanhTien,thoiGianGiaoDuKien,ngayTaoDon,trangThaiDon,trangThaiHoanThanh,nguoiTaoId,lyDoTuChoi,daThanhToan,conLai)
-     VALUES ('DH-TEST-007',${khIds[1]},${macIds[2]},${tramIds[1]},N'Ông Trần Văn B',N'456 Đường Nguyễn Văn Cừ, Q.Bình Thủy, Cần Thơ','0902000002','M350',8.0,1400000,11200000,'${D(2)}','${D(-1)}','tu_choi','chua_hoan_thanh',${dieuPhoiId},N'Kế toán từ chối: Khách hàng chưa thanh toán đơn cũ',0,0)`,
+     VALUES ('DH-TEST-007',${khIds[1]},${macIds[2]},${tramIds[1]},N'Ông Trần Văn B',N'456 Đường Nguyễn Văn Cừ, Q.Bình Thủy, Cần Thơ','0902000002','M350',8.0,1400000,11200000,'${D(2)}','${D(-1)}','tu_choi','chua_hoan_thanh',${salesId},N'Kế toán từ chối: Khách hàng chưa thanh toán đơn cũ',0,0)`,
 
     `INSERT DonHang (maDonHang,idKhachHang,idMacBeTong,idTramTron,tenKhachHang,diaChiNhan,soDienThoai,tenMacBeTong,khoiLuongDat,khoiLuongThucTe,donGia,thanhTien,thoiGianGiaoDuKien,ngayTaoDon,ngayDuyet,ngayGiao,ngayNghiemThu,trangThaiDon,trangThaiHoanThanh,nguoiTaoId,nguoiDuyetId,ghiChu,daThanhToan,conLai)
-     VALUES ('DH-TEST-008',${khIds[0]},${macIds[1]},${tramIds[0]},N'Công Ty TNHH Xây Dựng Minh Tiến',N'123 Đường 3/2, Q.Ninh Kiều, Cần Thơ','0902000001','M300',40.0,40.0,1300000,52000000,'${D(-60)}','${D(-90)}','${D(-89)}','${D(-80)}','${D(-70)}','da_thanh_toan','da_hoan_thanh',${dieuPhoiId},${keToanId},N'Đơn cũ quá hạn thanh toán',5000000,47000000)`,
+     VALUES ('DH-TEST-008',${khIds[0]},${macIds[1]},${tramIds[0]},N'Công Ty TNHH Xây Dựng Minh Tiến',N'123 Đường 3/2, Q.Ninh Kiều, Cần Thơ','0902000001','M300',40.0,40.0,1300000,52000000,'${D(-60)}','${D(-90)}','${D(-89)}','${D(-80)}','${D(-70)}','da_thanh_toan','da_hoan_thanh',${salesId},${keToanId},N'Đơn cũ quá hạn thanh toán',5000000,47000000)`,
   ]);
   const [dhId1, dhId2, dhId3, dhId4, dhId5, dhId6, dhId7, dhId8] = dhIds;
   console.log(`  ✓ 8 đơn hàng: ids ${dhIds.join(', ')}\n`);
@@ -282,16 +303,16 @@ async function seedData(): Promise<void> {
   // ── Lịch sản xuất ───────────────────────────────────────────────────────
   console.log('🟢 SEED LỊCH SẢN XUẤT...');
   await getIds([
-    `INSERT LichSanXuat (idDonHang,idXe,kyThuatCongTrinh,nguoiOmOng,nguoiBatOng,phuongAnDo,bienSoXe,thoiGianTron,trangThai,ghiChu)
-     VALUES (${dhId2},${xeIds[0]},N'KS. Hoàng Minh Quang',N'Nguyễn Thanh Phong',N'Trần Văn Mạnh',N'Đổ bằng bơm, cao độ 3.5m','59C1-1234','${D(0)} 07:00:00','dang_san_xuat',N'Xe chờ xuất bến')`,
-    `INSERT LichSanXuat (idDonHang,idXe,kyThuatCongTrinh,nguoiOmOng,nguoiBatOng,phuongAnDo,bienSoXe,thoiGianTron,thoiGianXuatBen,thoiGianDenCangDat,thoiGianBatDauDo,trangThai,ghiChu)
-     VALUES (${dhId3},${xeIds[1]},N'KS. Lê Hồng Sơn',N'Phạm Văn Tèo',N'Võ Văn Đực',N'Đổ cột, dùng cần trục','59C2-2345','${D(0)} 06:30:00','${D(0)} 07:30:00','${D(0)} 08:00:00','${D(0)} 08:15:00','dang_san_xuat',N'Xe đang vận chuyển đến công trình')`,
-    `INSERT LichSanXuat (idDonHang,idXe,kyThuatCongTrinh,nguoiOmOng,nguoiBatOng,phuongAnDo,bienSoXe,thoiGianTron,thoiGianXuatBen,thoiGianDenCangDat,thoiGianBatDauDo,thoiGianKetThucDo,trangThai,ghiChu)
-     VALUES (${dhId4},${xeIds[3]},N'KS. Đặng Văn Hùng',N'Bùi Thị Lan',N'Lý Văn Còi',N'Đổ sàn, mặt bằng rộng','59C4-4567','${D(-6)} 06:00:00','${D(-6)} 07:00:00','${D(-6)} 07:30:00','${D(-6)} 08:00:00','${D(-6)} 10:00:00','da_xong',N'Hoàn thành, chờ nghiệm thu')`,
-    `INSERT LichSanXuat (idDonHang,idXe,kyThuatCongTrinh,nguoiOmOng,nguoiBatOng,phuongAnDo,bienSoXe,thoiGianTron,thoiGianXuatBen,thoiGianDenCangDat,thoiGianBatDauDo,thoiGianKetThucDo,trangThai,ghiChu,driveLink)
-     VALUES (${dhId5},${xeIds[0]},N'KS. Trần Văn Nam',N'Huỳnh Minh Tuấn',N'Đặng Văn Cao',N'Đổ móng, cần bơm dài','59C1-1234','${D(-5)} 06:30:00','${D(-5)} 07:30:00','${D(-5)} 08:00:00','${D(-5)} 08:30:00','${D(-5)} 11:00:00','da_xong',N'Hoàn thành','https://drive.google.com/drive/folders/EXAMPLE_LSX_005')`,
-    `INSERT LichSanXuat (idDonHang,idXe,kyThuatCongTrinh,nguoiOmOng,nguoiBatOng,phuongAnDo,bienSoXe,thoiGianTron,thoiGianXuatBen,thoiGianDenCangDat,thoiGianBatDauDo,thoiGianKetThucDo,trangThai,ghiChu)
-     VALUES (${dhId6},${xeIds[2]},N'KS. Nguyễn Thị Hương',N'Trịnh Văn Hòa',N'Phan Thị Sen',N'Đổ đà kiềng','59C3-3456','${D(-12)} 07:00:00','${D(-12)} 08:00:00','${D(-12)} 08:30:00','${D(-12)} 09:00:00','${D(-12)} 10:30:00','da_xong',N'Hoàn thành tốt')`,
+    `INSERT LichSanXuat (idDonHang,idXe,idTaiXe,kyThuatCongTrinh,nguoiOmOng,nguoiBatOng,phuongAnDo,bienSoXe,thoiGianTron,trangThai,ghiChu)
+     VALUES (${dhId2},${xeIds[0]},${taiXeId},N'KS. Hoàng Minh Quang',N'Nguyễn Thanh Phong',N'Trần Văn Mạnh',N'Đổ bằng bơm, cao độ 3.5m','59C1-1234','${D(0)} 07:00:00','dang_san_xuat',N'Xe chờ xuất bến')`,
+    `INSERT LichSanXuat (idDonHang,idXe,idTaiXe,kyThuatCongTrinh,nguoiOmOng,nguoiBatOng,phuongAnDo,bienSoXe,thoiGianTron,thoiGianXuatBen,thoiGianDenCangDat,thoiGianBatDauDo,trangThai,ghiChu)
+     VALUES (${dhId3},${xeIds[1]},${taiXeId},N'KS. Lê Hồng Sơn',N'Phạm Văn Tèo',N'Võ Văn Đực',N'Đổ cột, dùng cần trục','59C2-2345','${D(0)} 06:30:00','${D(0)} 07:30:00','${D(0)} 08:00:00','${D(0)} 08:15:00','dang_san_xuat',N'Xe đang vận chuyển đến công trình')`,
+    `INSERT LichSanXuat (idDonHang,idXe,idTaiXe,kyThuatCongTrinh,nguoiOmOng,nguoiBatOng,phuongAnDo,bienSoXe,thoiGianTron,thoiGianXuatBen,thoiGianDenCangDat,thoiGianBatDauDo,thoiGianKetThucDo,trangThai,ghiChu)
+     VALUES (${dhId4},${xeIds[3]},${taiXeId},N'KS. Đặng Văn Hùng',N'Bùi Thị Lan',N'Lý Văn Còi',N'Đổ sàn, mặt bằng rộng','59C4-4567','${D(-6)} 06:00:00','${D(-6)} 07:00:00','${D(-6)} 07:30:00','${D(-6)} 08:00:00','${D(-6)} 10:00:00','da_xong',N'Hoàn thành, chờ nghiệm thu')`,
+    `INSERT LichSanXuat (idDonHang,idXe,idTaiXe,kyThuatCongTrinh,nguoiOmOng,nguoiBatOng,phuongAnDo,bienSoXe,thoiGianTron,thoiGianXuatBen,thoiGianDenCangDat,thoiGianBatDauDo,thoiGianKetThucDo,trangThai,ghiChu,driveLink)
+     VALUES (${dhId5},${xeIds[0]},${taiXeId},N'KS. Trần Văn Nam',N'Huỳnh Minh Tuấn',N'Đặng Văn Cao',N'Đổ móng, cần bơm dài','59C1-1234','${D(-5)} 06:30:00','${D(-5)} 07:30:00','${D(-5)} 08:00:00','${D(-5)} 08:30:00','${D(-5)} 11:00:00','da_xong',N'Hoàn thành','https://drive.google.com/drive/folders/EXAMPLE_LSX_005')`,
+    `INSERT LichSanXuat (idDonHang,idXe,idTaiXe,kyThuatCongTrinh,nguoiOmOng,nguoiBatOng,phuongAnDo,bienSoXe,thoiGianTron,thoiGianXuatBen,thoiGianDenCangDat,thoiGianBatDauDo,thoiGianKetThucDo,trangThai,ghiChu)
+     VALUES (${dhId6},${xeIds[2]},${taiXeId},N'KS. Nguyễn Thị Hương',N'Trịnh Văn Hòa',N'Phan Thị Sen',N'Đổ đà kiềng','59C3-3456','${D(-12)} 07:00:00','${D(-12)} 08:00:00','${D(-12)} 08:30:00','${D(-12)} 09:00:00','${D(-12)} 10:30:00','da_xong',N'Hoàn thành tốt')`,
   ]);
   console.log('  ✓ 5 lịch sản xuất\n');
 
@@ -356,22 +377,28 @@ async function seedData(): Promise<void> {
   console.log('   admin     / Admin@123     → Quản trị viên');
   console.log('   ketoan    / Ketoan@123   → Kế toán');
   console.log('   dieuphoi  / Dieuphoi@123 → Điều phối');
-  console.log('   lanhdao   / Lanhdao@123  → Lãnh đạo\n');
+  console.log('   lanhdao   / Lanhdao@123  → Lãnh đạo');
+  console.log('   kho       / Kho@123      → Quản lý kho');
+  console.log('   sales     / Sales@123    → Sales (tạo đơn)');
+  console.log('   taixe     / Taixe@123   → Tài xế (giao hàng)');
+  console.log('   kythuat   / Kythuat@123 → Kỹ thuật (nghiệm thu)\n');
   console.log('📦 ĐƠN HÀNG THEO TRẠNG THÁI:');
-  console.log('   cho_duyet      : DH-TEST-001  - đơn mới, chờ duyệt');
-  console.log('   dang_san_xuat  : DH-TEST-002  - cần lịch SX');
-  console.log('   dang_giao      : DH-TEST-003  - đang vận chuyển');
-  console.log('   nghiem_thu     : DH-TEST-004  - cần nghiệm thu');
-  console.log('   da_thanh_toan  : DH-TEST-005  - công nợ 29.1M');
-  console.log('   da_thanh_toan  : DH-TEST-006  - hoàn thành');
-  console.log('   tu_choi        : DH-TEST-007  - bị từ chối');
-  console.log('   da_thanh_toan  : DH-TEST-008  - QUÁ HẠN 47M\n');
-  console.log('🔗 TEST FLOW:');
-  console.log('   1. Login ketoan    → Duyệt DH-TEST-001');
-  console.log('   2. Login dieuphoi  → Tạo lịch SX cho DH-TEST-002');
-  console.log('   3. Xác nhận giao DH-TEST-003');
-  console.log('   4. Nghiệm thu DH-TEST-004');
-  console.log('   5. Thanh toán DH-TEST-005');
+  console.log('   cho_duyet      : DH-TEST-001  - đơn mới, chờ duyệt (sales tạo)');
+  console.log('   dang_san_xuat  : DH-TEST-002  - cần lịch SX (dieuphoi)');
+  console.log('   dang_giao      : DH-TEST-003  - đang vận chuyển (dieuphoi)');
+  console.log('   nghiem_thu     : DH-TEST-004  - cần nghiệm thu (kythuat)');
+  console.log('   da_thanh_toan  : DH-TEST-005  - công nợ 29.1M (ketoan)');
+  console.log('   da_thanh_toan  : DH-TEST-006  - hoàn thành (ketoan)');
+  console.log('   tu_choi        : DH-TEST-007  - bị từ chối (ketoan)');
+  console.log('   da_thanh_toan  : DH-TEST-008  - QUÁ HẠN 47M (ketoan)\n');
+  console.log('🔗 TEST FLOW MỚI:');
+  console.log('   1. Login sales     → Tạo đơn mới');
+  console.log('   2. Login ketoan    → Duyệt DH-TEST-001');
+  console.log('   3. Login dieuphoi  → Tạo lịch SX cho DH-TEST-002');
+  console.log('   4. Login kho       → Xác nhận sản xuất → bắt đầu giao');
+  console.log('   5. Login taixe     → Xác nhận đang giao / đã giao');
+  console.log('   6. Login kythuat   → Nghiệm thu + upload biên bản');
+  console.log('   7. Login ketoan    → Thanh toán DH-TEST-005\n');
   console.log('═══════════════════════════════════════════════════════\n');
 
   await pool.close();
