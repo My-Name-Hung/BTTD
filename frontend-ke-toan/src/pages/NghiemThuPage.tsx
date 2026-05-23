@@ -24,7 +24,6 @@ export default function NghiemThuPage() {
   const [tuKhoa, setTuKhoa] = useState('');
   const [tab, setTab] = useState<TabType>('can_nghiem_thu');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [hasFileModalOpen, setHasFileModalOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
   const [selectedNt, setSelectedNt] = useState<NghiemThu | null>(null);
@@ -78,35 +77,16 @@ export default function NghiemThuPage() {
 
   const handleDaNghiemThu = (dh: DonHang) => {
     setSelectedDonHang(dh);
-    setHasFileModalOpen(true);
-  };
-
-  const handleCoUploadFile = async () => {
-    setHasFileModalOpen(false);
     setUploadModalOpen(true);
   };
 
-  const handleKhongUploadFile = async () => {
-    if (!selectedDonHang) return;
-    setConfirmLoading(true);
-    try {
-      await xacNhanNghiemThu(selectedDonHang.id, 'da');
-      await taoCongNo(selectedDonHang.id);
-      showToast('Đã xác nhận đã nghiệm thu — đơn chuyển sang chờ thanh toán');
-      setHasFileModalOpen(false);
-      loadData();
-    } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi', 'error'); }
-    finally { setConfirmLoading(false); }
-  };
-
   const handleUpload = async () => {
-    if (!selectedDonHang) return;
+    if (!selectedDonHang || !uploadFile) return;
     setUploadLoading(true);
     try {
-      // Tạo record nghiệm thu TRƯỚC rồi mới upload file
       await xacNhanNghiemThu(selectedDonHang.id, 'da');
       await taoCongNo(selectedDonHang.id);
-      await uploadBienBanNghiemThu(selectedDonHang.id, uploadFile!);
+      await uploadBienBanNghiemThu(selectedDonHang.id, uploadFile);
       showToast('Đã tải file và xác nhận nghiệm thu thành công');
       setUploadModalOpen(false);
       setUploadFile(null);
@@ -312,35 +292,11 @@ export default function NghiemThuPage() {
       </Modal>
 
       {/* Modal hỏi có tải file biên bản không */}
-      <Modal
-        isOpen={hasFileModalOpen}
-        onClose={() => setHasFileModalOpen(false)}
-        title={`Nghiệm thu - ${selectedDonHang?.maDonHang}`}
-        footer={
-          <>
-            <button className="btn btn-cancel" onClick={() => setHasFileModalOpen(false)}>Hủy</button>
-            <button className="btn btn-cancel" onClick={handleKhongUploadFile} disabled={confirmLoading}>
-              Không
-            </button>
-            <button className="btn btn-save" onClick={handleCoUploadFile}>
-              Có, tải file biên bản
-            </button>
-          </>
-        }
-      >
-        <p style={{ fontSize: 14, color: 'var(--color-text)', marginBottom: 16 }}>
-          Bạn có muốn tải lên <strong>biên bản nghiệm thu</strong> (file Word, PDF hoặc hình ảnh) không?
-        </p>
-        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
-          Nếu có sẽ chuyển đến trang tải lên file, nếu không sẽ hoàn thành nghiệm thu mà không cần tải lên file.
-        </p>
-      </Modal>
-
-      {/* Modal upload file biên bản nghiệm thu */}
+      {/* Modal upload file biên bản nghiệm thu (bắt buộc) */}
       <Modal
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
-        title={`Tải file biên bản - ${selectedDonHang?.maDonHang}`}
+        title={`Tải biên bản nghiệm thu - ${selectedDonHang?.maDonHang}`}
         footer={
           <>
             <button className="btn btn-cancel" onClick={() => setUploadModalOpen(false)}>Hủy</button>
@@ -354,9 +310,9 @@ export default function NghiemThuPage() {
           </>
         }
       >
-        <div className={styles.uploadNote}>
-          Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .png</strong> (tối đa 50MB)
-        </div>
+        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16 }}>
+          Vui lòng tải lên <strong>biên bản nghiệm thu</strong> đã ký với khách hàng. Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .png</strong> (tối đa 50MB)
+        </p>
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Chọn file biên bản nghiệm thu *</label>
           <input

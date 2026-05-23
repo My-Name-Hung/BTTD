@@ -53,10 +53,53 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response<ApiRes
   }
 });
 
+/** Lấy đơn hàng của người tạo (sale) */
+router.get('/cua-toi', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+      return;
+    }
+
+    const page = parseInt(String(req.query.page || '1'), 10);
+    const limit = parseInt(String(req.query.limit || '20'), 10);
+    const trangThai = req.query.trangThai as string | undefined;
+    const tuKhoa = req.query.tuKhoa as string | undefined;
+    const offset = (page - 1) * limit;
+
+    let whereClause = 'WHERE dh.idNguoiTao = @idNguoiTao';
+    if (trangThai) whereClause += ` AND dh.trangThaiDon = @trangThai`;
+    if (tuKhoa) whereClause += ` AND (dh.maDonHang LIKE @tuKhoa OR dh.tenKhachHang LIKE @tuKhoa)`;
+
+    const countResult = await (await import('../config/database')).query<{ total: number }>(
+      `SELECT COUNT(*) as total FROM DonHang dh ${whereClause}`,
+      { idNguoiTao: req.user.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined }
+    );
+    const total = countResult[0]?.total || 0;
+
+    const data = await (await import('../config/database')).query<any>(
+      `SELECT dh.* FROM DonHang dh ${whereClause}
+       ORDER BY dh.ngayTao DESC
+       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+      { idNguoiTao: req.user.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined, offset, limit }
+    );
+
+    res.json({
+      success: true,
+      message: 'Lấy đơn hàng của bạn thành công',
+      data,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy đơn hàng';
+    res.status(500).json({ success: false, message });
+  }
+});
+
 router.post(
   '/',
   authMiddleware,
-  requireRole('admin', 'dieu_phoi'),
+  requireRole('admin', 'sale'),
   [
     body('tenKhachHang').trim().notEmpty().withMessage('Tên khách hàng là bắt buộc'),
     body('diaChiNhan').trim().notEmpty().withMessage('Địa chỉ nhận là bắt buộc'),

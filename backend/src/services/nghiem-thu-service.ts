@@ -89,10 +89,10 @@ export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 
     return (await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: idDonHang }))[0];
   }
 
-  // Đã nghiệm thu: chuyển sang chờ thanh toán (bước nghiệm thu)
+  // Kỹ thuật xác nhận nghiệm thu: chuyển sang da_nghiem_thu (chờ thanh toán)
   await query(
     `UPDATE DonHang SET
-      trangThaiDon = N'nghiem_thu',
+      trangThaiDon = N'da_nghiem_thu',
       trangThaiHoanThanh = N'dang_hoan_thanh',
       ngayCapNhat = GETDATE()
      WHERE id = @id`,

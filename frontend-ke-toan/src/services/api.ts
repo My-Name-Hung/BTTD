@@ -622,3 +622,51 @@ export async function xacNhanDaGiaoKho(
     body: JSON.stringify({ khoiLuongThucTe }),
   });
 }
+
+// ===== SALE — lấy đơn của mình =====
+export async function layDonHangCuaToi(
+  page = 1,
+  limit = 20,
+  trangThai?: string,
+): Promise<ApiResponseWithPagination<DonHang[]>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (trangThai) params.append("trangThai", trangThai);
+  const res = await fetch(`${BASE_URL}/don-hang/cua-toi?${params}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json as ApiResponseWithPagination<DonHang[]>;
+}
+
+// ===== TÀI XẾ — lấy đơn giao của mình =====
+export async function layDonHangGiaoCuaToi(): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/tai-xe/don-hang-cua-toi`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
+// Tài xế cập nhật trạng thái giao
+export async function taiXeCapNhatTrangThaiGiao(
+  idDonHang: number,
+  trangThai: 'dang_giao' | 'da_giao',
+  khoiLuongThucTe?: number,
+): Promise<DonHang> {
+  return request<DonHang>(`/tai-xe/cap-nhat-giao/${idDonHang}`, {
+    method: "PUT",
+    body: JSON.stringify({ trangThai, khoiLuongThucTe }),
+  });
+}
+
+// ===== KỸ THUẬT — lấy đơn chờ nghiệm thu =====
+export async function layDonHangChoNghiemThu(): Promise<DonHang[]> {
+  const res = await fetch(`${BASE_URL}/ky-thuat/don-hang-cho-nghiem-thu`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}

@@ -1,6 +1,6 @@
 import { useAuth } from './use-auth';
 
-export type VaiTro = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho';
+export type VaiTro = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho' | 'sale' | 'tai_xe' | 'ky_thuat';
 
 export const ROLE_LABELS: Record<VaiTro, string> = {
   admin: 'Quản trị viên',
@@ -8,19 +8,23 @@ export const ROLE_LABELS: Record<VaiTro, string> = {
   dieu_phoi: 'Điều phối',
   lanh_dao: 'Lãnh đạo',
   kho: 'Kho',
+  sale: 'Sales',
+  tai_xe: 'Tài xế',
+  ky_thuat: 'Kỹ thuật',
 };
 
 export const PERMISSIONS = {
   // === ROLE ACCESS ===
-  'role': ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao'],
+  'role': ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'kho', 'sale', 'tai_xe', 'ky_thuat'],
 
   // === DON HANG ===
-  'donhang.create': ['admin', 'dieu_phoi'],
-  'donhang.edit': ['admin', 'dieu_phoi'],
+  'donhang.create': ['admin', 'sale'],
+  'donhang.edit': ['admin'],
   'donhang.delete': ['admin'],
   'donhang.approve': ['admin', 'ke_toan'],
   'donhang.reject': ['admin', 'ke_toan'],
-  'donhang.view': ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao'],
+  'donhang.view': ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'sale', 'tai_xe', 'ky_thuat'],
+  'donhang.view_own': ['sale', 'tai_xe', 'ky_thuat'],
 
   // === DIEU PHOI ===
   'dieuphoi.access': ['admin', 'dieu_phoi'],
@@ -29,21 +33,20 @@ export const PERMISSIONS = {
   'dieuphoi.confirm': ['admin', 'dieu_phoi', 'ke_toan'],
 
   // === NGHIEM THU ===
-  'nghiemthu.access': ['admin', 'ke_toan', 'dieu_phoi'],
-  'nghiemthu.create': ['admin', 'ke_toan', 'dieu_phoi'],
-  'nghiemthu.confirm': ['admin', 'ke_toan'],
+  'nghiemthu.access': ['admin', 'ke_toan', 'ky_thuat'],
+  'nghiemthu.confirm': ['admin', 'ke_toan', 'ky_thuat'],
 
   // === THANH TOAN ===
   'thanhtoan.access': ['admin', 'ke_toan'],
   'thanhtoan.create': ['admin', 'ke_toan'],
 
   // === CONG NO ===
-  'congno.access': ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao'],
+  'congno.access': ['admin', 'ke_toan', 'lanh_dao'],
   'congno.view_detail': ['admin', 'ke_toan', 'lanh_dao'],
 
   // === KHACH HANG ===
-  'khachhang.access': ['admin', 'ke_toan', 'dieu_phoi'],
-  'khachhang.create': ['admin', 'ke_toan', 'dieu_phoi'],
+  'khachhang.access': ['admin', 'ke_toan', 'dieu_phoi', 'sale'],
+  'khachhang.create': ['admin', 'sale'],
   'khachhang.edit': ['admin', 'ke_toan'],
   'khachhang.delete': ['admin'],
 
@@ -51,6 +54,14 @@ export const PERMISSIONS = {
   'kho.access': ['admin', 'kho'],
   'kho.confirm_delivery': ['admin', 'kho'],
   'kho.confirm_complete': ['admin', 'kho'],
+
+  // === TAI XE ===
+  'taixe.access': ['admin', 'tai_xe'],
+  'taixe.update_giao': ['admin', 'tai_xe'],
+
+  // === KY THUAT ===
+  'kythuat.access': ['admin', 'ky_thuat'],
+  'kythuat.confirm': ['admin', 'ky_thuat'],
 
   // === THAM SO ===
   'thamso.access': ['admin'],

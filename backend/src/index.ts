@@ -5,6 +5,7 @@ import path from "path";
 import { config } from "./config";
 import { initDatabase } from "./config/init-database";
 import { ApiResponse } from "./models";
+import { maintenanceMiddleware } from "./middleware/maintenance";
 
 import authRoutes from "./routes/auth-routes";
 import dashboardRoutes from "./routes/dashboard-routes";
@@ -19,6 +20,8 @@ import cauHinhRoutes from "./routes/cau-hinh-routes";
 import lanhDaoRoutes from "./routes/lanh-dao-routes";
 import khoRoutes from "./routes/kho-routes";
 import importRoutes from "./routes/import-routes";
+import taiXeRoutes from "./routes/tai-xe-routes";
+import kyThuatRoutes from "./routes/ky-thuat-routes";
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -45,25 +48,27 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files (biên bản nghiệm thu, etc.)
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-// Health check
+// Health check - không cần auth
 app.get("/api/health", (_req: Request, res: Response<ApiResponse>) => {
   res.json({ success: true, message: "API Bê Tông Tây Đô đang hoạt động" });
 });
 
-// Routes
+// Routes - tất cả đều qua maintenance middleware (sau auth)
 app.use("/api/auth", authRoutes);
-app.use("/api/don-hang", donHangRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/dieu-phoi", dieuPhoiRoutes);
-app.use("/api/nghiem-thu", nghiemThuRoutes);
-app.use("/api/thanh-toan", thanhToanRoutes);
-app.use("/api/tham-so", thamSoRoutes);
-app.use("/api/notifications", thongBaoRoutes);
-app.use("/api/cau-hinh", cauHinhRoutes);
-app.use("/api/lanh-dao", lanhDaoRoutes);
-app.use("/api/kho", khoRoutes);
-app.use("/api", quanLyRoutes);
-app.use("/api/import", importRoutes);
+app.use("/api/don-hang", authMiddleware, maintenanceMiddleware, donHangRoutes);
+app.use("/api/dashboard", authMiddleware, maintenanceMiddleware, dashboardRoutes);
+app.use("/api/dieu-phoi", authMiddleware, maintenanceMiddleware, dieuPhoiRoutes);
+app.use("/api/nghiem-thu", authMiddleware, maintenanceMiddleware, nghiemThuRoutes);
+app.use("/api/thanh-toan", authMiddleware, maintenanceMiddleware, thanhToanRoutes);
+app.use("/api/tham-so", authMiddleware, maintenanceMiddleware, thamSoRoutes);
+app.use("/api/notifications", authMiddleware, maintenanceMiddleware, thongBaoRoutes);
+app.use("/api/cau-hinh", authMiddleware, maintenanceMiddleware, cauHinhRoutes);
+app.use("/api/lanh-dao", authMiddleware, maintenanceMiddleware, lanhDaoRoutes);
+app.use("/api/kho", authMiddleware, maintenanceMiddleware, khoRoutes);
+app.use("/api/tai-xe", authMiddleware, maintenanceMiddleware, taiXeRoutes);
+app.use("/api/ky-thuat", authMiddleware, maintenanceMiddleware, kyThuatRoutes);
+app.use("/api", authMiddleware, maintenanceMiddleware, quanLyRoutes);
+app.use("/api/import", authMiddleware, maintenanceMiddleware, importRoutes);
 
 // Error handler
 app.use(

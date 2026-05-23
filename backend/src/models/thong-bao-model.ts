@@ -38,7 +38,7 @@ export type NotificationType =
   | 'DELIVERY_STARTED'
   | 'DELIVERY_COMPLETED';
 
-export type UserRole = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao';
+export type UserRole = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho' | 'sale' | 'tai_xe' | 'ky_thuat';
 
 export const NOTIFICATION_MESSAGES: Record<NotificationType, (data: Record<string, unknown>) => { tieuDe: string; noiDung: string }> = {
   NEW_ORDER: (d) => ({

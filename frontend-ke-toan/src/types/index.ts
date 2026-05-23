@@ -22,7 +22,7 @@ export interface NguoiDung {
   hoTen: string;
   email: string | null;
   soDienThoai: string | null;
-  vaiTro: "admin" | "ke_toan" | "dieu_phoi" | "lanh_dao" | "kho";
+  vaiTro: "admin" | "ke_toan" | "dieu_phoi" | "lanh_dao" | "kho" | "sale" | "tai_xe" | "ky_thuat";
   trangThai: "hoat_dong" | "khong_hoat_dong";
   ngayTao?: string | Date;
   ngayCapNhat?: string | Date;
@@ -96,6 +96,7 @@ export interface DonHang {
     | "dang_giao"
     | "da_giao"
     | "nghiem_thu"
+    | "da_nghiem_thu"
     | "da_thanh_toan"
     | "tu_choi";
   trangThaiHoanThanh: "chua_hoan_thanh" | "dang_hoan_thanh" | "da_hoan_thanh";
@@ -236,7 +237,9 @@ export const TRANG_THAI_DON_LABELS: Record<string, string> = {
   dang_giao: "Đang giao",
   da_giao: "Đã giao",
   nghiem_thu: "Nghiệm thu",
+  da_nghiem_thu: "Đã nghiệm thu",
   da_thanh_toan: "Đã thanh toán",
+  hoan_thanh: "Hoàn thành",
   tu_choi: "Từ chối",
 };
 
@@ -247,6 +250,8 @@ export const TRANG_THAI_DON_COLORS: Record<string, string> = {
   dang_giao: "#f97316",
   da_giao: "#06b6d4",
   nghiem_thu: "#6366f1",
+  da_nghiem_thu: "#795548",
   da_thanh_toan: "#10b981",
+  hoan_thanh: "#22c55e",
   tu_choi: "#ef4444",
 };

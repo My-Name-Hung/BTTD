@@ -1,0 +1,253 @@
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* KPI Row */
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kpiCard {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.kpiCard:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(7, 60, 235, 0.1);
+}
+
+.kpiValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.kpiWarning { color: #ff9800; }
+.kpiInfo { color: #2196f3; }
+.kpiSuccess { color: #2e7d32; }
+
+.kpiLabel {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* Search bar */
+.searchBar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: var(--color-text-secondary);
+}
+
+.searchInput input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--color-text);
+  background: transparent;
+}
+
+.btnCreate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.btnCreate:hover { background: #062db8; }
+
+/* Order list */
+.orderList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.orderCard {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.orderCard:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 12px rgba(7, 60, 235, 0.1);
+}
+
+.orderCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.orderMa {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.orderKhach {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.orderStatus {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.orderCardBody {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+  margin-bottom: 12px;
+}
+
+.orderRow {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.orderLabel {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.orderValue {
+  font-size: 13px;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.orderValueBold {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.orderCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+}
+
+.orderActions {
+  display: flex;
+  gap: 8px;
+}
+
+.btnView {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  background: white;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnView:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Toast */
+.toastContainer {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+}
+
+.toast {
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: toastIn 0.3s ease;
+}
+
+.toastSuccess { background: #2e7d32; color: white; }
+.toastError { background: #ef4444; color: white; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .kpiRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .searchBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btnCreate {
+    justify-content: center;
+  }
+
+  .orderCardBody {
+    grid-template-columns: 1fr;
+  }
+}

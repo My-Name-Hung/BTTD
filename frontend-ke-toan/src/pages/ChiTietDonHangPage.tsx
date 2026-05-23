@@ -29,6 +29,7 @@ const TRANG_THAI_STEPS = [
   { key: 'dang_giao',     label: 'Đang giao' },
   { key: 'da_giao',       label: 'Đã giao' },
   { key: 'nghiem_thu',    label: 'Nghiệm thu' },
+  { key: 'da_nghiem_thu', label: 'Đã NT' },
   { key: 'da_thanh_toan', label: 'Thanh toán' },
 ];
 
@@ -244,7 +245,7 @@ export default function ChiTietDonHangPage() {
             const lastStepIdx = TRANG_THAI_STEPS.length - 1;
             const isLastDone = idx === lastStepIdx && currentStepIdx === lastStepIdx;
             const done = idx < currentStepIdx || isLastDone;
-            const active = idx === currentStepIdx && !isLastDone;
+            const active = idx === currentStepIdx;
             const pending = idx > currentStepIdx;
             let circleClass = styles.stepCirclePending;
             if (done) circleClass = styles.stepCircleDone;

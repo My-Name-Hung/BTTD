@@ -46,7 +46,7 @@ const uploadBienBan = multer({
   },
 });
 
-router.post('/', authMiddleware, requireRole('admin', 'ke_toan', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.post('/', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const nghiemThu = await taoNghiemThu(req.body);
     res.status(201).json({ success: true, message: 'Tạo biên bản nghiệm thu thành công', data: nghiemThu });
@@ -67,7 +67,7 @@ router.get('/don-hang/:idDonHang', authMiddleware, async (req: AuthRequest, res:
   }
 });
 
-router.put('/:id', authMiddleware, requireRole('admin', 'ke_toan', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.put('/:id', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
     const nghiemThu = await capNhatNghiemThu(id, req.body);
@@ -78,7 +78,7 @@ router.put('/:id', authMiddleware, requireRole('admin', 'ke_toan', 'dieu_phoi'),
   }
 });
 
-router.put('/xac-nhan/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.put('/xac-nhan/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const loai = (req.query.loai as string) === 'chua' ? 'chua' : 'da';
@@ -91,7 +91,7 @@ router.put('/xac-nhan/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan
 });
 
 // Upload file biên bản nghiệm thu (tùy chọn)
-router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'), uploadBienBan.single('file'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), uploadBienBan.single('file'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     if (!req.file) {
       res.status(400).json({ success: false, message: 'Không có file được tải lên' });
