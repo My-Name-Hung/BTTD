@@ -30,6 +30,14 @@
   margin-bottom: 20px;
 }
 
+/* Sale role - 2 columns */
+.kpiRowSale {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
 .kpiItem {
   background: var(--color-white);
   border-radius: var(--radius-lg);
@@ -221,13 +229,35 @@
 /* Table cell variants */
 .tableCode {
   color: var(--color-primary);
-  font-size: 13px;
+  font-size: 12px;
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+.tableCodeWrap {
+  color: var(--color-primary);
+  font-size: 12px;
+  word-break: break-word;
+  line-height: 1.3;
+  max-width: 100px;
 }
 
 .tableName {
   font-weight: 600;
   color: var(--color-text);
   line-height: 1.3;
+  word-break: break-word;
+}
+
+.tableNameFive {
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .tableSub {
@@ -368,6 +398,7 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-border);
+  overflow: hidden;
 }
 
 /* ── Toast ─────────────────────────────────────── */
@@ -404,10 +435,194 @@
 }
 
 /* ── Responsive ───────────────────────────────── */
+@media (max-width: 768px) {
+  .filterBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .filterBarLeft {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .filterSearch {
+    min-width: 160px;
+    max-width: 160px;
+    flex-shrink: 0;
+  }
+  .filterItem {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .filterLabel {
+    display: none;
+  }
+  .filterSelect {
+    min-width: 130px;
+    max-width: 130px;
+    padding: 7px 28px 7px 10px;
+    font-size: 12px;
+  }
+  .filterClearBtn {
+    flex-shrink: 0;
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+  .kpiRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile table - hide less important columns */
 @media (max-width: 640px) {
-  .filterBar { flex-direction: column; align-items: stretch; }
-  .filterBarLeft { flex-direction: column; }
-  .filterSearch { max-width: 100%; }
-  .filterSelect { min-width: 100%; }
-  .kpiRow { grid-template-columns: repeat(2, 1fr); }
+  .tableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table {
+    min-width: 700px;
+  }
+
+  .table .hideOnMobile,
+  .table thead .hideOnMobile,
+  .table tbody .hideOnMobile {
+    display: none;
+  }
+
+  .saleTable .hideOnMobile,
+  .saleTable thead .hideOnMobile,
+  .saleTable tbody .hideOnMobile {
+    display: none;
+  }
+
+  .rowActions {
+    gap: 4px;
+  }
+
+  .actionBtn {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpiRow {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .kpiItem {
+    padding: 12px 10px;
+  }
+
+  .kpiValue {
+    font-size: 20px;
+  }
+
+  .kpiRowSale {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+/* ── Sale role table ─────────────────────────────── */
+.saleTableWrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.saleTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 400px;
+}
+
+.saleTable th {
+  background: var(--color-bg);
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.saleTable td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.saleTable tr:hover td {
+  background: rgba(7, 60, 235, 0.02);
+}
+
+.saleTable tr:last-child td {
+  border-bottom: none;
+}
+
+@media (max-width: 640px) {
+  .kpiRowSale {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .kpiItem {
+    padding: 10px 8px;
+  }
+
+  .kpiValue {
+    font-size: 18px;
+  }
+
+  .kpiLabel {
+    font-size: 10px;
+  }
+
+  .saleTable {
+    min-width: 360px;
+  }
+
+  .saleTable th,
+  .saleTable td {
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+
+  .saleTable th {
+    font-size: 10px;
+  }
+
+  .tableNameFive {
+    -webkit-line-clamp: 2;
+    font-size: 12px;
+  }
+
+  .tableCodeWrap {
+    font-size: 11px;
+    max-width: 70px;
+  }
+
+  .actionBtn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
 }

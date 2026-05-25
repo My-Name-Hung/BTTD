@@ -23,7 +23,6 @@ const TRANG_THAI_STEPS = [
   { key: "dang_giao", label: "Đang giao" },
   { key: "da_giao", label: "Đã giao" },
   { key: "nghiem_thu", label: "Nghiệm thu" },
-  { key: "da_nghiem_thu", label: "Đã NT" },
   { key: "da_thanh_toan", label: "Thanh toán" },
 ];
 

@@ -1,30 +1,32 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import {
   FiBell,
   FiChevronRight,
+  FiChevronLeft,
   FiLogOut,
   FiMenu,
+  FiPlusCircle,
+  FiSettings,
   FiShoppingBag,
   FiTruck,
   FiUpload,
   FiUsers,
   FiX,
-  FiPlusCircle,
 } from "react-icons/fi";
 import {
   MdAssignment,
+  MdCheckCircle,
   MdDashboard,
+  MdDeliveryDining,
+  MdFactory,
   MdLocalShipping,
   MdPayments,
   MdPeople,
   MdSettings,
-  MdFactory,
-  MdCheckCircle,
-  MdDeliveryDining,
 } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ROLE_LABELS, useAuth, useNotifications } from "../hooks";
-import "./Layout.css";
+import "../styles/layout.css";
 
 const LOGO_URL =
   "https://betongtaydo.com/wp-content/uploads/2024/06/Logo-Be-Tong-Tay-Do-xanh-duong-1024x1024.png";
@@ -41,7 +43,6 @@ interface MenuItem {
   roles: string[];
 }
 
-// Menu cho sidebar desktop
 const SIDEBAR_ITEMS: MenuItem[] = [
   // Dashboard
   {
@@ -49,7 +50,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Tổng quan",
     icon: <MdDashboard size={20} />,
     iconActive: <MdDashboard size={20} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho"],
+    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"],
   },
   // Đơn hàng
   {
@@ -173,6 +174,53 @@ const SIDEBAR_ITEMS: MenuItem[] = [
   },
 ];
 
+// Nhóm menu cho sidebar desktop
+export interface MenuGroup {
+  title: string;
+  items: MenuItem[];
+}
+
+export const SIDEBAR_GROUPS: MenuGroup[] = [
+  {
+    title: "Tổng quan",
+    items: SIDEBAR_ITEMS.filter((m) => m.path === "/dashboard"),
+  },
+  {
+    title: "Kinh doanh",
+    items: SIDEBAR_ITEMS.filter((m) =>
+      ["/quan-ly/don-hang", "/quan-ly/don-hang/tao", "/khach-hang"].includes(
+        m.path,
+      ),
+    ),
+  },
+  {
+    title: "Vận hành",
+    items: SIDEBAR_ITEMS.filter((m) =>
+      [
+        "/dieu-phoi",
+        "/nghiem-thu",
+        "/thanh-toan",
+        "/cong-no",
+        "/kho/lich-san-xuat",
+        "/tai-xe",
+        "/ky-thuat",
+      ].includes(m.path),
+    ),
+  },
+  {
+    title: "Quản trị",
+    items: SIDEBAR_ITEMS.filter((m) =>
+      [
+        "/quan-ly/nguoi-dung",
+        "/quan-ly/xe",
+        "/quan-ly/tram-tron",
+        "/tai-len-danh-sach",
+        "/bao-tri",
+      ].includes(m.path),
+    ),
+  },
+];
+
 // Bottom tab items - dùng chung trên mobile
 const BOTTOM_TABS = [
   {
@@ -180,7 +228,16 @@ const BOTTOM_TABS = [
     label: "Tổng quan",
     icon: <MdDashboard size={22} />,
     iconActive: <MdDashboard size={22} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"],
+    roles: [
+      "admin",
+      "ke_toan",
+      "dieu_phoi",
+      "lanh_dao",
+      "kho",
+      "sale",
+      "tai_xe",
+      "ky_thuat",
+    ],
   },
   {
     path: "/quan-ly/don-hang",
@@ -194,7 +251,16 @@ const BOTTOM_TABS = [
     label: "Thông báo",
     icon: <FiBell size={22} />,
     iconActive: <FiBell size={22} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"],
+    roles: [
+      "admin",
+      "ke_toan",
+      "dieu_phoi",
+      "lanh_dao",
+      "kho",
+      "sale",
+      "tai_xe",
+      "ky_thuat",
+    ],
   },
 ];
 
@@ -203,11 +269,14 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Notifications
   const vaiTro = user?.vaiTro || "";
-  const { unreadCount, refreshUnreadCount, PopupContainer } =
-    useNotifications(vaiTro, user?.id);
+  const { unreadCount, refreshUnreadCount, PopupContainer } = useNotifications(
+    vaiTro,
+    user?.id,
+  );
 
   useEffect(() => {
     if (user?.id) refreshUnreadCount();
@@ -216,7 +285,8 @@ export function Layout({ children }: LayoutProps) {
   useEffect(() => {
     const handler = () => refreshUnreadCount();
     window.addEventListener("bttd:notifications-refresh", handler);
-    return () => window.removeEventListener("bttd:notifications-refresh", handler);
+    return () =>
+      window.removeEventListener("bttd:notifications-refresh", handler);
   }, [refreshUnreadCount]);
 
   useEffect(() => {
@@ -235,7 +305,9 @@ export function Layout({ children }: LayoutProps) {
   if (!user) return null;
 
   const currentItem = SIDEBAR_ITEMS.find(
-    (m) => location.pathname === m.path || location.pathname.startsWith(m.path + "/")
+    (m) =>
+      location.pathname === m.path ||
+      location.pathname.startsWith(m.path + "/"),
   );
   const pageTitle = currentItem?.label || "Bê Tông Tây Đô";
 
@@ -247,10 +319,10 @@ export function Layout({ children }: LayoutProps) {
   });
 
   const visibleSidebarItems = SIDEBAR_ITEMS.filter((item) =>
-    item.roles.includes(vaiTro)
+    item.roles.includes(vaiTro),
   );
   const visibleBottomTabs = BOTTOM_TABS.filter((tab) =>
-    tab.roles.includes(vaiTro)
+    tab.roles.includes(vaiTro),
   );
 
   return (
@@ -266,7 +338,9 @@ export function Layout({ children }: LayoutProps) {
         )}
 
         {/* Sidebar desktop */}
-        <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+        <aside
+          className={`sidebar ${sidebarOpen ? "sidebar-open" : ""} ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
+        >
           <div className="sidebar-logo">
             <button
               className="sidebar-close-btn"
@@ -274,58 +348,101 @@ export function Layout({ children }: LayoutProps) {
             >
               <FiX size={20} />
             </button>
-            <img src={LOGO_URL} alt="Bê Tông Tây Đô" className="sidebar-logo-img" />
-            <div className="sidebar-logo-text">
-              <span className="sidebar-logo-name">Bê Tông Tây Đô</span>
-              <span className="sidebar-logo-sub">Hệ thống quản lý</span>
-            </div>
+            {!sidebarCollapsed && (
+              <>
+                <img
+                  src={LOGO_URL}
+                  alt="Bê Tông Tây Đô"
+                  className="sidebar-logo-img"
+                />
+                <div className="sidebar-logo-text">
+                  <span className="sidebar-logo-name">Bê Tông Tây Đô</span>
+                  <span className="sidebar-logo-sub">Hệ thống quản lý</span>
+                </div>
+              </>
+            )}
+            {sidebarCollapsed && (
+              <img
+                src={LOGO_URL}
+                alt="Bê Tông Tây Đô"
+                className="sidebar-logo-img sidebar-logo-img-center"
+              />
+            )}
           </div>
 
           <nav className="sidebar-nav">
-            {visibleSidebarItems.map((item) => (
-              <div
-                key={item.path}
-                className={`nav-item ${
-                  location.pathname === item.path ? "nav-item-active" : ""
-                }`}
-                onClick={() => {
-                  navigate(item.path);
-                  setSidebarOpen(false);
-                }}
-              >
-                <span className="nav-icon">
-                  {location.pathname === item.path ? item.iconActive : item.icon}
-                </span>
-                <span className="nav-label">{item.label}</span>
-              </div>
-            ))}
+            {SIDEBAR_GROUPS.map((group) => {
+              const groupItems = visibleSidebarItems.filter((item) =>
+                group.items.some((gi) => gi.path === item.path),
+              );
+              if (groupItems.length === 0) return null;
+              return (
+                <div key={group.title} className="nav-group">
+                  {!sidebarCollapsed && (
+                    <div className="nav-group-title">{group.title}</div>
+                  )}
+                  {groupItems.map((item) => (
+                    <div
+                      key={item.path}
+                      className={`nav-item ${location.pathname === item.path ? "nav-item-active" : ""} ${sidebarCollapsed ? "nav-item-collapsed" : ""}`}
+                      onClick={() => {
+                        navigate(item.path);
+                        setSidebarOpen(false);
+                      }}
+                      title={sidebarCollapsed ? item.label : undefined}
+                    >
+                      <span className="nav-icon">
+                        {location.pathname === item.path
+                          ? item.iconActive
+                          : item.icon}
+                      </span>
+                      {!sidebarCollapsed && (
+                        <span className="nav-label">{item.label}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </nav>
 
           <div className="sidebar-footer">
-            <div className="user-info">
-              <div className="user-avatar">
-                {user?.hoTen?.charAt(0)?.toUpperCase() || "U"}
-              </div>
-              <div className="user-info-text">
-                <div className="user-name">{user?.hoTen}</div>
-                <div className="user-role">
-                  {ROLE_LABELS[user?.vaiTro as keyof typeof ROLE_LABELS] ||
-                    user?.vaiTro}
+            {!sidebarCollapsed && (
+              <>
+                <div className="user-info">
+                  <div className="user-avatar">
+                    {user?.hoTen?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                  <div className="user-info-text">
+                    <div className="user-name">{user?.hoTen}</div>
+                    <div className="user-role">
+                      {ROLE_LABELS[user?.vaiTro as keyof typeof ROLE_LABELS] ||
+                        user?.vaiTro}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <button
-              className="sidebar-logout-btn"
-              onClick={logout}
-            >
-              <FiLogOut size={16} />
-              <span>Đăng xuất</span>
-            </button>
+                <button className="sidebar-logout-btn" onClick={logout}>
+                  <FiLogOut size={16} />
+                  <span>Đăng xuất</span>
+                </button>
+              </>
+            )}
+            {sidebarCollapsed && (
+              <button
+                className="sidebar-logout-btn sidebar-logout-btn-collapsed"
+                onClick={logout}
+                title="Đăng xuất"
+              >
+                <FiLogOut size={16} />
+              </button>
+            )}
           </div>
         </aside>
 
         {/* Main content */}
-        <main className="main-content">
+        <main
+          className={`main-content ${sidebarCollapsed ? "main-content-collapsed" : ""}`}
+        >
           {/* Header */}
           <header className="header">
             <div className="header-left">
@@ -334,6 +451,17 @@ export function Layout({ children }: LayoutProps) {
                 onClick={() => setSidebarOpen(true)}
               >
                 <FiMenu size={20} />
+              </button>
+              <button
+                className="header-collapse-btn"
+                onClick={() => setSidebarCollapsed((v) => !v)}
+                title={sidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
+              >
+                {sidebarCollapsed ? (
+                  <FiChevronRight size={18} />
+                ) : (
+                  <FiChevronLeft size={18} />
+                )}
               </button>
               <div className="header-title-group">
                 <h1 className="header-title">{pageTitle}</h1>

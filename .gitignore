@@ -5,3 +5,7 @@ frontend-lanh-dao/node_modules/
 backend/.env
 frontend-ke-toan/.env
 frontend-lanh-dao/.env
+backend/dist/
+frontend-ke-toan/dist/
+frontend-lanh-dao/dist/
+.next

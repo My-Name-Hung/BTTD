@@ -23,14 +23,13 @@ import { Loading, ConfirmModal } from '../components/Common';
 import styles from './ChiTietDonHangPage.module.css';
 
 const TRANG_THAI_STEPS = [
-  { key: 'cho_duyet',     label: 'Chờ duyệt' },
-  { key: 'da_duyet',      label: 'Đã duyệt' },
-  { key: 'dang_san_xuat', label: 'Đang SX' },
-  { key: 'dang_giao',     label: 'Đang giao' },
-  { key: 'da_giao',       label: 'Đã giao' },
-  { key: 'nghiem_thu',    label: 'Nghiệm thu' },
-  { key: 'da_nghiem_thu', label: 'Đã NT' },
-  { key: 'da_thanh_toan', label: 'Thanh toán' },
+  { key: 'cho_duyet',      label: 'Chờ duyệt' },
+  { key: 'da_duyet',       label: 'Đã duyệt' },
+  { key: 'dang_san_xuat',  label: 'Đang SX' },
+  { key: 'dang_giao',      label: 'Đang giao' },
+  { key: 'da_giao',        label: 'Đã giao' },
+  { key: 'nghiem_thu',     label: 'Nghiệm thu' },
+  { key: 'da_thanh_toan',  label: 'Thanh toán' },
 ];
 
 function formatCurrency(v: number) {

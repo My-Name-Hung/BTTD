@@ -139,16 +139,17 @@
   background: var(--color-white);
   border-radius: 14px;
   border: 1px solid var(--color-border);
-  padding: 24px;
+  padding: 20px;
   margin-bottom: 20px;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .stepProgressTitle {
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .stepTrack {
@@ -156,6 +157,16 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 4px;
+}
+
+.stepTrack::-webkit-scrollbar {
+  display: none;
 }
 
 .stepConnector {
@@ -193,7 +204,8 @@
   position: relative;
   z-index: 1;
   flex: 1;
-  min-width: 0;
+  min-width: 60px;
+  scroll-snap-align: start;
 }
 
 .stepCircle {
@@ -209,6 +221,7 @@
   transition: all 0.3s ease;
   background: var(--color-white);
   color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
 .stepCircleDone {
@@ -239,7 +252,9 @@
   text-align: center;
   margin-top: 8px;
   line-height: 1.3;
-  max-width: 70px;
+  max-width: 60px;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .stepLabelActive {
@@ -508,30 +523,108 @@
 
 /* ── Responsive ─────────────────────────────────────── */
 @media (max-width: 768px) {
+  .detailPage {
+    overflow-x: hidden;
+  }
+
   .infoGrid {
     grid-template-columns: 1fr;
+  }
+
+  .stepProgressWrap {
+    padding: 14px 10px;
+    overflow-x: auto;
   }
 
   .stepTrack {
     overflow-x: auto;
     padding-bottom: 8px;
     gap: 0;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
   }
 
   .stepItem {
-    min-width: 60px;
+    min-width: 55px;
+    flex: 0 0 auto;
+  }
+
+  .stepCircle {
+    width: 26px;
+    height: 26px;
+    font-size: 10px;
+  }
+
+  .stepConnector {
+    top: 14px;
+    margin: 0 10px;
   }
 
   .stepLabel {
     font-size: 9px;
+    max-width: 50px;
+    word-break: break-word;
+    hyphens: auto;
   }
 
   .pageActions {
     width: 100%;
+    justify-content: flex-start;
   }
 
   .actionBtn {
-    flex: 1;
+    flex: 0 0 auto;
     justify-content: center;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pageHeaderLeft {
+    width: 100%;
+  }
+
+  .pageTitle {
+    font-size: 18px;
+  }
+
+  .infoCard {
+    padding: 14px;
+  }
+
+  .infoCardTitle {
+    font-size: 12px;
+  }
+
+  .infoRow {
+    padding: 4px 0;
+  }
+
+  .infoLabel,
+  .infoValue {
+    font-size: 12px;
+  }
+
+  .sectionCard {
+    padding: 14px;
+    overflow-x: auto;
+  }
+
+  .sectionTitle {
+    font-size: 14px;
+  }
+
+  .subTable {
+    font-size: 12px;
+    min-width: 400px;
+  }
+
+  .subTable th,
+  .subTable td {
+    padding: 6px 8px;
   }
 }
