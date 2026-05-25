@@ -1,9 +1,7 @@
 import { query } from '../config/database';
 import { DonHang, ApiResponseWithPagination } from '../models';
 import { v4 as uuidv4 } from 'uuid';
-import { guiEmailThongBaoDonMoi } from './email-service';
 import { guiThongBao } from './thong-bao-service';
-import { config } from '../config';
 
 export async function layTatCaDonHang(
   page: number = 1,
@@ -117,19 +115,6 @@ export async function taoDonHang(data: Partial<DonHang>, nguoiTaoId: number): Pr
     maDonHang: donHangMoi.maDonHang,
     tenKhachHang: data.tenKhachHang || '',
   });
-
-  // Gửi email thông báo
-  try {
-    await guiEmailThongBaoDonMoi(
-      config.email.adminEmail,
-      maDonHang,
-      data.tenKhachHang || '',
-      String(data.khoiLuongDat || 0),
-      data.diaChiNhan || ''
-    );
-  } catch (emailError) {
-    console.error('Lỗi gửi email thông báo:', emailError);
-  }
 
   return donHangMoi;
 }
