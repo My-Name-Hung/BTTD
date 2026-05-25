@@ -6,6 +6,7 @@ import { config } from "./config";
 import { initDatabase } from "./config/init-database";
 import { ApiResponse } from "./models";
 import { maintenanceMiddleware } from "./middleware/maintenance";
+import { authMiddleware } from "./middleware/auth";
 
 import authRoutes from "./routes/auth-routes";
 import dashboardRoutes from "./routes/dashboard-routes";
