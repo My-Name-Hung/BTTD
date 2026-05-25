@@ -50,6 +50,14 @@ export async function taoLichSanXuat(
     khoiLuong: donHang[0].khoiLuongDat,
   });
 
+  // Thông báo ORDER_STATUS_CHANGED - Đang sản xuất
+  guiThongBao('ORDER_STATUS_CHANGED', {
+    id: data.idDonHang,
+    maDonHang: donHang[0].maDonHang,
+    trangThai: 'dang_san_xuat',
+    trangThaiLabel: 'Đang sản xuất',
+  });
+
   return result[0];
 }
 
@@ -134,6 +142,24 @@ export async function capNhatLichSanXuat(
       `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = GETDATE() WHERE id = @id`,
       { id: updated.idDonHang }
     );
+
+    // Lấy thông tin đơn hàng để thông báo
+    const dh = await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: updated.idDonHang });
+
+    // Thông báo ORDER_STATUS_CHANGED - Đang giao
+    guiThongBao('ORDER_STATUS_CHANGED', {
+      id: updated.idDonHang,
+      maDonHang: dh[0].maDonHang,
+      trangThai: 'dang_giao',
+      trangThaiLabel: 'Đang giao',
+    });
+
+    // Thông báo cho kho bắt đầu giao
+    guiThongBao('DELIVERY_STARTED', {
+      id: updated.idDonHang,
+      maDonHang: dh[0].maDonHang,
+      bienSoXe: data.bienSoXe || '',
+    });
   }
 
   return updated;
@@ -142,11 +168,29 @@ export async function capNhatLichSanXuat(
 export async function xacNhanDaGiao(idDonHang: number): Promise<DonHang> {
   await query(
     `UPDATE DonHang SET
-      trangThaiDon = N'dang_giao',
+      trangThaiDon = N'da_giao',
+      ngayGiao = GETDATE(),
       ngayCapNhat = GETDATE()
      WHERE id = @id`,
     { id: idDonHang }
   );
 
-  return (await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: idDonHang }))[0];
+  const donHang = await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: idDonHang });
+
+  // Thông báo ORDER_STATUS_CHANGED - Đã giao
+  guiThongBao('ORDER_STATUS_CHANGED', {
+    id: idDonHang,
+    maDonHang: donHang[0].maDonHang,
+    trangThai: 'da_giao',
+    trangThaiLabel: 'Đã giao',
+  });
+
+  // Thông báo chờ nghiệm thu
+  guiThongBao('DELIVERY_COMPLETED', {
+    id: idDonHang,
+    maDonHang: donHang[0].maDonHang,
+    khoiLuong: donHang[0].khoiLuongThucTe || donHang[0].khoiLuongDat,
+  });
+
+  return donHang[0];
 }

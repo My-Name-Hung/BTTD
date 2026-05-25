@@ -3,6 +3,19 @@ import { DonHang, ApiResponseWithPagination } from '../models';
 import { v4 as uuidv4 } from 'uuid';
 import { guiThongBao } from './thong-bao-service';
 
+// Map trạng thái đơn hàng sang nhãn hiển thị
+export const TRANG_THAI_LABELS: Record<string, string> = {
+  cho_duyet: 'Chờ duyệt',
+  da_duyet: 'Đã duyệt',
+  dang_san_xuat: 'Đang sản xuất',
+  dang_giao: 'Đang giao',
+  da_giao: 'Đã giao',
+  nghiem_thu: 'Nghiệm thu',
+  da_thanh_toan: 'Thanh toán',
+  da_hoan_thanh: 'Hoàn thành',
+  tu_choi: 'Từ chối',
+};
+
 export async function layTatCaDonHang(
   page: number = 1,
   limit: number = 20,
@@ -172,6 +185,14 @@ export async function duyetDonHang(id: number, nguoiDuyetId: number): Promise<Do
 
   guiThongBao('ORDER_APPROVED', { id, maDonHang: donHang.maDonHang });
 
+  // Thông báo ORDER_STATUS_CHANGED - Đã duyệt
+  guiThongBao('ORDER_STATUS_CHANGED', {
+    id,
+    maDonHang: donHang.maDonHang,
+    trangThai: 'da_duyet',
+    trangThaiLabel: 'Đã duyệt',
+  });
+
   return donHang;
 }
 
@@ -204,9 +225,18 @@ export async function capNhatTrangThaiDon(
 
   const donHang = (await query<DonHang>(`SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`, { id }))[0];
 
-  // Gửi thông báo khi đơn hoàn thành
+  const trangThaiLabel = TRANG_THAI_LABELS[trangThaiDon] || trangThaiDon;
+
+  // Gửi thông báo cho mọi bước
   if (trangThaiDon === 'da_hoan_thanh') {
-    guiThongBao('ORDER_COMPLETED', { id, maDonHang: donHang.maDonHang });
+    guiThongBao('ORDER_COMPLETED', { id, maDonHang: donHang.maDonHang, trangThaiLabel });
+  } else {
+    guiThongBao('ORDER_STATUS_CHANGED', {
+      id,
+      maDonHang: donHang.maDonHang,
+      trangThai: trangThaiDon,
+      trangThaiLabel,
+    });
   }
 
   return donHang;

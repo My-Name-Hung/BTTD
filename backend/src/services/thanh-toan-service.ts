@@ -87,6 +87,20 @@ export async function taoThanhToan(
     soTien: thanhToanMoi.soTien,
   });
 
+  // Nếu đơn hoàn thành (đã thanh toán đủ), thông báo ORDER_COMPLETED
+  if (conLaiMoi <= 0) {
+    guiThongBao('ORDER_COMPLETED', {
+      id: data.idDonHang,
+      maDonHang: donHangHienTai.maDonHang,
+    });
+
+    // Cập nhật trạng thái thành hoàn thành
+    await query(
+      `UPDATE DonHang SET trangThaiDon = N'da_hoan_thanh', trangThaiHoanThanh = N'hoan_thanh', ngayCapNhat = GETDATE() WHERE id = @id`,
+      { id: data.idDonHang }
+    );
+  }
+
   return thanhToanMoi;
 }
 

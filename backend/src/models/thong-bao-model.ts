@@ -36,7 +36,8 @@ export type NotificationType =
   | 'DELIVERY_CONFIRMED'
   | 'PRODUCTION_SCHEDULED'
   | 'DELIVERY_STARTED'
-  | 'DELIVERY_COMPLETED';
+  | 'DELIVERY_COMPLETED'
+  | 'ORDER_STATUS_CHANGED';
 
 export type UserRole = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho' | 'sale' | 'tai_xe' | 'ky_thuat';
 
@@ -100,5 +101,9 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, (data: Record<strin
   DELIVERY_COMPLETED: (d) => ({
     tieuDe: 'Đơn hàng chờ nghiệm thu',
     noiDung: `Kho đã xác nhận giao thành công đơn hàng ${d.maDonHang || ''}. Khối lượng thực tế: ${d.khoiLuong || 0}m³. Vui lòng nghiệm thu.`,
+  }),
+  ORDER_STATUS_CHANGED: (d) => ({
+    tieuDe: `Cập nhật: ${d.trangThaiLabel || 'Trạng thái đơn hàng'}`,
+    noiDung: `Đơn hàng ${d.maDonHang || ''} đã chuyển sang bước: ${d.trangThaiLabel || d.trangThai || ''}.`,
   }),
 };
