@@ -534,6 +534,44 @@
 }
 
 /* ── Sale role table ─────────────────────────────── */
+.saleCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--color-border);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.saleCardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.createBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.createBtn:hover {
+  background: var(--color-primary-dark);
+  box-shadow: 0 4px 12px rgba(7, 60, 235, 0.3);
+}
+
 .saleTableWrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -590,6 +628,23 @@
 
   .kpiLabel {
     font-size: 10px;
+  }
+
+  .saleCardHeader {
+    padding: 12px 12px 10px;
+  }
+
+  .saleCardTitle {
+    font-size: 14px;
+  }
+
+  .createBtn {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .createBtn span {
+    display: inline;
   }
 
   .saleTable {

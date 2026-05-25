@@ -59,7 +59,7 @@ export default function QuanLyDonHangPage() {
     localStorage.getItem("bttd_user") || "{}",
   )?.vaiTro;
   const isSale = userVaiTro === "sale";
-  const canCreate = ["admin", "dieu_phoi"].includes(userVaiTro);
+  const canCreate = ["admin", "dieu_phoi", "sale"].includes(userVaiTro);
   const canEdit = ["admin", "dieu_phoi"].includes(userVaiTro);
   const canDelete = ["admin"].includes(userVaiTro);
   const canApprove = ["admin", "ke_toan"].includes(userVaiTro);
@@ -264,6 +264,9 @@ export default function QuanLyDonHangPage() {
       {/* Table - Sale role uses simplified 4-column table */}
       {isSale ? (
         <div className={styles.card}>
+          <div className={styles.saleCardHeader}>
+            <span className={styles.saleCardTitle}>Danh sách đơn hàng</span>
+          </div>
           <div className={styles.saleTableWrap}>
             {loading ? (
               <Loading />
@@ -275,10 +278,16 @@ export default function QuanLyDonHangPage() {
                   <tr>
                     <th style={{ minWidth: 80 }}>Mã đơn</th>
                     <th style={{ minWidth: 100 }}>Khách hàng</th>
-                    <th className={styles.hideOnMobile} style={{ minWidth: 60 }}>
+                    <th
+                      className={styles.hideOnMobile}
+                      style={{ minWidth: 60 }}
+                    >
                       Mác
                     </th>
-                    <th className={styles.hideOnMobile} style={{ minWidth: 50, textAlign: "right" }}>
+                    <th
+                      className={styles.hideOnMobile}
+                      style={{ minWidth: 50, textAlign: "right" }}
+                    >
                       KL
                     </th>
                     <th style={{ minWidth: 80 }}>Trạng thái</th>
@@ -357,7 +366,10 @@ export default function QuanLyDonHangPage() {
                   <tr>
                     <th style={{ minWidth: 130 }}>Mã đơn</th>
                     <th style={{ minWidth: 180 }}>Khách hàng</th>
-                    <th className={styles.hideOnMobile} style={{ minWidth: 160 }}>
+                    <th
+                      className={styles.hideOnMobile}
+                      style={{ minWidth: 160 }}
+                    >
                       Địa chỉ
                     </th>
                     <th style={{ minWidth: 80 }}>Mác BT</th>
@@ -374,7 +386,10 @@ export default function QuanLyDonHangPage() {
                       Thành tiền
                     </th>
                     <th style={{ minWidth: 110 }}>Trạng thái</th>
-                    <th className={styles.hideOnMobile} style={{ minWidth: 100 }}>
+                    <th
+                      className={styles.hideOnMobile}
+                      style={{ minWidth: 100 }}
+                    >
                       Ngày tạo
                     </th>
                     <th style={{ minWidth: 100 }}>Thao tác</th>
@@ -389,7 +404,9 @@ export default function QuanLyDonHangPage() {
                         </strong>
                       </td>
                       <td>
-                        <div className={styles.tableName}>{dh.tenKhachHang}</div>
+                        <div className={styles.tableName}>
+                          {dh.tenKhachHang}
+                        </div>
                         <div className={styles.tableSub}>{dh.soDienThoai}</div>
                       </td>
                       <td
@@ -410,9 +427,7 @@ export default function QuanLyDonHangPage() {
                       <td
                         className={`${styles.tableRight} ${styles.hideOnMobile}`}
                       >
-                        <strong>
-                          {formatCurrency(dh.thanhTien || 0)}
-                        </strong>
+                        <strong>{formatCurrency(dh.thanhTien || 0)}</strong>
                       </td>
                       <td>
                         <span
@@ -421,7 +436,9 @@ export default function QuanLyDonHangPage() {
                           {TRANG_THAI_DON_LABELS[dh.trangThaiDon]}
                         </span>
                       </td>
-                      <td className={`${styles.tableDate} ${styles.hideOnMobile}`}>
+                      <td
+                        className={`${styles.tableDate} ${styles.hideOnMobile}`}
+                      >
                         {formatDate(dh.ngayTaoDon)}
                       </td>
                       <td>

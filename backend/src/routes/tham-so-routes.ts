@@ -33,7 +33,7 @@ router.get('/khach-hang', authMiddleware, async (req: AuthRequest, res: Response
   }
 });
 
-router.post('/khach-hang', authMiddleware, requireRole('admin', 'ke_toan', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.post('/khach-hang', authMiddleware, requireRole('admin', 'ke_toan', 'dieu_phoi', 'sale'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const kh = await taoKhachHang(req.body);
     res.status(201).json({ success: true, message: 'Tạo khách hàng thành công', data: kh });
