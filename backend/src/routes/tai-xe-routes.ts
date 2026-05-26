@@ -1,6 +1,9 @@
 import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { ApiResponse } from '../models';
+import { query } from '../config/database';
+import { xacNhanGiaoThanhCong } from '../services/don-hang-service';
+import { guiThongBao } from '../services/thong-bao-service';
 
 const router = Router();
 
@@ -42,8 +45,6 @@ router.put('/cap-nhat-giao/:idDonHang', authMiddleware, async (req: AuthRequest,
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const rawKltt = req.body.khoiLuongThucTe;
     const khoiLuongThucTe = rawKltt != null && rawKltt !== '' ? parseFloat(String(rawKltt)) : undefined;
-    const { query, xacNhanGiaoThanhCong } = await import('../services/don-hang-service');
-    const { guiThongBao } = await import('../services/thong-bao-service');
 
     const donHang = await query<any>(
       `SELECT * FROM DonHang WHERE id = @id`,
@@ -55,7 +56,7 @@ router.put('/cap-nhat-giao/:idDonHang', authMiddleware, async (req: AuthRequest,
       return;
     }
 
-    if (trangThai === 'da_giao') {
+    if (req.body.trangThai === 'da_giao') {
       const updated = await xacNhanGiaoThanhCong(idDonHang, khoiLuongThucTe);
       guiThongBao('DELIVERY_COMPLETED', {
         id: idDonHang,
