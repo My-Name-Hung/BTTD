@@ -218,6 +218,8 @@ async function initDatabase(): Promise<void> {
           khoiLuongDat DECIMAL(18,2) NOT NULL,
           khoiLuongThucTe DECIMAL(18,2),
           donGia DECIMAL(18,2) NOT NULL,
+          chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0,
+          buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0,
           thanhTien DECIMAL(18,2),
           thoiGianGiaoDuKien DATETIME,
           ngayTaoDon DATETIME DEFAULT GETDATE(),
@@ -251,6 +253,17 @@ async function initDatabase(): Promise<void> {
         console.log('  🔧 Fixing column name: nguoiTaold -> nguoiTaoId');
         await db.query(`EXEC sp_rename 'DonHang.nguoiTaold', 'nguoiTaoId', 'COLUMN'`);
         console.log('  ✅ Column renamed successfully');
+      }
+
+      // Migration: thêm cột chiPhiPhatSinh và buVanChuyen nếu chưa có
+      const colNamesDh = dhCols.recordset.map(c => c.COLUMN_NAME.toLowerCase());
+      if (!colNamesDh.includes('chiphiphatsinh')) {
+        await db.query(`ALTER TABLE DonHang ADD chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0`);
+        console.log('  ➕ Thêm cột chiPhiPhatSinh vào DonHang');
+      }
+      if (!colNamesDh.includes('buvanchuyen')) {
+        await db.query(`ALTER TABLE DonHang ADD buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0`);
+        console.log('  ➕ Thêm cột buVanChuyen vào DonHang');
       }
     }
 
