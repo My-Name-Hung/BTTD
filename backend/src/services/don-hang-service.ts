@@ -83,20 +83,22 @@ export async function layDonHangTheoId(id: number): Promise<DonHang> {
 
 export async function taoDonHang(data: Partial<DonHang>, nguoiTaoId: number): Promise<DonHang> {
   const maDonHang = `DH${Date.now().toString().slice(-8)}-${uuidv4().slice(0, 4).toUpperCase()}`;
-  const thanhTien = (data.khoiLuongDat || 0) * (data.donGia || 0);
+  const chiPhiPhatSinh = data.chiPhiPhatSinh || 0;
+  const buVanChuyen = data.buVanChuyen || 0;
+  const thanhTien = (data.khoiLuongDat || 0) * (data.donGia || 0) + chiPhiPhatSinh + buVanChuyen;
   const conLai = thanhTien;
 
   const result = await query<DonHang>(
     `INSERT INTO DonHang (
       maDonHang, idKhachHang, idMacBeTong, idTramTron,
       tenKhachHang, diaChiNhan, soDienThoai,
-      tenMacBeTong, khoiLuongDat, donGia, thanhTien, conLai,
+      tenMacBeTong, khoiLuongDat, donGia, chiPhiPhatSinh, buVanChuyen, thanhTien, conLai,
       thoiGianGiaoDuKien, trangThaiDon, trangThaiHoanThanh,
       nguoiTaoId, ghiChu
     ) VALUES (
       @maDonHang, @idKhachHang, @idMacBeTong, @idTramTron,
       @tenKhachHang, @diaChiNhan, @soDienThoai,
-      @tenMacBeTong, @khoiLuongDat, @donGia, @thanhTien, @conLai,
+      @tenMacBeTong, @khoiLuongDat, @donGia, @chiPhiPhatSinh, @buVanChuyen, @thanhTien, @conLai,
       @thoiGianGiaoDuKien, N'cho_duyet', N'chua_hoan_thanh',
       @nguoiTaoId, @ghiChu
     );
@@ -112,6 +114,8 @@ export async function taoDonHang(data: Partial<DonHang>, nguoiTaoId: number): Pr
       tenMacBeTong: data.tenMacBeTong || '',
       khoiLuongDat: data.khoiLuongDat || 0,
       donGia: data.donGia || 0,
+      chiPhiPhatSinh,
+      buVanChuyen,
       thanhTien,
       conLai,
       thoiGianGiaoDuKien: data.thoiGianGiaoDuKien || null,
@@ -139,13 +143,18 @@ export async function suaDonHang(id: number, data: Partial<DonHang>): Promise<Do
     throw new Error('Chỉ có thể sửa đơn hàng đang chờ duyệt');
   }
 
-  const thanhTien = (data.khoiLuongDat || existing.khoiLuongDat) * (data.donGia || existing.donGia);
+  const khoiLuong = data.khoiLuongDat ?? existing.khoiLuongDat;
+  const donGia = data.donGia ?? existing.donGia;
+  const chiPhiPhatSinh = data.chiPhiPhatSinh ?? existing.chiPhiPhatSinh ?? 0;
+  const buVanChuyen = data.buVanChuyen ?? existing.buVanChuyen ?? 0;
+  const thanhTien = khoiLuong * donGia + chiPhiPhatSinh + buVanChuyen;
 
   await query(
     `UPDATE DonHang SET
       idKhachHang = @idKhachHang, idMacBeTong = @idMacBeTong, idTramTron = @idTramTron,
       tenKhachHang = @tenKhachHang, diaChiNhan = @diaChiNhan, soDienThoai = @soDienThoai,
       tenMacBeTong = @tenMacBeTong, khoiLuongDat = @khoiLuongDat, donGia = @donGia,
+      chiPhiPhatSinh = @chiPhiPhatSinh, buVanChuyen = @buVanChuyen,
       thanhTien = @thanhTien, conLai = @conLai, thoiGianGiaoDuKien = @thoiGianGiaoDuKien,
       ghiChu = @ghiChu, ngayCapNhat = GETDATE()
      WHERE id = @id`,
@@ -158,8 +167,10 @@ export async function suaDonHang(id: number, data: Partial<DonHang>): Promise<Do
       diaChiNhan: data.diaChiNhan ?? existing.diaChiNhan,
       soDienThoai: data.soDienThoai ?? existing.soDienThoai,
       tenMacBeTong: data.tenMacBeTong ?? existing.tenMacBeTong,
-      khoiLuongDat: data.khoiLuongDat ?? existing.khoiLuongDat,
-      donGia: data.donGia ?? existing.donGia,
+      khoiLuongDat: khoiLuong,
+      donGia,
+      chiPhiPhatSinh,
+      buVanChuyen,
       thanhTien,
       conLai: thanhTien - existing.daThanhToan,
       thoiGianGiaoDuKien: data.thoiGianGiaoDuKien ?? existing.thoiGianGiaoDuKien,

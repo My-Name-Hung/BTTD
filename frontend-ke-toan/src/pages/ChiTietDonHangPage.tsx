@@ -310,6 +310,18 @@ export default function ChiTietDonHangPage() {
             <span className={styles.infoLabel}>Đơn giá</span>
             <span className={styles.infoValue}>{formatCurrency(donHang.donGia)}/m³</span>
           </div>
+          {(donHang.chiPhiPhatSinh ?? 0) > 0 && (
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Chi phí phát sinh</span>
+              <span className={styles.infoValue}>{formatCurrency(donHang.chiPhiPhatSinh ?? 0)}</span>
+            </div>
+          )}
+          {(donHang.buVanChuyen ?? 0) > 0 && (
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Bù vận chuyển</span>
+              <span className={styles.infoValue}>{formatCurrency(donHang.buVanChuyen ?? 0)}</span>
+            </div>
+          )}
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Giao dự kiến</span>
             <span className={styles.infoValue}>{formatDateTime(donHang.thoiGianGiaoDuKien || '')}</span>

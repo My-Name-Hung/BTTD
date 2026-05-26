@@ -86,6 +86,8 @@ export interface DonHang {
   khoiLuongThucTe: number | null;
   donGia: number;
   thanhTien: number | null;
+  chiPhiPhatSinh?: number;
+  buVanChuyen?: number;
   thoiGianGiaoDuKien: string | null;
   ngayTaoDon: string;
   ngayDuyet: string | null;

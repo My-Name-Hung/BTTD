@@ -430,6 +430,85 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Biểu đồ donut tài xế — tỷ lệ giao hàng */}
+        {isTaiXe && (
+          <div className={styles.chartCard}>
+            <div className={styles.chartCardHeader}>
+              <div>
+                <h3 className={styles.chartCardTitle}>Tỷ lệ giao hàng</h3>
+                <p className={styles.chartCardDesc}>
+                  Tổng {(dashboard as any)?.tongDonTaiXe || 0} đơn đã nhận
+                </p>
+              </div>
+            </div>
+            <div className={styles.chartArea}>
+              <Pie
+                data={{
+                  labels: ["Chưa giao", "Đã giao"],
+                  datasets: [
+                    {
+                      data: [
+                        (dashboard as any)?.chuaGiaoTaiXe || 0,
+                        (dashboard as any)?.daGiaoTaiXe || 0,
+                      ],
+                      backgroundColor: ["#f59e0b", "#10b981"],
+                      borderWidth: 2,
+                      borderColor: "#ffffff",
+                      hoverOffset: 6,
+                    },
+                  ],
+                }}
+                options={{
+                  ...donutChartOptions,
+                  plugins: {
+                    ...donutChartOptions.plugins,
+                    datalabels: {
+                      color: "#ffffff",
+                      font: { size: 12, weight: "bold" as const },
+                      formatter: (v: unknown) => {
+                        const n = v as number;
+                        if (n === 0) return "";
+                        return `${n}`;
+                      },
+                    },
+                    legend: {
+                      position: "bottom" as const,
+                      labels: {
+                        padding: 16,
+                        usePointStyle: true,
+                        pointStyle: "circle",
+                        font: { size: 12 },
+                        generateLabels: (chart: any) => {
+                          const { tongDonTaiXe, chuaGiaoTaiXe, daGiaoTaiXe } = (dashboard as any) || {};
+                          const total = tongDonTaiXe || 0;
+                          return [
+                            {
+                              text: `Chưa giao: ${chuaGiaoTaiXe || 0}`,
+                              fillStyle: "#f59e0b",
+                              strokeStyle: "#f59e0b",
+                              pointStyle: "circle",
+                              hidden: false,
+                              index: 0,
+                            },
+                            {
+                              text: `Đã giao: ${daGiaoTaiXe || 0}`,
+                              fillStyle: "#10b981",
+                              strokeStyle: "#10b981",
+                              pointStyle: "circle",
+                              hidden: false,
+                              index: 1,
+                            },
+                          ];
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Biểu đồ trạng thái đơn hàng */}
         {showStatusChart && (
           <div className={styles.chartCard}>

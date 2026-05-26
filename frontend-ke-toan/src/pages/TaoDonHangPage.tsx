@@ -38,7 +38,7 @@ function parseLocalDatetime(s: string | null | undefined): Date | null {
 
 const EMPTY_FORM = {
   tenKhachHang: '', diaChiNhan: '', soDienThoai: '',
-  tenMacBeTong: '', khoiLuongDat: '', donGia: '',
+  tenMacBeTong: '', khoiLuongDat: '', donGia: '', chiPhiPhatSinh: '',
   ghiChu: '', idKhachHang: '', idMacBeTong: '', idTramTron: '',
   buVanChuyenTungay: '',
 };
@@ -65,14 +65,15 @@ export default function TaoDonHangPage() {
   const [thoiGianGiaoDuKien, setThoiGianGiaoDuKien] = useState<Date | null>(null);
 
   const thanhTien = (() => {
-    const chiPhi = parseFloat(form.donGia.replace(/[^\d]/g, '') || '0');
     const khoiLuong = parseFloat(form.khoiLuongDat) || 0;
     const mac = macBeTongs.find(m => m.id === parseInt(form.idMacBeTong));
     const donGia = mac?.donGia || 0;
+    const tienDonGia = khoiLuong * donGia;
+    const tienChiPhi = parseFloat(form.chiPhiPhatSinh.replace(/[^\d]/g, '') || '0');
     const buVanChuyen = (khoiLuong <= 5 && form.buVanChuyenTungay)
-      ? (5 - khoiLuong) * donGia
+      ? Math.max(0, 5 - khoiLuong) * donGia
       : 0;
-    return chiPhi + buVanChuyen;
+    return tienDonGia + tienChiPhi + buVanChuyen;
   })();
 
   const hienThiBuVanChuyen = (() => {
@@ -133,7 +134,8 @@ export default function TaoDonHangPage() {
             soDienThoai: dh.soDienThoai,
             tenMacBeTong: dh.tenMacBeTong || '',
             khoiLuongDat: String(dh.khoiLuongDat),
-            donGia: dh.donGia ? Number(dh.donGia).toLocaleString('vi-VN') : '',
+            donGia: '',
+            chiPhiPhatSinh: dh.chiPhiPhatSinh ? Number(dh.chiPhiPhatSinh).toLocaleString('vi-VN') : '',
             ghiChu: dh.ghiChu || '',
             idKhachHang: String(dh.idKhachHang || ''),
             idMacBeTong: String(dh.idMacBeTong || ''),
@@ -162,7 +164,10 @@ export default function TaoDonHangPage() {
       ...prev,
       idMacBeTong: macId,
       tenMacBeTong: mac?.tenMac || '',
-      donGia: chiPhiDefault,
+      donGia: mac?.donGia
+        ? Number(mac.donGia).toLocaleString('vi-VN')
+        : '',
+      chiPhiPhatSinh: chiPhiDefault,
       buVanChuyenTungay: '',
     }));
     setMacSearchOpen(false);
@@ -180,21 +185,21 @@ export default function TaoDonHangPage() {
       showToast('Khối lượng phải lớn hơn 0', 'error');
       return;
     }
-    if (!form.donGia || parseFloat(form.donGia.replace(/[^\d]/g, '')) <= 0) {
-      showToast('Chi phí phát sinh phải lớn hơn 0', 'error');
+    if (!form.idMacBeTong) {
+      showToast('Vui lòng chọn mác bê tông', 'error');
       return;
     }
 
     setSubmitting(true);
     try {
-      const chiPhiPhatSinh = parseFloat(form.donGia.replace(/[^\d]/g, ''));
+      const chiPhiPhatSinh = parseFloat(form.chiPhiPhatSinh.replace(/[^\d]/g, '') || '0');
       const khoiLuong = parseFloat(form.khoiLuongDat);
       const mac = macBeTongs.find(m => m.id === parseInt(form.idMacBeTong));
-      const donGia = mac?.donGia || 0;
+      const donGiaMac = mac?.donGia || 0;
       const buVanChuyenTinh = (khoiLuong <= 5 && form.buVanChuyenTungay)
-        ? Math.max(0, 5 - khoiLuong) * donGia
+        ? Math.max(0, 5 - khoiLuong) * donGiaMac
         : 0;
-      const donGiaTinh = chiPhiPhatSinh + buVanChuyenTinh;
+      const tongThanhTien = khoiLuong * donGiaMac + chiPhiPhatSinh + buVanChuyenTinh;
 
       const payload: Partial<DonHang> = {
         tenKhachHang: form.tenKhachHang,
@@ -202,7 +207,10 @@ export default function TaoDonHangPage() {
         soDienThoai: form.soDienThoai,
         tenMacBeTong: form.tenMacBeTong,
         khoiLuongDat: khoiLuong,
-        donGia: donGiaTinh,
+        donGia: donGiaMac,
+        chiPhiPhatSinh: chiPhiPhatSinh,
+        buVanChuyen: buVanChuyenTinh,
+        thanhTien: tongThanhTien,
         thoiGianGiaoDuKien: thoiGianGiaoDuKien ? toLocalDatetimeInput(thoiGianGiaoDuKien) : null,
         ghiChu: form.ghiChu || null,
         idKhachHang: form.idKhachHang ? parseInt(form.idKhachHang) : null,
@@ -386,14 +394,17 @@ export default function TaoDonHangPage() {
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Chi phí phát sinh (VNĐ)</label>
+              <label className={styles.formLabel}>
+                Chi phí phát sinh (VNĐ)
+                <span className={styles.labelHint}>— Phí khác (bơm, co, v.v.)</span>
+              </label>
               <input
                 type="text"
                 className={styles.formInput}
-                value={form.donGia}
+                value={form.chiPhiPhatSinh}
                 onChange={(e) => {
                   const raw = e.target.value.replace(/[^\d]/g, '');
-                  setForm({ ...form, donGia: raw ? Number(raw).toLocaleString('vi-VN') : '' });
+                  setForm({ ...form, chiPhiPhatSinh: raw ? Number(raw).toLocaleString('vi-VN') : '' });
                 }}
                 placeholder="VD: 1.500.000"
               />
