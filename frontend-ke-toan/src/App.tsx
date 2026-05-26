@@ -1,8 +1,8 @@
 import React, { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components";
-import { AuthProvider, useAuth } from "./hooks";
 import { Loading } from "./components/Common";
+import { AuthProvider, useAuth } from "./hooks";
 import { useMaintenanceCheck } from "./hooks/useMaintenanceCheck";
 
 const ChiTietDonHangPage = lazy(() => import("./pages/ChiTietDonHangPage"));
@@ -32,11 +32,19 @@ const QuanLyMacBeTongPage = lazy(() => import("./pages/QuanLyMacBeTongPage"));
 // Role-specific pages
 const SaleDonHangPage = lazy(() => import("./pages/SaleDonHangPage"));
 const TaiXeGiaoHangPage = lazy(() => import("./pages/TaiXeGiaoHangPage"));
+const LichSuGiaoHangPage = lazy(() => import("./pages/LichSuGiaoHangPage"));
 const KyThuatNghiemThuPage = lazy(() => import("./pages/KyThuatNghiemThuPage"));
 
 function PageFallback() {
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "60vh",
+      }}
+    >
       <Loading />
     </div>
   );
@@ -47,7 +55,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { maintenanceStatus, loading } = useMaintenanceCheck();
 
-  if (user?.vaiTro === 'admin') return <>{children}</>;
+  if (user?.vaiTro === "admin") return <>{children}</>;
 
   if (loading) return <PageFallback />;
 
@@ -81,31 +89,74 @@ function App() {
                     <Route path="/dashboard" element={<DashboardPage />} />
 
                     {/* Đơn hàng - admin, ke_toan, dieu_phoi, sale */}
-                    <Route path="/quan-ly/don-hang" element={<QuanLyDonHangPage />} />
-                    <Route path="/quan-ly/don-hang/chi-tiet/:id" element={<ChiTietDonHangPage />} />
-                    <Route path="/quan-ly/don-hang/tao" element={<TaoDonHangPage />} />
+                    <Route
+                      path="/quan-ly/don-hang"
+                      element={<QuanLyDonHangPage />}
+                    />
+                    <Route
+                      path="/quan-ly/don-hang/chi-tiet/:id"
+                      element={<ChiTietDonHangPage />}
+                    />
+                    <Route
+                      path="/quan-ly/don-hang/tao"
+                      element={<TaoDonHangPage />}
+                    />
 
                     {/* Sales - chỉ tạo đơn + xem đơn của mình */}
-                    <Route path="/sale/don-hang" element={<SaleDonHangPage />} />
-                    <Route path="/sale/don-hang/tao" element={<TaoDonHangPage />} />
+                    <Route
+                      path="/sale/don-hang"
+                      element={<SaleDonHangPage />}
+                    />
+                    <Route
+                      path="/sale/don-hang/tao"
+                      element={<TaoDonHangPage />}
+                    />
 
                     {/* Điều phối */}
                     <Route path="/dieu-phoi" element={<DieuPhoiPage />} />
-                    <Route path="/dieu-phoi/lich-san-xuat/:id" element={<TaoLichSanXuatPage />} />
-                    <Route path="/dieu-phoi/mac-be-tong" element={<QuanLyMacBeTongPage />} />
+                    <Route
+                      path="/dieu-phoi/lich-san-xuat/:id"
+                      element={<TaoLichSanXuatPage />}
+                    />
+                    <Route
+                      path="/dieu-phoi/mac-be-tong"
+                      element={<QuanLyMacBeTongPage />}
+                    />
 
                     {/* Kho */}
-                    <Route path="/kho/dashboard" element={<KhoDashboardPage />} />
-                    <Route path="/kho/lich-san-xuat" element={<KhoLichSanXuatPage />} />
-                    <Route path="/kho/don-hang/:id" element={<KhoDonHangPage />} />
+                    <Route
+                      path="/kho/dashboard"
+                      element={<KhoDashboardPage />}
+                    />
+                    <Route
+                      path="/kho/lich-san-xuat"
+                      element={<KhoLichSanXuatPage />}
+                    />
+                    <Route
+                      path="/kho/don-hang/:id"
+                      element={<KhoDonHangPage />}
+                    />
 
                     {/* Tài xế */}
                     <Route path="/tai-xe" element={<TaiXeGiaoHangPage />} />
-                    <Route path="/tai-xe/don-hang/:id" element={<ChiTietDonHangPage />} />
+                    <Route
+                      path="/tai-xe/lich-su-giao"
+                      element={<LichSuGiaoHangPage />}
+                    />
+                    <Route
+                      path="/tai-xe/don-hang/:id"
+                      element={<ChiTietDonHangPage />}
+                    />
 
                     {/* Kỹ thuật */}
-                    <Route path="/ky-thuat" element={<KyThuatNghiemThuPage />} />
-                    <Route path="/ky-thuat/don-hang/:id" element={<ChiTietDonHangPage />} />
+                    <Route
+                      path="/ky-thuat"
+                      element={<KyThuatNghiemThuPage />}
+                    />
+                    <Route
+                      path="/ky-thuat/don-hang/:id"
+                      element={<ChiTietDonHangPage />}
+                    />
 
                     {/* Nghiệm thu - ke_toan, ky_thuat */}
                     <Route path="/nghiem-thu" element={<NghiemThuPage />} />
@@ -121,16 +172,31 @@ function App() {
                     <Route path="/khach-hang" element={<KhachHangPage />} />
 
                     {/* Quản trị */}
-                    <Route path="/quan-ly/nguoi-dung" element={<QuanLyNguoiDungPage />} />
+                    <Route
+                      path="/quan-ly/nguoi-dung"
+                      element={<QuanLyNguoiDungPage />}
+                    />
                     <Route path="/quan-ly/xe" element={<QuanLyXePage />} />
-                    <Route path="/quan-ly/tram-tron" element={<QuanLyTramTronPage />} />
-                    <Route path="/tai-len-danh-sach" element={<TaiLenDanhSachPage />} />
+                    <Route
+                      path="/quan-ly/tram-tron"
+                      element={<QuanLyTramTronPage />}
+                    />
+                    <Route
+                      path="/tai-len-danh-sach"
+                      element={<TaiLenDanhSachPage />}
+                    />
                     <Route path="/bao-tri" element={<BaoTriPage />} />
                     <Route path="/tham-so" element={<ThamSoPage />} />
 
                     {/* Redirects */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    <Route
+                      path="/"
+                      element={<Navigate to="/dashboard" replace />}
+                    />
+                    <Route
+                      path="*"
+                      element={<Navigate to="/dashboard" replace />}
+                    />
                   </Routes>
                 </Layout>
               </MaintenanceGate>

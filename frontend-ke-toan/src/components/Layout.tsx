@@ -1,8 +1,8 @@
 import { ReactNode, useEffect, useState } from "react";
 import {
   FiBell,
-  FiChevronRight,
   FiChevronLeft,
+  FiChevronRight,
   FiLogOut,
   FiMenu,
   FiPlusCircle,
@@ -50,7 +50,16 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Tổng quan",
     icon: <MdDashboard size={20} />,
     iconActive: <MdDashboard size={20} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"],
+    roles: [
+      "admin",
+      "ke_toan",
+      "dieu_phoi",
+      "lanh_dao",
+      "kho",
+      "sale",
+      "tai_xe",
+      "ky_thuat",
+    ],
   },
   // Đơn hàng
   {
@@ -128,6 +137,13 @@ const SIDEBAR_ITEMS: MenuItem[] = [
   {
     path: "/tai-xe",
     label: "Giao hàng",
+    icon: <MdDeliveryDining size={20} />,
+    iconActive: <MdDeliveryDining size={20} />,
+    roles: ["admin", "tai_xe"],
+  },
+  {
+    path: "/tai-xe/lich-su-giao",
+    label: "Lịch sử giao",
     icon: <MdDeliveryDining size={20} />,
     iconActive: <MdDeliveryDining size={20} />,
     roles: ["admin", "tai_xe"],
@@ -212,6 +228,7 @@ export const SIDEBAR_GROUPS: MenuGroup[] = [
         "/cong-no",
         "/kho/lich-san-xuat",
         "/tai-xe",
+        "/tai-xe/lich-su-giao",
         "/ky-thuat",
       ].includes(m.path),
     ),

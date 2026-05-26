@@ -30,6 +30,7 @@ import {
   layDoanhThuTheoThang,
   layDonHangTheoTrangThai,
   layThongKeDashboard,
+  layThongKeTaiXe,
 } from "../services/api";
 import {
   DoanhThuTheoThang,
@@ -130,21 +131,32 @@ export default function DashboardPage() {
   const loadData = useCallback(async (period: FilterPeriod) => {
     setLoading(true);
     try {
-      const { tuNgay, denNgay } = getDateRange(period);
-      const [dashRes, revenueRes, statusRes] = await Promise.all([
-        layThongKeDashboard(),
-        layDoanhThuTheoThang(tuNgay, denNgay),
-        layDonHangTheoTrangThai(),
-      ]);
-      setDashboard(dashRes);
-      setDoanhThu(revenueRes);
-      setTrangThai(statusRes);
+      if (vaiTro === "tai_xe") {
+        const taiXeStats = await layThongKeTaiXe();
+        setDashboard({
+          tongDonTaiXe: taiXeStats.tongDon,
+          chuaGiaoTaiXe: taiXeStats.chuaGiao,
+          daGiaoTaiXe: taiXeStats.daGiao,
+        } as ThongKeDashboard);
+        setDoanhThu([]);
+        setTrangThai([]);
+      } else {
+        const { tuNgay, denNgay } = getDateRange(period);
+        const [dashRes, revenueRes, statusRes] = await Promise.all([
+          layThongKeDashboard(),
+          layDoanhThuTheoThang(tuNgay, denNgay),
+          layDonHangTheoTrangThai(),
+        ]);
+        setDashboard(dashRes);
+        setDoanhThu(revenueRes);
+        setTrangThai(statusRes);
+      }
     } catch (err) {
       console.error("Lỗi tải dashboard:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [vaiTro]);
 
   useEffect(() => {
     const token = localStorage.getItem("bttd_token");
@@ -158,13 +170,16 @@ export default function DashboardPage() {
   const showStatusChart = trangThai.length > 0;
 
   // ── KPI Cards theo vai trò ──────────────────────────────────────────────
+  const isTaiXe = vaiTro === "tai_xe";
+
   const kpiCards: KpiItem[] = [
     {
       label: "Tổng đơn hàng",
-      value: dashboard?.tongDonHang || 0,
+      value: isTaiXe ? (dashboard as any)?.tongDonTaiXe || 0 : dashboard?.tongDonHang || 0,
       icon: <FiShoppingCart size={20} />,
       color: "#073ceb",
       bg: "rgba(7,60,235,0.08)",
+      roles: ["admin", "ke_toan", "dieu_phoi", "sale", "lanh_dao"],
     },
     {
       label: "Chờ duyệt",
@@ -172,6 +187,7 @@ export default function DashboardPage() {
       icon: <FiClock size={20} />,
       color: "#f59e0b",
       bg: "rgba(245,158,11,0.1)",
+      roles: ["admin", "ke_toan", "lanh_dao"],
     },
     {
       label: "Đang xử lý",
@@ -179,6 +195,7 @@ export default function DashboardPage() {
       icon: <FiTrendingUp size={20} />,
       color: "#8b5cf6",
       bg: "rgba(139,92,246,0.1)",
+      roles: ["admin", "ke_toan", "lanh_dao"],
     },
     {
       label: "Hoàn thành",
@@ -186,6 +203,7 @@ export default function DashboardPage() {
       icon: <FiCheckCircle size={20} />,
       color: "#10b981",
       bg: "rgba(16,185,129,0.1)",
+      roles: ["admin", "ke_toan", "lanh_dao"],
     },
     {
       label: "Doanh thu",
@@ -213,7 +231,36 @@ export default function DashboardPage() {
       bg: "rgba(239,68,68,0.08)",
       roles: ["admin", "ke_toan"],
     },
-  ].filter(k => !k.roles || k.roles.includes(vaiTro!));
+    // KPI dành cho tài xế
+    ...(isTaiXe
+      ? [
+          {
+            label: "Tổng đơn nhận",
+            value: (dashboard as any)?.tongDonTaiXe || 0,
+            icon: <FiShoppingCart size={20} />,
+            color: "#073ceb",
+            bg: "rgba(7,60,235,0.08)",
+            roles: ["tai_xe"] as string[],
+          },
+          {
+            label: "Chưa giao",
+            value: (dashboard as any)?.chuaGiaoTaiXe || 0,
+            icon: <FiClock size={20} />,
+            color: "#f59e0b",
+            bg: "rgba(245,158,11,0.1)",
+            roles: ["tai_xe"] as string[],
+          },
+          {
+            label: "Đã giao",
+            value: (dashboard as any)?.daGiaoTaiXe || 0,
+            icon: <FiCheckCircle size={20} />,
+            color: "#10b981",
+            bg: "rgba(16,185,129,0.1)",
+            roles: ["tai_xe"] as string[],
+          },
+        ]
+      : []),
+  ].filter((k) => !k.roles || k.roles.includes(vaiTro!));
 
   // ── Chart data ─────────────────────────────────────────────────────────
   const pieData = trangThai.map((item) => ({

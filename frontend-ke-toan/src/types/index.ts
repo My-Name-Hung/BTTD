@@ -184,6 +184,9 @@ export interface ThongKeDashboard {
   tongDoanhThu: number;
   tongCongNo: number;
   donQuaHan: number;
+  tongDonTaiXe?: number;
+  chuaGiaoTaiXe?: number;
+  daGiaoTaiXe?: number;
 }
 
 export interface DoanhThuTheoThang {

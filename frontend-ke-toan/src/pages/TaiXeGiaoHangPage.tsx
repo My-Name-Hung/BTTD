@@ -1,23 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiTruck, FiPhone, FiMapPin, FiCheck, FiNavigation, FiPackage } from 'react-icons/fi';
+import { useCallback, useEffect, useState } from "react";
+import {
+  FiCheck,
+  FiMapPin,
+  FiNavigation,
+  FiPackage,
+  FiPhone,
+  FiTruck,
+} from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { ConfirmModal, Loading } from "../components/Common";
+import { useAuth, useToast } from "../hooks";
 import {
   layDonHangGiaoCuaToi,
   taiXeCapNhatTrangThaiGiao,
-} from '../services/api';
-import { DonHang } from '../types';
-import { useToast, useAuth } from '../hooks';
-import { Loading, ConfirmModal } from '../components/Common';
-import styles from './TaiXeGiaoHangPage.module.css';
+  layThongKeTaiXe,
+} from "../services/api";
+import { DonHang } from "../types";
+import styles from "./TaiXeGiaoHangPage.module.css";
 
-function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' || '0 đ'; }
-function formatDate(d: string) { return d ? new Date(d).toLocaleDateString('vi-VN') : ''; }
+function formatCurrency(v: number) {
+  return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
+}
+function formatDate(d: string) {
+  return d ? new Date(d).toLocaleDateString("vi-VN") : "";
+}
 
 export default function TaiXeGiaoHangPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toasts, showToast } = useToast();
   const [donHangList, setDonHangList] = useState<DonHang[]>([]);
+  const [thongKe, setThongKe] = useState({ tongDon: 0, chuaGiao: 0, daGiao: 0 });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<DonHang | null>(null);
@@ -25,25 +38,31 @@ export default function TaiXeGiaoHangPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await layDonHangGiaoCuaToi();
+      const [data, stats] = await Promise.all([
+        layDonHangGiaoCuaToi(),
+        layThongKeTaiXe(),
+      ]);
       setDonHangList(data);
+      setThongKe(stats);
     } catch {
-      showToast('Không tải được danh sách đơn giao', 'error');
+      showToast("Không tải được danh sách đơn giao", "error");
     } finally {
       setLoading(false);
     }
   }, [showToast]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleXacNhanDangGiao = async (dh: DonHang) => {
     setUpdating(dh.id);
     try {
-      await taiXeCapNhatTrangThaiGiao(dh.id, 'dang_giao');
-      showToast('Đã cập nhật trạng thái đang giao');
+      await taiXeCapNhatTrangThaiGiao(dh.id, "dang_giao");
+      showToast("Đã cập nhật trạng thái đang giao");
       loadData();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Lỗi cập nhật', 'error');
+      showToast(err instanceof Error ? err.message : "Lỗi cập nhật", "error");
     } finally {
       setUpdating(null);
     }
@@ -53,25 +72,28 @@ export default function TaiXeGiaoHangPage() {
     if (!confirmTarget) return;
     setUpdating(confirmTarget.id);
     try {
-      await taiXeCapNhatTrangThaiGiao(confirmTarget.id, 'da_giao');
-      showToast('Xác nhận giao hàng thành công');
+      await taiXeCapNhatTrangThaiGiao(confirmTarget.id, "da_giao");
+      showToast("Xác nhận giao hàng thành công");
       setConfirmTarget(null);
       loadData();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Lỗi xác nhận giao', 'error');
+      showToast(
+        err instanceof Error ? err.message : "Lỗi xác nhận giao",
+        "error",
+      );
     } finally {
       setUpdating(null);
     }
   };
 
   const statusColor = (s: string) => {
-    if (s === 'dang_giao') return { bg: '#00968822', color: '#009688' };
-    return { bg: '#4caf5022', color: '#4caf50' };
+    if (s === "dang_giao") return { bg: "#00968822", color: "#009688" };
+    return { bg: "#4caf5022", color: "#4caf50" };
   };
 
   const statusLabel = (s: string) => {
-    if (s === 'dang_giao') return 'Đang giao';
-    if (s === 'da_giao') return 'Đã giao';
+    if (s === "dang_giao") return "Đang giao";
+    if (s === "da_giao") return "Đã giao";
     return s;
   };
 
@@ -83,9 +105,7 @@ export default function TaiXeGiaoHangPage() {
           <FiTruck size={22} />
           <span>Giao hàng</span>
         </div>
-        <div className={styles.pageSubtitle}>
-          Xin chào, {user?.hoTen}
-        </div>
+        <div className={styles.pageSubtitle}>Xin chào, {user?.hoTen}</div>
       </div>
 
       {/* KPI */}
@@ -96,14 +116,16 @@ export default function TaiXeGiaoHangPage() {
         </div>
         <div className={styles.kpiCard}>
           <div className={`${styles.kpiValue} ${styles.kpiSuccess}`}>
-            {donHangList.filter(d => d.trangThaiDon === 'da_giao').length}
+            {thongKe.daGiao}
           </div>
           <div className={styles.kpiLabel}>Đã giao</div>
         </div>
       </div>
 
       {/* Order List */}
-      {loading ? <Loading /> : donHangList.length === 0 ? (
+      {loading ? (
+        <Loading />
+      ) : donHangList.length === 0 ? (
         <div className={styles.emptyState}>
           <FiPackage size={48} />
           <p>Không có đơn giao nào</p>
@@ -129,20 +151,24 @@ export default function TaiXeGiaoHangPage() {
 
                 <div className={styles.infoRow}>
                   <FiMapPin size={14} />
-                  <span>{dh.diaChiNhan || 'Chưa có địa chỉ'}</span>
+                  <span>{dh.diaChiNhan || "Chưa có địa chỉ"}</span>
                 </div>
 
                 <div className={styles.infoRow}>
                   <FiPackage size={14} />
                   <span>
-                    <strong>{dh.khoiLuongDat || 0} m³</strong> · {dh.tenMacBeTong || '—'}
+                    <strong>{dh.khoiLuongDat || 0} m³</strong> ·{" "}
+                    {dh.tenMacBeTong || "—"}
                   </span>
                 </div>
 
                 {dh.soDienThoaiNguoiNhan && (
                   <div className={styles.infoRow}>
                     <FiPhone size={14} />
-                    <a href={`tel:${dh.soDienThoaiNguoiNhan}`} className={styles.phoneLink}>
+                    <a
+                      href={`tel:${dh.soDienThoaiNguoiNhan}`}
+                      className={styles.phoneLink}
+                    >
                       {dh.soDienThoaiNguoiNhan}
                     </a>
                   </div>
@@ -165,16 +191,32 @@ export default function TaiXeGiaoHangPage() {
                   <button
                     className={styles.btnDangGiao}
                     onClick={() => handleXacNhanDangGiao(dh)}
-                    disabled={updating === dh.id || dh.trangThaiDon === 'dang_giao'}
+                    disabled={
+                      updating === dh.id || dh.trangThaiDon === "dang_giao"
+                    }
                   >
-                    {updating === dh.id ? '...' : <><FiNavigation size={14} /> Đang giao</>}
+                    {updating === dh.id ? (
+                      "..."
+                    ) : (
+                      <>
+                        <FiNavigation size={14} /> Đang giao
+                      </>
+                    )}
                   </button>
                   <button
                     className={styles.btnDaGiao}
                     onClick={() => setConfirmTarget(dh)}
-                    disabled={updating === dh.id || dh.trangThaiDon === 'da_giao'}
+                    disabled={
+                      updating === dh.id || dh.trangThaiDon === "da_giao"
+                    }
                   >
-                    {updating === dh.id ? '...' : <><FiCheck size={14} /> Đã giao</>}
+                    {updating === dh.id ? (
+                      "..."
+                    ) : (
+                      <>
+                        <FiCheck size={14} /> Đã giao
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -197,7 +239,10 @@ export default function TaiXeGiaoHangPage() {
 
       <div className={styles.toastContainer}>
         {toasts.map((t) => (
-          <div key={t.id} className={`${styles.toast} ${t.type === 'error' ? styles.toastError : styles.toastSuccess}`}>
+          <div
+            key={t.id}
+            className={`${styles.toast} ${t.type === "error" ? styles.toastError : styles.toastSuccess}`}
+          >
             {t.message}
           </div>
         ))}

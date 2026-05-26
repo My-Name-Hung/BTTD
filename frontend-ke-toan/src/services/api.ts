@@ -661,6 +661,26 @@ export async function taiXeCapNhatTrangThaiGiao(
   });
 }
 
+// Tài xế thống kê đơn hàng
+export async function layThongKeTaiXe(): Promise<{ tongDon: number; chuaGiao: number; daGiao: number }> {
+  const res = await fetch(`${BASE_URL}/tai-xe/thong-ke`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data;
+}
+
+// Tài xế lịch sử giao hàng
+export async function layLichSuGiaoHangTaiXe(): Promise<DonHang[]> {
+  const res = await fetch(`${BASE_URL}/tai-xe/lich-su-giao`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
 // ===== KỸ THUẬT — lấy đơn chờ nghiệm thu =====
 export async function layDonHangChoNghiemThu(): Promise<DonHang[]> {
   const res = await fetch(`${BASE_URL}/ky-thuat/don-hang-cho-nghiem-thu`, {
