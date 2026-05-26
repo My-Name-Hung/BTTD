@@ -20,7 +20,7 @@ export default function QuanLyMacBeTongPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MacBeTong | null>(null);
-  const [form, setForm] = useState({ tenMac: '', chiPhiPhatSinh: '', buVanChuyen: '', moTa: '' });
+  const [form, setForm] = useState({ tenMac: '', donGia: '', chiPhiPhatSinh: '', buVanChuyen: '', moTa: '' });
   const [formLoading, setFormLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -41,7 +41,7 @@ export default function QuanLyMacBeTongPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({ tenMac: '', chiPhiPhatSinh: '', buVanChuyen: '', moTa: '' });
+    setForm({ tenMac: '', donGia: '', chiPhiPhatSinh: '', buVanChuyen: '', moTa: '' });
     setModalOpen(true);
   };
 
@@ -49,6 +49,7 @@ export default function QuanLyMacBeTongPage() {
     setEditingId(m.id);
     setForm({
       tenMac: m.tenMac,
+      donGia: Number(m.donGia || 0).toLocaleString('vi-VN'),
       chiPhiPhatSinh: Number(m.chiPhiPhatSinh || 0).toLocaleString('vi-VN'),
       buVanChuyen: Number(m.buVanChuyen || 0).toLocaleString('vi-VN'),
       moTa: m.moTa || '',
@@ -61,6 +62,7 @@ export default function QuanLyMacBeTongPage() {
       showToast('Vui lòng nhập tên mác', 'error');
       return;
     }
+    const donGia = parseFloat(form.donGia.replace(/[^\d]/g, '') || '0');
     const chiPhi = parseFloat(form.chiPhiPhatSinh.replace(/[^\d]/g, '') || '0');
     const buVanChuyen = parseFloat(form.buVanChuyen.replace(/[^\d]/g, '') || '0');
 
@@ -68,6 +70,7 @@ export default function QuanLyMacBeTongPage() {
     try {
       const payload = {
         tenMac: form.tenMac.trim(),
+        donGia,
         chiPhiPhatSinh: chiPhi,
         buVanChuyen,
         moTa: form.moTa.trim() || null,
@@ -139,7 +142,8 @@ export default function QuanLyMacBeTongPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th style={{ minWidth: 100 }}>Tên mác</th>
+                  <th style={{ minWidth: 90 }}>Tên mác</th>
+                  <th style={{ minWidth: 110, textAlign: 'right' }}>Đơn giá</th>
                   <th style={{ minWidth: 140, textAlign: 'right' }}>Chi phí phát sinh</th>
                   <th style={{ minWidth: 130, textAlign: 'right' }}>Bù vận chuyển</th>
                   <th style={{ minWidth: 100 }}>Ghi chú</th>
@@ -149,19 +153,26 @@ export default function QuanLyMacBeTongPage() {
               <tbody>
                 {filtered.map((m) => (
                   <tr key={m.id}>
-                    <td>
-                      <span className={styles.macName}>{m.tenMac}</span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <strong>{formatCurrency(m.chiPhiPhatSinh)}</strong>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      {m.buVanChuyen > 0 ? (
-                        <span className={styles.buHighlight}>{formatCurrency(m.buVanChuyen)}</span>
-                      ) : (
-                        <span className={styles.buEmpty}>-</span>
-                      )}
-                    </td>
+                  <td>
+                    <span className={styles.macName}>{m.tenMac}</span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    {m.donGia > 0 ? (
+                      <strong>{formatCurrency(m.donGia)}</strong>
+                    ) : (
+                      <span className={styles.buEmpty}>-</span>
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <strong>{formatCurrency(m.chiPhiPhatSinh)}</strong>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    {m.buVanChuyen > 0 ? (
+                      <span className={styles.buHighlight}>{formatCurrency(m.buVanChuyen)}</span>
+                    ) : (
+                      <span className={styles.buEmpty}>-</span>
+                    )}
+                  </td>
                     <td>
                       <span className={styles.moTa}>{m.moTa || '-'}</span>
                     </td>
@@ -212,6 +223,15 @@ export default function QuanLyMacBeTongPage() {
             value={form.tenMac}
             onChange={(e) => setForm({ ...form, tenMac: e.target.value })}
             placeholder="VD: M250, M300..."
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Đơn giá (VNĐ)</label>
+          <input
+            className={styles.formInput}
+            value={form.donGia}
+            onChange={(e) => setForm({ ...form, donGia: formatInput(e.target.value) })}
+            placeholder="VD: 1.500.000"
           />
         </div>
         <div className={styles.formGroup}>

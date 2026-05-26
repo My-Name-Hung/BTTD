@@ -30,7 +30,7 @@ const TABS: TabConfig[] = [
     key: 'don_hang',
     label: 'Đơn hàng',
     importFn: importDonHang,
-    canAccess: ['admin', 'ke_toan', 'dieu_phoi'],
+    canAccess: ['admin', 'ke_toan'],
     templateColumns: [
       { key: 'Tên khách hàng', title: 'Tên khách hàng', example: 'Nguyễn Văn A' },
       { key: 'Địa chỉ nhận', title: 'Địa chỉ nhận', example: '123 Đường ABC, Q.Ninh Kiều, Cần Thơ' },
@@ -47,7 +47,7 @@ const TABS: TabConfig[] = [
     key: 'khach_hang',
     label: 'Khách hàng',
     importFn: importKhachHang,
-    canAccess: ['admin', 'ke_toan', 'dieu_phoi'],
+    canAccess: ['admin', 'ke_toan'],
     templateColumns: [
       { key: 'Tên khách hàng', title: 'Tên khách hàng', example: 'Công Ty TNHH ABC' },
       { key: 'Địa chỉ', title: 'Địa chỉ', example: '456 Đường XYZ, Cần Thơ' },
@@ -86,10 +86,12 @@ const TABS: TabConfig[] = [
     key: 'mac_be_tong',
     label: 'Mác bê tông',
     importFn: importMacBeTong,
-    canAccess: ['admin', 'ke_toan', 'dieu_phoi'],
+    canAccess: ['admin', 'dieu_phoi'],
     templateColumns: [
-      { key: 'Tên mác', title: 'Tên mác', example: 'M251' },
+      { key: 'Tên mác', title: 'Tên mác', example: 'M250' },
       { key: 'DonGia', title: 'DonGia', example: '1500000' },
+      { key: 'ChiPhiPhatSinh', title: 'ChiPhiPhatSinh', example: '1200000' },
+      { key: 'BuVanChuyen', title: 'BuVanChuyen', example: '300000' },
       { key: 'MoTa', title: 'MoTa', example: 'Mác bê tông 250' },
     ],
   },
@@ -114,7 +116,7 @@ export default function TaiLenDanhSachPage() {
   const { hasPermission, hasAnyRole } = usePageRole();
   const { toasts, showToast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<TabKey>('don_hang');
+  const [activeTab, setActiveTab] = useState<TabKey>('mac_be_tong');
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);

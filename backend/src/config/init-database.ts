@@ -132,6 +132,7 @@ async function initDatabase(): Promise<void> {
         CREATE TABLE MacBeTong (
           id INT IDENTITY(1,1) PRIMARY KEY,
           tenMac NVARCHAR(100) NOT NULL,
+          donGia DECIMAL(18,2) NOT NULL DEFAULT 0,
           chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0,
           buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0,
           moTa NVARCHAR(500),
@@ -147,6 +148,10 @@ async function initDatabase(): Promise<void> {
           `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'MacBeTong'`
         );
         const colNames = cols.recordset.map(c => c.COLUMN_NAME.toLowerCase());
+        if (!colNames.includes('dongia')) {
+          await db.query(`ALTER TABLE MacBeTong ADD donGia DECIMAL(18,2) NOT NULL DEFAULT 0`);
+          console.log('  ➕ Thêm cột donGia vào MacBeTong');
+        }
         if (!colNames.includes('chiphiphatsinh')) {
           await db.query(`ALTER TABLE MacBeTong ADD chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0`);
           console.log('  ➕ Thêm cột chiPhiPhatSinh vào MacBeTong');

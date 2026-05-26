@@ -65,19 +65,30 @@ export default function TaoDonHangPage() {
   const [thoiGianGiaoDuKien, setThoiGianGiaoDuKien] = useState<Date | null>(null);
 
   const thanhTien = (() => {
-    const mac = macBeTongs.find(m => m.id === parseInt(form.idMacBeTong));
-    if (!mac) return 0;
-    const chiPhiPhatSinh = mac.chiPhiPhatSinh || 0;
+    const chiPhi = parseFloat(form.donGia.replace(/[^\d]/g, '') || '0');
     const khoiLuong = parseFloat(form.khoiLuongDat) || 0;
+    const mac = macBeTongs.find(m => m.id === parseInt(form.idMacBeTong));
+    const donGia = mac?.donGia || 0;
     const buVanChuyen = (khoiLuong <= 5 && form.buVanChuyenTungay)
-      ? (mac.buVanChuyen || 0)
+      ? (5 - khoiLuong) * donGia
       : 0;
-    return chiPhiPhatSinh + buVanChuyen;
+    return chiPhi + buVanChuyen;
   })();
 
   const hienThiBuVanChuyen = (() => {
     const khoiLuong = parseFloat(form.khoiLuongDat) || 0;
-    return khoiLuong <= 5;
+    return khoiLuong > 0 && khoiLuong <= 5;
+  })();
+
+  const buVanChuyenSoM3 = (() => {
+    const khoiLuong = parseFloat(form.khoiLuongDat) || 0;
+    return khoiLuong <= 5 ? Math.max(0, 5 - khoiLuong) : 0;
+  })();
+
+  const buVanChuyenTien = (() => {
+    const mac = macBeTongs.find(m => m.id === parseInt(form.idMacBeTong));
+    const donGia = mac?.donGia || 0;
+    return buVanChuyenSoM3 * donGia;
   })();
 
   // Track initial state for change detection
@@ -143,12 +154,16 @@ export default function TaoDonHangPage() {
   }, [editingId, showToast]);
 
   const handleMacChange = (macId: string) => {
-    setForm({ ...form, idMacBeTong: macId, buVanChuyenTungay: '' });
     const mac = macBeTongs.find((m) => m.id === parseInt(macId));
+    const chiPhiDefault = mac?.chiPhiPhatSinh
+      ? Number(mac.chiPhiPhatSinh).toLocaleString('vi-VN')
+      : '';
     setForm((prev) => ({
       ...prev,
       idMacBeTong: macId,
       tenMacBeTong: mac?.tenMac || '',
+      donGia: chiPhiDefault,
+      buVanChuyenTungay: '',
     }));
     setMacSearchOpen(false);
     setMacSearchQuery('');
@@ -175,7 +190,10 @@ export default function TaoDonHangPage() {
       const chiPhiPhatSinh = parseFloat(form.donGia.replace(/[^\d]/g, ''));
       const khoiLuong = parseFloat(form.khoiLuongDat);
       const mac = macBeTongs.find(m => m.id === parseInt(form.idMacBeTong));
-      const buVanChuyenTinh = (khoiLuong <= 5 && form.buVanChuyenTungay) ? (mac?.buVanChuyen || 0) : 0;
+      const donGia = mac?.donGia || 0;
+      const buVanChuyenTinh = (khoiLuong <= 5 && form.buVanChuyenTungay)
+        ? Math.max(0, 5 - khoiLuong) * donGia
+        : 0;
       const donGiaTinh = chiPhiPhatSinh + buVanChuyenTinh;
 
       const payload: Partial<DonHang> = {
@@ -293,7 +311,7 @@ export default function TaoDonHangPage() {
                     <span>
                       {(macBeTongs.find(m => m.id === parseInt(form.idMacBeTong)) || { tenMac: form.tenMacBeTong }).tenMac}
                       <span className={styles.searchDropdownPrice}>
-                        — {formatCurrency(macBeTongs.find(m => m.id === parseInt(form.idMacBeTong))?.chiPhiPhatSinh || 0)}
+                        — {formatCurrency(macBeTongs.find(m => m.id === parseInt(form.idMacBeTong))?.donGia || 0)}/m³
                       </span>
                     </span>
                   ) : (
@@ -322,7 +340,7 @@ export default function TaoDonHangPage() {
                             onClick={() => handleMacChange(String(m.id))}
                           >
                             <span className={styles.searchDropdownItemName}>{m.tenMac}</span>
-                            <span className={styles.searchDropdownItemPrice}>{formatCurrency(m.chiPhiPhatSinh)}</span>
+                            <span className={styles.searchDropdownItemPrice}>{formatCurrency(m.donGia)}/m³</span>
                           </div>
                         ))}
                       {macBeTongs.filter(m => m.tenMac.toLowerCase().includes(macSearchQuery.toLowerCase())).length === 0 && (
@@ -384,7 +402,7 @@ export default function TaoDonHangPage() {
           {hienThiBuVanChuyen && form.idMacBeTong && (
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>
-                Bù vận chuyển (VNĐ)
+                Bù vận chuyển
                 <span className={styles.labelHint}>— Áp dụng cho đơn ≤ 5m³, chỉ tính theo ngày</span>
               </label>
               <div className={styles.buVanChuyenRow}>
@@ -398,7 +416,7 @@ export default function TaoDonHangPage() {
                 </label>
                 {form.buVanChuyenTungay && (
                   <span className={styles.buVanChuyenAmount}>
-                    + {formatCurrency(macBeTongs.find(m => m.id === parseInt(form.idMacBeTong))?.buVanChuyen || 0)}
+                    + {formatCurrency(buVanChuyenTien)} ({buVanChuyenSoM3}m³)
                   </span>
                 )}
               </div>

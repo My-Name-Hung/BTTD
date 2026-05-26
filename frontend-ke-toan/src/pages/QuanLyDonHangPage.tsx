@@ -65,7 +65,7 @@ export default function QuanLyDonHangPage() {
   const isKeToanOrAdmin = isKeToan || userVaiTro === "admin";
   const canCreate = ["admin", "dieu_phoi", "sale"].includes(userVaiTro);
   const canCreateOrder = ["admin", "sale"].includes(userVaiTro);
-  const canEdit = ["admin", "dieu_phoi"].includes(userVaiTro);
+  const canEdit = ["admin"].includes(userVaiTro);
   const canDelete = ["admin"].includes(userVaiTro);
   const canApprove = ["admin", "ke_toan"].includes(userVaiTro);
 
