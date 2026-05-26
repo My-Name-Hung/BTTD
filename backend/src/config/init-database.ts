@@ -1,5 +1,4 @@
 import mssql from 'mssql';
-import bcrypt from 'bcryptjs';
 import { config } from './index';
 
 async function initDatabase(): Promise<void> {
@@ -74,11 +73,6 @@ async function initDatabase(): Promise<void> {
       `);
     } else {
       console.log('  ✅ Bảng NguoiDung đã tồn tại');
-      // Log column names for debugging
-      const cols = await db.query<{ COLUMN_NAME: string }[]>(
-        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'NguoiDung' ORDER BY ORDINAL_POSITION`
-      );
-      console.log('  📋 NguoiDung columns:', cols.recordset.map(c => c.COLUMN_NAME).join(', '));
     }
 
     // Tạo bảng KhachHang
@@ -402,87 +396,6 @@ async function initDatabase(): Promise<void> {
       `);
     } else {
       console.log('  ✅ Bảng ThongBao đã tồn tại');
-    }
-
-    // Insert dữ liệu mẫu
-    console.log('  🔄 Kiểm tra dữ liệu mẫu...');
-
-    const userCount = await db.query<{ cnt: number }[]>(`SELECT COUNT(*) as cnt FROM NguoiDung`);
-    if (userCount.recordset[0].cnt === 0) {
-      console.log('  ➕ Thêm dữ liệu người dùng mẫu...');
-
-      const hashPassword = async (p: string) => {
-        const h = await bcrypt.hash(p, 10);
-        return h;
-      };
-
-      const users = [
-        { u: 'admin', p: 'Admin@123', n: 'Quản trị viên', e: 'thanhhung11112002@gmail.com', v: 'admin' },
-        { u: 'ketoan', p: 'Ketoan@123', n: 'Nguyễn Thị Kế Toán', e: 'ketoan@betongtaydo.com', v: 'ke_toan' },
-        { u: 'dieuphoi', p: 'Dieuphoi@123', n: 'Trần Văn Điều Phối', e: 'dieuphoi@betongtaydo.com', v: 'dieu_phoi' },
-        { u: 'lanhdao', p: 'Lanhdao@123', n: 'Giám đốc Lãnh Đạo', e: 'lanhdao@betongtaydo.com', v: 'lanh_dao' },
-      ];
-
-      for (const user of users) {
-        const hashed = await hashPassword(user.p);
-        const req = db.request();
-        req.input('u', user.u);
-        req.input('p', hashed);
-        req.input('n', user.n);
-        req.input('e', user.e);
-        req.input('v', user.v);
-        await req.query(
-          `INSERT INTO NguoiDung (tenDangNhap, matKhau, hoTen, email, vaiTro) VALUES (@u, @p, @n, @e, @v)`
-        );
-      }
-      console.log('  ✅ Đã thêm 4 tài khoản mẫu');
-    } else {
-      console.log('  ✅ Dữ liệu người dùng đã tồn tại');
-    }
-
-    const macCount = await db.query<{ cnt: number }[]>(`SELECT COUNT(*) as cnt FROM MacBeTong`);
-    if (macCount.recordset[0].cnt === 0) {
-      console.log('  ➕ Thêm dữ liệu mác bê tông mẫu...');
-      await db.query(`
-        INSERT INTO MacBeTong (tenMac, chiPhiPhatSinh, buVanChuyen, moTa)
-        VALUES
-        (N'M250', 1200000, 0, N'Mác bê tông 250'),
-        (N'M300', 1300000, 0, N'Mác bê tông 300'),
-        (N'M350', 1400000, 0, N'Mác bê tông 350'),
-        (N'M400', 1500000, 0, N'Mác bê tông 400'),
-        (N'M450', 1600000, 0, N'Mác bê tông 450')
-      `);
-    } else {
-      console.log('  ✅ Dữ liệu mác bê tông đã tồn tại');
-    }
-
-    const tramCount = await db.query<{ cnt: number }[]>(`SELECT COUNT(*) as cnt FROM TramTron`);
-    if (tramCount.recordset[0].cnt === 0) {
-      console.log('  ➕ Thêm dữ liệu trạm trộn mẫu...');
-      await db.query(`
-        INSERT INTO TramTron (tenTram, diaChi, soDienThoai)
-        VALUES
-        (N'Trạm trộn số 1', N'Km 14, QL91, Phước Thới, Cần Thơ', N'0292 651 8375'),
-        (N'Trạm trộn số 2', N'Quận Cái Răng, Cần Thơ', N'0292 652 1234'),
-        (N'Trạm trộn số 3', N'Quận Thốt Nốt, Cần Thơ', N'0292 653 5678')
-      `);
-    } else {
-      console.log('  ✅ Dữ liệu trạm trộn đã tồn tại');
-    }
-
-    const xeCount = await db.query<{ cnt: number }[]>(`SELECT COUNT(*) as cnt FROM Xe`);
-    if (xeCount.recordset[0].cnt === 0) {
-      console.log('  ➕ Thêm dữ liệu xe mẫu...');
-      await db.query(`
-        INSERT INTO Xe (bienSo, tenTaiXe, soDienThoaiTaiXe, taiTrong, trangThai)
-        VALUES
-        (N'59C1-12345', N'Lê Văn Tài', N'0901234567', 10, N'san_sang'),
-        (N'59C2-23456', N'Phạm Văn Xe', N'0902345678', 12, N'san_sang'),
-        (N'59C3-34567', N'Hoàng Văn Lái', N'0903456789', 8, N'dang_giao'),
-        (N'59C4-45678', N'Nguyễn Văn Chauffeur', N'0904567890', 10, N'san_sang')
-      `);
-    } else {
-      console.log('  ✅ Dữ liệu xe đã tồn tại');
     }
 
     await dbPool.close();

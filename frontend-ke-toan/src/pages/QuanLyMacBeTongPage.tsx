@@ -142,12 +142,12 @@ export default function QuanLyMacBeTongPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th style={{ minWidth: 90 }}>Tên mác</th>
-                  <th style={{ minWidth: 110, textAlign: 'right' }}>Đơn giá</th>
-                  <th style={{ minWidth: 140, textAlign: 'right' }}>Chi phí phát sinh</th>
-                  <th style={{ minWidth: 130, textAlign: 'right' }}>Bù vận chuyển</th>
-                  <th style={{ minWidth: 100 }}>Ghi chú</th>
-                  <th style={{ minWidth: 90 }}>Thao tác</th>
+                  <th style={{ minWidth: 80 }}>Tên mác</th>
+                  <th style={{ minWidth: 100, textAlign: 'right' }}>Đơn giá</th>
+                  <th style={{ minWidth: 120, textAlign: 'right' }}>Chi phí phát sinh</th>
+                  <th style={{ minWidth: 110, textAlign: 'right' }}>Bù vận chuyển</th>
+                  <th style={{ minWidth: 80 }}>Ghi chú</th>
+                  <th style={{ minWidth: 80 }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>

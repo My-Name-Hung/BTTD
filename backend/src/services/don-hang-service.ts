@@ -253,6 +253,7 @@ export async function xoaDonHang(id: number): Promise<void> {
 }
 
 export async function xacNhanGiaoThanhCong(idDonHang: number, khoiLuongThucTe?: number): Promise<DonHang> {
+  const kltt = khoiLuongThucTe != null && !isNaN(khoiLuongThucTe) ? khoiLuongThucTe : null;
   await query(
     `UPDATE DonHang SET
       trangThaiDon = N'da_giao',
@@ -260,7 +261,7 @@ export async function xacNhanGiaoThanhCong(idDonHang: number, khoiLuongThucTe?: 
       ngayGiao = GETDATE(),
       ngayCapNhat = GETDATE()
      WHERE id = @id`,
-    { id: idDonHang, khoiLuongThucTe: khoiLuongThucTe || null }
+    { id: idDonHang, khoiLuongThucTe: kltt }
   );
 
   return (await query<DonHang>(`SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`, { id: idDonHang }))[0];

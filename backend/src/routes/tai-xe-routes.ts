@@ -40,7 +40,8 @@ router.put('/cap-nhat-giao/:idDonHang', authMiddleware, async (req: AuthRequest,
     }
 
     const idDonHang = parseInt(req.params.idDonHang, 10);
-    const { trangThai, khoiLuongThucTe } = req.body;
+    const rawKltt = req.body.khoiLuongThucTe;
+    const khoiLuongThucTe = rawKltt != null && rawKltt !== '' ? parseFloat(String(rawKltt)) : undefined;
     const { query, xacNhanGiaoThanhCong } = await import('../services/don-hang-service');
     const { guiThongBao } = await import('../services/thong-bao-service');
 

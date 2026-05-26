@@ -62,6 +62,7 @@ export default function QuanLyDonHangPage() {
   )?.vaiTro;
   const isSale = userVaiTro === "sale";
   const isKeToan = userVaiTro === "ke_toan";
+  const isDieuPhoi = userVaiTro === "dieu_phoi";
   const isKeToanOrAdmin = isKeToan || userVaiTro === "admin";
   const canCreate = ["admin", "dieu_phoi", "sale"].includes(userVaiTro);
   const canCreateOrder = ["admin", "sale"].includes(userVaiTro);
@@ -176,9 +177,9 @@ export default function QuanLyDonHangPage() {
         )}
       </div>
 
-      {/* KPI Row - Sale/Kế toán role uses simplified 2-column grid */}
-      <div className={isSale || isKeToan ? styles.kpiRowSale : styles.kpiRow}>
-        {isSale || isKeToan ? (
+      {/* KPI Row - Sale/Kế toán/Điều phối role uses simplified 2-column grid */}
+      <div className={isSale || isKeToan || isDieuPhoi ? styles.kpiRowSale : styles.kpiRow}>
+        {isSale || isKeToan || isDieuPhoi ? (
           <>
             <div className={styles.kpiItem}>
               <div className={styles.kpiLabel}>Tổng đơn</div>
@@ -272,8 +273,8 @@ export default function QuanLyDonHangPage() {
         </div>
       </div>
 
-      {/* Table - Sale/Kế toán uses simplified table with actions */}
-      {isSale || isKeToan ? (
+      {/* Table - Sale/Kế toán/Điều phối uses simplified table with actions */}
+      {isSale || isKeToan || isDieuPhoi ? (
         <div className={styles.card}>
           <div className={styles.saleCardHeader}>
             <span className={styles.saleCardTitle}>Danh sách đơn hàng</span>

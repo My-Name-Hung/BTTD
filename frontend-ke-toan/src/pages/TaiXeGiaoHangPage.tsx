@@ -21,7 +21,6 @@ export default function TaiXeGiaoHangPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<DonHang | null>(null);
-  const [khoiLuongThucTe, setKhoiLuongThucTe] = useState('');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -54,14 +53,9 @@ export default function TaiXeGiaoHangPage() {
     if (!confirmTarget) return;
     setUpdating(confirmTarget.id);
     try {
-      await taiXeCapNhatTrangThaiGiao(
-        confirmTarget.id,
-        'da_giao',
-        khoiLuongThucTe ? parseFloat(khoiLuongThucTe) : undefined
-      );
+      await taiXeCapNhatTrangThaiGiao(confirmTarget.id, 'da_giao');
       showToast('Xác nhận giao hàng thành công');
       setConfirmTarget(null);
-      setKhoiLuongThucTe('');
       loadData();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Lỗi xác nhận giao', 'error');
@@ -177,10 +171,7 @@ export default function TaiXeGiaoHangPage() {
                   </button>
                   <button
                     className={styles.btnDaGiao}
-                    onClick={() => {
-                      setConfirmTarget(dh);
-                      setKhoiLuongThucTe(String(dh.khoiLuongDat || ''));
-                    }}
+                    onClick={() => setConfirmTarget(dh)}
                     disabled={updating === dh.id || dh.trangThaiDon === 'da_giao'}
                   >
                     {updating === dh.id ? '...' : <><FiCheck size={14} /> Đã giao</>}
@@ -200,22 +191,8 @@ export default function TaiXeGiaoHangPage() {
         confirmText="Xác nhận đã giao"
         cancelText="Hủy"
         onConfirm={handleXacNhanDaGiao}
-        onClose={() => { setConfirmTarget(null); setKhoiLuongThucTe(''); }}
+        onClose={() => setConfirmTarget(null)}
         loading={updating !== null}
-        extra={
-          <div style={{ marginTop: 12 }}>
-            <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 6 }}>
-              Khối lượng thực tế (m³) — không bắt buộc
-            </label>
-            <input
-              type="number"
-              className={styles.klInput}
-              placeholder="Ví dụ: 25.5"
-              value={khoiLuongThucTe}
-              onChange={(e) => setKhoiLuongThucTe(e.target.value)}
-            />
-          </div>
-        }
       />
 
       <div className={styles.toastContainer}>

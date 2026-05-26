@@ -338,7 +338,7 @@
   .formRow { grid-template-columns: 1fr; }
   .filterBar { flex-direction: column; align-items: stretch; }
   .filterBarLeft { flex-direction: column; }
-  .filterSearch { max-width: 100%; }
+  .filterSearch { min-width: 100%; max-width: 100%; }
   .infoBoxRow { grid-template-columns: 1fr; }
   .cardGridFooter { flex-direction: column; }
   .btn { width: 100%; justify-content: center; }
