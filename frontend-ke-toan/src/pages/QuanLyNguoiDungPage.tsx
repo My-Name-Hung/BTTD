@@ -71,6 +71,7 @@ export default function QuanLyNguoiDungPage() {
   const [editingUser, setEditingUser] = useState<NguoiDung | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<NguoiDung | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [form, setForm] = useState({
@@ -164,6 +165,7 @@ export default function QuanLyNguoiDungPage() {
       showToast("Vui lòng nhập mật khẩu", "error");
       return;
     }
+    setFormLoading(true);
     try {
       if (editingUser) {
         await suaNguoiDung(editingUser.id, {
@@ -188,6 +190,8 @@ export default function QuanLyNguoiDungPage() {
       setShowSuccess(true);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi", "error");
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -427,11 +431,11 @@ export default function QuanLyNguoiDungPage() {
         title={editingUser ? "Sửa người dùng" : "Thêm người dùng mới"}
         footer={
           <>
-            <button className="btn btn-cancel" onClick={closeModal}>
+            <button className="btn btn-cancel" onClick={closeModal} disabled={formLoading}>
               Hủy
             </button>
-            <button className="btn btn-save" onClick={handleSubmit}>
-              {editingUser ? "Cập nhật" : "Tạo người dùng"}
+            <button className="btn btn-save" onClick={handleSubmit} disabled={formLoading}>
+              {formLoading ? "Đang lưu..." : (editingUser ? "Cập nhật" : "Tạo người dùng")}
             </button>
           </>
         }

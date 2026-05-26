@@ -76,17 +76,18 @@ export async function xoaKhachHang(id: number): Promise<void> {
 
 export async function layTatCaMacBeTong(): Promise<MacBeTong[]> {
   return await query<MacBeTong>(
-    `SELECT * FROM MacBeTong WHERE trangThai = N'hoat_dong' ORDER BY donGia ASC`
+    `SELECT * FROM MacBeTong WHERE trangThai = N'hoat_dong' ORDER BY chiPhiPhatSinh ASC`
   );
 }
 
 export async function taoMacBeTong(data: Partial<MacBeTong>): Promise<MacBeTong> {
   const result = await query<MacBeTong>(
-    `INSERT INTO MacBeTong (tenMac, donGia, moTa) VALUES (@tenMac, @donGia, @moTa);
+    `INSERT INTO MacBeTong (tenMac, chiPhiPhatSinh, buVanChuyen, moTa) VALUES (@tenMac, @chiPhiPhatSinh, @buVanChuyen, @moTa);
      SELECT * FROM MacBeTong WHERE id = SCOPE_IDENTITY();`,
     {
       tenMac: data.tenMac || '',
-      donGia: data.donGia || 0,
+      chiPhiPhatSinh: data.chiPhiPhatSinh || 0,
+      buVanChuyen: data.buVanChuyen || 0,
       moTa: data.moTa || null,
     }
   );
@@ -95,8 +96,8 @@ export async function taoMacBeTong(data: Partial<MacBeTong>): Promise<MacBeTong>
 
 export async function suaMacBeTong(id: number, data: Partial<MacBeTong>): Promise<MacBeTong> {
   await query(
-    `UPDATE MacBeTong SET tenMac = @tenMac, donGia = @donGia, moTa = @moTa WHERE id = @id`,
-    { id, tenMac: data.tenMac, donGia: data.donGia, moTa: data.moTa || null }
+    `UPDATE MacBeTong SET tenMac = @tenMac, chiPhiPhatSinh = @chiPhiPhatSinh, buVanChuyen = @buVanChuyen, moTa = @moTa WHERE id = @id`,
+    { id, tenMac: data.tenMac, chiPhiPhatSinh: data.chiPhiPhatSinh, buVanChuyen: data.buVanChuyen, moTa: data.moTa || null }
   );
   return (await query<MacBeTong>(`SELECT * FROM MacBeTong WHERE id = @id`, { id }))[0];
 }

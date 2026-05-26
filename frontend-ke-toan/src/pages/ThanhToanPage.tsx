@@ -19,6 +19,7 @@ export default function ThanhToanPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
   const [form, setForm] = useState({ soTien: '', hinhThuc: 'tien_mat', nguoiNhan: '', ghiChu: '' });
+  const [formLoading, setFormLoading] = useState(false);
 
   const canCreate = hasPermission('thanhtoan.create');
 
@@ -50,6 +51,7 @@ export default function ThanhToanPage() {
 
   const handleSubmit = async () => {
     if (!selectedDonHang || !form.soTien) return;
+    setFormLoading(true);
     try {
       await taoThanhToan({
         idDonHang: selectedDonHang.id,
@@ -62,6 +64,7 @@ export default function ThanhToanPage() {
       setModalOpen(false);
       loadData();
     } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi', 'error'); }
+    finally { setFormLoading(false); }
   };
 
   const tongCongNo = donHangs.reduce((sum, dh) => sum + Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0)), 0);
@@ -116,13 +119,13 @@ export default function ThanhToanPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Mã đơn</th>
-                  <th>Khách hàng</th>
-                  <th>Tổng tiền</th>
-                  <th>Đã thanh toán</th>
-                  <th>Còn lại</th>
-                  <th>Trạng thái</th>
-                  <th>Thao tác</th>
+                  <th style={{ minWidth: 90 }}>Mã đơn</th>
+                  <th style={{ minWidth: 110 }}>Khách hàng</th>
+                  <th className={styles.hideOnMobile} style={{ minWidth: 100, textAlign: 'right' }}>Tổng tiền</th>
+                  <th className={styles.hideOnMobile} style={{ minWidth: 90, textAlign: 'right' }}>Đã Thanh Toán</th>
+                  <th style={{ minWidth: 80 }}>Còn lại</th>
+                  <th className={styles.hideOnMobile} style={{ minWidth: 90 }}>Trạng thái</th>
+                  <th style={{ minWidth: 90 }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -130,22 +133,30 @@ export default function ThanhToanPage() {
                   const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
                   return (
                     <tr key={dh.id}>
-                      <td><strong>{dh.maDonHang}</strong></td>
-                      <td>{dh.tenKhachHang}</td>
-                      <td><strong>{formatCurrency(dh.thanhTien || 0)}</strong></td>
-                      <td style={{ color: 'var(--color-success)' }}>{formatCurrency(dh.daThanhToan || 0)}</td>
+                      <td>
+                        <span className={styles.tableCode}>{dh.maDonHang}</span>
+                      </td>
+                      <td>
+                        <div className={styles.tableName}>{dh.tenKhachHang}</div>
+                      </td>
+                      <td className={`${styles.tableRight} ${styles.hideOnMobile}`}>
+                        <strong>{formatCurrency(dh.thanhTien || 0)}</strong>
+                      </td>
+                      <td className={`${styles.tableRight} ${styles.hideOnMobile}`} style={{ color: 'var(--color-success)' }}>
+                        {formatCurrency(dh.daThanhToan || 0)}
+                      </td>
                       <td>
                         <span style={{ color: conLai > 0 ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 700 }}>
                           {formatCurrency(conLai)}
                         </span>
                       </td>
-                      <td>
+                      <td className={styles.hideOnMobile}>
                         <span className={styles.badge}>{TRANG_THAI_DON_LABELS[dh.trangThaiDon]}</span>
                       </td>
                       <td>
                         {canCreate && (
-                          <button className="btn btn-save btn-sm" onClick={() => openThanhToan(dh)} disabled={conLai <= 0}>
-                            <FiPlus /> Thanh toán
+                          <button className={`${styles.btnPay} ${conLai <= 0 ? styles.btnPayDisabled : ''}`} onClick={() => openThanhToan(dh)} disabled={conLai <= 0}>
+                            <FiPlus size={14} /> Thanh toán
                           </button>
                         )}
                       </td>
@@ -174,27 +185,29 @@ export default function ThanhToanPage() {
         title={`Thanh toán - ${selectedDonHang?.maDonHang}`}
         footer={
           <>
-            <button className="btn btn-cancel" onClick={() => setModalOpen(false)}>Hủy</button>
-            <button className="btn btn-save" onClick={handleSubmit}>Xác nhận thanh toán</button>
+            <button className="btn btn-cancel" onClick={() => setModalOpen(false)} disabled={formLoading}>Hủy</button>
+            <button className="btn btn-save" onClick={handleSubmit} disabled={formLoading}>
+              {formLoading ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
+            </button>
           </>
         }
       >
-        <div className={styles.infoBox}>
-          <div className={styles.infoBoxRow}>
-            <span className={styles.infoBoxLabel}>Khách hàng</span>
-            <span className={styles.infoBoxValue}>{selectedDonHang?.tenKhachHang}</span>
+        <div className={styles.modalInfoBox}>
+          <div className={styles.modalInfoRow}>
+            <span className={styles.modalInfoLabel}>Khách hàng</span>
+            <span className={styles.modalInfoValue}>{selectedDonHang?.tenKhachHang}</span>
           </div>
-          <div className={styles.infoBoxRow}>
-            <span className={styles.infoBoxLabel}>Tổng tiền</span>
-            <span className={styles.infoBoxValue}>{formatCurrency(selectedDonHang?.thanhTien || 0)}</span>
+          <div className={styles.modalInfoRow}>
+            <span className={styles.modalInfoLabel}>Tổng tiền</span>
+            <span className={styles.modalInfoValue}>{formatCurrency(selectedDonHang?.thanhTien || 0)}</span>
           </div>
-          <div className={styles.infoBoxRow}>
-            <span className={styles.infoBoxLabel}>Đã thanh toán</span>
-            <span className={styles.infoBoxValueSuccess}>{formatCurrency(selectedDonHang?.daThanhToan || 0)}</span>
+          <div className={styles.modalInfoRow}>
+            <span className={styles.modalInfoLabel}>Đã thanh toán</span>
+            <span className={styles.modalInfoSuccess}>{formatCurrency(selectedDonHang?.daThanhToan || 0)}</span>
           </div>
-          <div className={styles.infoBoxRow}>
-            <span className={styles.infoBoxLabel}>Còn lại</span>
-            <span className={styles.infoBoxValueWarning}>{formatCurrency((selectedDonHang?.thanhTien || 0) - (selectedDonHang?.daThanhToan || 0))}</span>
+          <div className={styles.modalInfoRow}>
+            <span className={styles.modalInfoLabel}>Còn lại</span>
+            <span className={styles.modalInfoWarning}>{formatCurrency((selectedDonHang?.thanhTien || 0) - (selectedDonHang?.daThanhToan || 0))}</span>
           </div>
         </div>
         <div className={styles.formGroup}>

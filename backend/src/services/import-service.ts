@@ -375,8 +375,10 @@ export async function importMacBeTong(
     const rowNum = i + 2;
     try {
       const tenMac = String(r['Tên mác'] || r['tenMac'] || '').trim();
-      const donGiaRaw = String(r['DonGia'] || r['Đơn giá'] || r['donGia'] || '0').replace(/[^\d.,]/g, '').replace(',', '.');
-      const donGia = parseFloat(donGiaRaw) || 0;
+      const chiPhiRaw = String(r['ChiPhiPhatSinh'] || r['Chi phí phát sinh'] || r['chiphiphatsinh'] || '0').replace(/[^\d.,]/g, '').replace(',', '.');
+      const chiPhiPhatSinh = parseFloat(chiPhiRaw) || 0;
+      const buRaw = String(r['BuVanChuyen'] || r['Bù vận chuyển'] || r['buvanchuyen'] || '0').replace(/[^\d.,]/g, '').replace(',', '.');
+      const buVanChuyen = parseFloat(buRaw) || 0;
       const moTa = String(r['MoTa'] || r['Mô tả'] || r['moTa'] || '').trim();
 
       if (!tenMac) {
@@ -392,13 +394,13 @@ export async function importMacBeTong(
       );
       if (existing.length > 0) {
         await query(
-          `UPDATE MacBeTong SET donGia = @donGia, moTa = @moTa WHERE id = @id`,
-          { donGia, moTa: moTa || null, id: existing[0].id }
+          `UPDATE MacBeTong SET chiPhiPhatSinh = @chiPhiPhatSinh, buVanChuyen = @buVanChuyen, moTa = @moTa WHERE id = @id`,
+          { chiPhiPhatSinh, buVanChuyen, moTa: moTa || null, id: existing[0].id }
         );
       } else {
         await query(
-          `INSERT INTO MacBeTong (tenMac, donGia, moTa) VALUES (@tenMac, @donGia, @moTa)`,
-          { tenMac, donGia, moTa: moTa || null }
+          `INSERT INTO MacBeTong (tenMac, chiPhiPhatSinh, buVanChuyen, moTa) VALUES (@tenMac, @chiPhiPhatSinh, @buVanChuyen, @moTa)`,
+          { tenMac, chiPhiPhatSinh, buVanChuyen, moTa: moTa || null }
         );
       }
       success++;

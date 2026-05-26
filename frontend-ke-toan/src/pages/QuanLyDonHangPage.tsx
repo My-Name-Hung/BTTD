@@ -54,12 +54,17 @@ export default function QuanLyDonHangPage() {
   const [deleteTarget, setDeleteTarget] = useState<DonHang | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [lyDoTuChoi, setLyDoTuChoi] = useState("");
+  const [approvingId, setApprovingId] = useState<number | null>(null);
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
 
   const userVaiTro = JSON.parse(
     localStorage.getItem("bttd_user") || "{}",
   )?.vaiTro;
   const isSale = userVaiTro === "sale";
+  const isKeToan = userVaiTro === "ke_toan";
+  const isKeToanOrAdmin = isKeToan || userVaiTro === "admin";
   const canCreate = ["admin", "dieu_phoi", "sale"].includes(userVaiTro);
+  const canCreateOrder = ["admin", "sale"].includes(userVaiTro);
   const canEdit = ["admin", "dieu_phoi"].includes(userVaiTro);
   const canDelete = ["admin"].includes(userVaiTro);
   const canApprove = ["admin", "ke_toan"].includes(userVaiTro);
@@ -102,17 +107,21 @@ export default function QuanLyDonHangPage() {
     data.data?.filter((d) => d.trangThaiDon === "da_thanh_toan").length || 0;
 
   const handleDuyet = async (id: number) => {
+    setApprovingId(id);
     try {
       await duyetDonHang(id);
       showToast("Duyệt đơn hàng thành công");
       loadData();
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi", "error");
+    } finally {
+      setApprovingId(null);
     }
   };
 
   const handleTuChoi = async () => {
     if (!tuChoiModal || !lyDoTuChoi.trim()) return;
+    setRejectingId(tuChoiModal);
     try {
       await tuChoiDonHang(tuChoiModal, lyDoTuChoi);
       showToast("Từ chối đơn hàng thành công");
@@ -121,6 +130,8 @@ export default function QuanLyDonHangPage() {
       loadData();
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi", "error");
+    } finally {
+      setRejectingId(null);
     }
   };
 
@@ -155,7 +166,7 @@ export default function QuanLyDonHangPage() {
             Toàn quyền quản lý đơn hàng bê tông
           </div>
         </div>
-        {canCreate && (
+        {canCreateOrder && (
           <button
             className="btn btn-add"
             onClick={() => navigate("/quan-ly/don-hang/tao")}
@@ -165,9 +176,9 @@ export default function QuanLyDonHangPage() {
         )}
       </div>
 
-      {/* KPI Row - Sale role uses simplified 2-column grid */}
-      <div className={isSale ? styles.kpiRowSale : styles.kpiRow}>
-        {isSale ? (
+      {/* KPI Row - Sale/Kế toán role uses simplified 2-column grid */}
+      <div className={isSale || isKeToan ? styles.kpiRowSale : styles.kpiRow}>
+        {isSale || isKeToan ? (
           <>
             <div className={styles.kpiItem}>
               <div className={styles.kpiLabel}>Tổng đơn</div>
@@ -261,8 +272,8 @@ export default function QuanLyDonHangPage() {
         </div>
       </div>
 
-      {/* Table - Sale role uses simplified 4-column table */}
-      {isSale ? (
+      {/* Table - Sale/Kế toán uses simplified table with actions */}
+      {isSale || isKeToan ? (
         <div className={styles.card}>
           <div className={styles.saleCardHeader}>
             <span className={styles.saleCardTitle}>Danh sách đơn hàng</span>
@@ -288,10 +299,10 @@ export default function QuanLyDonHangPage() {
                       className={styles.hideOnMobile}
                       style={{ minWidth: 50, textAlign: "right" }}
                     >
-                      KL
+                      KL (m3)
                     </th>
                     <th style={{ minWidth: 80 }}>Trạng thái</th>
-                    <th style={{ minWidth: 50 }}>Thao tác</th>
+                    <th style={{ minWidth: isKeToan ? 80 : 50 }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -326,14 +337,34 @@ export default function QuanLyDonHangPage() {
                       </td>
                       <td>
                         <div className={styles.rowActions}>
+                          {dh.trangThaiDon === "cho_duyet" && canApprove && (
+                            <button
+                              className={`${styles.actionBtn} ${styles.actionBtnSuccess} ${styles.actionBtnSm}`}
+                              onClick={() => handleDuyet(dh.id)}
+                              disabled={approvingId === dh.id}
+                              title="Duyệt"
+                            >
+                              {approvingId === dh.id ? "..." : <FiCheck size={12} />}
+                            </button>
+                          )}
+                          {dh.trangThaiDon === "cho_duyet" && canApprove && (
+                            <button
+                              className={`${styles.actionBtn} ${styles.actionBtnDanger} ${styles.actionBtnSm}`}
+                              onClick={() => setTuChoiModal(dh.id)}
+                              disabled={rejectingId === dh.id}
+                              title="Từ chối"
+                            >
+                              {rejectingId === dh.id ? "..." : <FiX size={12} />}
+                            </button>
+                          )}
                           <button
-                            className={`${styles.actionBtn} ${styles.actionBtnView}`}
+                            className={`${styles.actionBtn} ${styles.actionBtnView} ${styles.actionBtnSm}`}
                             onClick={() =>
                               navigate(`/quan-ly/don-hang/chi-tiet/${dh.id}`)
                             }
                             title="Xem chi tiết"
                           >
-                            <FiEye size={14} />
+                            <FiEye size={12} />
                           </button>
                         </div>
                       </td>
@@ -372,7 +403,12 @@ export default function QuanLyDonHangPage() {
                     >
                       Địa chỉ
                     </th>
-                    <th style={{ minWidth: 80 }}>Mác BT</th>
+                    <th
+                      className={styles.hideOnMobile}
+                      style={{ minWidth: 80 }}
+                    >
+                      Mác BT
+                    </th>
                     <th
                       className={styles.hideOnMobile}
                       style={{ minWidth: 90, textAlign: "right" }}
@@ -414,7 +450,7 @@ export default function QuanLyDonHangPage() {
                       >
                         {dh.diaChiNhan}
                       </td>
-                      <td>
+                      <td className={styles.hideOnMobile}>
                         <span className={styles.tableMac}>
                           {dh.tenMacBeTong}
                         </span>
@@ -458,16 +494,26 @@ export default function QuanLyDonHangPage() {
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
                                 onClick={() => handleDuyet(dh.id)}
+                                disabled={approvingId === dh.id}
                                 title="Duyệt"
                               >
-                                <FiCheck size={14} />
+                                {approvingId === dh.id ? (
+                                  "..."
+                                ) : (
+                                  <FiCheck size={14} />
+                                )}
                               </button>
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
                                 onClick={() => setTuChoiModal(dh.id)}
+                                disabled={rejectingId === dh.id}
                                 title="Từ chối"
                               >
-                                <FiX size={14} />
+                                {rejectingId === dh.id ? (
+                                  "..."
+                                ) : (
+                                  <FiX size={14} />
+                                )}
                               </button>
                             </>
                           )}
@@ -529,6 +575,7 @@ export default function QuanLyDonHangPage() {
         confirmText="Xác nhận từ chối"
         cancelText="Hủy"
         type="warning"
+        loading={rejectingId !== null}
         extra={
           <div style={{ marginTop: 16, textAlign: "left" }}>
             <label

@@ -32,6 +32,9 @@ export default function NghiemThuPage() {
 
   const canConfirm = hasPermission('nghiemthu.confirm');
 
+  const userVaiTro = JSON.parse(localStorage.getItem("bttd_user") || "{}")?.vaiTro;
+  const isKyThuat = userVaiTro === "ky_thuat" || userVaiTro === "admin";
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -224,12 +227,12 @@ export default function NghiemThuPage() {
                 </div>
 
                 <div className={styles.cardGridFooter}>
-                  {!isDaNT && canConfirm && (
+                  {!isDaNT && isKyThuat && (
                     <button className="btn btn-save" onClick={() => handleDaNghiemThu(dh)}>
                       <FiCheck /> Đã nghiệm thu
                     </button>
                   )}
-                  {isDaNT && (
+                  {isDaNT && isKyThuat && (
                     <button className="btn btn-secondary" onClick={() => openUploadFile(dh, nt!)}>
                       <FiUpload /> {nt?.bienBanFile ? 'Thay đổi file' : 'Tải file biên bản'}
                     </button>

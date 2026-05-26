@@ -16,6 +16,7 @@ export default function ThamSoPage() {
   const [xes, setXes] = useState<Xe[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'mac' | 'tram' | 'xe'>('mac');
   const [form, setForm] = useState({ tenMac: '', donGia: '', moTa: '' });
 
@@ -40,6 +41,7 @@ export default function ThamSoPage() {
 
   const handleTaoMac = async () => {
     if (!form.tenMac.trim() || !form.donGia) return;
+    setFormLoading(true);
     try {
       await taoMacBeTong({ tenMac: form.tenMac, donGia: parseFloat(form.donGia), moTa: form.moTa || null });
       showToast('Thêm mác bê tông thành công');
@@ -47,6 +49,7 @@ export default function ThamSoPage() {
       setForm({ tenMac: '', donGia: '', moTa: '' });
       loadData();
     } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi', 'error'); }
+    finally { setFormLoading(false); }
   };
 
   return (
@@ -147,7 +150,7 @@ export default function ThamSoPage() {
       )}
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Thêm mác bê tông"
-        footer={<><button className="btn btn-cancel" onClick={() => setModalOpen(false)}>Hủy</button><button className="btn btn-save" onClick={handleTaoMac}>Thêm</button></>}
+        footer={<><button className="btn btn-cancel" onClick={() => setModalOpen(false)} disabled={formLoading}>Hủy</button><button className="btn btn-save" onClick={handleTaoMac} disabled={formLoading}>{formLoading ? 'Đang lưu...' : 'Thêm'}</button></>}
       >
         <div className={styles.formGroup}><label className={styles.formLabel}>Tên mác *</label><input className={styles.formInput} value={form.tenMac} onChange={(e) => setForm({ ...form, tenMac: e.target.value })} placeholder="VD: M300" /></div>
         <div className={styles.formGroup}><label className={styles.formLabel}>Đơn giá (VNĐ) *</label><input type="number" className={styles.formInput} value={form.donGia} onChange={(e) => setForm({ ...form, donGia: e.target.value })} placeholder="VD: 1300000" /></div>

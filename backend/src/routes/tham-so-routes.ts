@@ -76,7 +76,7 @@ router.get('/mac-be-tong', authMiddleware, async (_req: AuthRequest, res: Respon
   }
 });
 
-router.post('/mac-be-tong', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.post('/mac-be-tong', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const mac = await taoMacBeTong(req.body);
     res.status(201).json({ success: true, message: 'Tạo mác bê tông thành công', data: mac });
@@ -86,7 +86,7 @@ router.post('/mac-be-tong', authMiddleware, requireRole('admin'), async (req: Au
   }
 });
 
-router.put('/mac-be-tong/:id', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.put('/mac-be-tong/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
     const mac = await suaMacBeTong(id, req.body);
@@ -205,7 +205,7 @@ router.delete('/xe/:id', authMiddleware, requireRole('admin'), async (req: AuthR
   }
 });
 
-router.delete('/mac-be-tong/:id', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.delete('/mac-be-tong/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
     await query('DELETE FROM MacBeTong WHERE id = @id', { id });

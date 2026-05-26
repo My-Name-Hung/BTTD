@@ -40,6 +40,7 @@ const EMPTY_FORM = {
   tenKhachHang: '', diaChiNhan: '', soDienThoai: '',
   tenMacBeTong: '', khoiLuongDat: '', donGia: '',
   ghiChu: '', idKhachHang: '', idMacBeTong: '', idTramTron: '',
+  buVanChuyenTungay: '',
 };
 
 export default function TaoDonHangPage() {
@@ -63,7 +64,21 @@ export default function TaoDonHangPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [thoiGianGiaoDuKien, setThoiGianGiaoDuKien] = useState<Date | null>(null);
 
-  const thanhTien = (parseFloat(form.khoiLuongDat) || 0) * (parseFloat(form.donGia.replace(/[^\d]/g, '')) || 0);
+  const thanhTien = (() => {
+    const mac = macBeTongs.find(m => m.id === parseInt(form.idMacBeTong));
+    if (!mac) return 0;
+    const chiPhiPhatSinh = mac.chiPhiPhatSinh || 0;
+    const khoiLuong = parseFloat(form.khoiLuongDat) || 0;
+    const buVanChuyen = (khoiLuong <= 5 && form.buVanChuyenTungay)
+      ? (mac.buVanChuyen || 0)
+      : 0;
+    return chiPhiPhatSinh + buVanChuyen;
+  })();
+
+  const hienThiBuVanChuyen = (() => {
+    const khoiLuong = parseFloat(form.khoiLuongDat) || 0;
+    return khoiLuong <= 5;
+  })();
 
   // Track initial state for change detection
   const [initialForm, setInitialForm] = useState(EMPTY_FORM);
@@ -112,6 +127,7 @@ export default function TaoDonHangPage() {
             idKhachHang: String(dh.idKhachHang || ''),
             idMacBeTong: String(dh.idMacBeTong || ''),
             idTramTron: String(dh.idTramTron || ''),
+            buVanChuyenTungay: '',
           };
           const t = parseLocalDatetime(dh.thoiGianGiaoDuKien);
           setForm(f);
@@ -127,17 +143,13 @@ export default function TaoDonHangPage() {
   }, [editingId, showToast]);
 
   const handleMacChange = (macId: string) => {
-    if (!macId) {
-      setForm({ ...form, idMacBeTong: '', donGia: form.donGia });
-      return;
-    }
+    setForm({ ...form, idMacBeTong: macId, buVanChuyenTungay: '' });
     const mac = macBeTongs.find((m) => m.id === parseInt(macId));
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       idMacBeTong: macId,
       tenMacBeTong: mac?.tenMac || '',
-      donGia: mac ? Number(mac.donGia).toLocaleString('vi-VN') : form.donGia,
-    });
+    }));
     setMacSearchOpen(false);
     setMacSearchQuery('');
   };
@@ -154,19 +166,25 @@ export default function TaoDonHangPage() {
       return;
     }
     if (!form.donGia || parseFloat(form.donGia.replace(/[^\d]/g, '')) <= 0) {
-      showToast('Đơn giá phải lớn hơn 0', 'error');
+      showToast('Chi phí phát sinh phải lớn hơn 0', 'error');
       return;
     }
 
     setSubmitting(true);
     try {
+      const chiPhiPhatSinh = parseFloat(form.donGia.replace(/[^\d]/g, ''));
+      const khoiLuong = parseFloat(form.khoiLuongDat);
+      const mac = macBeTongs.find(m => m.id === parseInt(form.idMacBeTong));
+      const buVanChuyenTinh = (khoiLuong <= 5 && form.buVanChuyenTungay) ? (mac?.buVanChuyen || 0) : 0;
+      const donGiaTinh = chiPhiPhatSinh + buVanChuyenTinh;
+
       const payload: Partial<DonHang> = {
         tenKhachHang: form.tenKhachHang,
         diaChiNhan: form.diaChiNhan,
         soDienThoai: form.soDienThoai,
         tenMacBeTong: form.tenMacBeTong,
-        khoiLuongDat: parseFloat(form.khoiLuongDat),
-        donGia: parseFloat(form.donGia.replace(/[^\d]/g, '')),
+        khoiLuongDat: khoiLuong,
+        donGia: donGiaTinh,
         thoiGianGiaoDuKien: thoiGianGiaoDuKien ? toLocalDatetimeInput(thoiGianGiaoDuKien) : null,
         ghiChu: form.ghiChu || null,
         idKhachHang: form.idKhachHang ? parseInt(form.idKhachHang) : null,
@@ -275,7 +293,7 @@ export default function TaoDonHangPage() {
                     <span>
                       {(macBeTongs.find(m => m.id === parseInt(form.idMacBeTong)) || { tenMac: form.tenMacBeTong }).tenMac}
                       <span className={styles.searchDropdownPrice}>
-                        — {formatCurrency(macBeTongs.find(m => m.id === parseInt(form.idMacBeTong))?.donGia || 0)}/m³
+                        — {formatCurrency(macBeTongs.find(m => m.id === parseInt(form.idMacBeTong))?.chiPhiPhatSinh || 0)}
                       </span>
                     </span>
                   ) : (
@@ -304,7 +322,7 @@ export default function TaoDonHangPage() {
                             onClick={() => handleMacChange(String(m.id))}
                           >
                             <span className={styles.searchDropdownItemName}>{m.tenMac}</span>
-                            <span className={styles.searchDropdownItemPrice}>{formatCurrency(m.donGia)}/m³</span>
+                            <span className={styles.searchDropdownItemPrice}>{formatCurrency(m.chiPhiPhatSinh)}</span>
                           </div>
                         ))}
                       {macBeTongs.filter(m => m.tenMac.toLowerCase().includes(macSearchQuery.toLowerCase())).length === 0 && (
@@ -350,7 +368,7 @@ export default function TaoDonHangPage() {
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Đơn giá (VNĐ) *</label>
+              <label className={styles.formLabel}>Chi phí phát sinh (VNĐ)</label>
               <input
                 type="text"
                 className={styles.formInput}
@@ -360,10 +378,32 @@ export default function TaoDonHangPage() {
                   setForm({ ...form, donGia: raw ? Number(raw).toLocaleString('vi-VN') : '' });
                 }}
                 placeholder="VD: 1.500.000"
-                required
               />
             </div>
           </div>
+          {hienThiBuVanChuyen && form.idMacBeTong && (
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>
+                Bù vận chuyển (VNĐ)
+                <span className={styles.labelHint}>— Áp dụng cho đơn ≤ 5m³, chỉ tính theo ngày</span>
+              </label>
+              <div className={styles.buVanChuyenRow}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={!!form.buVanChuyenTungay}
+                    onChange={(e) => setForm({ ...form, buVanChuyenTungay: e.target.checked ? '1' : '' })}
+                  />
+                  Tính bù vận chuyển hôm nay
+                </label>
+                {form.buVanChuyenTungay && (
+                  <span className={styles.buVanChuyenAmount}>
+                    + {formatCurrency(macBeTongs.find(m => m.id === parseInt(form.idMacBeTong))?.buVanChuyen || 0)}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className={styles.formDivider} />
           <div className={styles.sectionTitle}>Thông tin giao hàng</div>

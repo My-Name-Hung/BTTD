@@ -303,4 +303,9 @@
 @media (max-width: 768px) {
   .orderInfo { grid-template-columns: 1fr; }
   .orderActions { flex-direction: column; }
+  .searchBar { margin-bottom: 12px; }
+  .searchInput {
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+  }
 }

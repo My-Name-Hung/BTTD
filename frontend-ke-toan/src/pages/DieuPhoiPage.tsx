@@ -25,6 +25,7 @@ export default function DieuPhoiPage() {
   const [tuKhoa, setTuKhoa] = useState('');
   const [xeModal, setXeModal] = useState(false);
   const [xeForm, setXeForm] = useState({ bienSo: '', tenTaiXe: '', soDienThoaiTaiXe: '' });
+  const [formLoading, setFormLoading] = useState(false);
 
   const canCreateSchedule = hasPermission('dieuphoi.create');
   const canEditSchedule = hasPermission('dieuphoi.edit');
@@ -65,12 +66,14 @@ export default function DieuPhoiPage() {
 
   const handleTaoXe = async () => {
     if (!xeForm.bienSo.trim()) return;
+    setFormLoading(true);
     try {
       await taoXe(xeForm);
       showToast('Thêm xe thành công');
       setXeForm({ bienSo: '', tenTaiXe: '', soDienThoaiTaiXe: '' });
       setXeModal(false);
     } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi', 'error'); }
+    finally { setFormLoading(false); }
   };
 
   const filteredDonHangs = donHangs.filter((dh) =>
@@ -174,7 +177,7 @@ export default function DieuPhoiPage() {
       )}
 
       <Modal isOpen={xeModal} onClose={() => setXeModal(false)} title="Thêm xe mới"
-        footer={<><button className="btn btn-cancel" onClick={() => setXeModal(false)}>Hủy</button><button className="btn btn-add" onClick={handleTaoXe}>Thêm</button></>}
+        footer={<><button className="btn btn-cancel" onClick={() => setXeModal(false)} disabled={formLoading}>Hủy</button><button className="btn btn-add" onClick={handleTaoXe} disabled={formLoading}>{formLoading ? 'Đang thêm...' : 'Thêm'}</button></>}
       >
         <div className={styles.formGroup}><label className={styles.formLabel}>Biển số xe *</label><input className={styles.formInput} value={xeForm.bienSo} onChange={(e) => setXeForm({ ...xeForm, bienSo: e.target.value })} placeholder="VD: 59C1-12345" /></div>
         <div className={styles.formGroup}><label className={styles.formLabel}>Tên tài xế</label><input className={styles.formInput} value={xeForm.tenTaiXe} onChange={(e) => setXeForm({ ...xeForm, tenTaiXe: e.target.value })} /></div>

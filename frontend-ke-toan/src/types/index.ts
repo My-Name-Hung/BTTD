@@ -40,7 +40,8 @@ export interface KhachHang {
 export interface MacBeTong {
   id: number;
   tenMac: string;
-  donGia: number;
+  chiPhiPhatSinh: number;
+  buVanChuyen: number;
   moTa: string | null;
 }
 

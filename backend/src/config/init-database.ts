@@ -132,7 +132,8 @@ async function initDatabase(): Promise<void> {
         CREATE TABLE MacBeTong (
           id INT IDENTITY(1,1) PRIMARY KEY,
           tenMac NVARCHAR(100) NOT NULL,
-          donGia DECIMAL(18,2) NOT NULL DEFAULT 0,
+          chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0,
+          buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0,
           moTa NVARCHAR(500),
           trangThai NVARCHAR(20) DEFAULT N'hoat_dong',
           ngayTao DATETIME DEFAULT GETDATE()
@@ -140,6 +141,21 @@ async function initDatabase(): Promise<void> {
       `);
     } else {
       console.log('  ✅ Bảng MacBeTong đã tồn tại');
+      // Thêm cột mới nếu chưa có (cho DB đã tồn tại)
+      try {
+        const cols = await db.query<{ COLUMN_NAME: string }[]>(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'MacBeTong'`
+        );
+        const colNames = cols.recordset.map(c => c.COLUMN_NAME.toLowerCase());
+        if (!colNames.includes('chiphiphatsinh')) {
+          await db.query(`ALTER TABLE MacBeTong ADD chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0`);
+          console.log('  ➕ Thêm cột chiPhiPhatSinh vào MacBeTong');
+        }
+        if (!colNames.includes('buvanchuyen')) {
+          await db.query(`ALTER TABLE MacBeTong ADD buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0`);
+          console.log('  ➕ Thêm cột buVanChuyen vào MacBeTong');
+        }
+      } catch (e) { /* columns may already exist */ }
     }
 
     // Tạo bảng TramTron
@@ -423,13 +439,13 @@ async function initDatabase(): Promise<void> {
     if (macCount.recordset[0].cnt === 0) {
       console.log('  ➕ Thêm dữ liệu mác bê tông mẫu...');
       await db.query(`
-        INSERT INTO MacBeTong (tenMac, donGia, moTa)
+        INSERT INTO MacBeTong (tenMac, chiPhiPhatSinh, buVanChuyen, moTa)
         VALUES
-        (N'M250', 1200000, N'Mác bê tông 250'),
-        (N'M300', 1300000, N'Mác bê tông 300'),
-        (N'M350', 1400000, N'Mác bê tông 350'),
-        (N'M400', 1500000, N'Mác bê tông 400'),
-        (N'M450', 1600000, N'Mác bê tông 450')
+        (N'M250', 1200000, 0, N'Mác bê tông 250'),
+        (N'M300', 1300000, 0, N'Mác bê tông 300'),
+        (N'M350', 1400000, 0, N'Mác bê tông 350'),
+        (N'M400', 1500000, 0, N'Mác bê tông 400'),
+        (N'M450', 1600000, 0, N'Mác bê tông 450')
       `);
     } else {
       console.log('  ✅ Dữ liệu mác bê tông đã tồn tại');

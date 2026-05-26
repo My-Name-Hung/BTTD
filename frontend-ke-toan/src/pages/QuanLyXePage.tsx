@@ -31,6 +31,7 @@ export default function QuanLyXePage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Xe | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
 
@@ -123,6 +124,7 @@ export default function QuanLyXePage() {
 
   const handleSubmit = async () => {
     if (!form.bienSo.trim()) { showToast('Biển số xe là bắt buộc', 'error'); return; }
+    setFormLoading(true);
     try {
       const payload = { bienSo: form.bienSo, tenTaiXe: form.tenTaiXe || null, soDienThoaiTaiXe: form.soDienThoaiTaiXe || null, taiTrong: form.taiTrong ? parseFloat(form.taiTrong) : null, trangThai: form.trangThai };
       if (editingId) { await suaXe(editingId, payload); }
@@ -130,6 +132,7 @@ export default function QuanLyXePage() {
       setModalOpen(false);
       setShowSuccess(true);
     } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi', 'error'); }
+    finally { setFormLoading(false); }
   };
 
   const resetForm = () => {
@@ -339,7 +342,7 @@ export default function QuanLyXePage() {
       </Modal>
 
       <Modal isOpen={modalOpen} onClose={closeModal} title={editingId ? 'Sửa phương tiện' : 'Thêm phương tiện mới'}
-        footer={<><button className="btn btn-cancel" onClick={closeModal}>Hủy</button><button className="btn btn-save" onClick={handleSubmit}>{editingId ? 'Cập nhật' : 'Thêm xe'}</button></>}
+        footer={<><button className="btn btn-cancel" onClick={closeModal} disabled={formLoading}>Hủy</button><button className="btn btn-save" onClick={handleSubmit} disabled={formLoading}>{formLoading ? 'Đang lưu...' : (editingId ? 'Cập nhật' : 'Thêm xe')}</button></>}
       >
         <div className={styles.formGroup}><label className={styles.formLabel}>Biển số xe *</label><input className={styles.formInput} value={form.bienSo} onChange={(e) => setForm({ ...form, bienSo: e.target.value })} placeholder="VD: 59C1-12345" /></div>
         <div className={styles.formGroup}><label className={styles.formLabel}>Tên tài xế</label><input className={styles.formInput} value={form.tenTaiXe} onChange={(e) => setForm({ ...form, tenTaiXe: e.target.value })} /></div>

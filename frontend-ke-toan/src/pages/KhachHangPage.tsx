@@ -21,6 +21,7 @@ export default function KhachHangPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<KhachHang | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [form, setForm] = useState({
@@ -48,6 +49,7 @@ export default function KhachHangPage() {
 
   const handleSubmit = async () => {
     if (!form.tenKhachHang.trim()) { showToast('Tên khách hàng là bắt buộc', 'error'); return; }
+    setFormLoading(true);
     try {
       if (editingId) {
         await suaKhachHang(editingId, form);
@@ -58,6 +60,8 @@ export default function KhachHangPage() {
       setShowSuccess(true);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Lỗi', 'error');
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -206,8 +210,10 @@ export default function KhachHangPage() {
         title={editingId ? 'Sửa khách hàng' : 'Thêm khách hàng mới'}
         footer={
           <>
-            <button className="btn btn-cancel" onClick={closeModal}>Hủy</button>
-            <button className="btn btn-save" onClick={handleSubmit}>{editingId ? 'Cập nhật' : 'Thêm'}</button>
+            <button className="btn btn-cancel" onClick={closeModal} disabled={formLoading}>Hủy</button>
+            <button className="btn btn-save" onClick={handleSubmit} disabled={formLoading}>
+              {formLoading ? 'Đang lưu...' : (editingId ? 'Cập nhật' : 'Thêm')}
+            </button>
           </>
         }
       >

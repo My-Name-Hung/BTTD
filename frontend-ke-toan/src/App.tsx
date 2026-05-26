@@ -27,6 +27,7 @@ const MaintenanceBlockPage = lazy(() => import("./pages/MaintenanceBlockPage"));
 const KhoDashboardPage = lazy(() => import("./pages/KhoDashboardPage"));
 const KhoLichSanXuatPage = lazy(() => import("./pages/KhoLichSanXuatPage"));
 const KhoDonHangPage = lazy(() => import("./pages/KhoDonHangPage"));
+const QuanLyMacBeTongPage = lazy(() => import("./pages/QuanLyMacBeTongPage"));
 
 // Role-specific pages
 const SaleDonHangPage = lazy(() => import("./pages/SaleDonHangPage"));
@@ -91,6 +92,7 @@ function App() {
                     {/* Điều phối */}
                     <Route path="/dieu-phoi" element={<DieuPhoiPage />} />
                     <Route path="/dieu-phoi/lich-san-xuat/:id" element={<TaoLichSanXuatPage />} />
+                    <Route path="/dieu-phoi/mac-be-tong" element={<QuanLyMacBeTongPage />} />
 
                     {/* Kho */}
                     <Route path="/kho/dashboard" element={<KhoDashboardPage />} />

@@ -84,6 +84,14 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdLocalShipping size={20} />,
     roles: ["admin", "dieu_phoi"],
   },
+  // Quản lý mác bê tông
+  {
+    path: "/dieu-phoi/mac-be-tong",
+    label: "Mác bê tông",
+    icon: <MdFactory size={20} />,
+    iconActive: <MdFactory size={20} />,
+    roles: ["admin", "dieu_phoi"],
+  },
   // Nghiệm thu
   {
     path: "/nghiem-thu",
@@ -198,6 +206,7 @@ export const SIDEBAR_GROUPS: MenuGroup[] = [
     items: SIDEBAR_ITEMS.filter((m) =>
       [
         "/dieu-phoi",
+        "/dieu-phoi/mac-be-tong",
         "/nghiem-thu",
         "/thanh-toan",
         "/cong-no",
@@ -261,6 +270,13 @@ const BOTTOM_TABS = [
       "tai_xe",
       "ky_thuat",
     ],
+  },
+  {
+    path: "/dieu-phoi/mac-be-tong",
+    label: "Mác BT",
+    icon: <MdFactory size={22} />,
+    iconActive: <MdFactory size={22} />,
+    roles: ["admin", "dieu_phoi"],
   },
 ];
 

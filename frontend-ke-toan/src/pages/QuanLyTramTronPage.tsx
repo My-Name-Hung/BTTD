@@ -29,6 +29,7 @@ export default function QuanLyTramTronPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TramTron | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
 
@@ -114,6 +115,7 @@ export default function QuanLyTramTronPage() {
 
   const handleSubmit = async () => {
     if (!form.tenTram.trim()) { showToast('Tên trạm trộn là bắt buộc', 'error'); return; }
+    setFormLoading(true);
     try {
       const payload: Partial<TramTron> = {
         tenTram: form.tenTram,
@@ -126,6 +128,7 @@ export default function QuanLyTramTronPage() {
       setModalOpen(false);
       setShowSuccess(true);
     } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi', 'error'); }
+    finally { setFormLoading(false); }
   };
 
   const resetForm = () => {
@@ -315,7 +318,7 @@ export default function QuanLyTramTronPage() {
       </Modal>
 
       <Modal isOpen={modalOpen} onClose={closeModal} title={editingId ? 'Sửa trạm trộn' : 'Thêm trạm trộn mới'}
-        footer={<><button className="btn btn-cancel" onClick={closeModal}>Hủy</button><button className="btn btn-save" onClick={handleSubmit}>{editingId ? 'Cập nhật' : 'Thêm trạm trộn'}</button></>}
+        footer={<><button className="btn btn-cancel" onClick={closeModal} disabled={formLoading}>Hủy</button><button className="btn btn-save" onClick={handleSubmit} disabled={formLoading}>{formLoading ? 'Đang lưu...' : (editingId ? 'Cập nhật' : 'Thêm trạm trộn')}</button></>}
       >
         <div className={styles.formGroup}><label className={styles.formLabel}>Tên trạm trộn *</label><input className={styles.formInput} value={form.tenTram} onChange={(e) => setForm({ ...form, tenTram: e.target.value })} placeholder="VD: Trạm trộn số 1" /></div>
         <div className={styles.formGroup}><label className={styles.formLabel}>Địa chỉ</label><input className={styles.formInput} value={form.diaChi} onChange={(e) => setForm({ ...form, diaChi: e.target.value })} placeholder="VD: Km 14, QL91, P.Phước Thới, TP.Cần Thơ" /></div>
