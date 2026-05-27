@@ -59,7 +59,11 @@ export function requireRole(...roles: string[]) {
       return;
     }
 
-    if (!roles.includes(req.user.vaiTro)) {
+    const normalize = (s: string) => s.replace(/_/g, '').toLowerCase();
+    const userRole = normalize(req.user.vaiTro || '');
+    const allowed = roles.map(normalize);
+
+    if (!allowed.includes(userRole)) {
       res.status(403).json({
         success: false,
         message: 'Bạn không có quyền thực hiện thao tác này',

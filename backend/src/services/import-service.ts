@@ -377,17 +377,36 @@ export async function importPhuongTien(
         }
       }
 
-      await query(
-        `INSERT INTO Xe (bienSo, idTaiKhoan, tenTaiXe, soDienThoaiTaiXe, taiTrong, trangThai)
-         VALUES (@bienSo, @idTaiKhoan, @tenTaiXe, @soDienThoaiTaiXe, @taiTrong, N'san_sang')`,
-        {
-          bienSo: bienSo.toUpperCase(),
-          idTaiKhoan,
-          tenTaiXe: tenTaiXe || null,
-          soDienThoaiTaiXe: soDienThoaiTaiXe || null,
-          taiTrong: taiTrong || null,
-        }
+      // UPSERT: update nếu biển số đã tồn tại, insert nếu chưa
+      const existing = await query<{ id: number }>(
+        `SELECT id FROM Xe WHERE bienSo = @bienSo`,
+        { bienSo: bienSo.toUpperCase() }
       );
+
+      if (existing.length > 0) {
+        await query(
+          `UPDATE Xe SET idTaiKhoan = @idTaiKhoan, tenTaiXe = @tenTaiXe, soDienThoaiTaiXe = @soDienThoaiTaiXe, taiTrong = @taiTrong WHERE bienSo = @bienSo`,
+          {
+            bienSo: bienSo.toUpperCase(),
+            idTaiKhoan,
+            tenTaiXe: tenTaiXe || null,
+            soDienThoaiTaiXe: soDienThoaiTaiXe || null,
+            taiTrong: taiTrong || null,
+          }
+        );
+      } else {
+        await query(
+          `INSERT INTO Xe (bienSo, idTaiKhoan, tenTaiXe, soDienThoaiTaiXe, taiTrong, trangThai)
+           VALUES (@bienSo, @idTaiKhoan, @tenTaiXe, @soDienThoaiTaiXe, @taiTrong, N'san_sang')`,
+          {
+            bienSo: bienSo.toUpperCase(),
+            idTaiKhoan,
+            tenTaiXe: tenTaiXe || null,
+            soDienThoaiTaiXe: soDienThoaiTaiXe || null,
+            taiTrong: taiTrong || null,
+          }
+        );
+      }
       success++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Lỗi không xác định';
