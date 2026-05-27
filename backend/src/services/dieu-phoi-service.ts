@@ -20,18 +20,31 @@ export async function taoLichSanXuat(
     { id: data.idDonHang }
   );
 
+  // Lấy idTaiXe từ bảng Xe (qua idTaiKhoan)
+  let idTaiXe: number | null = null;
+  if (data.idXe) {
+    const xe = await query<{ idTaiKhoan: number | null }>(
+      `SELECT idTaiKhoan FROM Xe WHERE id = @idXe`,
+      { idXe: data.idXe }
+    );
+    if (xe.length > 0 && xe[0].idTaiKhoan) {
+      idTaiXe = xe[0].idTaiKhoan;
+    }
+  }
+
   const result = await query<LichSanXuat>(
     `INSERT INTO LichSanXuat (
-      idDonHang, idXe, kyThuatCongTrinh, nguoiOmOng, nguoiBatOng,
+      idDonHang, idXe, idTaiXe, kyThuatCongTrinh, nguoiOmOng, nguoiBatOng,
       phuongAnDo, bienSoXe, trangThai, ghiChu, driveLink
     ) VALUES (
-      @idDonHang, @idXe, @kyThuatCongTrinh, @nguoiOmOng, @nguoiBatOng,
+      @idDonHang, @idXe, @idTaiXe, @kyThuatCongTrinh, @nguoiOmOng, @nguoiBatOng,
       @phuongAnDo, @bienSoXe, N'chua_san_xuat', @ghiChu, @driveLink
     );
     SELECT * FROM LichSanXuat WHERE id = SCOPE_IDENTITY();`,
     {
       idDonHang: data.idDonHang,
       idXe: data.idXe || null,
+      idTaiXe,
       kyThuatCongTrinh: data.kyThuatCongTrinh || null,
       nguoiOmOng: data.nguoiOmOng || null,
       nguoiBatOng: data.nguoiBatOng || null,
@@ -105,9 +118,21 @@ export async function capNhatLichSanXuat(
   id: number,
   data: Partial<LichSanXuat>
 ): Promise<LichSanXuat> {
+  // Lấy idTaiXe từ bảng Xe nếu có đổi xe
+  let idTaiXe: number | null = null;
+  if (data.idXe) {
+    const xe = await query<{ idTaiKhoan: number | null }>(
+      `SELECT idTaiKhoan FROM Xe WHERE id = @idXe`,
+      { idXe: data.idXe }
+    );
+    if (xe.length > 0 && xe[0].idTaiKhoan) {
+      idTaiXe = xe[0].idTaiKhoan;
+    }
+  }
+
   await query(
     `UPDATE LichSanXuat SET
-      idXe = @idXe, kyThuatCongTrinh = @kyThuatCongTrinh,
+      idXe = @idXe, idTaiXe = @idTaiXe, kyThuatCongTrinh = @kyThuatCongTrinh,
       nguoiOmOng = @nguoiOmOng, nguoiBatOng = @nguoiBatOng,
       phuongAnDo = @phuongAnDo, bienSoXe = @bienSoXe,
       thoiGianTron = @thoiGianTron, thoiGianXuatBen = @thoiGianXuatBen,
@@ -119,6 +144,7 @@ export async function capNhatLichSanXuat(
     {
       id,
       idXe: data.idXe ?? null,
+      idTaiXe: idTaiXe ?? data.idTaiXe ?? null,
       kyThuatCongTrinh: data.kyThuatCongTrinh ?? null,
       nguoiOmOng: data.nguoiOmOng ?? null,
       nguoiBatOng: data.nguoiBatOng ?? null,

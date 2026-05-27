@@ -20,10 +20,12 @@ router.get(
 
       const idTaiXe = req.user.id;
 
+      // Join qua Xe để lấy đơn của tài xế đang login
       const data = await query<any>(
         `SELECT dh.* FROM DonHang dh
          INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-         WHERE ls.idTaiXe = @idTaiXe
+         INNER JOIN Xe xe ON ls.idXe = xe.id
+         WHERE xe.idTaiKhoan = @idTaiXe
            AND dh.trangThaiDon IN (N'dang_cho_giao', N'dang_giao')
          ORDER BY dh.ngayGiao DESC`,
         { idTaiXe },
@@ -51,23 +53,27 @@ router.get(
 
       const idTaiXe = req.user.id;
 
-      // Tổng số đơn đã nhận (có trong lịch sản xuất)
+      // Join qua Xe để lấy đơn của tài xế đang login
       const [tongRes, chuaGiaoRes, daGiaoRes] = await Promise.all([
         query<any>(
-          `SELECT COUNT(*) as cnt FROM LichSanXuat WHERE idTaiXe = @idTaiXe`,
+          `SELECT COUNT(*) as cnt FROM LichSanXuat ls
+           INNER JOIN Xe xe ON ls.idXe = xe.id
+           WHERE xe.idTaiKhoan = @idTaiXe`,
           { idTaiXe },
         ),
         query<any>(
           `SELECT COUNT(*) as cnt FROM DonHang dh
            INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-           WHERE ls.idTaiXe = @idTaiXe
+           INNER JOIN Xe xe ON ls.idXe = xe.id
+           WHERE xe.idTaiKhoan = @idTaiXe
              AND dh.trangThaiDon NOT IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'dang_cho_giao', N'dang_giao')`,
           { idTaiXe },
         ),
         query<any>(
           `SELECT COUNT(*) as cnt FROM DonHang dh
            INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-           WHERE ls.idTaiXe = @idTaiXe
+           INNER JOIN Xe xe ON ls.idXe = xe.id
+           WHERE xe.idTaiKhoan = @idTaiXe
              AND dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')`,
           { idTaiXe },
         ),
@@ -104,7 +110,8 @@ router.get(
       const data = await query<any>(
         `SELECT dh.* FROM DonHang dh
          INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-         WHERE ls.idTaiXe = @idTaiXe
+         INNER JOIN Xe xe ON ls.idXe = xe.id
+         WHERE xe.idTaiKhoan = @idTaiXe
            AND dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')
          ORDER BY dh.ngayGiao DESC`,
         { idTaiXe },
@@ -145,6 +152,18 @@ router.put(
         res
           .status(404)
           .json({ success: false, message: "Không tìm thấy đơn hàng" });
+        return;
+      }
+
+      // Kiểm tra tài xế có phải người được giao đơn này không
+      const ls = await query<any>(
+        `SELECT ls.*, xe.idTaiKhoan FROM LichSanXuat ls
+         INNER JOIN Xe xe ON ls.idXe = xe.id
+         WHERE ls.idDonHang = @idDonHang`,
+        { idDonHang }
+      );
+      if (ls.length === 0 || ls[0].idTaiKhoan !== req.user.id) {
+        res.status(403).json({ success: false, message: "Bạn không có quyền cập nhật đơn hàng này" });
         return;
       }
 

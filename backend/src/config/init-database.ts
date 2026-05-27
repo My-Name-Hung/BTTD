@@ -196,6 +196,33 @@ async function initDatabase(): Promise<void> {
       `);
     } else {
       console.log('  ✅ Bảng Xe đã tồn tại');
+      // Migration: thêm cột idTaiKhoan nếu chưa có
+      try {
+        await db.query(`ALTER TABLE Xe ADD idTaiKhoan INT`);
+        console.log('  ➕ Cột idTaiKhoan đã được thêm vào bảng Xe');
+      } catch {
+        // đã có rồi, bỏ qua
+      }
+      // Migration: thêm cột idTaiXe vào LichSanXuat nếu chưa có
+      try {
+        await db.query(`ALTER TABLE LichSanXuat ADD idTaiXe INT`);
+        console.log('  ➕ Cột idTaiXe đã được thêm vào bảng LichSanXuat');
+      } catch {
+        // đã có rồi, bỏ qua
+      }
+
+      // Fix dữ liệu cũ: cập nhật idTaiXe trong LichSanXuat từ bảng Xe
+      try {
+        await db.query(`
+          UPDATE ls SET ls.idTaiXe = xe.idTaiKhoan
+          FROM LichSanXuat ls
+          INNER JOIN Xe xe ON ls.idXe = xe.id
+          WHERE ls.idTaiXe IS NULL AND xe.idTaiKhoan IS NOT NULL
+        `);
+        console.log('  🔧 Đã fix idTaiXe cho các lịch sản xuất cũ');
+      } catch {
+        // lỗi thì bỏ qua
+      }
     }
 
     // Tạo bảng DonHang
