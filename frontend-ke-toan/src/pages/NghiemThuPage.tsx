@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FiSearch, FiCheck, FiFileText, FiX, FiUpload, FiExternalLink, FiCheckCircle, FiClock } from 'react-icons/fi';
 import {
   layDanhSachDonHang, layNghiemThu,
-  xacNhanNghiemThu, layLichSuThanhToan, taoCongNo,
+  xacNhanNghiemThu, layLichSuThanhToan,
   uploadBienBanNghiemThu,
 } from '../services/api';
 import { DonHang, NghiemThu, ThanhToan } from '../types';
@@ -35,6 +35,13 @@ export default function NghiemThuPage() {
   const userVaiTro = JSON.parse(localStorage.getItem("bttd_user") || "{}")?.vaiTro;
   const isKyThuat = userVaiTro === "ky_thuat" || userVaiTro === "admin";
 
+  const resetModal = () => {
+    setUploadModalOpen(false);
+    setSelectedDonHang(null);
+    setSelectedNt(null);
+    setUploadFile(null);
+  };
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -59,6 +66,8 @@ export default function NghiemThuPage() {
   }, [showToast]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => { resetModal(); }, [tab]);
 
   const canNghiemThu = donHangs.filter((dh) => {
     const nt = nghiemThus[dh.id];
@@ -88,7 +97,6 @@ export default function NghiemThuPage() {
     setUploadLoading(true);
     try {
       await xacNhanNghiemThu(selectedDonHang.id, 'da');
-      await taoCongNo(selectedDonHang.id);
       await uploadBienBanNghiemThu(selectedDonHang.id, uploadFile);
       showToast('Đã tải file và xác nhận nghiệm thu thành công');
       setUploadModalOpen(false);
@@ -244,65 +252,14 @@ export default function NghiemThuPage() {
         </div>
       )}
 
-      {/* Modal upload file */}
+      {/* Modal upload file biên bản nghiệm thu */}
       <Modal
         isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        title={`Tải file biên bản - ${selectedDonHang?.maDonHang}`}
-        footer={
-          <>
-            <button className="btn btn-cancel" onClick={() => setUploadModalOpen(false)}>Hủy</button>
-            <button
-              className="btn btn-save"
-              onClick={handleUpload}
-              disabled={!uploadFile || uploadLoading}
-            >
-              {uploadLoading ? 'Đang tải...' : 'Tải lên'}
-            </button>
-          </>
-        }
-      >
-        <div className={styles.uploadNote}>
-          Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .png</strong> (tối đa 50MB) — Không bắt buộc
-        </div>
-        {selectedNt?.bienBanFile && (
-          <div className={styles.uploadCurrentFile}>
-            <span>File hiện tại:</span>
-            <a
-              href={`${getBaseUrl()}${selectedNt.bienBanFile}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.bienBanLink}
-            >
-              <FiExternalLink size={12} /> Mở file đang có
-            </a>
-          </div>
-        )}
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Chọn file biên bản nghiệm thu (tùy chọn)</label>
-          <input
-            type="file"
-            className={styles.formInput}
-            accept=".doc,.docx,.pdf,.jpg,.jpeg,.png"
-            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-          />
-        </div>
-        {uploadFile && (
-          <div className={styles.uploadFileName}>
-            <FiFileText size={14} /> {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
-          </div>
-        )}
-      </Modal>
-
-      {/* Modal hỏi có tải file biên bản không */}
-      {/* Modal upload file biên bản nghiệm thu (bắt buộc) */}
-      <Modal
-        isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
+        onClose={resetModal}
         title={`Tải biên bản nghiệm thu - ${selectedDonHang?.maDonHang}`}
         footer={
           <>
-            <button className="btn btn-cancel" onClick={() => setUploadModalOpen(false)}>Hủy</button>
+            <button className="btn btn-cancel" onClick={resetModal}>Hủy</button>
             <button
               className="btn btn-save"
               onClick={handleUpload}

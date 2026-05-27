@@ -7,6 +7,7 @@ import {
   Modal,
   Pagination,
 } from "../components/Common";
+import { SearchableDropdown } from "../components/SearchableDropdown";
 import { usePagination, useToast } from "../hooks";
 import {
   layDanhSachNguoiDung,
@@ -23,6 +24,9 @@ const VAI_TRO_SORT_ORDER: Record<string, number> = {
   ke_toan: 3,
   dieu_phoi: 4,
   kho: 5,
+  sale: 6,
+  tai_xe: 7,
+  ky_thuat: 8,
 };
 
 const VAI_TRO_LABELS: Record<string, string> = {
@@ -31,6 +35,9 @@ const VAI_TRO_LABELS: Record<string, string> = {
   dieu_phoi: "Điều phối",
   lanh_dao: "Lãnh đạo",
   kho: "Kho",
+  sale: "Sales",
+  tai_xe: "Tài xế",
+  ky_thuat: "Kỹ thuật",
 };
 
 const VAI_TRO_CLASS: Record<string, string> = {
@@ -39,6 +46,9 @@ const VAI_TRO_CLASS: Record<string, string> = {
   dieu_phoi: styles.roleBadgeDieuPhoi,
   lanh_dao: styles.roleBadgeLanhDao,
   kho: styles.roleBadgeKho,
+  sale: styles.roleBadgeSale,
+  tai_xe: styles.roleBadgeTaiXe,
+  ky_thuat: styles.roleBadgeKyThuat,
 };
 
 const VAI_TRO_COLORS: Record<string, string> = {
@@ -47,6 +57,9 @@ const VAI_TRO_COLORS: Record<string, string> = {
   dieu_phoi: "#ea6b00",
   lanh_dao: "#7c3aed",
   kho: "#0369a1",
+  sale: "#dc2626",
+  tai_xe: "#0d9488",
+  ky_thuat: "#9333ea",
 };
 
 export default function QuanLyNguoiDungPage() {
@@ -261,44 +274,35 @@ export default function QuanLyNguoiDungPage() {
         </div>
 
         {/* Vai trò filter */}
-        <div
-          className={`${styles.selectWrap} ${vaiTroFilter ? styles.activeFilter : ""}`}
-        >
-          <span className={styles.selectLabel}>Vai trò</span>
-          <div className={styles.selectControl}>
-            <select
-              className={styles.selectInput}
-              value={vaiTroFilter}
-              onChange={(e) => setVaiTroFilter(e.target.value)}
-            >
-              <option value="">Tất cả</option>
-              <option value="admin">Quản trị</option>
-              <option value="ke_toan">Kế toán</option>
-              <option value="dieu_phoi">Điều phối</option>
-              <option value="lanh_dao">Lãnh đạo</option>
-              <option value="kho">Kho</option>
-            </select>
-            <span className={styles.selectArrow}>▼</span>
-          </div>
+        <div className={`${styles.filterDropdown} ${vaiTroFilter ? styles.activeFilterDropdown : ""}`}>
+          <SearchableDropdown
+            value={vaiTroFilter}
+            onChange={(val) => { setVaiTroFilter(String(val)); resetPage(); }}
+            placeholder="Tất cả vai trò"
+            options={[
+              { id: "admin", label: "Quản trị" },
+              { id: "ke_toan", label: "Kế toán" },
+              { id: "dieu_phoi", label: "Điều phối" },
+              { id: "lanh_dao", label: "Lãnh đạo" },
+              { id: "kho", label: "Kho" },
+              { id: "sale", label: "Sales" },
+              { id: "tai_xe", label: "Tài xế" },
+              { id: "ky_thuat", label: "Kỹ thuật" },
+            ]}
+          />
         </div>
 
         {/* Trạng thái filter */}
-        <div
-          className={`${styles.selectWrap} ${trangThaiFilter ? styles.activeFilter : ""}`}
-        >
-          <span className={styles.selectLabel}>Trạng thái</span>
-          <div className={styles.selectControl}>
-            <select
-              className={styles.selectInput}
-              value={trangThaiFilter}
-              onChange={(e) => setTrangThaiFilter(e.target.value)}
-            >
-              <option value="">Tất cả</option>
-              <option value="hoat_dong">Hoạt động</option>
-              <option value="khong_hoat_dong">Không hoạt động</option>
-            </select>
-            <span className={styles.selectArrow}>▼</span>
-          </div>
+        <div className={`${styles.filterDropdown} ${trangThaiFilter ? styles.activeFilterDropdown : ""}`}>
+          <SearchableDropdown
+            value={trangThaiFilter}
+            onChange={(val) => { setTrangThaiFilter(String(val)); resetPage(); }}
+            placeholder="Tất cả trạng thái"
+            options={[
+              { id: "hoat_dong", label: "Hoạt động" },
+              { id: "khong_hoat_dong", label: "Không hoạt động" },
+            ]}
+          />
         </div>
 
         {hasFilters && (
@@ -368,6 +372,10 @@ export default function QuanLyNguoiDungPage() {
                       <span
                         className={`${styles.roleBadge} ${VAI_TRO_CLASS[u.vaiTro] || ""}`}
                       >
+                        <span
+                          className={styles.roleDot}
+                          style={{ backgroundColor: VAI_TRO_COLORS[u.vaiTro] || "#888" }}
+                        />
                         {VAI_TRO_LABELS[u.vaiTro] || u.vaiTro}
                       </span>
                     </td>
@@ -509,17 +517,21 @@ export default function QuanLyNguoiDungPage() {
         </div>
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Vai trò *</label>
-          <select
-            className={styles.formSelect}
+          <SearchableDropdown
             value={form.vaiTro}
-            onChange={(e) => setForm({ ...form, vaiTro: e.target.value })}
-          >
-            <option value="admin">Quản trị</option>
-            <option value="ke_toan">Kế toán</option>
-            <option value="dieu_phoi">Điều phối</option>
-            <option value="lanh_dao">Lãnh đạo</option>
-            <option value="kho">Kho</option>
-          </select>
+            onChange={(val) => setForm({ ...form, vaiTro: String(val) })}
+            placeholder="-- Chọn vai trò --"
+            options={[
+              { id: "admin", label: "Quản trị", subLabel: "Toàn quyền hệ thống" },
+              { id: "lanh_dao", label: "Lãnh đạo", subLabel: "Xem KPI & báo cáo" },
+              { id: "ke_toan", label: "Kế toán", subLabel: "Duyệt đơn & thanh toán" },
+              { id: "dieu_phoi", label: "Điều phối", subLabel: "Lên lịch & điều xe" },
+              { id: "kho", label: "Kho", subLabel: "Xác nhận sản xuất" },
+              { id: "sale", label: "Sales", subLabel: "Tạo đơn hàng" },
+              { id: "tai_xe", label: "Tài xế", subLabel: "Giao hàng" },
+              { id: "ky_thuat", label: "Kỹ thuật", subLabel: "Nghiệm thu công trình" },
+            ]}
+          />
         </div>
         {editingUser && (
           <div className={styles.formGroup}>

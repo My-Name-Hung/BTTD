@@ -283,7 +283,7 @@ export async function importNguoiDung(
         continue;
       }
 
-      const validRoles = ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao'];
+      const validRoles = ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'kho', 'sale', 'tai_xe', 'ky_thuat'];
       const normalizedRole = validRoles.includes(vaiTro) ? vaiTro : 'ke_toan';
 
       const hashed = await bcrypt.hash(matKhau, 10);

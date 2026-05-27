@@ -1,11 +1,15 @@
 import { Router, Response } from 'express';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { ApiResponse } from '../models';
 
 const router = Router();
 
 /** Lấy đơn hàng chờ nghiệm thu (da_giao) cho kỹ thuật */
-router.get('/don-hang-cho-nghiem-thu', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.get(
+  '/don-hang-cho-nghiem-thu',
+  authMiddleware,
+  requireRole('ky_thuat', 'admin'),
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
