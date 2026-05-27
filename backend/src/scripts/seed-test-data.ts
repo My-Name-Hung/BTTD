@@ -90,6 +90,7 @@ async function initDatabase(): Promise<void> {
 
   await create('Xe', `CREATE TABLE Xe (
     id INT IDENTITY(1,1) PRIMARY KEY, bienSo NVARCHAR(50) NOT NULL,
+    idTaiKhoan INT,
     tenTaiXe NVARCHAR(200), soDienThoaiTaiXe NVARCHAR(20),
     taiTrong DECIMAL(18,2), trangThai NVARCHAR(20) DEFAULT N'san_sang',
     ngayTao DATETIME DEFAULT GETDATE())`);
@@ -258,8 +259,8 @@ async function seedData(): Promise<void> {
   // ── Xe (gán thêm tài xế) ───────────────────────────────────────────
   console.log('🟢 SEED XE...');
   const xeIds = await getIds([
-    `INSERT Xe (bienSo,tenTaiXe,soDienThoaiTaiXe,taiTrong,trangThai) VALUES
-     ('59C1-1234',N'Nguyễn Văn Tài','0903000001',10.0,'san_sang')`,
+    `INSERT Xe (bienSo,idTaiKhoan,tenTaiXe,soDienThoaiTaiXe,taiTrong,trangThai) VALUES
+     ('59C1-1234',${taiXeId},N'Nguyễn Văn Tài','0903000001',10.0,'san_sang')`,
     `INSERT Xe (bienSo,tenTaiXe,soDienThoaiTaiXe,taiTrong,trangThai) VALUES
      ('59C2-2345',N'Trần Văn Lái','0903000002',12.0,'san_sang')`,
     `INSERT Xe (bienSo,tenTaiXe,soDienThoaiTaiXe,taiTrong,trangThai) VALUES
@@ -267,7 +268,7 @@ async function seedData(): Promise<void> {
     `INSERT Xe (bienSo,tenTaiXe,soDienThoaiTaiXe,taiTrong,trangThai) VALUES
      ('59C4-4567',N'Phạm Văn Bánh','0903000004',8.0,'san_sang')`,
   ]);
-  console.log(`  ✓ 4 xe: ids ${xeIds.join(', ')}\n`);
+  console.log(`  ✓ 4 xe: ids ${xeIds.join(', ')} (59C1-1234 gán taiXeId=${taiXeId})\n`);
 
   // ── Đơn hàng (sales tạo) ─────────────────────────────────────────────
   const D = sqlDate;
