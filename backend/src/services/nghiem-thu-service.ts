@@ -89,11 +89,17 @@ export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 
     return (await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: idDonHang }))[0];
   }
 
-  // Kỹ thuật xác nhận nghiệm thu: chuyển thẳng sang thanh toán
+  // Kỹ thuật xác nhận nghiệm thu: chuyển sang trạng thái nghiệm thu, tạo record NghiemThu
+  await query(
+    `IF NOT EXISTS (SELECT * FROM NghiemThu WHERE idDonHang = @idDonHang)
+     INSERT INTO NghiemThu (idDonHang, chatLuong, bienBanSo) VALUES (@idDonHang, N'dat', NULL)`,
+    { idDonHang }
+  );
+
   await query(
     `UPDATE DonHang SET
-      trangThaiDon = N'da_thanh_toan',
-      trangThaiHoanThanh = N'dang_hoan_thanh',
+      trangThaiDon = N'nghiem_thu',
+      ngayNghiemThu = GETDATE(),
       ngayCapNhat = GETDATE()
      WHERE id = @id`,
     { id: idDonHang }
@@ -101,16 +107,12 @@ export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 
 
   const donHang = (await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: idDonHang }))[0];
 
-  // Thông báo ORDER_STATUS_CHANGED - Thanh toán
   guiThongBao('ORDER_STATUS_CHANGED', {
     id: idDonHang,
     maDonHang: donHang.maDonHang,
-    trangThai: 'da_thanh_toan',
-    trangThaiLabel: 'Thanh toán',
+    trangThai: 'nghiem_thu',
+    trangThaiLabel: 'Nghiệm thu',
   });
-
-  // Thông báo chờ thanh toán
-  guiThongBao('PAYMENT_NEEDED', { id: idDonHang, maDonHang: donHang.maDonHang });
 
   return donHang;
 }

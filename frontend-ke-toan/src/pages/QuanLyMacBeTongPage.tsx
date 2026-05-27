@@ -136,7 +136,7 @@ export default function QuanLyMacBeTongPage() {
 
       <div className={styles.card}>
         {loading ? <Loading /> : filtered.length === 0 ? (
-          <EmptyState icon={<FiPackage size={48} />} text="Không có mác bê tông nào" />
+          <EmptyState text="Không có mác bê tông nào" />
         ) : (
           <div className={styles.tableWrap}>
             <table className={styles.table}>

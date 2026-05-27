@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCheckCircle, FiFileText, FiEye, FiSearch } from 'react-icons/fi';
+import { FiCheckCircle, FiFileText, FiEye, FiSearch, FiUpload } from 'react-icons/fi';
 import {
   layDonHangChoNghiemThu,
   xacNhanNghiemThu,
   uploadBienBanNghiemThu,
-  taoCongNo,
 } from '../services/api';
 import { DonHang, TRANG_THAI_DON_LABELS } from '../types';
 import { useToast, useAuth } from '../hooks';
@@ -14,6 +13,11 @@ import styles from './KyThuatNghiemThuPage.module.css';
 
 function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' || '0 đ'; }
 function formatDate(d: string) { return d ? new Date(d).toLocaleDateString('vi-VN') : ''; }
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+}
 
 export default function KyThuatNghiemThuPage() {
   const navigate = useNavigate();
@@ -49,7 +53,6 @@ export default function KyThuatNghiemThuPage() {
     setUploadLoading(true);
     try {
       await xacNhanNghiemThu(confirmTarget.id, 'da');
-      await taoCongNo(confirmTarget.id);
       await uploadBienBanNghiemThu(confirmTarget.id, uploadFile);
       showToast('Xác nhận nghiệm thu thành công');
       setConfirmTarget(null);
@@ -75,7 +78,7 @@ export default function KyThuatNghiemThuPage() {
       <div className={styles.pageHeader}>
         <div className={styles.pageTitle}>
           <FiCheckCircle size={22} />
-          <span>Nghiệm thu công trình</span>
+          <span>Nghiệm thu</span>
         </div>
         <div className={styles.pageSubtitle}>
           Xin chào, {user?.hoTen} — Xác nhận nghiệm thu khi đã ký biên bản với khách
@@ -172,7 +175,7 @@ export default function KyThuatNghiemThuPage() {
                     className={styles.btnNghiemThu}
                     onClick={(e) => { e.stopPropagation(); setConfirmTarget(dh); }}
                   >
-                    <FiCheckCircle size={14} /> Nghiệm thu
+                    <FiCheckCircle size={14} /> Xác nhận
                   </button>
                 )}
               </div>
@@ -184,7 +187,7 @@ export default function KyThuatNghiemThuPage() {
       {/* Upload Modal */}
       <ConfirmModal
         isOpen={!!confirmTarget}
-        title={`Nghiệm thu — ${confirmTarget?.maDonHang}`}
+        title={`Xác nhận — ${confirmTarget?.maDonHang}`}
         message=""
         confirmText="Xác nhận nghiệm thu"
         cancelText="Hủy"
@@ -194,25 +197,38 @@ export default function KyThuatNghiemThuPage() {
         extra={
           <div className={styles.uploadSection}>
             <p className={styles.uploadNote}>
-              Tải lên <strong>biên bản nghiệm thu</strong> đã ký với khách.
-              Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .png</strong> (tối đa 50MB)
+              Tải lên <strong>biên bản nghiệm thu</strong> đã ký với khách hàng để xác nhận nghiệm thu.
             </p>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Chọn file biên bản nghiệm thu *</label>
-              <input
-                type="file"
-                className={styles.fileInput}
-                accept=".doc,.docx,.pdf,.jpg,.jpeg,.png"
-                onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-              />
-            </div>
-            {uploadFile && (
+            {!uploadFile ? (
+              <div className={styles.fileDropZone}>
+                <input
+                  type="file"
+                  className={styles.fileDropZoneInput}
+                  accept=".doc,.docx,.pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                />
+                <div className={styles.fileDropZoneIcon}>
+                  <FiUpload size={36} />
+                </div>
+                <div className={styles.fileDropZoneText}>Nhấn hoặc kéo file vào đây</div>
+                <div className={styles.fileDropZoneHint}>Nhấn để chọn file từ máy</div>
+                <div className={styles.fileDropZoneFormats}>Hỗ trợ: .doc, .docx, .pdf, .jpg, .png (tối đa 50MB)</div>
+              </div>
+            ) : (
               <div className={styles.filePreview}>
-                <FiFileText size={14} />
-                <span>{uploadFile.name}</span>
-                <span className={styles.fileSize}>
-                  ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
-                </span>
+                <FiFileText size={18} />
+                <div className={styles.filePreviewInfo}>
+                  <span className={styles.filePreviewName}>{uploadFile.name}</span>
+                  <span className={styles.fileSize}>
+                    {formatFileSize(uploadFile.size)}
+                  </span>
+                </div>
+                <button
+                  className={styles.filePreviewRemove}
+                  onClick={() => setUploadFile(null)}
+                >
+                  ✕
+                </button>
               </div>
             )}
           </div>

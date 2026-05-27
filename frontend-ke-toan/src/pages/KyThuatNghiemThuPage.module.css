@@ -214,6 +214,7 @@
   font-size: 13px;
   color: var(--color-text-secondary);
   margin-bottom: 16px;
+  line-height: 1.5;
 }
 
 .formGroup {
@@ -225,38 +226,122 @@
   font-weight: 600;
   color: var(--color-text);
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
-.fileInput {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1.5px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  color: var(--color-text);
-  background: var(--color-bg);
+/* Drag & drop file zone */
+.fileDropZone {
+  position: relative;
+  border: 2px dashed rgba(7, 60, 235, 0.3);
+  border-radius: var(--radius-lg);
+  background: rgba(7, 60, 235, 0.02);
+  padding: 28px 20px;
+  text-align: center;
   cursor: pointer;
-  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.fileDropZone:hover,
+.fileDropZoneDragging {
+  border-color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.04);
+}
+
+.fileDropZoneInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.fileDropZoneIcon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.fileDropZoneIcon svg {
+  color: var(--color-primary);
+  opacity: 0.6;
+}
+
+.fileDropZoneText {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.fileDropZoneHint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.fileDropZoneFormats {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  opacity: 0.7;
 }
 
 .filePreview {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 12px;
+  padding: 12px 14px;
   background: rgba(7, 60, 235, 0.04);
   border: 1px solid rgba(7, 60, 235, 0.15);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   font-size: 13px;
   color: var(--color-primary);
 }
 
-.filePreview svg { flex-shrink: 0; }
+.filePreview svg { flex-shrink: 0; color: var(--color-primary); }
+
+.filePreviewInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.filePreviewName {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .fileSize {
   font-size: 11px;
   color: var(--color-text-secondary);
+}
+
+.filePreviewRemove {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: white;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: all 0.15s ease;
+}
+
+.filePreviewRemove:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #ef4444;
 }
 
 /* Empty state */

@@ -162,14 +162,14 @@ export default function TaiXeGiaoHangPage() {
                   </span>
                 </div>
 
-                {dh.soDienThoaiNguoiNhan && (
+                {dh.soDienThoai && (
                   <div className={styles.infoRow}>
                     <FiPhone size={14} />
                     <a
-                      href={`tel:${dh.soDienThoaiNguoiNhan}`}
+                      href={`tel:${dh.soDienThoai}`}
                       className={styles.phoneLink}
                     >
-                      {dh.soDienThoaiNguoiNhan}
+                      {dh.soDienThoai}
                     </a>
                   </div>
                 )}

@@ -1,1 +1,0 @@
-import{r as e}from"./index-C5bNI-0G.js";function T(){const[a,t]=e.useState([]),r=e.useCallback((c,u="success")=>{const o=Date.now();t(s=>[...s,{id:o,message:c,type:u}]),setTimeout(()=>{t(s=>s.filter(n=>n.id!==o))},3500)},[]);return{toasts:a,showToast:r}}export{T as u};

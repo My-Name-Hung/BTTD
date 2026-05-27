@@ -148,13 +148,13 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdDeliveryDining size={20} />,
     roles: ["admin", "tai_xe"],
   },
-  // Kỹ thuật
+  // Kỹ thuật — đã ẩn, chỉ dùng menu Nghiệm thu
   {
     path: "/ky-thuat",
     label: "Công trình",
     icon: <MdCheckCircle size={20} />,
     iconActive: <MdCheckCircle size={20} />,
-    roles: ["admin", "ky_thuat"],
+    roles: [],
   },
   // Người dùng
   {
