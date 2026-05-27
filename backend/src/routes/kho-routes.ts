@@ -28,7 +28,7 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('kho'), async (req: Aut
     const countResult = await query<{ total: number }>(
       `SELECT COUNT(*) as total FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
-       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')`,
+       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_cho_giao', N'dang_giao', N'da_giao')`,
       {}
     );
     const total = countResult[0]?.total || 0;
@@ -37,7 +37,7 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('kho'), async (req: Aut
       `SELECT ls.*, dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao
        FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
-       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
+       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_cho_giao', N'dang_giao', N'da_giao')
        ORDER BY ls.ngayCapNhat DESC
        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
       { offset, limit }
@@ -80,7 +80,7 @@ router.get('/don-hang/:id', authMiddleware, requireRole('kho'), async (req: Auth
   }
 });
 
-// Xác nhận bắt đầu giao - kho xác nhận đơn bắt đầu được giao (dang_san_xuat -> dang_giao)
+// Xác nhận sản xuất xong - kho xác nhận đã sản xuất xong (dang_san_xuat -> dang_cho_giao)
 router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('kho'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
@@ -98,7 +98,7 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('kho
 
     // Kiểm tra trạng thái phải là dang_san_xuat
     if (donHang[0].trangThaiDon !== 'dang_san_xuat') {
-      res.status(400).json({ success: false, message: 'Chỉ có thể xác nhận bắt đầu giao đơn hàng đang sản xuất' });
+      res.status(400).json({ success: false, message: 'Chỉ có thể xác nhận sản xuất xong đơn hàng đang sản xuất' });
       return;
     }
 
@@ -113,24 +113,24 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('kho
       return;
     }
 
-    // Cập nhật trạng thái sang dang_giao
+    // Cập nhật trạng thái sang dang_cho_giao (đang chờ giao hàng)
     await query(
-      `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = GETDATE() WHERE id = @id`,
+      `UPDATE DonHang SET trangThaiDon = N'dang_cho_giao', ngayCapNhat = GETDATE() WHERE id = @id`,
       { id: idDonHang }
     );
 
     const updatedDonHang = await layDonHangTheoId(idDonHang);
 
-    // Thông báo cho điều phối: kho bắt đầu giao
-    guiThongBao('DELIVERY_STARTED', {
+    guiThongBao('ORDER_STATUS_CHANGED', {
       id: idDonHang,
       maDonHang: updatedDonHang.maDonHang,
-      bienSoXe: lichSanXuat[0].bienSoXe || '',
+      trangThai: 'dang_cho_giao',
+      trangThaiLabel: 'Đang chờ giao',
     });
 
-    res.json({ success: true, message: 'Xác nhận bắt đầu giao hàng thành công', data: updatedDonHang });
+    res.json({ success: true, message: 'Xác nhận sản xuất xong thành công', data: updatedDonHang });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Lỗi xác nhận bắt đầu giao hàng';
+    const message = error instanceof Error ? error.message : 'Lỗi xác nhận sản xuất xong';
     res.status(400).json({ success: false, message });
   }
 });

@@ -198,6 +198,18 @@
   white-space: nowrap;
 }
 
+/* Badge hiển thị trạng thái thuần (không phải nút bấm) */
+.rowStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 /* ── Empty State ── */
 .empty {
   display: flex;

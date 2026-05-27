@@ -10,16 +10,15 @@ import {
   FiCheckCircle,
   FiClock,
 } from "react-icons/fi";
-import { layDonHangKho, xacNhanBatDauGiao, xacNhanDaGiaoKho } from "../services/api";
+import { layDonHangKho, xacNhanBatDauGiao } from "../services/api";
 import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from "../types";
 import { useToast } from "../hooks";
 import { Loading } from "../components/Common";
 import styles from "./KhoDonHangPage.module.css";
 
 const TRANG_THAI_STEPS = [
-  { key: "cho_duyet", label: "Chờ duyệt" },
-  { key: "da_duyet", label: "Đã duyệt" },
   { key: "dang_san_xuat", label: "Đang SX" },
+  { key: "dang_cho_giao", label: "Chờ giao" },
   { key: "dang_giao", label: "Đang giao" },
   { key: "da_giao", label: "Đã giao" },
   { key: "nghiem_thu", label: "Nghiệm thu" },
@@ -100,7 +99,6 @@ export default function KhoDonHangPage() {
   const [lichSanXuat, setLichSanXuat] = useState<LichSanXuatData | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmLoading, setConfirmLoading] = useState(false);
-  const [khoiLuongThucTe, setKhoiLuongThucTe] = useState<string>("");
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -109,9 +107,6 @@ export default function KhoDonHangPage() {
       const res = await layDonHangKho(parseInt(id));
       setDonHang(res.donHang);
       setLichSanXuat(res.lichSanXuat);
-      if (res.donHang?.khoiLuongThucTe) {
-        setKhoiLuongThucTe(String(res.donHang.khoiLuongThucTe));
-      }
     } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
     } finally {
@@ -128,22 +123,7 @@ export default function KhoDonHangPage() {
     setConfirmLoading(true);
     try {
       await xacNhanBatDauGiao(donHang.id);
-      showToast("Đã xác nhận bắt đầu giao hàng");
-      loadData();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Lỗi xác nhận", "error");
-    } finally {
-      setConfirmLoading(false);
-    }
-  };
-
-  const handleXacNhanDaGiao = async () => {
-    if (!donHang) return;
-    setConfirmLoading(true);
-    try {
-      const kltt = khoiLuongThucTe ? parseFloat(khoiLuongThucTe) : undefined;
-      await xacNhanDaGiaoKho(donHang.id, kltt);
-      showToast("Đã xác nhận giao hàng thành công");
+      showToast("Đã xác nhận sản xuất xong");
       loadData();
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi xác nhận", "error");
@@ -167,7 +147,7 @@ export default function KhoDonHangPage() {
     (s) => s.key === donHang.trangThaiDon
   );
   const connLai = (donHang.thanhTien || 0) - (donHang.daThanhToan || 0);
-  const trangThai = donHang.trangThaiDon || "cho_duyet";
+  const trangThai = donHang.trangThaiDon || "dang_san_xuat";
 
   return (
     <div className={styles.detailPage}>
@@ -200,39 +180,24 @@ export default function KhoDonHangPage() {
         <div className={styles.pageActions}>
           {trangThai === "dang_san_xuat" && (
             <button
-              className={`${styles.actionBtn} ${styles.actionBtnWarning}`}
+              className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
               onClick={handleXacNhanBatDauGiao}
               disabled={confirmLoading}
             >
-              <FiTruck size={16} />
-              {confirmLoading ? "Đang xử lý..." : "Xác nhận bắt đầu giao"}
+              <FiCheck size={16} />
+              {confirmLoading ? "Đang xử lý..." : "Xác nhận sản xuất xong"}
             </button>
           )}
-          {trangThai === "dang_giao" && (
-            <>
-              <input
-                type="number"
-                className={styles.khoiLuongInput}
-                placeholder="Khối lượng thực tế (m³)"
-                value={khoiLuongThucTe}
-                onChange={(e) => setKhoiLuongThucTe(e.target.value)}
-                step="0.1"
-                min="0"
-              />
-              <button
-                className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
-                onClick={handleXacNhanDaGiao}
-                disabled={confirmLoading}
-              >
-                <FiCheck size={16} />
-                {confirmLoading ? "Đang xử lý..." : "Xác nhận đã giao thành công"}
-              </button>
-            </>
+          {(trangThai === "dang_cho_giao" || trangThai === "dang_giao") && (
+            <span className={styles.completedBadge}>
+              <FiTruck size={16} />
+              {trangThai === "dang_cho_giao" ? "Đang chờ tài xế giao..." : "Tài xế đang giao..."}
+            </span>
           )}
           {trangThai === "da_giao" && (
             <span className={styles.completedBadge}>
               <FiCheckCircle size={16} />
-              Đã hoàn thành giao hàng
+              Đã giao thành công
             </span>
           )}
         </div>

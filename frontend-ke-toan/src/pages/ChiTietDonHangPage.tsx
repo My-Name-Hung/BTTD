@@ -5,6 +5,7 @@ import {
   FiUser, FiMapPin, FiPhone, FiPackage,
   FiDollarSign, FiClock, FiTruck, FiCheckCircle,
   FiAlertTriangle, FiFileText, FiCheckSquare, FiExternalLink,
+  FiAlertCircle,
 } from 'react-icons/fi';
 import {
   layDonHang,
@@ -459,8 +460,8 @@ export default function ChiTietDonHangPage() {
         )}
       </div>
 
-      {/* Nghiệm thu — chỉ hiện khi có file biên bản */}
-      {nghiemThu && nghiemThu.bienBanFile && (
+      {/* Nghiệm thu — chỉ hiện khi đã có record nghiệm thu */}
+      {nghiemThu && (
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionTitle}>
@@ -470,16 +471,23 @@ export default function ChiTietDonHangPage() {
             </div>
           </div>
           <div style={{ padding: '8px 0' }}>
-            <a
-              href={`${(import.meta.env.VITE_API_URL || 'https://bttd.onrender.com/api').replace('/api', '')}${nghiemThu.bienBanFile}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'var(--color-primary)', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
-            >
-              <FiFileText size={16} />
-              Mở biên bản nghiệm thu
-              <FiExternalLink size={13} />
-            </a>
+            {nghiemThu.bienBanFile ? (
+              <a
+                href={`${(import.meta.env.VITE_API_URL || 'https://bttd.onrender.com/api').replace('/api', '')}${nghiemThu.bienBanFile}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--color-primary)', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+              >
+                <FiFileText size={16} />
+                Mở biên bản nghiệm thu
+                <FiExternalLink size={13} />
+              </a>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text-secondary)', fontSize: 14 }}>
+                <FiAlertCircle size={16} />
+                Chưa có file biên bản nghiệm thu
+              </div>
+            )}
           </div>
         </div>
       )}

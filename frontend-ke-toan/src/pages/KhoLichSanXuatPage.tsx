@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiEye, FiPackage, FiTruck, FiCheck, FiClock, FiAlertTriangle } from "react-icons/fi";
 import { Loading } from "../components/Common";
-import { layLichSanXuatKho, xacNhanBatDauGiao, xacNhanDaGiaoKho } from "../services/api";
+import { layLichSanXuatKho, xacNhanBatDauGiao } from "../services/api";
 import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from "../types";
 import { useToast } from "../hooks";
 import styles from "./KhoLichSanXuatPage.module.css";
@@ -75,26 +75,12 @@ export default function KhoLichSanXuatPage() {
     loadData();
   }, [navigate, loadData]);
 
-  const handleXacNhanBatDauGiao = async (item: LichSanXuatItem) => {
+  const handleXacNhanSanXuatXong = async (item: LichSanXuatItem) => {
     if (!item.idDonHang) return;
     setActionLoading(item.idDonHang);
     try {
       await xacNhanBatDauGiao(item.idDonHang);
-      showToast("Đã xác nhận bắt đầu giao hàng");
-      loadData();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Lỗi xác nhận", "error");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleXacNhanDaGiao = async (item: LichSanXuatItem) => {
-    if (!item.idDonHang) return;
-    setActionLoading(item.idDonHang);
-    try {
-      await xacNhanDaGiaoKho(item.idDonHang);
-      showToast("Đã xác nhận giao hàng thành công");
+      showToast("Đã xác nhận sản xuất xong");
       loadData();
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi xác nhận", "error");
@@ -180,34 +166,29 @@ export default function KhoLichSanXuatPage() {
                       </td>
                       <td>
                         <div className={styles.rowActions}>
-                          {/* Xác nhận bắt đầu giao */}
+                          {/* Xác nhận sản xuất xong */}
                           {trangThai === "dang_san_xuat" && (
                             <button
-                              className={`${styles.actionBtn} ${styles.actionBtnWarning}`}
-                              onClick={() => handleXacNhanBatDauGiao(item)}
-                              disabled={isLoading}
-                              title="Xác nhận bắt đầu giao"
-                            >
-                              {isLoading ? <FiClock size={14} /> : <FiTruck size={14} />}
-                              {isLoading ? "Đang xử lý..." : "Bắt đầu giao"}
-                            </button>
-                          )}
-                          {/* Xác nhận đã giao */}
-                          {trangThai === "dang_giao" && (
-                            <button
                               className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
-                              onClick={() => handleXacNhanDaGiao(item)}
+                              onClick={() => handleXacNhanSanXuatXong(item)}
                               disabled={isLoading}
-                              title="Xác nhận đã giao thành công"
+                              title="Xác nhận sản xuất xong"
                             >
                               {isLoading ? <FiClock size={14} /> : <FiCheck size={14} />}
-                              {isLoading ? "Đang xử lý..." : "Đã giao"}
+                              {isLoading ? "Đang xử lý..." : "SX xong"}
                             </button>
                           )}
-                          {/* Đã hoàn thành */}
+                          {/* Đang chờ giao / đang giao — chỉ hiển thị trạng thái */}
+                          {(trangThai === "dang_cho_giao" || trangThai === "dang_giao") && (
+                            <span className={styles.rowStatusBadge} style={{ color: '#f97316', background: 'rgba(249,115,22,0.1)' }}>
+                              <FiTruck size={12} />
+                              {trangThai === "dang_cho_giao" ? "Chờ giao" : "Đang giao"}
+                            </span>
+                          )}
+                          {/* Đã giao */}
                           {trangThai === "da_giao" && (
-                            <span className={styles.completedBadge}>
-                              <FiCheck size={13} /> Đã hoàn thành
+                            <span className={styles.rowStatusBadge} style={{ color: '#06b6d4', background: 'rgba(6,182,212,0.1)' }}>
+                              <FiCheck size={12} /> Đã giao
                             </span>
                           )}
                           {/* Xem chi tiết */}

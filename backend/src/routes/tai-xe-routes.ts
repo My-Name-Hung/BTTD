@@ -24,7 +24,7 @@ router.get(
         `SELECT dh.* FROM DonHang dh
          INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
          WHERE ls.idTaiXe = @idTaiXe
-           AND dh.trangThaiDon IN (N'dang_giao')
+           AND dh.trangThaiDon IN (N'dang_cho_giao', N'dang_giao')
          ORDER BY dh.ngayGiao DESC`,
         { idTaiXe },
       );
@@ -61,7 +61,7 @@ router.get(
           `SELECT COUNT(*) as cnt FROM DonHang dh
            INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
            WHERE ls.idTaiXe = @idTaiXe
-             AND dh.trangThaiDon NOT IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan')`,
+             AND dh.trangThaiDon NOT IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'dang_cho_giao', N'dang_giao')`,
           { idTaiXe },
         ),
         query<any>(
@@ -148,19 +148,12 @@ router.put(
         return;
       }
 
-      if (req.body.trangThai === "da_giao") {
-        const updated = await xacNhanGiaoThanhCong(idDonHang, khoiLuongThucTe);
-        guiThongBao("DELIVERY_COMPLETED", {
-          id: idDonHang,
-          maDonHang: updated.maDonHang,
-          khoiLuong: khoiLuongThucTe || updated.khoiLuongThucTe || 0,
-        });
-        res.json({
-          success: true,
-          message: "Xác nhận đã giao thành công",
-          data: updated,
-        });
-      } else {
+      // Tài xế xác nhận đang giao: dang_cho_giao -> dang_giao
+      if (req.body.trangThai === "dang_giao") {
+        if (donHang[0].trangThaiDon !== "dang_cho_giao") {
+          res.status(400).json({ success: false, message: "Đơn hàng không ở trạng thái chờ giao" });
+          return;
+        }
         await query(
           `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = GETDATE() WHERE id = @id`,
           { id: idDonHang },
@@ -175,6 +168,25 @@ router.put(
           message: "Đã cập nhật trạng thái đang giao",
           data: updated,
         });
+      } else if (req.body.trangThai === "da_giao") {
+        // Tài xế xác nhận đã giao: dang_giao -> da_giao
+        if (donHang[0].trangThaiDon !== "dang_giao") {
+          res.status(400).json({ success: false, message: "Đơn hàng không ở trạng thái đang giao" });
+          return;
+        }
+        const updated = await xacNhanGiaoThanhCong(idDonHang, khoiLuongThucTe);
+        guiThongBao("DELIVERY_COMPLETED", {
+          id: idDonHang,
+          maDonHang: updated.maDonHang,
+          khoiLuong: khoiLuongThucTe || updated.khoiLuongThucTe || 0,
+        });
+        res.json({
+          success: true,
+          message: "Xác nhận đã giao thành công",
+          data: updated,
+        });
+      } else {
+        res.status(400).json({ success: false, message: "Trạng thái không hợp lệ" });
       }
     } catch (error) {
       const message =

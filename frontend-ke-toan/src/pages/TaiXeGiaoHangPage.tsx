@@ -88,10 +88,12 @@ export default function TaiXeGiaoHangPage() {
 
   const statusColor = (s: string) => {
     if (s === "dang_giao") return { bg: "#00968822", color: "#009688" };
+    if (s === "dang_cho_giao") return { bg: "#f9731622", color: "#f97316" };
     return { bg: "#4caf5022", color: "#4caf50" };
   };
 
   const statusLabel = (s: string) => {
+    if (s === "dang_cho_giao") return "Chờ giao";
     if (s === "dang_giao") return "Đang giao";
     if (s === "da_giao") return "Đã giao";
     return s;
@@ -188,36 +190,24 @@ export default function TaiXeGiaoHangPage() {
                   >
                     Xem chi tiết
                   </button>
-                  <button
-                    className={styles.btnDangGiao}
-                    onClick={() => handleXacNhanDangGiao(dh)}
-                    disabled={
-                      updating === dh.id || dh.trangThaiDon === "dang_giao"
-                    }
-                  >
-                    {updating === dh.id ? (
-                      "..."
-                    ) : (
-                      <>
-                        <FiNavigation size={14} /> Đang giao
-                      </>
-                    )}
-                  </button>
-                  <button
-                    className={styles.btnDaGiao}
-                    onClick={() => setConfirmTarget(dh)}
-                    disabled={
-                      updating === dh.id || dh.trangThaiDon === "da_giao"
-                    }
-                  >
-                    {updating === dh.id ? (
-                      "..."
-                    ) : (
-                      <>
-                        <FiCheck size={14} /> Đã giao
-                      </>
-                    )}
-                  </button>
+                  {dh.trangThaiDon === "dang_cho_giao" && (
+                    <button
+                      className={styles.btnDangGiao}
+                      onClick={() => handleXacNhanDangGiao(dh)}
+                      disabled={updating === dh.id}
+                    >
+                      {updating === dh.id ? "..." : <><FiNavigation size={14} /> Đang giao</>}
+                    </button>
+                  )}
+                  {dh.trangThaiDon === "dang_giao" && (
+                    <button
+                      className={styles.btnDaGiao}
+                      onClick={() => setConfirmTarget(dh)}
+                      disabled={updating === dh.id}
+                    >
+                      {updating === dh.id ? "..." : <><FiCheck size={14} /> Đã giao</>}
+                    </button>
+                  )}
                 </div>
               </div>
             );
