@@ -11,6 +11,7 @@ import {
   suaMacBeTong,
   layTatCaTramTron,
   layTatCaXe,
+  layTatCaTaiXe,
   taoXe,
   suaXe,
   xoaXe,
