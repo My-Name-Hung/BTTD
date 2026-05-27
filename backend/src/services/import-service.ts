@@ -337,11 +337,24 @@ export async function importPhuongTien(
         continue;
       }
 
+      // Tra cứu idTaiKhoan từ bảng NguoiDung nếu có tên tài xế
+      let idTaiKhoan: number | null = null;
+      if (tenTaiXe) {
+        const tx = await query<{ id: number }>(
+          `SELECT id FROM NguoiDung WHERE hoTen = @hoTen AND vaiTro = N'tai_xe'`,
+          { hoTen: tenTaiXe }
+        );
+        if (tx.length > 0) {
+          idTaiKhoan = tx[0].id;
+        }
+      }
+
       await query(
-        `INSERT INTO Xe (bienSo, tenTaiXe, soDienThoaiTaiXe, taiTrong, trangThai)
-         VALUES (@bienSo, @tenTaiXe, @soDienThoaiTaiXe, @taiTrong, N'san_sang')`,
+        `INSERT INTO Xe (bienSo, idTaiKhoan, tenTaiXe, soDienThoaiTaiXe, taiTrong, trangThai)
+         VALUES (@bienSo, @idTaiKhoan, @tenTaiXe, @soDienThoaiTaiXe, @taiTrong, N'san_sang')`,
         {
           bienSo: bienSo.toUpperCase(),
+          idTaiKhoan,
           tenTaiXe: tenTaiXe || null,
           soDienThoaiTaiXe: soDienThoaiTaiXe || null,
           taiTrong: taiTrong || null,

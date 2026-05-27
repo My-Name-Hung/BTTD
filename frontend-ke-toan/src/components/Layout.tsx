@@ -383,11 +383,13 @@ export function Layout({ children }: LayoutProps) {
             </button>
             {!sidebarCollapsed && (
               <>
+              <a href="/">
                 <img
                   src={LOGO_URL}
                   alt="Bê Tông Tây Đô"
                   className="sidebar-logo-img"
                 />
+                </a>
                 <div className="sidebar-logo-text">
                   <span className="sidebar-logo-name">Bê Tông Tây Đô</span>
                   <span className="sidebar-logo-sub">Hệ thống quản lý</span>

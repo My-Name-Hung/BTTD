@@ -173,6 +173,17 @@ router.get('/xe', authMiddleware, async (req: AuthRequest, res: Response<ApiResp
   }
 });
 
+// Lấy danh sách tài xế (role=tai_xe)
+router.get('/tai-xe', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const data = await layTatCaTaiXe();
+    res.json({ success: true, message: 'Lấy danh sách tài xế thành công', data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy danh sách tài xế';
+    res.status(500).json({ success: false, message });
+  }
+});
+
 router.post('/xe', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const xe = await taoXe(req.body);

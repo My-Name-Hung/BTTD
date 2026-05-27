@@ -182,15 +182,36 @@ export async function layTatCaXe(
   };
 }
 
+export async function layTatCaTaiXe(): Promise<{ id: number; hoTen: string; soDienThoai: string | null }[]> {
+  return await query<{ id: number; hoTen: string; soDienThoai: string | null }>(
+    `SELECT id, hoTen, soDienThoai FROM NguoiDung WHERE vaiTro = N'tai_xe' AND trangThai = N'hoat_dong' ORDER BY hoTen ASC`
+  );
+}
+
 export async function taoXe(data: Partial<Xe>): Promise<Xe> {
+  // Lấy thông tin tài xế nếu có idTaiKhoan
+  let tenTaiXe: string | null = data.tenTaiXe || null;
+  let soDienThoaiTaiXe: string | null = data.soDienThoaiTaiXe || null;
+  if (data.idTaiKhoan) {
+    const taiXe = await query<{ hoTen: string; soDienThoai: string | null }>(
+      `SELECT hoTen, soDienThoai FROM NguoiDung WHERE id = @id`,
+      { id: data.idTaiKhoan }
+    );
+    if (taiXe.length > 0) {
+      tenTaiXe = taiXe[0].hoTen;
+      soDienThoaiTaiXe = taiXe[0].soDienThoai;
+    }
+  }
+
   const result = await query<Xe>(
-    `INSERT INTO Xe (bienSo, tenTaiXe, soDienThoaiTaiXe, taiTrong, trangThai)
-     VALUES (@bienSo, @tenTaiXe, @soDienThoaiTaiXe, @taiTrong, @trangThai);
+    `INSERT INTO Xe (bienSo, idTaiKhoan, tenTaiXe, soDienThoaiTaiXe, taiTrong, trangThai)
+     VALUES (@bienSo, @idTaiKhoan, @tenTaiXe, @soDienThoaiTaiXe, @taiTrong, @trangThai);
      SELECT * FROM Xe WHERE id = SCOPE_IDENTITY();`,
     {
       bienSo: data.bienSo || '',
-      tenTaiXe: data.tenTaiXe || null,
-      soDienThoaiTaiXe: data.soDienThoaiTaiXe || null,
+      idTaiKhoan: data.idTaiKhoan || null,
+      tenTaiXe,
+      soDienThoaiTaiXe,
       taiTrong: data.taiTrong || null,
       trangThai: data.trangThai || 'san_sang',
     }
@@ -199,14 +220,29 @@ export async function taoXe(data: Partial<Xe>): Promise<Xe> {
 }
 
 export async function suaXe(id: number, data: Partial<Xe>): Promise<Xe> {
+  // Lấy thông tin tài xế nếu có idTaiKhoan
+  let tenTaiXe: string | null = data.tenTaiXe ?? null;
+  let soDienThoaiTaiXe: string | null = data.soDienThoaiTaiXe ?? null;
+  if (data.idTaiKhoan) {
+    const taiXe = await query<{ hoTen: string; soDienThoai: string | null }>(
+      `SELECT hoTen, soDienThoai FROM NguoiDung WHERE id = @id`,
+      { id: data.idTaiKhoan }
+    );
+    if (taiXe.length > 0) {
+      tenTaiXe = taiXe[0].hoTen;
+      soDienThoaiTaiXe = taiXe[0].soDienThoai;
+    }
+  }
+
   await query(
-    `UPDATE Xe SET bienSo = @bienSo, tenTaiXe = @tenTaiXe, soDienThoaiTaiXe = @soDienThoaiTaiXe,
+    `UPDATE Xe SET bienSo = @bienSo, idTaiKhoan = @idTaiKhoan, tenTaiXe = @tenTaiXe, soDienThoaiTaiXe = @soDienThoaiTaiXe,
      taiTrong = @taiTrong, trangThai = @trangThai WHERE id = @id`,
     {
       id,
       bienSo: data.bienSo,
-      tenTaiXe: data.tenTaiXe ?? null,
-      soDienThoaiTaiXe: data.soDienThoaiTaiXe ?? null,
+      idTaiKhoan: data.idTaiKhoan ?? null,
+      tenTaiXe,
+      soDienThoaiTaiXe,
       taiTrong: data.taiTrong ?? null,
       trangThai: data.trangThai ?? 'san_sang',
     }

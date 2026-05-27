@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiX, FiEye } from 'react-icons/fi';
-import { layDanhSachXe, taoXe, suaXe, xoaXe, layDanhSachDonHang, layTatCaLichSanXuat } from '../services/api';
+import { layDanhSachXe, taoXe, suaXe, xoaXe, layDanhSachDonHang, layTatCaLichSanXuat, layDanhSachTaiXe } from '../services/api';
 import { Xe, DonHang } from '../types';
+import { SearchableDropdown } from '../components/SearchableDropdown';
 import { usePagination, useToast } from '../hooks';
 import { Modal, Loading, EmptyState, ConfirmModal, Pagination } from '../components/Common';
 import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from '../types';
@@ -26,6 +27,7 @@ export default function QuanLyXePage() {
   const canDelete = ['admin'].includes(userVaiTro);
 
   const [xes, setXes] = useState<Xe[]>([]);
+  const [taiXeList, setTaiXeList] = useState<{ id: number; hoTen: string; soDienThoai: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -46,13 +48,20 @@ export default function QuanLyXePage() {
   const [ordersTotal, setOrdersTotal] = useState(0);
 
   const [form, setForm] = useState({
-    bienSo: '', tenTaiXe: '', soDienThoaiTaiXe: '', taiTrong: '', trangThai: 'san_sang' as Xe['trangThai'],
+    bienSo: '', idTaiKhoan: '' as string | number, taiTrong: '', trangThai: 'san_sang' as Xe['trangThai'],
   });
   const [initialForm, setInitialForm] = useState(form);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    try { const data = await layDanhSachXe(); setXes(data); }
+    try {
+      const [xeData, txData] = await Promise.all([
+        layDanhSachXe(),
+        layDanhSachTaiXe(),
+      ]);
+      setXes(xeData);
+      setTaiXeList(txData);
+    }
     catch { showToast('Lỗi tải dữ liệu', 'error'); }
     finally { setLoading(false); }
   }, [showToast]);
@@ -107,7 +116,7 @@ export default function QuanLyXePage() {
   };
 
   const openCreate = () => {
-    const f = { bienSo: '', tenTaiXe: '', soDienThoaiTaiXe: '', taiTrong: '', trangThai: 'san_sang' as Xe['trangThai'] };
+    const f = { bienSo: '', idTaiKhoan: '' as string | number, taiTrong: '', trangThai: 'san_sang' as Xe['trangThai'] };
     setEditingId(null);
     setForm(f);
     setInitialForm(f);
@@ -115,7 +124,7 @@ export default function QuanLyXePage() {
   };
 
   const openEdit = (x: Xe) => {
-    const f = { bienSo: x.bienSo, tenTaiXe: x.tenTaiXe || '', soDienThoaiTaiXe: x.soDienThoaiTaiXe || '', taiTrong: x.taiTrong ? String(x.taiTrong) : '', trangThai: x.trangThai };
+    const f = { bienSo: x.bienSo, idTaiKhoan: (x.idTaiKhoan ?? '') as string | number, taiTrong: x.taiTrong ? String(x.taiTrong) : '', trangThai: x.trangThai };
     setEditingId(x.id);
     setForm(f);
     setInitialForm(f);
@@ -126,7 +135,12 @@ export default function QuanLyXePage() {
     if (!form.bienSo.trim()) { showToast('Biển số xe là bắt buộc', 'error'); return; }
     setFormLoading(true);
     try {
-      const payload = { bienSo: form.bienSo, tenTaiXe: form.tenTaiXe || null, soDienThoaiTaiXe: form.soDienThoaiTaiXe || null, taiTrong: form.taiTrong ? parseFloat(form.taiTrong) : null, trangThai: form.trangThai };
+      const payload = {
+        bienSo: form.bienSo,
+        idTaiKhoan: form.idTaiKhoan ? Number(form.idTaiKhoan) : null,
+        taiTrong: form.taiTrong ? parseFloat(form.taiTrong) : null,
+        trangThai: form.trangThai,
+      };
       if (editingId) { await suaXe(editingId, payload); }
       else { await taoXe(payload); }
       setModalOpen(false);
@@ -136,7 +150,7 @@ export default function QuanLyXePage() {
   };
 
   const resetForm = () => {
-    const f = { bienSo: '', tenTaiXe: '', soDienThoaiTaiXe: '', taiTrong: '', trangThai: 'san_sang' as Xe['trangThai'] };
+    const f = { bienSo: '', idTaiKhoan: '' as string | number, taiTrong: '', trangThai: 'san_sang' as Xe['trangThai'] };
     setForm(f);
     setInitialForm(f);
     setEditingId(null);
@@ -345,8 +359,19 @@ export default function QuanLyXePage() {
         footer={<><button className="btn btn-cancel" onClick={closeModal} disabled={formLoading}>Hủy</button><button className="btn btn-save" onClick={handleSubmit} disabled={formLoading}>{formLoading ? 'Đang lưu...' : (editingId ? 'Cập nhật' : 'Thêm xe')}</button></>}
       >
         <div className={styles.formGroup}><label className={styles.formLabel}>Biển số xe *</label><input className={styles.formInput} value={form.bienSo} onChange={(e) => setForm({ ...form, bienSo: e.target.value })} placeholder="VD: 59C1-12345" /></div>
-        <div className={styles.formGroup}><label className={styles.formLabel}>Tên tài xế</label><input className={styles.formInput} value={form.tenTaiXe} onChange={(e) => setForm({ ...form, tenTaiXe: e.target.value })} /></div>
-        <div className={styles.formGroup}><label className={styles.formLabel}>SĐT tài xế</label><input className={styles.formInput} value={form.soDienThoaiTaiXe} onChange={(e) => setForm({ ...form, soDienThoaiTaiXe: e.target.value })} /></div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Tài xế</label>
+          <SearchableDropdown
+            value={form.idTaiKhoan}
+            onChange={(id) => setForm({ ...form, idTaiKhoan: id as number })}
+            options={taiXeList.map((tx) => ({
+              id: tx.id,
+              label: tx.hoTen,
+              subLabel: tx.soDienThoai || undefined,
+            }))}
+            placeholder="-- Chọn tài xế --"
+          />
+        </div>
         <div className={styles.formGroup}><label className={styles.formLabel}>Tải trọng (tấn)</label><input type="number" className={styles.formInput} value={form.taiTrong} onChange={(e) => setForm({ ...form, taiTrong: e.target.value })} placeholder="VD: 10" /></div>
         <div className={styles.formGroup}><label className={styles.formLabel}>Trạng thái</label><select className={styles.formSelect} value={form.trangThai} onChange={(e) => setForm({ ...form, trangThai: e.target.value as Xe['trangThai'] })}><option value="san_sang">Sẵn sàng</option><option value="dang_giao">Đang giao</option><option value="bao_tri">Bảo trì</option></select></div>
       </Modal>

@@ -54,6 +54,7 @@ export interface TramTron {
 export interface Xe {
   id: number;
   bienSo: string;
+  idTaiKhoan: number | null;
   tenTaiXe: string | null;
   soDienThoaiTaiXe: string | null;
   taiTrong: number | null;

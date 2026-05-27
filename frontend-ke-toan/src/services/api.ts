@@ -228,6 +228,10 @@ export async function layDanhSachXe(trangThai?: string): Promise<Xe[]> {
   return res ?? [];
 }
 
+export async function layDanhSachTaiXe(): Promise<{ id: number; hoTen: string; soDienThoai: string | null }[]> {
+  return request<{ id: number; hoTen: string; soDienThoai: string | null }[]>("/tham-so/tai-xe");
+}
+
 export async function taoXe(data: Partial<Xe>): Promise<Xe> {
   return request<Xe>("/tham-so/xe", {
     method: "POST",
