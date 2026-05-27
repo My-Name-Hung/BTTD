@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiCheckCircle, FiFileText, FiEye, FiSearch, FiUpload } from 'react-icons/fi';
 import {
   layDonHangChoNghiemThu,
-  xacNhanNghiemThu,
-  uploadBienBanNghiemThu,
+  xacNhanNghiemThuUploadFile,
 } from '../services/api';
 import { DonHang, TRANG_THAI_DON_LABELS } from '../types';
 import { useToast, useAuth } from '../hooks';
@@ -52,12 +51,11 @@ export default function KyThuatNghiemThuPage() {
     }
     setUploadLoading(true);
     try {
-      await xacNhanNghiemThu(confirmTarget.id, 'da');
-      await uploadBienBanNghiemThu(confirmTarget.id, uploadFile);
+      await xacNhanNghiemThuUploadFile(confirmTarget.id, uploadFile);
       showToast('Xác nhận nghiệm thu thành công');
       setConfirmTarget(null);
       setUploadFile(null);
-      loadData();
+      await loadData();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Lỗi nghiệm thu', 'error');
     } finally {

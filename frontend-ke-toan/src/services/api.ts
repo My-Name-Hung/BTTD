@@ -300,6 +300,31 @@ export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 
   });
 }
 
+// Xác nhận nghiệm thu kèm upload file trong 1 request
+export async function xacNhanNghiemThuUploadFile(
+  idDonHang: number,
+  file: File,
+): Promise<{ donHang: DonHang; bienBanFile: string }> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(
+    `${BASE_URL}/nghiem-thu/xac-nhan-upload/${idDonHang}`,
+    {
+      method: "POST",
+      headers: { Authorization: token ? `Bearer ${token}` : "" },
+      body: formData,
+    },
+  );
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || "Lỗi xác nhận nghiệm thu");
+  }
+  return result.data;
+}
+
 export async function uploadBienBanNghiemThu(
   idDonHang: number,
   file: File,

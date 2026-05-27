@@ -78,9 +78,8 @@ export async function capNhatNghiemThu(id: number, data: Partial<NghiemThu>): Pr
   return (await query<NghiemThu>(`SELECT * FROM NghiemThu WHERE id = @id`, { id }))[0];
 }
 
-export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 'da'): Promise<DonHang> {
+export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 'da', bienBanFile?: string): Promise<DonHang> {
   if (loai === 'chua') {
-    // Chưa nghiệm thu: chỉ tạo record NghiemThu, giữ nguyên trạng thái đơn
     await query(
       `IF NOT EXISTS (SELECT * FROM NghiemThu WHERE idDonHang = @idDonHang)
        INSERT INTO NghiemThu (idDonHang, chatLuong, bienBanSo) VALUES (@idDonHang, N'chua', NULL)`,
@@ -90,11 +89,19 @@ export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 
   }
 
   // Kỹ thuật xác nhận nghiệm thu: chuyển sang trạng thái nghiệm thu, tạo record NghiemThu
-  await query(
-    `IF NOT EXISTS (SELECT * FROM NghiemThu WHERE idDonHang = @idDonHang)
-     INSERT INTO NghiemThu (idDonHang, chatLuong, bienBanSo) VALUES (@idDonHang, N'dat', NULL)`,
-    { idDonHang }
-  );
+  const existing = await query<NghiemThu>(`SELECT * FROM NghiemThu WHERE idDonHang = @idDonHang`, { idDonHang });
+
+  if (existing.length === 0) {
+    await query(
+      `INSERT INTO NghiemThu (idDonHang, chatLuong, bienBanSo, bienBanFile) VALUES (@idDonHang, N'dat', NULL, @bienBanFile)`,
+      { idDonHang, bienBanFile: bienBanFile || null }
+    );
+  } else {
+    await query(
+      `UPDATE NghiemThu SET chatLuong = N'dat', bienBanFile = @bienBanFile, ngayCapNhat = GETDATE() WHERE idDonHang = @idDonHang`,
+      { idDonHang, bienBanFile: bienBanFile || existing[0].bienBanFile || null }
+    );
+  }
 
   await query(
     `UPDATE DonHang SET

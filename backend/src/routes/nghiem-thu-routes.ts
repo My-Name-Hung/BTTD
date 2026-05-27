@@ -101,33 +101,47 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const fileUrl = `/uploads/bien-ban/${req.file.filename}`;
 
-    // Tạo record NghiemThu nếu chưa có
-    let nghiemThuId: number;
     const existing = await query<NghiemThu>(
       `SELECT * FROM NghiemThu WHERE idDonHang = @idDonHang`,
       { idDonHang }
     );
 
     if (existing.length === 0) {
-      const result = await query<NghiemThu>(
+      await query(
         `INSERT INTO NghiemThu (idDonHang, chatLuong, bienBanFile, ngayTao)
-         OUTPUT INSERTED.id
          VALUES (@idDonHang, N'dat', @bienBanFile, GETDATE())`,
         { idDonHang, bienBanFile: fileUrl }
       );
-      nghiemThuId = result[0].id;
     } else {
       await query(
-        `UPDATE NghiemThu SET bienBanFile = @bienBanFile, ngayCapNhat = GETDATE() WHERE id = @id`,
-        { bienBanFile: fileUrl, id: existing[0].id }
+        `UPDATE NghiemThu SET bienBanFile = @bienBanFile, ngayCapNhat = GETDATE() WHERE idDonHang = @idDonHang`,
+        { idDonHang, bienBanFile: fileUrl }
       );
-      nghiemThuId = existing[0].id;
     }
 
-    res.json({ success: true, message: 'Tải file thành công', data: { bienBanFile: fileUrl, id: nghiemThuId } });
+    res.json({ success: true, message: 'Tải file thành công', data: { bienBanFile: fileUrl } });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tải file';
     res.status(500).json({ success: false, message });
+  }
+});
+
+// Xác nhận nghiệm thu kèm upload file trong 1 request
+router.post('/xac-nhan-upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), uploadBienBan.single('file'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const idDonHang = parseInt(req.params.idDonHang, 10);
+    const fileUrl = req.file ? `/uploads/bien-ban/${req.file.filename}` : undefined;
+
+    const dh = await xacNhanNghiemThu(idDonHang, 'da', fileUrl);
+
+    res.json({
+      success: true,
+      message: 'Xác nhận nghiệm thu thành công',
+      data: { donHang: dh, bienBanFile: fileUrl },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi xác nhận nghiệm thu';
+    res.status(400).json({ success: false, message });
   }
 });
 
