@@ -179,8 +179,8 @@ router.get('/tai-xe', authMiddleware, async (req: AuthRequest, res: Response<Api
     const data = await layTatCaTaiXe();
     res.json({ success: true, message: 'Lấy danh sách tài xế thành công', data });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Lỗi lấy danh sách tài xế';
-    res.status(500).json({ success: false, message });
+    console.error('Lỗi lấy danh sách tài xế:', error);
+    res.status(500).json({ success: false, message: 'Lỗi lấy danh sách tài xế' });
   }
 });
 

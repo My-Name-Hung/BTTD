@@ -322,14 +322,42 @@ export async function importPhuongTien(
   const details: ImportResult['details'] = [];
   let success = 0;
 
+  const getRowValFuzzy = (row: Record<string, unknown>, ...patterns: string[]): unknown => {
+    const normalizedMap = new Map<string, string>();
+    for (const key of Object.keys(row)) {
+      normalizedMap.set(
+        key.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase(),
+        key
+      );
+    }
+    for (const pattern of patterns) {
+      const normPattern = pattern.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      for (const [normKey, origKey] of normalizedMap) {
+        if (normKey.includes(normPattern) || normPattern.includes(normKey)) {
+          return row[origKey];
+        }
+        const patternWords = normPattern.split(/\s+/).filter(Boolean);
+        if (patternWords.length > 0 && patternWords.every(word => normKey.includes(word))) {
+          return row[origKey];
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const parseNum = (v: unknown): number => {
+    const s = String(v ?? '0');
+    return parseFloat(s.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+  };
+
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     const rowNum = i + 2;
     try {
-      const bienSo = String(r['Biển số'] || r['bienSo'] || '').trim();
-      const tenTaiXe = String(r['Tên tài xế'] || r['tenTaiXe'] || '').trim();
-      const soDienThoaiTaiXe = String(r['SĐT tài xế'] || r['soDienThoaiTaiXe'] || '').trim();
-      const taiTrong = parseFloat(String(r['Tải trọng'] || r['taiTrong'] || '0').replace(/[^\d.,]/g, '').replace(',', '.'));
+      const bienSo = String(getRowValFuzzy(r, 'Biển số', 'Biển số xe', 'bienSo') || '').trim();
+      const tenTaiXe = String(getRowValFuzzy(r, 'Tên tài xế', 'tenTaiXe') || '').trim();
+      const soDienThoaiTaiXe = String(getRowValFuzzy(r, 'SĐT tài xế', 'Điện thoại tài xế') || '').trim();
+      const taiTrong = parseNum(getRowValFuzzy(r, 'Tải trọng', 'Tải trọng (tấn)', 'taiTrong'));
 
       if (!bienSo) {
         errors.push(`Dòng ${rowNum}: Thiếu biển số xe`);
