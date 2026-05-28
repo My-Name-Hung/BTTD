@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiEye, FiPackage, FiTruck, FiCheck, FiClock, FiAlertTriangle } from "react-icons/fi";
+import { FiEye, FiPackage, FiTruck, FiCheck, FiClock } from "react-icons/fi";
 import { Loading } from "../components/Common";
 import { layLichSanXuatKho, xacNhanBatDauGiao } from "../services/api";
 import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from "../types";
@@ -24,6 +24,8 @@ interface LichSanXuatItem {
   ngayTao?: string;
 }
 
+type FilterMode = "ngay" | "thang" | "nam";
+
 function formatDate(d: string) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("vi-VN", {
@@ -31,6 +33,23 @@ function formatDate(d: string) {
     month: "2-digit",
     year: "numeric",
   });
+}
+
+function getDateKey(d: string) {
+  if (!d) return "";
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
+function getMonthKey(d: string) {
+  if (!d) return "";
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getYearKey(d: string) {
+  if (!d) return "";
+  return String(new Date(d).getFullYear());
 }
 
 function statusColor(key: string) {
@@ -52,15 +71,17 @@ export default function KhoLichSanXuatPage() {
   const [data, setData] = useState<LichSanXuatItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [filterMode, setFilterMode] = useState<FilterMode>("ngay");
+  const [filterValue, setFilterValue] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await layLichSanXuatKho();
-      const sorted = (res || []).sort(
-        (a, b) => new Date(b.ngayTao || 0).getTime() - new Date(a.ngayTao || 0).getTime()
-      );
-      setData(sorted);
+      setData(res || []);
     } catch (err) {
       console.error("Lỗi tải lịch sản xuất:", err);
       showToast("Không tải được dữ liệu lịch sản xuất", "error");
@@ -89,6 +110,75 @@ export default function KhoLichSanXuatPage() {
     }
   };
 
+  const filteredData = useMemo(() => {
+    let items = [...data];
+
+    // Lọc theo filter
+    if (filterMode === "ngay") {
+      items = items.filter((item) => getDateKey(item.ngayTao || "") === filterValue);
+    } else if (filterMode === "thang") {
+      items = items.filter((item) => getMonthKey(item.ngayTao || "") === filterValue);
+    } else if (filterMode === "nam") {
+      items = items.filter((item) => getYearKey(item.ngayTao || "") === filterValue);
+    }
+
+    // Sắp xếp: chưa xác nhận (dang_san_xuat) lên đầu, sau đó theo ngày mới nhất
+    items.sort((a, b) => {
+      const isA = a.trangThaiDon === "dang_san_xuat";
+      const isB = b.trangThaiDon === "dang_san_xuat";
+      if (isA && !isB) return -1;
+      if (!isA && isB) return 1;
+      return new Date(b.ngayTao || 0).getTime() - new Date(a.ngayTao || 0).getTime();
+    });
+
+    return items;
+  }, [data, filterMode, filterValue]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const chuaXacNhan = filteredData.filter((i) => i.trangThaiDon === "dang_san_xuat").length;
+    const dangGiao = filteredData.filter((i) => i.trangThaiDon === "dang_giao" || i.trangThaiDon === "dang_cho_giao").length;
+    const daXong = filteredData.filter((i) => ["da_giao", "nghiem_thu", "da_thanh_toan", "hoan_thanh"].includes(i.trangThaiDon || "")).length;
+    return { chuaXacNhan, dangGiao, daXong, total: filteredData.length };
+  }, [filteredData]);
+
+  // Month options cho filter
+  const monthOptions = useMemo(() => {
+    const months: string[] = [];
+    const seen = new Set<string>();
+    data.forEach((item) => {
+      const key = getMonthKey(item.ngayTao || "");
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        months.push(key);
+      }
+    });
+    months.sort((a, b) => b.localeCompare(a));
+    return months;
+  }, [data]);
+
+  // Year options
+  const yearOptions = useMemo(() => {
+    const years: number[] = [];
+    const seen = new Set<number>();
+    data.forEach((item) => {
+      const y = new Date(item.ngayTao || 0).getFullYear();
+      if (y && !seen.has(y)) {
+        seen.add(y);
+        years.push(y);
+      }
+    });
+    years.sort((a, b) => b - a);
+    return years;
+  }, [data]);
+
+  const clearFilter = () => {
+    const now = new Date();
+    setFilterMode("ngay");
+    setFilterValue(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`);
+  };
+
+
   if (loading) return <Loading />;
 
   return (
@@ -101,12 +191,101 @@ export default function KhoLichSanXuatPage() {
         </div>
       </div>
 
+      {/* Filter Bar */}
+      <div className={styles.filterBar}>
+        <div className={styles.filterModeGroup}>
+          {(["ngay", "thang", "nam"] as FilterMode[]).map((mode) => (
+            <button
+              key={mode}
+              className={`${styles.filterModeBtn} ${filterMode === mode ? styles.filterModeBtnActive : ""}`}
+              onClick={() => setFilterMode(mode)}
+            >
+              {mode === "ngay" ? "Theo ngày" : mode === "thang" ? "Theo tháng" : "Theo năm"}
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.filterValueWrap}>
+          {filterMode === "ngay" && (
+            <input
+              type="date"
+              className={styles.filterDateInput}
+              value={filterValue}
+              onChange={(e) => setFilterValue(e.target.value)}
+            />
+          )}
+          {filterMode === "thang" && (
+            <select
+              className={styles.filterSelect}
+              value={filterValue}
+              onChange={(e) => setFilterValue(e.target.value)}
+            >
+              {monthOptions.map((m) => {
+                const [y, mo] = m.split("-");
+                return (
+                  <option key={m} value={m}>
+                    Tháng {mo}/{y}
+                  </option>
+                );
+              })}
+              {monthOptions.length === 0 && <option value="">-- Chọn tháng --</option>}
+            </select>
+          )}
+          {filterMode === "nam" && (
+            <select
+              className={styles.filterSelect}
+              value={filterValue}
+              onChange={(e) => setFilterValue(e.target.value)}
+            >
+              {yearOptions.map((y) => (
+                <option key={y} value={String(y)}>
+                  Năm {y}
+                </option>
+              ))}
+              {yearOptions.length === 0 && <option value="">-- Chọn năm --</option>}
+            </select>
+          )}
+        </div>
+      </div>
+
+      {/* Stats Row */}
+      <div className={styles.statsRow}>
+        <div className={`${styles.statCard} ${styles.statCardWarning}`}>
+          <FiClock size={18} />
+          <div className={styles.statContent}>
+            <div className={styles.statNum}>{stats.chuaXacNhan}</div>
+            <div className={styles.statLabel}>Chưa xác nhận</div>
+          </div>
+        </div>
+        <div className={`${styles.statCard} ${styles.statCardInfo}`}>
+          <FiTruck size={18} />
+          <div className={styles.statContent}>
+            <div className={styles.statNum}>{stats.dangGiao}</div>
+            <div className={styles.statLabel}>Đang giao</div>
+          </div>
+        </div>
+        <div className={`${styles.statCard} ${styles.statCardSuccess}`}>
+          <FiCheck size={18} />
+          <div className={styles.statContent}>
+            <div className={styles.statNum}>{stats.daXong}</div>
+            <div className={styles.statLabel}>Đã hoàn thành</div>
+          </div>
+        </div>
+        <div className={`${styles.statCard} ${styles.statCardAll}`}>
+          <FiPackage size={18} />
+          <div className={styles.statContent}>
+            <div className={styles.statNum}>{stats.total}</div>
+            <div className={styles.statLabel}>Tổng cộng</div>
+          </div>
+        </div>
+      </div>
+
       {/* Table */}
       <div className={styles.tableCard}>
-        {data.length === 0 ? (
+        {filteredData.length === 0 ? (
           <div className={styles.empty}>
             <FiPackage size={48} />
-            <p>Chưa có lịch sản xuất nào</p>
+            <p>Không có lịch sản xuất nào trong khoảng thời gian này</p>
           </div>
         ) : (
           <div className={styles.tableWrap}>
@@ -125,11 +304,12 @@ export default function KhoLichSanXuatPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.map((item) => {
+                {filteredData.map((item) => {
                   const trangThai = item.trangThaiDon || "cho_duyet";
                   const isLoading = actionLoading === item.idDonHang;
+                  const isChuaXacNhan = trangThai === "dang_san_xuat";
                   return (
-                    <tr key={item.id}>
+                    <tr key={item.id} className={isChuaXacNhan ? styles.rowChuaXacNhan : ""}>
                       <td>
                         <span className={styles.tableCode}>{item.maDonHang || `#${item.idDonHang}`}</span>
                       </td>

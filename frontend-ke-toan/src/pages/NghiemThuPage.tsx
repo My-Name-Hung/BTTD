@@ -240,10 +240,15 @@ export default function NghiemThuPage() {
                       <FiCheck /> Đã nghiệm thu
                     </button>
                   )}
-                  {isDaNT && isKyThuat && (
-                    <button className="btn btn-secondary" onClick={() => openUploadFile(dh, nt!)}>
-                      <FiUpload /> {nt?.bienBanFile ? 'Thay đổi file' : 'Tải file biên bản'}
-                    </button>
+                  {isDaNT && (
+                    <a
+                      href={`${baseUrl}${nt?.bienBanFile}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.bienBanLink}
+                    >
+                      <FiExternalLink size={14} /> Mở file biên bản
+                    </a>
                   )}
                 </div>
               </div>

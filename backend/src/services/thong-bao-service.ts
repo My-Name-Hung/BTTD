@@ -60,7 +60,7 @@ export function guiThongBao(
     DELIVERY_CONFIRMED: ['dieu_phoi', 'admin', 'lanh_dao', 'ky_thuat'],
     PRODUCTION_SCHEDULED: ['kho', 'admin', 'lanh_dao'],
     DELIVERY_STARTED: ['dieu_phoi', 'admin', 'lanh_dao'],
-    DELIVERY_COMPLETED: ['dieu_phoi', 'admin', 'lanh_dao', 'ke_toan'],
+    DELIVERY_COMPLETED: ['dieu_phoi', 'admin', 'lanh_dao', 'ke_toan', 'ky_thuat'],
     ORDER_STATUS_CHANGED: ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'kho', 'sale', 'tai_xe', 'ky_thuat'],
   };
 
