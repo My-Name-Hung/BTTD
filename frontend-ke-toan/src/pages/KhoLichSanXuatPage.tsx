@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { FiCheck, FiClock, FiEye, FiPackage, FiTruck } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { FiEye, FiPackage, FiTruck, FiCheck, FiClock } from "react-icons/fi";
 import { Loading } from "../components/Common";
-import { layLichSanXuatKho, xacNhanBatDauGiao } from "../services/api";
-import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from "../types";
 import { useToast } from "../hooks";
+import { layLichSanXuatKho, xacNhanBatDauGiao } from "../services/api";
+import { TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./KhoLichSanXuatPage.module.css";
 
 interface LichSanXuatItem {
@@ -92,7 +92,10 @@ export default function KhoLichSanXuatPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("bttd_token");
-    if (!token) { navigate("/login"); return; }
+    if (!token) {
+      navigate("/login");
+      return;
+    }
     loadData();
   }, [navigate, loadData]);
 
@@ -115,11 +118,17 @@ export default function KhoLichSanXuatPage() {
 
     // Lọc theo filter
     if (filterMode === "ngay") {
-      items = items.filter((item) => getDateKey(item.ngayTao || "") === filterValue);
+      items = items.filter(
+        (item) => getDateKey(item.ngayTao || "") === filterValue,
+      );
     } else if (filterMode === "thang") {
-      items = items.filter((item) => getMonthKey(item.ngayTao || "") === filterValue);
+      items = items.filter(
+        (item) => getMonthKey(item.ngayTao || "") === filterValue,
+      );
     } else if (filterMode === "nam") {
-      items = items.filter((item) => getYearKey(item.ngayTao || "") === filterValue);
+      items = items.filter(
+        (item) => getYearKey(item.ngayTao || "") === filterValue,
+      );
     }
 
     // Sắp xếp: chưa xác nhận (dang_san_xuat) lên đầu, sau đó theo ngày mới nhất
@@ -128,7 +137,9 @@ export default function KhoLichSanXuatPage() {
       const isB = b.trangThaiDon === "dang_san_xuat";
       if (isA && !isB) return -1;
       if (!isA && isB) return 1;
-      return new Date(b.ngayTao || 0).getTime() - new Date(a.ngayTao || 0).getTime();
+      return (
+        new Date(b.ngayTao || 0).getTime() - new Date(a.ngayTao || 0).getTime()
+      );
     });
 
     return items;
@@ -136,48 +147,29 @@ export default function KhoLichSanXuatPage() {
 
   // Stats
   const stats = useMemo(() => {
-    const chuaXacNhan = filteredData.filter((i) => i.trangThaiDon === "dang_san_xuat").length;
-    const dangGiao = filteredData.filter((i) => i.trangThaiDon === "dang_giao" || i.trangThaiDon === "dang_cho_giao").length;
-    const daXong = filteredData.filter((i) => ["da_giao", "nghiem_thu", "da_thanh_toan", "hoan_thanh"].includes(i.trangThaiDon || "")).length;
+    const chuaXacNhan = filteredData.filter(
+      (i) => i.trangThaiDon === "dang_san_xuat",
+    ).length;
+    const dangGiao = filteredData.filter(
+      (i) =>
+        i.trangThaiDon === "dang_giao" || i.trangThaiDon === "dang_cho_giao",
+    ).length;
+    const daXong = filteredData.filter((i) =>
+      ["da_giao", "nghiem_thu", "da_thanh_toan", "hoan_thanh"].includes(
+        i.trangThaiDon || "",
+      ),
+    ).length;
     return { chuaXacNhan, dangGiao, daXong, total: filteredData.length };
   }, [filteredData]);
 
-  // Month options cho filter
-  const monthOptions = useMemo(() => {
-    const months: string[] = [];
-    const seen = new Set<string>();
-    data.forEach((item) => {
-      const key = getMonthKey(item.ngayTao || "");
-      if (key && !seen.has(key)) {
-        seen.add(key);
-        months.push(key);
-      }
-    });
-    months.sort((a, b) => b.localeCompare(a));
-    return months;
-  }, [data]);
-
-  // Year options
-  const yearOptions = useMemo(() => {
-    const years: number[] = [];
-    const seen = new Set<number>();
-    data.forEach((item) => {
-      const y = new Date(item.ngayTao || 0).getFullYear();
-      if (y && !seen.has(y)) {
-        seen.add(y);
-        years.push(y);
-      }
-    });
-    years.sort((a, b) => b - a);
-    return years;
-  }, [data]);
 
   const clearFilter = () => {
     const now = new Date();
     setFilterMode("ngay");
-    setFilterValue(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`);
+    setFilterValue(
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
+    );
   };
-
 
   if (loading) return <Loading />;
 
@@ -187,7 +179,9 @@ export default function KhoLichSanXuatPage() {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Lịch sản xuất</h1>
-          <p className={styles.pageDesc}>Danh sách đơn hàng đã lên lịch sản xuất</p>
+          <p className={styles.pageDesc}>
+            Danh sách đơn hàng đã lên lịch sản xuất
+          </p>
         </div>
       </div>
 
@@ -200,7 +194,11 @@ export default function KhoLichSanXuatPage() {
               className={`${styles.filterModeBtn} ${filterMode === mode ? styles.filterModeBtnActive : ""}`}
               onClick={() => setFilterMode(mode)}
             >
-              {mode === "ngay" ? "Theo ngày" : mode === "thang" ? "Theo tháng" : "Theo năm"}
+              {mode === "ngay"
+                ? "Theo ngày"
+                : mode === "thang"
+                  ? "Theo tháng"
+                  : "Theo năm"}
             </button>
           ))}
         </div>
@@ -215,35 +213,45 @@ export default function KhoLichSanXuatPage() {
             />
           )}
           {filterMode === "thang" && (
-            <select
-              className={styles.filterSelect}
+            <input
+              type="month"
+              className={styles.filterDateInput}
               value={filterValue}
               onChange={(e) => setFilterValue(e.target.value)}
-            >
-              {monthOptions.map((m) => {
-                const [y, mo] = m.split("-");
-                return (
-                  <option key={m} value={m}>
-                    Tháng {mo}/{y}
-                  </option>
-                );
-              })}
-              {monthOptions.length === 0 && <option value="">-- Chọn tháng --</option>}
-            </select>
+            />
           )}
           {filterMode === "nam" && (
-            <select
-              className={styles.filterSelect}
-              value={filterValue}
-              onChange={(e) => setFilterValue(e.target.value)}
-            >
-              {yearOptions.map((y) => (
-                <option key={y} value={String(y)}>
-                  Năm {y}
-                </option>
-              ))}
-              {yearOptions.length === 0 && <option value="">-- Chọn năm --</option>}
-            </select>
+            <div className={styles.yearInputWrap}>
+              <button
+                className={styles.yearStepBtn}
+                onClick={() => {
+                  const y = parseInt(filterValue) - 1;
+                  if (y >= 2000) setFilterValue(String(y));
+                }}
+                title="Năm trước"
+              >
+                ‹
+              </button>
+              <input
+                type="number"
+                className={styles.filterYearInput}
+                value={filterValue}
+                min={2000}
+                max={2100}
+                step={1}
+                onChange={(e) => setFilterValue(e.target.value)}
+              />
+              <button
+                className={styles.yearStepBtn}
+                onClick={() => {
+                  const y = parseInt(filterValue) + 1;
+                  if (y <= 2100) setFilterValue(String(y));
+                }}
+                title="Năm sau"
+              >
+                ›
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -309,21 +317,34 @@ export default function KhoLichSanXuatPage() {
                   const isLoading = actionLoading === item.idDonHang;
                   const isChuaXacNhan = trangThai === "dang_san_xuat";
                   return (
-                    <tr key={item.id} className={isChuaXacNhan ? styles.rowChuaXacNhan : ""}>
+                    <tr
+                      key={item.id}
+                      className={isChuaXacNhan ? styles.rowChuaXacNhan : ""}
+                    >
                       <td>
-                        <span className={styles.tableCode}>{item.maDonHang || `#${item.idDonHang}`}</span>
+                        <span className={styles.tableCode}>
+                          {item.maDonHang || `#${item.idDonHang}`}
+                        </span>
                       </td>
                       <td>
-                        <div className={styles.tableName}>{item.tenKhachHang || "—"}</div>
+                        <div className={styles.tableName}>
+                          {item.tenKhachHang || "—"}
+                        </div>
                       </td>
                       <td>
-                        <div className={styles.tableAddress}>{item.diaChiNhan || "—"}</div>
+                        <div className={styles.tableAddress}>
+                          {item.diaChiNhan || "—"}
+                        </div>
                       </td>
                       <td>
-                        <div className={styles.tableMac}>{item.tenMacBeTong || "—"}</div>
+                        <div className={styles.tableMac}>
+                          {item.tenMacBeTong || "—"}
+                        </div>
                       </td>
                       <td>
-                        <span>{item.khoiLuongDat ? `${item.khoiLuongDat} m³` : "—"}</span>
+                        <span>
+                          {item.khoiLuongDat ? `${item.khoiLuongDat} m³` : "—"}
+                        </span>
                       </td>
                       <td>
                         <span
@@ -337,7 +358,9 @@ export default function KhoLichSanXuatPage() {
                         </span>
                       </td>
                       <td>
-                        <span className={styles.tableXe}>{item.bienSoXe || "—"}</span>
+                        <span className={styles.tableXe}>
+                          {item.bienSoXe || "—"}
+                        </span>
                       </td>
                       <td>
                         <span className={styles.tableDate}>
@@ -354,27 +377,48 @@ export default function KhoLichSanXuatPage() {
                               disabled={isLoading}
                               title="Xác nhận sản xuất xong"
                             >
-                              {isLoading ? <FiClock size={14} /> : <FiCheck size={14} />}
+                              {isLoading ? (
+                                <FiClock size={14} />
+                              ) : (
+                                <FiCheck size={14} />
+                              )}
                               {isLoading ? "Đang xử lý..." : "SX xong"}
                             </button>
                           )}
                           {/* Đang chờ giao / đang giao — chỉ hiển thị trạng thái */}
-                          {(trangThai === "dang_cho_giao" || trangThai === "dang_giao") && (
-                            <span className={styles.rowStatusBadge} style={{ color: '#f97316', background: 'rgba(249,115,22,0.1)' }}>
+                          {(trangThai === "dang_cho_giao" ||
+                            trangThai === "dang_giao") && (
+                            <span
+                              className={styles.rowStatusBadge}
+                              style={{
+                                color: "#f97316",
+                                background: "rgba(249,115,22,0.1)",
+                              }}
+                            >
                               <FiTruck size={12} />
-                              {trangThai === "dang_cho_giao" ? "Chờ giao" : "Đang giao"}
+                              {trangThai === "dang_cho_giao"
+                                ? "Chờ giao"
+                                : "Đang giao"}
                             </span>
                           )}
                           {/* Đã giao */}
                           {trangThai === "da_giao" && (
-                            <span className={styles.rowStatusBadge} style={{ color: '#06b6d4', background: 'rgba(6,182,212,0.1)' }}>
+                            <span
+                              className={styles.rowStatusBadge}
+                              style={{
+                                color: "#06b6d4",
+                                background: "rgba(6,182,212,0.1)",
+                              }}
+                            >
                               <FiCheck size={12} /> Đã giao
                             </span>
                           )}
                           {/* Xem chi tiết */}
                           <button
                             className={`${styles.actionBtn} ${styles.actionBtnView}`}
-                            onClick={() => navigate(`/kho/don-hang/${item.idDonHang}`)}
+                            onClick={() =>
+                              navigate(`/kho/don-hang/${item.idDonHang}`)
+                            }
                             title="Xem chi tiết"
                           >
                             <FiEye size={15} />

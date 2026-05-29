@@ -234,19 +234,20 @@
   background: var(--color-white);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
-  padding: 12px 16px;
-  flex-wrap: wrap;
+  padding: 10px 16px;
+  flex-wrap: nowrap;
 }
 
 .filterModeGroup {
   display: flex;
   border: 1.5px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .filterModeBtn {
-  padding: 7px 14px;
+  padding: 5px 12px;
   font-size: 12px;
   font-weight: 600;
   font-family: inherit;
@@ -255,6 +256,7 @@
   background: transparent;
   color: var(--color-text-secondary);
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .filterModeBtn:not(:last-child) {
@@ -272,16 +274,16 @@
 }
 
 .filterValueWrap {
-  flex: 1;
+  flex: 0 0 auto;
   min-width: 160px;
 }
 
 .filterDateInput,
 .filterSelect {
-  width: 100%;
-  padding: 8px 12px;
+  width: 160px;
+  padding: 6px 10px;
   border: 1.5px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 13px;
   font-family: inherit;
   color: var(--color-text);
@@ -294,6 +296,59 @@
 .filterSelect:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+.yearInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+  width: 130px;
+  background: var(--color-white);
+}
+
+.yearStepBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.yearStepBtn:hover {
+  background: rgba(7, 60, 235, 0.08);
+  color: var(--color-primary);
+}
+
+.filterYearInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-text);
+  background: transparent;
+  width: 100%;
+  -moz-appearance: textfield;
+  min-width: 0;
+}
+
+.filterYearInput::-webkit-inner-spin-button,
+.filterYearInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* ── Stats Row ── */
@@ -335,17 +390,33 @@
   margin-top: 2px;
 }
 
-.statCardWarning svg { color: #f59e0b; }
-.statCardWarning .statNum { color: #f59e0b; }
+.statCardWarning svg {
+  color: #f59e0b;
+}
+.statCardWarning .statNum {
+  color: #f59e0b;
+}
 
-.statCardInfo svg { color: #0ea5e9; }
-.statCardInfo .statNum { color: #0ea5e9; }
+.statCardInfo svg {
+  color: #0ea5e9;
+}
+.statCardInfo .statNum {
+  color: #0ea5e9;
+}
 
-.statCardSuccess svg { color: #10b981; }
-.statCardSuccess .statNum { color: #10b981; }
+.statCardSuccess svg {
+  color: #10b981;
+}
+.statCardSuccess .statNum {
+  color: #10b981;
+}
 
-.statCardAll svg { color: var(--color-primary); }
-.statCardAll .statNum { color: var(--color-primary); }
+.statCardAll svg {
+  color: var(--color-primary);
+}
+.statCardAll .statNum {
+  color: var(--color-primary);
+}
 
 /* Row highlight cho đơn chưa xác nhận */
 .rowChuaXacNhan td {
