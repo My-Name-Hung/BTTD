@@ -617,16 +617,11 @@ export async function importCongNo(
   const details: ImportResult["details"] = [];
   let success = 0;
 
-  // Hỗ trợ 2 format: array-index (header:1) hoặc cell-ref key ("A","B","C")
-  // Bravo file không có header nên XLSX dùng cell ref làm key
-  const getVal = (row: Record<string, unknown>, idx: number, ref: string): unknown => {
-    return row[String(idx)] ?? row[ref] ?? row[String(idx - 1)] ?? undefined;
-  };
-
-  const getRowVal = (row: unknown, idx: number, ref: string): unknown => {
+  // Bravo dùng key __EMPTY, __EMPTY_1... nên lấy theo index từ values
+  const getRowVal = (row: unknown, idx: number): unknown => {
     if (Array.isArray(row)) return row[idx];
-    const r = row as Record<string, unknown>;
-    return getVal(r, idx, ref);
+    const vals = Object.values(row as Record<string, unknown>);
+    return vals[idx];
   };
 
   const parseNum = (v: unknown): number => {
@@ -654,14 +649,14 @@ export async function importCongNo(
     const rowNum = i + 2;
     try {
       // Lấy theo index hoặc cell ref
-      const maRaw = getRowVal(r, 0, "A");
-      const tenRaw = getRowVal(r, 1, "B");
-      const duDauNoRaw = getRowVal(r, 2, "C");
-      const duDauCoRaw = getRowVal(r, 3, "D");
-      const psNoRaw = getRowVal(r, 4, "E");
-      const psCoRaw = getRowVal(r, 5, "F");
-      const duCuoiNoRaw = getRowVal(r, 6, "G");
-      const duCuoiCoRaw = getRowVal(r, 7, "H");
+      const maRaw = getRowVal(r, 0);
+      const tenRaw = getRowVal(r, 1);
+      const duDauNoRaw = getRowVal(r, 2);
+      const duDauCoRaw = getRowVal(r, 3);
+      const psNoRaw = getRowVal(r, 4);
+      const psCoRaw = getRowVal(r, 5);
+      const duCuoiNoRaw = getRowVal(r, 6);
+      const duCuoiCoRaw = getRowVal(r, 7);
 
       const maKhachHang = String(maRaw ?? "").trim().replace(/\s+$/, "");
       const tenKhachHang = String(tenRaw ?? "").trim();
