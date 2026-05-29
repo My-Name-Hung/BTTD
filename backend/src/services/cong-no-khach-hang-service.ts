@@ -24,6 +24,9 @@ export async function layCongNoKhachHangGrouped(
   const groupMap = new Map<string, CongNoKhachHangGroup>();
 
   for (const row of rows) {
+    // Bỏ qua dòng Tổng cộng
+    if (row.tenKhachHang === 'Tổng cộng') continue;
+
     const nhom = row.nhom || 'Chưa phân nhóm';
     if (!groupMap.has(nhom)) {
       groupMap.set(nhom, {
@@ -54,7 +57,7 @@ export async function layDanhSachNhomCongNoKhachHang(): Promise<{ nhom: string; 
   const rows = await query<{ nhom: string; soLuong: number }>(
     `SELECT nhom, COUNT(*) as soLuong
      FROM CongNoKhachHang
-     WHERE nhom IS NOT NULL AND nhom <> ''
+     WHERE nhom IS NOT NULL AND nhom <> '' AND nhom <> N'Tổng cộng'
      GROUP BY nhom
      ORDER BY MIN(ngayTao) ASC`,
   );

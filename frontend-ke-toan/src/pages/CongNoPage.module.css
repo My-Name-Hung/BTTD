@@ -42,6 +42,12 @@
 .groupHeaderValue { font-weight: 700; font-size: 12px; color: #374151; }
 .groupSubTotal { color: #d97706; }
 
+/* Grand total row */
+.grandTotalRow td { background: #e8f0ff !important; border-top: 2px solid #073ceb; }
+.grandTotalLabel { font-weight: 800; font-size: 13px; color: #073ceb; padding: 12px 14px; }
+.grandTotalValue { font-weight: 800; font-size: 13px; color: #073ceb; padding: 12px 14px; }
+.grandTotalSub { color: #d97706; }
+
 /* Data rows */
 .dataRow td { background: var(--color-white); }
 .dataRow:hover td { background: rgba(7, 60, 235, 0.02); }

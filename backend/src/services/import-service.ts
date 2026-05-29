@@ -874,15 +874,16 @@ export async function importCongNoKhachHang(
       .join(" UNION ALL ");
 
     try {
-      // Merge: update nếu đã tồn tại (theo maKhachHang + tenKhachHang), insert nếu chưa
+      // Merge: match theo tenKhachHang (luôn có, unique trong file Bravo)
       await query(
         `MERGE INTO CongNoKhachHang AS target
          USING (
            ${values}
          ) AS source (rn, maKhachHang, tenKhachHang, duDauNo, duDauCo, phatSinhNo, phatSinhCo, duCuoiNo, duCuoiCo, nhom, rowNum)
-         ON (target.maKhachHang = source.maKhachHang AND target.tenKhachHang = source.tenKhachHang AND source.maKhachHang <> '')
+         ON (target.tenKhachHang = source.tenKhachHang)
          WHEN MATCHED THEN
            UPDATE SET
+             target.maKhachHang = source.maKhachHang,
              target.duDauNo = source.duDauNo,
              target.duDauCo = source.duDauCo,
              target.phatSinhNo = source.phatSinhNo,
@@ -896,6 +897,34 @@ export async function importCongNoKhachHang(
            VALUES (source.maKhachHang, source.tenKhachHang, source.duDauNo, source.duDauCo, source.phatSinhNo, source.phatSinhCo, source.duCuoiNo, source.duCuoiCo, source.nhom);`,
       );
       success = dataRows.length;
+
+      // Tính tổng cộng từ dataRows
+      const tongCong = {
+        duDauNo: dataRows.reduce((s, r) => s + r.duDauNo, 0),
+        duDauCo: dataRows.reduce((s, r) => s + r.duDauCo, 0),
+        phatSinhNo: dataRows.reduce((s, r) => s + r.phatSinhNo, 0),
+        phatSinhCo: dataRows.reduce((s, r) => s + r.phatSinhCo, 0),
+        duCuoiNo: dataRows.reduce((s, r) => s + r.duCuoiNo, 0),
+        duCuoiCo: dataRows.reduce((s, r) => s + r.duCuoiCo, 0),
+      };
+
+      // Upsert dòng Tổng cộng (tenKhachHang = 'Tổng cộng', nhom = 'Tổng cộng')
+      await query(
+        `MERGE INTO CongNoKhachHang AS target
+         USING (SELECT 1 as rn) AS source
+         ON (target.tenKhachHang = N'Tổng cộng')
+         WHEN MATCHED THEN
+           UPDATE SET
+             maKhachHang = NULL,
+             duDauNo = @duDauNo, duDauCo = @duDauCo,
+             phatSinhNo = @phatSinhNo, phatSinhCo = @phatSinhCo,
+             duCuoiNo = @duCuoiNo, duCuoiCo = @duCuoiCo,
+             nhom = N'Tổng cộng', ngayCapNhat = GETDATE()
+         WHEN NOT MATCHED THEN
+           INSERT (maKhachHang, tenKhachHang, duDauNo, duDauCo, phatSinhNo, phatSinhCo, duCuoiNo, duCuoiCo, nhom)
+           VALUES (NULL, N'Tổng cộng', @duDauNo, @duDauCo, @phatSinhNo, @phatSinhCo, @duCuoiNo, @duCuoiCo, N'Tổng cộng');`,
+        tongCong,
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Lỗi không xác định";
       errors.push(msg);

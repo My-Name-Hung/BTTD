@@ -84,8 +84,11 @@ export default function CongNoPage() {
     setSearchTimeoutState(t);
   };
 
-  const tongDuCuoiNo = groups.reduce((s, g) => s + g.tongDuCuoiNo, 0);
-  const tongDuCuoiCo = groups.reduce((s, g) => s + g.tongDuCuoiCo, 0);
+  const tongDuCuoiNo = tongCong?.duCuoiNo ?? groups.reduce((s, g) => s + g.tongDuCuoiNo, 0);
+  const tongDuCuoiCo = tongCong?.duCuoiCo ?? groups.reduce((s, g) => s + g.tongDuCuoiCo, 0);
+
+  const tongCong = groups.flatMap(g => g.items).find(cn => cn.tenKhachHang === 'Tổng cộng');
+  const displayGroups = groups.filter(g => g.nhom !== 'Tổng cộng');
 
   const toggleGroup = (nhom: string) => {
     const next = new Set(collapsed);
@@ -273,7 +276,7 @@ export default function CongNoPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {groups.map((group) => {
+                    {displayGroups.map((group) => {
                       const isCollapsed = collapsed.has(group.nhom);
                       return (
                         <React.Fragment key={group.nhom}>
@@ -315,6 +318,19 @@ export default function CongNoPage() {
                         </React.Fragment>
                       );
                     })}
+                    {/* Dòng Tổng cộng */}
+                    {tongCong && (
+                      <tr className={styles.grandTotalRow}>
+                        <td colSpan={2} className={styles.grandTotalLabel}>Tổng cộng</td>
+                        <td className={`${styles.grandTotalValue} ${styles.thRight}`}>{formatCurrency(tongCong.duDauNo)}</td>
+                        <td className={`${styles.grandTotalValue} ${styles.thRight}`}>{formatCurrency(tongCong.duDauCo)}</td>
+                        <td className={`${styles.grandTotalValue} ${styles.thRight}`}>{formatCurrency(tongCong.phatSinhNo)}</td>
+                        <td className={`${styles.grandTotalValue} ${styles.thRight}`}>{formatCurrency(tongCong.phatSinhCo)}</td>
+                        <td className={`${styles.grandTotalValue} ${styles.thRight} ${styles.grandTotalSub}`}>{formatCurrency(tongCong.duCuoiNo)}</td>
+                        <td className={`${styles.grandTotalValue} ${styles.thRight}`}>{formatCurrency(tongCong.duCuoiCo)}</td>
+                        {canWrite && <td />}
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               )}

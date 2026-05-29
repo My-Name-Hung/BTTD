@@ -436,12 +436,6 @@ export async function importCongNoKhachHang(file: File): Promise<ImportResult> {
   if (!json.success) throw new Error(json.message);
   return json.data as ImportResult;
 }
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message);
-  return json.data as CongNoGroup[];
-}
 
 export async function layDanhSachNhomCongNo(): Promise<{ nhom: string; soLuong: number }[]> {
   const res = await fetch(`${BASE_URL}/thanh-toan/cong-no/nhom/list`, {
