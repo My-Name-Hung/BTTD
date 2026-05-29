@@ -188,6 +188,32 @@ export interface CongNoGroup {
   tongConLai: number;
 }
 
+export interface CongNoKhachHang {
+  id: number;
+  maKhachHang: string | null;
+  tenKhachHang: string;
+  duDauNo: number;
+  duDauCo: number;
+  phatSinhNo: number;
+  phatSinhCo: number;
+  duCuoiNo: number;
+  duCuoiCo: number;
+  nhom: string | null;
+  ngayTao: Date;
+  ngayCapNhat: Date;
+}
+
+export interface CongNoKhachHangGroup {
+  nhom: string;
+  items: CongNoKhachHang[];
+  tongDuDauNo: number;
+  tongDuDauCo: number;
+  tongPhatSinhNo: number;
+  tongPhatSinhCo: number;
+  tongDuCuoiNo: number;
+  tongDuCuoiCo: number;
+}
+
 export interface ThongKeDashboard {
   tongDonHang: number;
   donChoDuyet: number;

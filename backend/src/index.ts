@@ -23,6 +23,7 @@ import khoRoutes from "./routes/kho-routes";
 import importRoutes from "./routes/import-routes";
 import taiXeRoutes from "./routes/tai-xe-routes";
 import kyThuatRoutes from "./routes/ky-thuat-routes";
+import congNoKhachHangRoutes from "./routes/cong-no-khach-hang-routes";
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -70,6 +71,7 @@ app.use("/api/tai-xe", authMiddleware, maintenanceMiddleware, taiXeRoutes);
 app.use("/api/ky-thuat", authMiddleware, maintenanceMiddleware, kyThuatRoutes);
 app.use("/api", authMiddleware, maintenanceMiddleware, quanLyRoutes);
 app.use("/api/import", authMiddleware, maintenanceMiddleware, importRoutes);
+app.use("/api", authMiddleware, maintenanceMiddleware, congNoKhachHangRoutes);
 
 // Error handler
 app.use(

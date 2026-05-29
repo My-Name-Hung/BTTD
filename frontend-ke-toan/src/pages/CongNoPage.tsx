@@ -4,54 +4,19 @@ import {
   FiFileText, FiCheckCircle, FiXCircle,
 } from 'react-icons/fi';
 import {
-  layDanhSachCongNo, suaCongNo, xoaCongNo, layCongNoTheoId, importCongNo,
-  layCongNoGrouped, layDanhSachNhomCongNo,
+  layCongNoKhachHangGrouped,
+  layDanhSachNhomCongNoKhachHang,
+  suaCongNoKhachHang,
+  xoaCongNoKhachHang,
+  importCongNoKhachHang,
 } from '../services/api';
-import { CongNo, CongNoGroup } from '../types';
+import { CongNoKhachHang, CongNoKhachHangGroup } from '../types';
 import { useToast, usePageRole } from '../hooks';
 import { Loading, EmptyState, ConfirmModal } from '../components/Common';
 import { generateCongNoBravoTemplate } from '../utils/exportCongNo';
 import styles from './CongNoPage.module.css';
 
 function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' || '0 đ'; }
-function formatDate(d: string) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-const TRANG_THAI_LABELS: Record<string, string> = {
-  chua_thanh_toan: 'Chưa thanh toán',
-  dang_thanh_toan: 'Đang thanh toán',
-  da_thanh_toan: 'Đã thanh toán',
-  qua_han: 'Quá hạn',
-};
-
-const TRANG_THAI_CLASS: Record<string, string> = {
-  chua_thanh_toan: styles.badgeChuaTT,
-  dang_thanh_toan: styles.badgeDangTT,
-  da_thanh_toan: styles.badgeDaTT,
-  qua_han: styles.badgeQuaHan,
-};
-
-type TabKey = 'danh_sach' | 'tai_len';
-
-type EditForm = {
-  id: number;
-  tongTien: string;
-  daThanhToan: string;
-  conLai: string;
-  ngayBatDau: string;
-  hanThanhToan: string;
-  trangThai: string;
-  ghiChu: string;
-};
-
-const TRANG_THAI_OPTIONS = [
-  { value: 'chua_thanh_toan', label: 'Chưa thanh toán' },
-  { value: 'dang_thanh_toan', label: 'Đang thanh toán' },
-  { value: 'da_thanh_toan', label: 'Đã thanh toán' },
-  { value: 'qua_han', label: 'Quá hạn' },
-];
 
 async function downloadTemplate() {
   const buf = await generateCongNoBravoTemplate();
@@ -64,13 +29,14 @@ async function downloadTemplate() {
   URL.revokeObjectURL(url);
 }
 
+type TabKey = 'danh_sach' | 'tai_len';
+
 export default function CongNoPage() {
   const { toasts, showToast } = useToast();
   const { hasAnyRole } = usePageRole();
   const [activeTab, setActiveTab] = useState<TabKey>('danh_sach');
 
-  // List state - grouped
-  const [groups, setGroups] = useState<CongNoGroup[]>([]);
+  const [groups, setGroups] = useState<CongNoKhachHangGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -79,14 +45,12 @@ export default function CongNoPage() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [searchTimeout, setSearchTimeoutState] = useState<ReturnType<typeof setTimeout> | null>(null);
 
-  // Edit modal
   const [editModal, setEditModal] = useState(false);
-  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [editForm, setEditForm] = useState<CongNoKhachHang | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<CongNo | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<CongNoKhachHang | null>(null);
 
-  // Upload state
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -97,7 +61,7 @@ export default function CongNoPage() {
 
   const loadNhomList = useCallback(async () => {
     try {
-      const data = await layDanhSachNhomCongNo();
+      const data = await layDanhSachNhomCongNoKhachHang();
       setNhomList(data);
     } catch { /* ignore */ }
   }, []);
@@ -105,7 +69,7 @@ export default function CongNoPage() {
   const loadGroups = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await layCongNoGrouped(search || undefined, nhomFilter || undefined);
+      const data = await layCongNoKhachHangGrouped(search || undefined, nhomFilter || undefined);
       setGroups(data);
     } catch { showToast('Lỗi tải dữ liệu', 'error'); }
     finally { setLoading(false); }
@@ -120,8 +84,8 @@ export default function CongNoPage() {
     setSearchTimeoutState(t);
   };
 
-  const tongCongNo = groups.reduce((s, g) => s + g.tongConLai, 0);
-  const tongDaTT = groups.reduce((s, g) => s + g.tongDaThanhToan, 0);
+  const tongDuCuoiNo = groups.reduce((s, g) => s + g.tongDuCuoiNo, 0);
+  const tongDuCuoiCo = groups.reduce((s, g) => s + g.tongDuCuoiCo, 0);
 
   const toggleGroup = (nhom: string) => {
     const next = new Set(collapsed);
@@ -130,39 +94,27 @@ export default function CongNoPage() {
     setCollapsed(next);
   };
 
-  // Open edit modal
-  const openEdit = async (cn: CongNo) => {
-    try {
-      const full = await layCongNoTheoId(cn.id);
-      setEditForm({
-        id: full.id,
-        tongTien: String(full.tongTien),
-        daThanhToan: String(full.daThanhToan),
-        conLai: String(full.conLai),
-        ngayBatDau: full.ngayBatDau ? String(full.ngayBatDau).split('T')[0] : '',
-        hanThanhToan: full.hanThanhToan ? String(full.hanThanhToan).split('T')[0] : '',
-        trangThai: full.trangThai,
-        ghiChu: full.ghiChu || '',
-      });
-      setEditModal(true);
-    } catch { showToast('Không tải được chi tiết công nợ', 'error'); }
+  const openEdit = (cn: CongNoKhachHang) => {
+    setEditForm(cn);
+    setEditModal(true);
   };
 
   const handleSaveEdit = async () => {
     if (!editForm) return;
     setSaving(true);
     try {
-      const tongTien = parseFloat(editForm.tongTien.replace(/[^\d]/g, '')) || 0;
-      const daThanhToan = parseFloat(editForm.daThanhToan.replace(/[^\d]/g, '')) || 0;
-      const conLai = parseFloat(editForm.conLai.replace(/[^\d]/g, '')) || 0;
-      await suaCongNo(editForm.id, {
-        tongTien, daThanhToan, conLai,
-        ngayBatDau: editForm.ngayBatDau || null,
-        hanThanhToan: editForm.hanThanhToan || null,
-        trangThai: editForm.trangThai,
-        ghiChu: editForm.ghiChu || null,
+      await suaCongNoKhachHang(editForm.id, {
+        maKhachHang: editForm.maKhachHang ?? undefined,
+        tenKhachHang: editForm.tenKhachHang,
+        duDauNo: editForm.duDauNo,
+        duDauCo: editForm.duDauCo,
+        phatSinhNo: editForm.phatSinhNo,
+        phatSinhCo: editForm.phatSinhCo,
+        duCuoiNo: editForm.duCuoiNo,
+        duCuoiCo: editForm.duCuoiCo,
+        nhom: editForm.nhom ?? undefined,
       });
-      showToast('Cập nhật công nợ thành công');
+      showToast('Cập nhật thành công');
       setEditModal(false);
       loadGroups();
     } catch (err) {
@@ -174,8 +126,8 @@ export default function CongNoPage() {
     if (!confirmDelete) return;
     setDeletingId(confirmDelete.id);
     try {
-      await xoaCongNo(confirmDelete.id);
-      showToast('Xóa công nợ thành công');
+      await xoaCongNoKhachHang(confirmDelete.id);
+      showToast('Xóa thành công');
       setConfirmDelete(null);
       loadGroups();
       loadNhomList();
@@ -184,7 +136,6 @@ export default function CongNoPage() {
     } finally { setDeletingId(null); }
   };
 
-  // Upload handlers
   const handleFile = (f: File) => {
     const ext = f.name.toLowerCase();
     if (!ext.endsWith('.xlsx') && !ext.endsWith('.xls') && !ext.endsWith('.csv')) {
@@ -207,19 +158,19 @@ export default function CongNoPage() {
     setUploading(true);
     setUploadResult(null);
     try {
-      const result = await importCongNo(file);
+      const result = await importCongNoKhachHang(file);
       setUploadResult(result);
       if (result.success > 0) {
-        showToast(`Tải lên thành công ${result.success}/${result.total} dòng`);
+        showToast(`Import thành công ${result.success}/${result.total} dòng`);
         setFile(null);
         if (activeTab === 'tai_len') setActiveTab('danh_sach');
         loadGroups();
         loadNhomList();
       } else {
-        showToast(`Tải lên thất bại: ${result.errors[0] || 'Không rõ lỗi'}`, 'error');
+        showToast(`Import thất bại: ${result.errors[0] || 'Không rõ lỗi'}`, 'error');
       }
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Lỗi khi Tải lên', 'error');
+      showToast(err instanceof Error ? err.message : 'Lỗi khi import', 'error');
     } finally { setUploading(false); }
   };
 
@@ -228,20 +179,20 @@ export default function CongNoPage() {
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageHeaderTitle}>Công nợ</div>
-          <div className={styles.pageHeaderDesc}>Theo dõi công nợ khách hàng theo nhóm từ Bravo</div>
+          <div className={styles.pageHeaderTitle}>Công nợ Bravo</div>
+          <div className={styles.pageHeaderDesc}>Theo dõi công nợ theo nhóm từ file Bravo</div>
         </div>
       </div>
 
       {/* KPI */}
       <div className={styles.kpiGrid}>
         <div className={styles.kpiCard}>
-          <div className={styles.kpiLabel}>Tổng công nợ</div>
-          <div className={styles.kpiValue} style={{ color: 'var(--color-warning)' }}>{formatCurrency(tongCongNo)}</div>
+          <div className={styles.kpiLabel}>Dư cuối Nợ</div>
+          <div className={styles.kpiValue} style={{ color: 'var(--color-warning)' }}>{formatCurrency(tongDuCuoiNo)}</div>
         </div>
         <div className={styles.kpiCard}>
-          <div className={styles.kpiLabel}>Đã thanh toán</div>
-          <div className={styles.kpiValue} style={{ color: 'var(--color-success)' }}>{formatCurrency(tongDaTT)}</div>
+          <div className={styles.kpiLabel}>Dư cuối Có</div>
+          <div className={styles.kpiValue} style={{ color: 'var(--color-success)' }}>{formatCurrency(tongDuCuoiCo)}</div>
         </div>
       </div>
 
@@ -324,54 +275,38 @@ export default function CongNoPage() {
                   <tbody>
                     {groups.map((group) => {
                       const isCollapsed = collapsed.has(group.nhom);
-                      const duDauNo = group.items.reduce((s, i) => s + Math.max(0, i.tongTien - i.daThanhToan), 0);
-                      const duDauCo = group.items.reduce((s, i) => s + Math.max(0, i.daThanhToan - i.tongTien), 0);
-                      const psNo = group.items.reduce((s, i) => s + Math.max(0, i.daThanhToan), 0);
-                      const psCo = group.items.reduce((s, i) => s + Math.max(0, i.tongTien - i.daThanhToan), 0);
                       return (
                         <React.Fragment key={group.nhom}>
-                          {/* Group header row */}
-                          <tr
-                            className={styles.groupHeaderRow}
-                            onClick={() => toggleGroup(group.nhom)}
-                            style={{ cursor: 'pointer' }}
-                          >
+                          {/* Group header */}
+                          <tr className={styles.groupHeaderRow} onClick={() => toggleGroup(group.nhom)} style={{ cursor: 'pointer' }}>
                             <td colSpan={2} className={styles.groupHeaderLabel}>
                               <span className={styles.groupToggleIcon}>{isCollapsed ? '▶' : '▼'}</span>
                               {group.nhom}
                             </td>
-                            <td className={`${styles.groupHeaderValue} ${styles.thRight}`}>{formatCurrency(duDauNo)}</td>
-                            <td className={`${styles.groupHeaderValue} ${styles.thRight}`}>{formatCurrency(duDauCo)}</td>
-                            <td className={`${styles.groupHeaderValue} ${styles.thRight}`}>{formatCurrency(psNo)}</td>
-                            <td className={`${styles.groupHeaderValue} ${styles.thRight}`}>{formatCurrency(psCo)}</td>
-                            <td className={`${styles.groupHeaderValue} ${styles.thRight} ${styles.groupSubTotal}`}>{formatCurrency(group.tongCongNo)}</td>
-                            <td className={`${styles.groupHeaderValue} ${styles.thRight}`}>{formatCurrency(group.tongDaThanhToan)}</td>
+                            <td className={`${styles.groupHeaderValue} ${styles.thRight}`}>{formatCurrency(group.tongDuDauNo)}</td>
+                            <td className={`${styles.groupHeaderValue} ${styles.thRight}`}>{formatCurrency(group.tongDuDauCo)}</td>
+                            <td className={`${styles.groupHeaderValue} ${styles.thRight}`}>{formatCurrency(group.tongPhatSinhNo)}</td>
+                            <td className={`${styles.groupHeaderValue} ${styles.thRight}`}>{formatCurrency(group.tongPhatSinhCo)}</td>
+                            <td className={`${styles.groupHeaderValue} ${styles.thRight} ${styles.groupSubTotal}`}>{formatCurrency(group.tongDuCuoiNo)}</td>
+                            <td className={`${styles.groupHeaderValue} ${styles.thRight}`}>{formatCurrency(group.tongDuCuoiCo)}</td>
                             {canWrite && <td />}
                           </tr>
                           {/* Data rows */}
                           {!isCollapsed && group.items.map((cn) => (
                             <tr key={cn.id} className={styles.dataRow}>
-                              <td className={styles.dataCell}><strong>{cn.maDonHang || `ĐH-${cn.idDonHang}`}</strong></td>
-                              <td className={styles.dataCell}>{cn.tenKhachHang || '—'}</td>
-                              <td className={`${styles.dataCell} ${styles.thRight}`} />
-                              <td className={`${styles.dataCell} ${styles.thRight}`} />
-                              <td className={`${styles.dataCell} ${styles.thRight}`} />
-                              <td className={`${styles.dataCell} ${styles.thRight}`} />
-                              <td className={`${styles.dataCell} ${styles.thRight} ${cn.conLai > 0 ? styles.conNoCell : ''}`}>
-                                {formatCurrency(cn.conLai)}
-                              </td>
-                              <td className={`${styles.dataCell} ${styles.thRight}`}>
-                                {formatCurrency(cn.daThanhToan)}
-                              </td>
+                              <td className={styles.dataCell}><strong>{cn.maKhachHang || '—'}</strong></td>
+                              <td className={styles.dataCell}>{cn.tenKhachHang}</td>
+                              <td className={`${styles.dataCell} ${styles.thRight}`}>{formatCurrency(cn.duDauNo)}</td>
+                              <td className={`${styles.dataCell} ${styles.thRight}`}>{formatCurrency(cn.duDauCo)}</td>
+                              <td className={`${styles.dataCell} ${styles.thRight}`}>{formatCurrency(cn.phatSinhNo)}</td>
+                              <td className={`${styles.dataCell} ${styles.thRight}`}>{formatCurrency(cn.phatSinhCo)}</td>
+                              <td className={`${styles.dataCell} ${styles.thRight} ${cn.duCuoiNo > 0 ? styles.conNoCell : ''}`}>{formatCurrency(cn.duCuoiNo)}</td>
+                              <td className={`${styles.dataCell} ${styles.thRight}`}>{formatCurrency(cn.duCuoiCo)}</td>
                               {canWrite && (
                                 <td className={`${styles.dataCell} ${styles.thCenter}`}>
                                   <div className={styles.rowActions}>
-                                    <button className={styles.actionBtnEdit} onClick={() => openEdit(cn)} title="Sửa">
-                                      <FiEdit2 size={14} />
-                                    </button>
-                                    <button className={styles.actionBtnDelete} onClick={() => setConfirmDelete(cn)} title="Xóa">
-                                      <FiTrash2 size={14} />
-                                    </button>
+                                    <button className={styles.actionBtnEdit} onClick={() => openEdit(cn)} title="Sửa"><FiEdit2 size={14} /></button>
+                                    <button className={styles.actionBtnDelete} onClick={() => setConfirmDelete(cn)} title="Xóa"><FiTrash2 size={14} /></button>
                                   </div>
                                 </td>
                               )}
@@ -394,18 +329,14 @@ export default function CongNoPage() {
           <div className={styles.uploadCard}>
             <div className={styles.uploadCardHeader}>
               <FiUpload size={18} />
-              <span>Tải lên danh sách công nợ</span>
+              <span>Import công nợ Bravo</span>
             </div>
-
             <p className={styles.uploadHint}>
-              Tải file từ phần mềm Bravo (Excel) để tải lên công nợ vào hệ thống.
+              Tải file Excel từ phần mềm Bravo để import công nợ theo khách hàng vào hệ thống.
             </p>
-
             <button className={styles.templateBtn} onClick={downloadTemplate}>
               <FiDownload size={15} /> Tải file mẫu
             </button>
-
-            {/* Drop zone */}
             <div
               className={`${styles.dropZone} ${dragging ? styles.dropZoneDragging : ''} ${file ? styles.dropZoneHasFile : ''}`}
               onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -415,7 +346,6 @@ export default function CongNoPage() {
             >
               <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className={styles.hiddenInput}
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-
               {file ? (
                 <div className={styles.filePreview}>
                   <FiFileText size={32} />
@@ -434,18 +364,16 @@ export default function CongNoPage() {
                 </div>
               )}
             </div>
-
             <button className={`btn btn-primary ${styles.uploadBtn}`} onClick={handleUpload} disabled={!file || uploading}>
-              {uploading ? <><Loading /></> : <><FiUpload size={15} /> Tải lên dữ liệu</>}
+              {uploading ? <><Loading /></> : <><FiUpload size={15} /> Import dữ liệu</>}
             </button>
 
-            {/* Result */}
             {uploadResult && (
               <div className={`${styles.resultCard} ${uploadResult.failed === 0 ? styles.resultSuccess : uploadResult.success === 0 ? styles.resultError : styles.resultPartial}`}>
                 <div className={styles.resultHeader}>
                   {uploadResult.failed === 0 ? <FiCheckCircle size={20} /> : <FiXCircle size={20} />}
                   <span>
-                    {uploadResult.failed === 0 ? 'Tải lên thành công!' : uploadResult.success === 0 ? 'Tải lên thất bại!' : 'Tải lên hoàn thành (có lỗi)'}
+                    {uploadResult.failed === 0 ? 'Import thành công!' : uploadResult.success === 0 ? 'Import thất bại!' : 'Import hoàn thành (có lỗi)'}
                   </span>
                 </div>
                 <div className={styles.resultStats}>
@@ -477,46 +405,59 @@ export default function CongNoPage() {
             <div className={styles.modalBody}>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label>Tổng tiền (VNĐ)</label>
-                  <input className={styles.formInput} type="text" value={editForm.tongTien}
-                    onChange={(e) => setEditForm({ ...editForm, tongTien: e.target.value })} />
+                  <label>Mã khách hàng</label>
+                  <input className={styles.formInput} value={editForm.maKhachHang || ''}
+                    onChange={(e) => setEditForm({ ...editForm, maKhachHang: e.target.value })} />
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Đã thanh toán (VNĐ)</label>
-                  <input className={styles.formInput} type="text" value={editForm.daThanhToan}
-                    onChange={(e) => setEditForm({ ...editForm, daThanhToan: e.target.value })} />
-                </div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>Còn lại (VNĐ)</label>
-                  <input className={styles.formInput} type="text" value={editForm.conLai}
-                    onChange={(e) => setEditForm({ ...editForm, conLai: e.target.value })} />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Trạng thái</label>
-                  <select className={styles.formInput} value={editForm.trangThai}
-                    onChange={(e) => setEditForm({ ...editForm, trangThai: e.target.value })}>
-                    {TRANG_THAI_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
+                  <label>Tên khách hàng</label>
+                  <input className={styles.formInput} value={editForm.tenKhachHang}
+                    onChange={(e) => setEditForm({ ...editForm, tenKhachHang: e.target.value })} />
                 </div>
               </div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label>Ngày bắt đầu</label>
-                  <input className={styles.formInput} type="date" value={editForm.ngayBatDau}
-                    onChange={(e) => setEditForm({ ...editForm, ngayBatDau: e.target.value })} />
+                  <label>Dư đầu Nợ</label>
+                  <input className={styles.formInput} type="number" value={editForm.duDauNo}
+                    onChange={(e) => setEditForm({ ...editForm, duDauNo: Number(e.target.value) })} />
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Hạn thanh toán</label>
-                  <input className={styles.formInput} type="date" value={editForm.hanThanhToan}
-                    onChange={(e) => setEditForm({ ...editForm, hanThanhToan: e.target.value })} />
+                  <label>Dư đầu Có</label>
+                  <input className={styles.formInput} type="number" value={editForm.duDauCo}
+                    onChange={(e) => setEditForm({ ...editForm, duDauCo: Number(e.target.value) })} />
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Phát sinh Nợ</label>
+                  <input className={styles.formInput} type="number" value={editForm.phatSinhNo}
+                    onChange={(e) => setEditForm({ ...editForm, phatSinhNo: Number(e.target.value) })} />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Phát sinh Có</label>
+                  <input className={styles.formInput} type="number" value={editForm.phatSinhCo}
+                    onChange={(e) => setEditForm({ ...editForm, phatSinhCo: Number(e.target.value) })} />
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Dư cuối Nợ</label>
+                  <input className={styles.formInput} type="number" value={editForm.duCuoiNo}
+                    onChange={(e) => setEditForm({ ...editForm, duCuoiNo: Number(e.target.value) })} />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Dư cuối Có</label>
+                  <input className={styles.formInput} type="number" value={editForm.duCuoiCo}
+                    onChange={(e) => setEditForm({ ...editForm, duCuoiCo: Number(e.target.value) })} />
                 </div>
               </div>
               <div className={styles.formGroup}>
-                <label>Ghi chú</label>
-                <textarea className={styles.formInput} rows={3} value={editForm.ghiChu}
-                  onChange={(e) => setEditForm({ ...editForm, ghiChu: e.target.value })} />
+                <label>Nhóm</label>
+                <select className={styles.formInput} value={editForm.nhom || ''}
+                  onChange={(e) => setEditForm({ ...editForm, nhom: e.target.value || null })}>
+                  <option value="">Chưa phân nhóm</option>
+                  {nhomList.map((g) => <option key={g.nhom} value={g.nhom}>{g.nhom}</option>)}
+                </select>
               </div>
             </div>
             <div className={styles.modalFooter}>
@@ -533,7 +474,7 @@ export default function CongNoPage() {
       <ConfirmModal
         isOpen={!!confirmDelete}
         title="Xóa công nợ"
-        message={`Bạn có chắc muốn xóa công nợ của ${confirmDelete?.tenKhachHang || 'khách hàng này'}? Hành động này không thể hoàn tác.`}
+        message={`Xóa công nợ của "${confirmDelete?.tenKhachHang}"? Hành động này không thể hoàn tác.`}
         confirmText="Xóa"
         cancelText="Hủy"
         onConfirm={handleDelete}

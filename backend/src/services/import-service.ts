@@ -761,3 +761,147 @@ export async function importCongNo(
   await ghiLichSuImport("cong_no", tenFile, rows.length, success, failed, nguoiTaiId);
   return { total: rows.length, success, failed, errors, details };
 }
+
+// ===== Import công nợ theo khách hàng (Bravo - nhanh, batch) =====
+export async function importCongNoKhachHang(
+  rows: Record<string, unknown>[],
+  nguoiTaiId: number,
+  tenFile: string,
+): Promise<ImportResult> {
+  const errors: string[] = [];
+  let success = 0;
+
+  // Nhóm cố định từ Bravo
+  const NHOM_LABELS: Record<string, string> = {
+    "Các công ty thuộc Tây Đô Group": "Các công ty thuộc Tây Đô Group",
+    "Đơn vị, cá nhân, tổ chức có MST": "Đơn vị, cá nhân, tổ chức có MST",
+    "Đơn vị trong nước có MST": "Đơn vị trong nước có MST",
+    "Cá nhân có MST": "Cá nhân có MST",
+    "Đơn vị, cá nhân, tổ chức không có MST": "Đơn vị, cá nhân, tổ chức không có MST",
+    "Bê tông Tây Đô": "Bê tông Tây Đô",
+    "Nội bộ từng công ty": "Nội bộ từng công ty",
+    "Nội bộ công ty Bê Tông Tây Đô": "Nội bộ công ty Bê Tông Tây Đô",
+  };
+
+  const parseNum = (v: unknown): number => {
+    if (typeof v === "number") return v;
+    const s = String(v ?? "0");
+    return parseFloat(s.replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
+  };
+
+  const getVal = (row: unknown, idx: number): unknown => {
+    if (Array.isArray(row)) return row[idx];
+    const vals = Object.values(row as Record<string, unknown>);
+    return vals[idx];
+  };
+
+  const dataRows: {
+    maKhachHang: string;
+    tenKhachHang: string;
+    duDauNo: number;
+    duDauCo: number;
+    phatSinhNo: number;
+    phatSinhCo: number;
+    duCuoiNo: number;
+    duCuoiCo: number;
+    nhom: string;
+    rowNum: number;
+  }[] = [];
+
+  let currentNhom = "Chưa phân nhóm";
+
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const rowNum = i + 2;
+
+    const maRaw = getVal(r, 0);
+    const tenRaw = getVal(r, 1);
+    const duDauNoRaw = getVal(r, 2);
+    const duDauCoRaw = getVal(r, 3);
+    const psNoRaw = getVal(r, 4);
+    const psCoRaw = getVal(r, 5);
+    const duCuoiNoRaw = getVal(r, 6);
+    const duCuoiCoRaw = getVal(r, 7);
+
+    const maKhachHang = String(maRaw ?? "").trim().replace(/\s+$/, "");
+    const tenKhachHang = String(tenRaw ?? "").trim();
+    const duDauNo = parseNum(duDauNoRaw);
+    const duDauCo = parseNum(duDauCoRaw);
+    const phatSinhNo = parseNum(psNoRaw);
+    const phatSinhCo = parseNum(psCoRaw);
+    const duCuoiNo = parseNum(duCuoiNoRaw);
+    const duCuoiCo = parseNum(duCuoiCoRaw);
+
+    // Bỏ qua dòng trống
+    if (!tenKhachHang && !maKhachHang) continue;
+
+    // Bỏ qua dòng header (số 1-8)
+    if (/^[1-8]$/.test(tenKhachHang)) continue;
+
+    // Dòng NHÓM
+    const isGroupRow = !maKhachHang && NHOM_LABELS[tenKhachHang];
+    if (isGroupRow) {
+      currentNhom = NHOM_LABELS[tenKhachHang];
+      continue;
+    }
+
+    // Dòng data thực sự: phải có mã hoặc có số tiền
+    const hasAmounts = duDauNo > 0 || duDauCo > 0 || phatSinhNo > 0 || phatSinhCo > 0 || duCuoiNo > 0 || duCuoiCo > 0;
+    const isDataRow = maKhachHang || (tenKhachHang && hasAmounts);
+    if (!isDataRow) continue;
+
+    dataRows.push({
+      maKhachHang,
+      tenKhachHang,
+      duDauNo,
+      duDauCo,
+      phatSinhNo,
+      phatSinhCo,
+      duCuoiNo,
+      duCuoiCo,
+      nhom: currentNhom,
+      rowNum,
+    });
+  }
+
+  // Batch upsert — không query per row
+  if (dataRows.length > 0) {
+    // Xây dựng câu MERGE (SQL Server) để upsert nhanh
+    const values = dataRows
+      .map((r, idx) =>
+        `SELECT ${idx + 1} as rn, N'${r.maKhachHang.replace(/'/g, "''")}', N'${r.tenKhachHang.replace(/'/g, "''")}', ${r.duDauNo}, ${r.duDauCo}, ${r.phatSinhNo}, ${r.phatSinhCo}, ${r.duCuoiNo}, ${r.duCuoiCo}, N'${r.nhom.replace(/'/g, "''")}', ${r.rowNum}`
+      )
+      .join(" UNION ALL ");
+
+    try {
+      // Merge: update nếu đã tồn tại (theo maKhachHang + tenKhachHang), insert nếu chưa
+      await query(
+        `MERGE INTO CongNoKhachHang AS target
+         USING (
+           ${values}
+         ) AS source (rn, maKhachHang, tenKhachHang, duDauNo, duDauCo, phatSinhNo, phatSinhCo, duCuoiNo, duCuoiCo, nhom, rowNum)
+         ON (target.maKhachHang = source.maKhachHang AND target.tenKhachHang = source.tenKhachHang AND source.maKhachHang <> '')
+         WHEN MATCHED THEN
+           UPDATE SET
+             target.duDauNo = source.duDauNo,
+             target.duDauCo = source.duDauCo,
+             target.phatSinhNo = source.phatSinhNo,
+             target.phatSinhCo = source.phatSinhCo,
+             target.duCuoiNo = source.duCuoiNo,
+             target.duCuoiCo = source.duCuoiCo,
+             target.nhom = source.nhom,
+             target.ngayCapNhat = GETDATE()
+         WHEN NOT MATCHED THEN
+           INSERT (maKhachHang, tenKhachHang, duDauNo, duDauCo, phatSinhNo, phatSinhCo, duCuoiNo, duCuoiCo, nhom)
+           VALUES (source.maKhachHang, source.tenKhachHang, source.duDauNo, source.duDauCo, source.phatSinhNo, source.phatSinhCo, source.duCuoiNo, source.duCuoiCo, source.nhom);`,
+      );
+      success = dataRows.length;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Lỗi không xác định";
+      errors.push(msg);
+    }
+  }
+
+  await ghiLichSuImport("cong_no_khach_hang", tenFile, rows.length, success, rows.length - success, nguoiTaiId);
+  return { total: rows.length, success, failed: rows.length - success, errors, details: [] };
+}

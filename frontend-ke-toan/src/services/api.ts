@@ -381,6 +381,68 @@ export async function layCongNoGrouped(search?: string, nhom?: string): Promise<
   return json.data as CongNoGroup[];
 }
 
+// CongNoKhachHang (Bravo)
+export async function layCongNoKhachHangGrouped(search?: string, nhom?: string): Promise<CongNoKhachHangGroup[]> {
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  if (nhom) params.append("nhom", nhom);
+  const res = await fetch(`${BASE_URL}/cong-no-khach-hang/grouped?${params}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data as CongNoKhachHangGroup[];
+}
+
+export async function layDanhSachNhomCongNoKhachHang(): Promise<{ nhom: string; soLuong: number }[]> {
+  const res = await fetch(`${BASE_URL}/cong-no-khach-hang/nhom/list`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data as { nhom: string; soLuong: number }[];
+}
+
+export async function suaCongNoKhachHang(id: number, data: {
+  maKhachHang?: string;
+  tenKhachHang?: string;
+  duDauNo?: number;
+  duDauCo?: number;
+  phatSinhNo?: number;
+  phatSinhCo?: number;
+  duCuoiNo?: number;
+  duCuoiCo?: number;
+  nhom?: string;
+}): Promise<CongNoKhachHang> {
+  return request<CongNoKhachHang>(`/cong-no-khach-hang/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function xoaCongNoKhachHang(id: number): Promise<void> {
+  return request<void>(`/cong-no-khach-hang/${id}`, { method: "DELETE" });
+}
+
+export async function importCongNoKhachHang(file: File): Promise<ImportResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${BASE_URL}/import/cong-no-khach-hang`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: formData,
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data as ImportResult;
+}
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data as CongNoGroup[];
+}
+
 export async function layDanhSachNhomCongNo(): Promise<{ nhom: string; soLuong: number }[]> {
   const res = await fetch(`${BASE_URL}/thanh-toan/cong-no/nhom/list`, {
     headers: { Authorization: `Bearer ${getToken()}` },

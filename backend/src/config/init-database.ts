@@ -459,6 +459,49 @@ async function initDatabase(): Promise<void> {
       }
     }
 
+    // Tạo bảng CongNoKhachHang (theo khách hàng, giống Bravo)
+    const cnkExists = await db.query<{ name: string }[]>(
+      `SELECT name FROM sys.tables WHERE name = 'CongNoKhachHang'`,
+    );
+    if (cnkExists.recordset.length === 0) {
+      console.log("  ➕ Tạo bảng CongNoKhachHang...");
+      await db.query(`
+        CREATE TABLE CongNoKhachHang (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          maKhachHang NVARCHAR(100),
+          tenKhachHang NVARCHAR(500) NOT NULL,
+          duDauNo DECIMAL(18,2) DEFAULT 0,
+          duDauCo DECIMAL(18,2) DEFAULT 0,
+          phatSinhNo DECIMAL(18,2) DEFAULT 0,
+          phatSinhCo DECIMAL(18,2) DEFAULT 0,
+          duCuoiNo DECIMAL(18,2) DEFAULT 0,
+          duCuoiCo DECIMAL(18,2) DEFAULT 0,
+          nhom NVARCHAR(200),
+          ngayTao DATETIME DEFAULT GETDATE(),
+          ngayCapNhat DATETIME DEFAULT GETDATE()
+        )
+      `);
+      console.log("  ✅ Bảng CongNoKhachHang đã tạo");
+    } else {
+      // Migration: đảm bảo các cột mới có đủ
+      console.log("  ✅ Bảng CongNoKhachHang đã tồn tại");
+      const colCheck = async (col: string, def: string) => {
+        const c = await db.query<{ name: string }[]>(
+          `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('CongNoKhachHang') AND name = @col`,
+          { col },
+        );
+        if (c.recordset.length === 0) {
+          await db.query(`ALTER TABLE CongNoKhachHang ADD ${col} ${def}`);
+        }
+      };
+      await colCheck("duDauNo", "DECIMAL(18,2) DEFAULT 0");
+      await colCheck("duDauCo", "DECIMAL(18,2) DEFAULT 0");
+      await colCheck("phatSinhNo", "DECIMAL(18,2) DEFAULT 0");
+      await colCheck("phatSinhCo", "DECIMAL(18,2) DEFAULT 0");
+      await colCheck("duCuoiNo", "DECIMAL(18,2) DEFAULT 0");
+      await colCheck("duCuoiCo", "DECIMAL(18,2) DEFAULT 0");
+    }
+
     // Tạo bảng ThongBao
     const thongBaoExists = await db.query<{ name: string }[]>(
       `SELECT name FROM sys.tables WHERE name = 'ThongBao'`,
