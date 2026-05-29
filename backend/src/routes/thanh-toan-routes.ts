@@ -8,6 +8,10 @@ import {
   layThanhToanTheoDonHang,
   layTatCaCongNo,
   taoCongNo,
+  suaCongNo,
+  xoaCongNo,
+  layCongNoTheoId,
+  layDanhSachNhomCongNo,
 } from '../services/thanh-toan-service';
 
 const router = Router();
@@ -19,6 +23,8 @@ router.get(
     queryValidator('page').optional().isInt({ min: 1 }).toInt(),
     queryValidator('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
     queryValidator('trangThai').optional().trim(),
+    queryValidator('nhom').optional().trim(),
+    queryValidator('search').optional().trim(),
   ],
   validate([]),
   async (req: AuthRequest, res: Response<ApiResponse>) => {
@@ -26,7 +32,9 @@ router.get(
       const page = (req.query.page as unknown as number) || 1;
       const limit = (req.query.limit as unknown as number) || 20;
       const trangThai = req.query.trangThai as string | undefined;
-      const result = await layTatCaCongNo(page, limit, trangThai);
+      const nhom = req.query.nhom as string | undefined;
+      const search = req.query.search as string | undefined;
+      const result = await layTatCaCongNo(page, limit, { trangThai, nhom, search });
       res.json(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Lỗi lấy công nợ';
@@ -78,6 +86,71 @@ router.get('/don-hang/:idDonHang', authMiddleware, async (req: AuthRequest, res:
     res.json({ success: true, message: 'Lấy lịch sử thanh toán thành công', data });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi lấy lịch sử thanh toán';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+/** Lấy chi tiết công nợ theo ID */
+router.get('/cong-no/:id', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const congNo = await layCongNoTheoId(id);
+    if (!congNo) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy công nợ' });
+      return;
+    }
+    res.json({ success: true, message: 'Lấy công nợ thành công', data: congNo });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy công nợ';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+/** Sửa công nợ */
+router.put('/cong-no/:id', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { tongTien, daThanhToan, conLai, ngayBatDau, hanThanhToan, trangThai, ghiChu, nhom } = req.body;
+    const congNo = await suaCongNo(id, { tongTien, daThanhToan, conLai, ngayBatDau, hanThanhToan, trangThai, ghiChu, nhom });
+    res.json({ success: true, message: 'Cập nhật công nợ thành công', data: congNo });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi cập nhật công nợ';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+/** Xóa công nợ */
+router.delete('/cong-no/:id', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    await xoaCongNo(id);
+    res.json({ success: true, message: 'Xóa công nợ thành công' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi xóa công nợ';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+/** Lấy danh sách nhóm công nợ */
+router.get('/cong-no/nhom/list', authMiddleware, async (_req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const groups = await layDanhSachNhomCongNo();
+    res.json({ success: true, message: 'Lấy danh sách nhóm thành công', data: groups });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy danh sách nhóm';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+/** Lấy công nợ theo nhóm + subtotal */
+router.get('/cong-no/grouped', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const search = req.query.search as string | undefined;
+    const nhom = req.query.nhom as string | undefined;
+    const groups = await layCongNoTheoNhom(search, nhom);
+    res.json({ success: true, message: 'Lấy công nợ theo nhóm thành công', data: groups });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy công nợ';
     res.status(500).json({ success: false, message });
   }
 });

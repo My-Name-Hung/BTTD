@@ -352,19 +352,42 @@ export async function uploadBienBanNghiemThu(
 export async function layDanhSachCongNo(
   page = 1,
   limit = 20,
-  trangThai?: string,
+  opts?: { trangThai?: string; nhom?: string; search?: string },
 ): Promise<ApiResponseWithPagination<CongNo[]>> {
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
   });
-  if (trangThai) params.append("trangThai", trangThai);
+  if (opts?.trangThai) params.append("trangThai", opts.trangThai);
+  if (opts?.nhom) params.append("nhom", opts.nhom);
+  if (opts?.search) params.append("search", opts.search);
   const res = await fetch(`${BASE_URL}/thanh-toan/cong-no?${params}`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message);
   return json as ApiResponseWithPagination<CongNo[]>;
+}
+
+export async function layCongNoGrouped(search?: string, nhom?: string): Promise<CongNoGroup[]> {
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  if (nhom) params.append("nhom", nhom);
+  const res = await fetch(`${BASE_URL}/thanh-toan/cong-no/grouped?${params}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data as CongNoGroup[];
+}
+
+export async function layDanhSachNhomCongNo(): Promise<{ nhom: string; soLuong: number }[]> {
+  const res = await fetch(`${BASE_URL}/thanh-toan/cong-no/nhom/list`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data as { nhom: string; soLuong: number }[];
 }
 
 export async function taoCongNo(
@@ -376,6 +399,45 @@ export async function taoCongNo(
     method: "POST",
     body: JSON.stringify({ idDonHang, ngayBatDau, hanThanhToan }),
   });
+}
+
+export async function suaCongNo(id: number, data: {
+  tongTien?: number;
+  daThanhToan?: number;
+  conLai?: number;
+  ngayBatDau?: string | null;
+  hanThanhToan?: string | null;
+  trangThai?: string;
+  ghiChu?: string | null;
+  nhom?: string | null;
+}): Promise<CongNo> {
+  return request<CongNo>(`/thanh-toan/cong-no/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function xoaCongNo(id: number): Promise<void> {
+  return request<void>(`/thanh-toan/cong-no/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function layCongNoTheoId(id: number): Promise<CongNo> {
+  return request<CongNo>(`/thanh-toan/cong-no/${id}`);
+}
+
+export async function importCongNo(file: File): Promise<ImportResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${BASE_URL}/import/cong-no`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: formData,
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data;
 }
 
 export async function taoThanhToan(data: {

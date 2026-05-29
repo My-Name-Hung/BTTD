@@ -7,15 +7,17 @@ import {
   importNguoiDung,
   importPhuongTien,
   importMacBeTong,
+  importCongNo,
   layLichSuImport,
   ImportHistory,
   ImportResult,
 } from '../services/api';
 import { useToast, usePageRole, VaiTro } from '../hooks';
 import { Loading } from '../components/Common';
+import { generateCongNoBravoTemplate } from '../utils/exportCongNo';
 import styles from './TaiLenDanhSachPage.module.css';
 
-type TabKey = 'don_hang' | 'khach_hang' | 'nguoi_dung' | 'phuong_tien' | 'mac_be_tong';
+type TabKey = 'don_hang' | 'khach_hang' | 'nguoi_dung' | 'phuong_tien' | 'mac_be_tong' | 'cong_no';
 
 interface TabConfig {
   key: TabKey;
@@ -23,6 +25,7 @@ interface TabConfig {
   importFn: (file: File) => Promise<ImportResult>;
   canAccess: string[];
   templateColumns: { key: string; title: string; example: string }[];
+  customTemplateFn?: () => Promise<void>;
 }
 
 const TABS: TabConfig[] = [
@@ -94,6 +97,32 @@ const TABS: TabConfig[] = [
       { key: 'BuVanChuyen', title: 'BuVanChuyen', example: '300000' },
       { key: 'MoTa', title: 'MoTa', example: 'Mác bê tông 250' },
     ],
+  },
+  {
+    key: 'cong_no',
+    label: 'Công nợ',
+    importFn: importCongNo,
+    canAccess: ['admin', 'ke_toan'],
+    templateColumns: [
+      { key: 'Mã', title: 'Mã', example: '100001' },
+      { key: 'Tên khách hàng', title: 'Tên khách hàng', example: 'Nguyễn Văn A' },
+      { key: 'Dư đầu Nợ', title: 'Dư đầu Nợ', example: '0' },
+      { key: 'Dư đầu Có', title: 'Dư đầu Có', example: '10000000' },
+      { key: 'Phát sinh Nợ', title: 'Phát sinh Nợ', example: '5000000' },
+      { key: 'Phát sinh Có', title: 'Phát sinh Có', example: '8000000' },
+      { key: 'Dư cuối Nợ', title: 'Dư cuối Nợ', example: '0' },
+      { key: 'Dư cuối Có', title: 'Dư cuối Có', example: '7000000' },
+    ],
+    customTemplateFn: async () => {
+      const buf = await generateCongNoBravoTemplate();
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mau_import_cong_no.xlsx';
+      a.click();
+      URL.revokeObjectURL(url);
+    },
   },
 ];
 
@@ -236,7 +265,7 @@ export default function TaiLenDanhSachPage() {
             </div>
 
             {/* Download template */}
-            <button className={styles.templateBtn} onClick={() => generateTemplate(tab)}>
+            <button className={styles.templateBtn} onClick={() => tab.customTemplateFn ? tab.customTemplateFn() : generateTemplate(tab)}>
               <FiDownload size={15} />
               Tải file mẫu
             </button>

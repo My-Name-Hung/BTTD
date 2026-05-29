@@ -14,8 +14,16 @@ export interface NguoiDung {
   hoTen: string;
   email: string | null;
   soDienThoai: string | null;
-  vaiTro: 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho' | 'sale' | 'tai_xe' | 'ky_thuat';
-  trangThai: 'hoat_dong' | 'khong_hoat_dong';
+  vaiTro:
+    | "admin"
+    | "ke_toan"
+    | "dieu_phoi"
+    | "lanh_dao"
+    | "kho"
+    | "sale"
+    | "tai_xe"
+    | "ky_thuat";
+  trangThai: "hoat_dong" | "khong_hoat_dong";
   ngayTao: Date;
   ngayCapNhat: Date;
 }
@@ -58,7 +66,7 @@ export interface Xe {
   tenTaiXe: string | null;
   soDienThoaiTaiXe: string | null;
   taiTrong: number | null;
-  trangThai: 'san_sang' | 'dang_giao' | 'bao_tri';
+  trangThai: "san_sang" | "dang_giao" | "bao_tri";
   ngayTao: Date;
 }
 
@@ -88,14 +96,14 @@ export interface DonHang {
   ngayNghiemThu: Date | null;
 
   trangThaiDon:
-    | 'cho_duyet'
-    | 'da_duyet'
-    | 'dang_san_xuat'
-    | 'dang_giao'
-    | 'da_giao'
-    | 'nghiem_thu'
-    | 'da_thanh_toan';
-  trangThaiHoanThanh: 'chua_hoan_thanh' | 'dang_hoan_thanh' | 'da_hoan_thanh';
+    | "cho_duyet"
+    | "da_duyet"
+    | "dang_san_xuat"
+    | "dang_giao"
+    | "da_giao"
+    | "nghiem_thu"
+    | "da_thanh_toan";
+  trangThaiHoanThanh: "chua_hoan_thanh" | "dang_hoan_thanh" | "da_hoan_thanh";
 
   nguoiTaoId: number | null;
   nguoiDuyetId: number | null;
@@ -126,7 +134,7 @@ export interface LichSanXuat {
   thoiGianKetThucDo: Date | null;
   ghiChu: string | null;
   driveLink: string | null;
-  trangThai: 'chua_san_xuat' | 'dang_san_xuat' | 'da_xong';
+  trangThai: "chua_san_xuat" | "dang_san_xuat" | "da_xong";
   ngayTao: Date;
   ngayCapNhat: Date;
 }
@@ -136,7 +144,7 @@ export interface NghiemThu {
   idDonHang: number;
   khoiLuongXacNhan: number | null;
   khoiLuongThucTe: number | null;
-  chatLuong: 'dat' | 'khong_dat' | null;
+  chatLuong: "dat" | "khong_dat" | null;
   bienBanFile: string | null;
   bienBanSo: string | null;
   ngayLapBienBan: Date | null;
@@ -154,7 +162,7 @@ export interface ThanhToan {
   id: number;
   idDonHang: number;
   soTien: number;
-  hinhThuc: 'tien_mat' | 'chuyen_khoan' | 'truct_hop_dong' | null;
+  hinhThuc: "tien_mat" | "chuyen_khoan" | "truct_hop_dong" | null;
   ngayThanhToan: Date;
   nguoiNhan: string | null;
   ghiChu: string | null;
@@ -170,8 +178,13 @@ export interface CongNo {
   conLai: number;
   ngayBatDau: Date | null;
   hanThanhToan: Date | null;
-  trangThai: 'chua_thanh_toan' | 'dang_thanh_toan' | 'da_thanh_toan' | 'qua_han';
+  trangThai:
+    | "chua_thanh_toan"
+    | "dang_thanh_toan"
+    | "da_thanh_toan"
+    | "qua_han";
   ghiChu: string | null;
+  nhom: string | null;
   ngayTao: Date;
   ngayCapNhat: Date;
 }
@@ -222,7 +235,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
-  user: Omit<NguoiDung, 'matKhau'>;
+  user: Omit<NguoiDung, "matKhau">;
 }
 
 // Dashboard types

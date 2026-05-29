@@ -174,9 +174,18 @@ export interface CongNo {
     | "da_thanh_toan"
     | "qua_han";
   ghiChu: string | null;
+  nhom: string | null;
   maDonHang?: string;
   tenKhachHang?: string;
   thanhTien?: number;
+}
+
+export interface CongNoGroup {
+  nhom: string;
+  items: CongNo[];
+  tongCongNo: number;
+  tongDaThanhToan: number;
+  tongConLai: number;
 }
 
 export interface ThongKeDashboard {

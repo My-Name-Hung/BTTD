@@ -1,14 +1,14 @@
-import mssql from 'mssql';
-import { config } from './index';
+import mssql from "mssql";
+import { config } from "./index";
 
 async function initDatabase(): Promise<void> {
-  console.log('\n📦 Đang khởi tạo database...');
+  console.log("\n📦 Đang khởi tạo database...");
 
   try {
     const pool = await mssql.connect({
       server: config.db.server,
       port: config.db.port,
-      database: 'master',
+      database: "master",
       user: config.db.user,
       password: config.db.password,
       options: {
@@ -20,16 +20,16 @@ async function initDatabase(): Promise<void> {
     const request = pool.request();
 
     // Tạo database nếu chưa có
-    console.log('  🔄 Kiểm tra database DBXMTD...');
+    console.log("  🔄 Kiểm tra database DBXMTD...");
     const dbExists = await request.query<{ name: string }[]>(
-      `SELECT name FROM sys.databases WHERE name = 'DBXMTD'`
+      `SELECT name FROM sys.databases WHERE name = 'DBXMTD'`,
     );
 
     if (dbExists.recordset.length === 0) {
-      console.log('  ➕ Tạo database DBXMTD...');
-      await request.query('CREATE DATABASE DBXMTD');
+      console.log("  ➕ Tạo database DBXMTD...");
+      await request.query("CREATE DATABASE DBXMTD");
     } else {
-      console.log('  ✅ Database DBXMTD đã tồn tại');
+      console.log("  ✅ Database DBXMTD đã tồn tại");
     }
 
     await pool.close();
@@ -49,14 +49,14 @@ async function initDatabase(): Promise<void> {
 
     const db = dbPool;
 
-    console.log('  🔄 Kiểm tra bảng hệ thống...');
+    console.log("  🔄 Kiểm tra bảng hệ thống...");
 
     // Tạo bảng NguoiDung
     const nguoiDungExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'NguoiDung'`
+      `SELECT name FROM sys.tables WHERE name = 'NguoiDung'`,
     );
     if (nguoiDungExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng NguoiDung...');
+      console.log("  ➕ Tạo bảng NguoiDung...");
       await db.query(`
         CREATE TABLE NguoiDung (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -72,15 +72,15 @@ async function initDatabase(): Promise<void> {
         )
       `);
     } else {
-      console.log('  ✅ Bảng NguoiDung đã tồn tại');
+      console.log("  ✅ Bảng NguoiDung đã tồn tại");
     }
 
     // Tạo bảng KhachHang
     const khachHangExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'KhachHang'`
+      `SELECT name FROM sys.tables WHERE name = 'KhachHang'`,
     );
     if (khachHangExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng KhachHang...');
+      console.log("  ➕ Tạo bảng KhachHang...");
       await db.query(`
         CREATE TABLE KhachHang (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -94,15 +94,15 @@ async function initDatabase(): Promise<void> {
         )
       `);
     } else {
-      console.log('  ✅ Bảng KhachHang đã tồn tại');
+      console.log("  ✅ Bảng KhachHang đã tồn tại");
     }
 
     // Tạo bảng CauHinh (key/value store cho cấu hình hệ thống)
     const cauHinhExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'CauHinh'`
+      `SELECT name FROM sys.tables WHERE name = 'CauHinh'`,
     );
     if (cauHinhExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng CauHinh...');
+      console.log("  ➕ Tạo bảng CauHinh...");
       await db.query(`
         CREATE TABLE CauHinh (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -111,17 +111,17 @@ async function initDatabase(): Promise<void> {
           ngayCapNhat DATETIME DEFAULT GETDATE()
         )
       `);
-      console.log('  ✅ Bảng CauHinh đã tạo');
+      console.log("  ✅ Bảng CauHinh đã tạo");
     } else {
-      console.log('  ✅ Bảng CauHinh đã tồn tại');
+      console.log("  ✅ Bảng CauHinh đã tồn tại");
     }
 
     // Tạo bảng MacBeTong
     const macBeTongExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'MacBeTong'`
+      `SELECT name FROM sys.tables WHERE name = 'MacBeTong'`,
     );
     if (macBeTongExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng MacBeTong...');
+      console.log("  ➕ Tạo bảng MacBeTong...");
       await db.query(`
         CREATE TABLE MacBeTong (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -135,34 +135,42 @@ async function initDatabase(): Promise<void> {
         )
       `);
     } else {
-      console.log('  ✅ Bảng MacBeTong đã tồn tại');
+      console.log("  ✅ Bảng MacBeTong đã tồn tại");
       // Thêm cột mới nếu chưa có (cho DB đã tồn tại)
       try {
         const cols = await db.query<{ COLUMN_NAME: string }[]>(
-          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'MacBeTong'`
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'MacBeTong'`,
         );
-        const colNames = cols.recordset.map(c => c.COLUMN_NAME.toLowerCase());
-        if (!colNames.includes('dongia')) {
-          await db.query(`ALTER TABLE MacBeTong ADD donGia DECIMAL(18,2) NOT NULL DEFAULT 0`);
-          console.log('  ➕ Thêm cột donGia vào MacBeTong');
+        const colNames = cols.recordset.map((c) => c.COLUMN_NAME.toLowerCase());
+        if (!colNames.includes("dongia")) {
+          await db.query(
+            `ALTER TABLE MacBeTong ADD donGia DECIMAL(18,2) NOT NULL DEFAULT 0`,
+          );
+          console.log("  ➕ Thêm cột donGia vào MacBeTong");
         }
-        if (!colNames.includes('chiphiphatsinh')) {
-          await db.query(`ALTER TABLE MacBeTong ADD chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0`);
-          console.log('  ➕ Thêm cột chiPhiPhatSinh vào MacBeTong');
+        if (!colNames.includes("chiphiphatsinh")) {
+          await db.query(
+            `ALTER TABLE MacBeTong ADD chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0`,
+          );
+          console.log("  ➕ Thêm cột chiPhiPhatSinh vào MacBeTong");
         }
-        if (!colNames.includes('buvanchuyen')) {
-          await db.query(`ALTER TABLE MacBeTong ADD buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0`);
-          console.log('  ➕ Thêm cột buVanChuyen vào MacBeTong');
+        if (!colNames.includes("buvanchuyen")) {
+          await db.query(
+            `ALTER TABLE MacBeTong ADD buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0`,
+          );
+          console.log("  ➕ Thêm cột buVanChuyen vào MacBeTong");
         }
-      } catch (e) { /* columns may already exist */ }
+      } catch (e) {
+        /* columns may already exist */
+      }
     }
 
     // Tạo bảng TramTron
     const tramTronExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'TramTron'`
+      `SELECT name FROM sys.tables WHERE name = 'TramTron'`,
     );
     if (tramTronExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng TramTron...');
+      console.log("  ➕ Tạo bảng TramTron...");
       await db.query(`
         CREATE TABLE TramTron (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -174,15 +182,15 @@ async function initDatabase(): Promise<void> {
         )
       `);
     } else {
-      console.log('  ✅ Bảng TramTron đã tồn tại');
+      console.log("  ✅ Bảng TramTron đã tồn tại");
     }
 
     // Tạo bảng Xe
     const xeExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'Xe'`
+      `SELECT name FROM sys.tables WHERE name = 'Xe'`,
     );
     if (xeExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng Xe...');
+      console.log("  ➕ Tạo bảng Xe...");
       await db.query(`
         CREATE TABLE Xe (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -195,18 +203,18 @@ async function initDatabase(): Promise<void> {
         )
       `);
     } else {
-      console.log('  ✅ Bảng Xe đã tồn tại');
+      console.log("  ✅ Bảng Xe đã tồn tại");
       // Migration: thêm cột idTaiKhoan nếu chưa có
       try {
         await db.query(`ALTER TABLE Xe ADD idTaiKhoan INT`);
-        console.log('  ➕ Cột idTaiKhoan đã được thêm vào bảng Xe');
+        console.log("  ➕ Cột idTaiKhoan đã được thêm vào bảng Xe");
       } catch {
         // đã có rồi, bỏ qua
       }
       // Migration: thêm cột idTaiXe vào LichSanXuat nếu chưa có
       try {
         await db.query(`ALTER TABLE LichSanXuat ADD idTaiXe INT`);
-        console.log('  ➕ Cột idTaiXe đã được thêm vào bảng LichSanXuat');
+        console.log("  ➕ Cột idTaiXe đã được thêm vào bảng LichSanXuat");
       } catch {
         // đã có rồi, bỏ qua
       }
@@ -219,7 +227,7 @@ async function initDatabase(): Promise<void> {
           INNER JOIN Xe xe ON ls.idXe = xe.id
           WHERE ls.idTaiXe IS NULL AND xe.idTaiKhoan IS NOT NULL
         `);
-        console.log('  🔧 Đã fix idTaiXe cho các lịch sản xuất cũ');
+        console.log("  🔧 Đã fix idTaiXe cho các lịch sản xuất cũ");
       } catch {
         // lỗi thì bỏ qua
       }
@@ -227,10 +235,10 @@ async function initDatabase(): Promise<void> {
 
     // Tạo bảng DonHang
     const donHangExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'DonHang'`
+      `SELECT name FROM sys.tables WHERE name = 'DonHang'`,
     );
     if (donHangExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng DonHang...');
+      console.log("  ➕ Tạo bảng DonHang...");
       await db.query(`
         CREATE TABLE DonHang (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -266,40 +274,55 @@ async function initDatabase(): Promise<void> {
         )
       `);
     } else {
-      console.log('  ✅ Bảng DonHang đã tồn tại');
+      console.log("  ✅ Bảng DonHang đã tồn tại");
       // Log column names for debugging
       const dhCols = await db.query<{ COLUMN_NAME: string }[]>(
-        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'DonHang' ORDER BY ORDINAL_POSITION`
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'DonHang' ORDER BY ORDINAL_POSITION`,
       );
-      console.log('  📋 DonHang columns:', dhCols.recordset.map(c => c.COLUMN_NAME).join(', '));
+      console.log(
+        "  📋 DonHang columns:",
+        dhCols.recordset.map((c) => c.COLUMN_NAME).join(", "),
+      );
 
       // Migration: fix column name if wrong (l -> I)
-      const hasNguoiTaold = dhCols.recordset.some(c => c.COLUMN_NAME === 'nguoiTaold');
-      const hasNguoiTaoId = dhCols.recordset.some(c => c.COLUMN_NAME === 'nguoiTaoId');
+      const hasNguoiTaold = dhCols.recordset.some(
+        (c) => c.COLUMN_NAME === "nguoiTaold",
+      );
+      const hasNguoiTaoId = dhCols.recordset.some(
+        (c) => c.COLUMN_NAME === "nguoiTaoId",
+      );
       if (hasNguoiTaold && !hasNguoiTaoId) {
-        console.log('  🔧 Fixing column name: nguoiTaold -> nguoiTaoId');
-        await db.query(`EXEC sp_rename 'DonHang.nguoiTaold', 'nguoiTaoId', 'COLUMN'`);
-        console.log('  ✅ Column renamed successfully');
+        console.log("  🔧 Fixing column name: nguoiTaold -> nguoiTaoId");
+        await db.query(
+          `EXEC sp_rename 'DonHang.nguoiTaold', 'nguoiTaoId', 'COLUMN'`,
+        );
+        console.log("  ✅ Column renamed successfully");
       }
 
       // Migration: thêm cột chiPhiPhatSinh và buVanChuyen nếu chưa có
-      const colNamesDh = dhCols.recordset.map(c => c.COLUMN_NAME.toLowerCase());
-      if (!colNamesDh.includes('chiphiphatsinh')) {
-        await db.query(`ALTER TABLE DonHang ADD chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0`);
-        console.log('  ➕ Thêm cột chiPhiPhatSinh vào DonHang');
+      const colNamesDh = dhCols.recordset.map((c) =>
+        c.COLUMN_NAME.toLowerCase(),
+      );
+      if (!colNamesDh.includes("chiphiphatsinh")) {
+        await db.query(
+          `ALTER TABLE DonHang ADD chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0`,
+        );
+        console.log("  ➕ Thêm cột chiPhiPhatSinh vào DonHang");
       }
-      if (!colNamesDh.includes('buvanchuyen')) {
-        await db.query(`ALTER TABLE DonHang ADD buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0`);
-        console.log('  ➕ Thêm cột buVanChuyen vào DonHang');
+      if (!colNamesDh.includes("buvanchuyen")) {
+        await db.query(
+          `ALTER TABLE DonHang ADD buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0`,
+        );
+        console.log("  ➕ Thêm cột buVanChuyen vào DonHang");
       }
     }
 
     // Tạo bảng LichSanXuat
     const lichSanXuatExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'LichSanXuat'`
+      `SELECT name FROM sys.tables WHERE name = 'LichSanXuat'`,
     );
     if (lichSanXuatExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng LichSanXuat...');
+      console.log("  ➕ Tạo bảng LichSanXuat...");
       await db.query(`
         CREATE TABLE LichSanXuat (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -323,15 +346,15 @@ async function initDatabase(): Promise<void> {
         )
       `);
     } else {
-      console.log('  ✅ Bảng LichSanXuat đã tồn tại');
+      console.log("  ✅ Bảng LichSanXuat đã tồn tại");
     }
 
     // Tạo bảng NghiemThu
     const nghiemThuExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'NghiemThu'`
+      `SELECT name FROM sys.tables WHERE name = 'NghiemThu'`,
     );
     if (nghiemThuExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng NghiemThu...');
+      console.log("  ➕ Tạo bảng NghiemThu...");
       await db.query(`
         CREATE TABLE NghiemThu (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -353,15 +376,15 @@ async function initDatabase(): Promise<void> {
         )
       `);
     } else {
-      console.log('  ✅ Bảng NghiemThu đã tồn tại');
+      console.log("  ✅ Bảng NghiemThu đã tồn tại");
     }
 
     // Tạo bảng ThanhToan
     const thanhToanExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'ThanhToan'`
+      `SELECT name FROM sys.tables WHERE name = 'ThanhToan'`,
     );
     if (thanhToanExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng ThanhToan...');
+      console.log("  ➕ Tạo bảng ThanhToan...");
       await db.query(`
         CREATE TABLE ThanhToan (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -376,26 +399,35 @@ async function initDatabase(): Promise<void> {
         )
       `);
     } else {
-      console.log('  ✅ Bảng ThanhToan đã tồn tại');
+      console.log("  ✅ Bảng ThanhToan đã tồn tại");
       const ttCols = await db.query<{ COLUMN_NAME: string }[]>(
-        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ThanhToan' ORDER BY ORDINAL_POSITION`
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ThanhToan' ORDER BY ORDINAL_POSITION`,
       );
-      console.log('  📋 ThanhToan columns:', ttCols.recordset.map(c => c.COLUMN_NAME).join(', '));
-      const hasTTTaold = ttCols.recordset.some(c => c.COLUMN_NAME === 'nguoiTaold');
-      const hasTTTaoId = ttCols.recordset.some(c => c.COLUMN_NAME === 'nguoiTaoId');
+      console.log(
+        "  📋 ThanhToan columns:",
+        ttCols.recordset.map((c) => c.COLUMN_NAME).join(", "),
+      );
+      const hasTTTaold = ttCols.recordset.some(
+        (c) => c.COLUMN_NAME === "nguoiTaold",
+      );
+      const hasTTTaoId = ttCols.recordset.some(
+        (c) => c.COLUMN_NAME === "nguoiTaoId",
+      );
       if (hasTTTaold && !hasTTTaoId) {
-        console.log('  🔧 Fixing ThanhToan column: nguoiTaold -> nguoiTaoId');
-        await db.query(`EXEC sp_rename 'ThanhToan.nguoiTaold', 'nguoiTaoId', 'COLUMN'`);
-        console.log('  ✅ ThanhToan column renamed successfully');
+        console.log("  🔧 Fixing ThanhToan column: nguoiTaold -> nguoiTaoId");
+        await db.query(
+          `EXEC sp_rename 'ThanhToan.nguoiTaold', 'nguoiTaoId', 'COLUMN'`,
+        );
+        console.log("  ✅ ThanhToan column renamed successfully");
       }
     }
 
     // Tạo bảng CongNo
     const congNoExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'CongNo'`
+      `SELECT name FROM sys.tables WHERE name = 'CongNo'`,
     );
     if (congNoExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng CongNo...');
+      console.log("  ➕ Tạo bảng CongNo...");
       await db.query(`
         CREATE TABLE CongNo (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -407,20 +439,21 @@ async function initDatabase(): Promise<void> {
           hanThanhToan DATE,
           trangThai NVARCHAR(50) DEFAULT N'chua_thanh_toan',
           ghiChu NVARCHAR(MAX),
+          nhom NVARCHAR(200),
           ngayTao DATETIME DEFAULT GETDATE(),
           ngayCapNhat DATETIME DEFAULT GETDATE()
         )
       `);
     } else {
-      console.log('  ✅ Bảng CongNo đã tồn tại');
+      console.log("  ✅ Bảng CongNo đã tồn tại");
     }
 
     // Tạo bảng ThongBao
     const thongBaoExists = await db.query<{ name: string }[]>(
-      `SELECT name FROM sys.tables WHERE name = 'ThongBao'`
+      `SELECT name FROM sys.tables WHERE name = 'ThongBao'`,
     );
     if (thongBaoExists.recordset.length === 0) {
-      console.log('  ➕ Tạo bảng ThongBao...');
+      console.log("  ➕ Tạo bảng ThongBao...");
       await db.query(`
         CREATE TABLE ThongBao (
           id INT IDENTITY(1,1) PRIMARY KEY,
@@ -435,15 +468,18 @@ async function initDatabase(): Promise<void> {
         )
       `);
     } else {
-      console.log('  ✅ Bảng ThongBao đã tồn tại');
+      console.log("  ✅ Bảng ThongBao đã tồn tại");
     }
 
     await dbPool.close();
 
-    console.log('  ✅ Khởi tạo database hoàn tất!\n');
+    console.log("  ✅ Khởi tạo database hoàn tất!\n");
   } catch (error) {
-    console.error('  ❌ Lỗi khởi tạo database:', error instanceof Error ? error.message : error);
-    console.log('  ⚠ Backend sẽ tiếp tục chạy mà không có database.\n');
+    console.error(
+      "  ❌ Lỗi khởi tạo database:",
+      error instanceof Error ? error.message : error,
+    );
+    console.log("  ⚠ Backend sẽ tiếp tục chạy mà không có database.\n");
   }
 }
 
