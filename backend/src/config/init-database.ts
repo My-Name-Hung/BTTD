@@ -446,6 +446,17 @@ async function initDatabase(): Promise<void> {
       `);
     } else {
       console.log("  ✅ Bảng CongNo đã tồn tại");
+      // Migration: thêm cột nhom nếu chưa có
+      const colExists = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('CongNo') AND name = 'nhom'`,
+      );
+      if (colExists.recordset.length === 0) {
+        console.log("  ➕ Thêm cột nhom vào CongNo...");
+        await db.query(`ALTER TABLE CongNo ADD nhom NVARCHAR(200) NULL`);
+        console.log("  ✅ Đã thêm cột nhom");
+      } else {
+        console.log("  ✅ Cột nhom đã tồn tại trong CongNo");
+      }
     }
 
     // Tạo bảng ThongBao
