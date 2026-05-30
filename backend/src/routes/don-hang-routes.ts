@@ -13,6 +13,7 @@ import {
   capNhatTrangThaiDon,
   xoaDonHang,
 } from '../services/don-hang-service';
+import { ghiNhatKy } from '../services/access-history-service';
 
 const router = Router();
 
@@ -115,6 +116,8 @@ router.post(
         return;
       }
       const donHang = await taoDonHang(req.body, req.user.id);
+      const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+      await ghiNhatKy(req.user.id, 'TAO', 'DonHang', donHang.id, undefined, undefined, ip);
       res.status(201).json({ success: true, message: 'Tạo đơn hàng thành công', data: donHang });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Lỗi tạo đơn hàng';
@@ -125,8 +128,11 @@ router.post(
 
 router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
+    if (!req.user) { res.status(401).json({ success: false, message: 'Chưa đăng nhập' }); return; }
     const id = parseInt(req.params.id, 10);
     const donHang = await suaDonHang(id, req.body);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'SUA', 'DonHang', id, undefined, JSON.stringify(req.body), ip);
     res.json({ success: true, message: 'Cập nhật đơn hàng thành công', data: donHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật đơn hàng';
@@ -136,12 +142,11 @@ router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req
 
 router.put('/:id/duyet', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
+    if (!req.user) { res.status(401).json({ success: false, message: 'Chưa đăng nhập' }); return; }
     const id = parseInt(req.params.id, 10);
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
-      return;
-    }
     const donHang = await duyetDonHang(id, req.user.id);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'DUYET', 'DonHang', id, undefined, undefined, ip);
     res.json({ success: true, message: 'Duyệt đơn hàng thành công', data: donHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi duyệt đơn hàng';
@@ -151,13 +156,13 @@ router.put('/:id/duyet', authMiddleware, requireRole('admin', 'ke_toan'), async 
 
 router.put('/:id/tu-choi', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
+    if (!req.user) { res.status(401).json({ success: false, message: 'Chưa đăng nhập' }); return; }
     const id = parseInt(req.params.id, 10);
     const { lyDo } = req.body;
-    if (!lyDo) {
-      res.status(400).json({ success: false, message: 'Lý do từ chối là bắt buộc' });
-      return;
-    }
+    if (!lyDo) { res.status(400).json({ success: false, message: 'Lý do từ chối là bắt buộc' }); return; }
     const donHang = await tuChoiDonHang(id, lyDo);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'TU_CHOI', 'DonHang', id, undefined, undefined, ip);
     res.json({ success: true, message: 'Từ chối đơn hàng thành công', data: donHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi từ chối đơn hàng';
@@ -167,13 +172,13 @@ router.put('/:id/tu-choi', authMiddleware, requireRole('admin', 'ke_toan'), asyn
 
 router.put('/:id/trang-thai', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
+    if (!req.user) { res.status(401).json({ success: false, message: 'Chưa đăng nhập' }); return; }
     const id = parseInt(req.params.id, 10);
     const { trangThaiDon, ghiChu } = req.body;
-    if (!trangThaiDon) {
-      res.status(400).json({ success: false, message: 'Trạng thái là bắt buộc' });
-      return;
-    }
+    if (!trangThaiDon) { res.status(400).json({ success: false, message: 'Trạng thái là bắt buộc' }); return; }
     const donHang = await capNhatTrangThaiDon(id, trangThaiDon, ghiChu);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'SUA', 'DonHang', id, undefined, undefined, ip);
     res.json({ success: true, message: 'Cập nhật trạng thái thành công', data: donHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật trạng thái';
@@ -183,7 +188,10 @@ router.put('/:id/trang-thai', authMiddleware, async (req: AuthRequest, res: Resp
 
 router.delete('/:id', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
+    if (!req.user) { res.status(401).json({ success: false, message: 'Chưa đăng nhập' }); return; }
     const id = parseInt(req.params.id, 10);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'XOA', 'DonHang', id, undefined, undefined, ip);
     await xoaDonHang(id);
     res.json({ success: true, message: 'Xóa đơn hàng thành công' });
   } catch (error) {

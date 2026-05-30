@@ -4,6 +4,7 @@ import { body } from "express-validator";
 import { query } from "../config/database";
 import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { ApiResponse } from "../models";
+import { ghiNhatKy } from "../services/access-history-service";
 
 const router = Router();
 
@@ -95,6 +96,8 @@ router.post(
           vaiTro,
         },
       );
+      const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+      await ghiNhatKy(req.user?.id, 'TAO', 'NguoiDung', result[0]?.id, undefined, `Tạo user: ${tenDangNhap}`, ip);
       res
         .status(201)
         .json({
@@ -145,6 +148,8 @@ router.put(
       }
 
       await query(sql, params);
+      const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+      await ghiNhatKy(req.user?.id, 'SUA', 'NguoiDung', id, undefined, undefined, ip);
 
       const result = await query<any[]>(
         `SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai, ngayTao FROM NguoiDung WHERE id = @id`,
@@ -186,6 +191,8 @@ router.delete(
           });
         return;
       }
+      const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+      await ghiNhatKy(req.user?.id, 'XOA', 'NguoiDung', id, undefined, undefined, ip);
       await query("DELETE FROM NguoiDung WHERE id = @id", { id });
       res.json({ success: true, message: "Xóa người dùng thành công" });
     } catch (error) {

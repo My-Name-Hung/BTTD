@@ -13,6 +13,7 @@ import {
   importCongNoKhachHang,
   layLichSuImport,
 } from '../services/import-service';
+import { ghiNhatKy } from '../services/access-history-service';
 
 const router = Router();
 
@@ -37,6 +38,10 @@ function parseExcel(buffer: Buffer): Record<string, unknown>[] {
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
   return XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+}
+
+function getIp(req: AuthRequest): string {
+  return req.ip || req.headers['x-forwarded-for'] as string || '';
 }
 
 // Lấy lịch sử import
@@ -100,6 +105,7 @@ router.post(
 
       const nguoiTaiId = req.user.id ?? 1;
       const result = await importDonHang(rows, nguoiTaiId, req.file.originalname);
+      await ghiNhatKy(req.user.id, 'TAO', 'DonHang', undefined, undefined, `Import file: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -136,6 +142,7 @@ router.post(
       }
 
       const result = await importKhachHang(rows, req.user.id, req.file.originalname);
+      await ghiNhatKy(req.user.id, 'TAO', 'KhachHang', undefined, undefined, `Import file: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -172,6 +179,7 @@ router.post(
       }
 
       const result = await importNguoiDung(rows, req.user.id, req.file.originalname);
+      await ghiNhatKy(req.user.id, 'TAO', 'NguoiDung', undefined, undefined, `Import file: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -208,6 +216,7 @@ router.post(
       }
 
       const result = await importPhuongTien(rows, req.user.id, req.file.originalname);
+      await ghiNhatKy(req.user.id, 'TAO', 'PhuongTien', undefined, undefined, `Import file: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -244,6 +253,7 @@ router.post(
       }
 
       const result = await importMacBeTong(rows, req.user.id, req.file.originalname);
+      await ghiNhatKy(req.user.id, 'TAO', 'MacBeTong', undefined, undefined, `Import file: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -280,6 +290,7 @@ router.post(
       }
 
       const result = await importCongNo(rows, req.user.id, req.file.originalname);
+      await ghiNhatKy(req.user.id, 'TAO', 'CongNo', undefined, undefined, `Import file: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -316,6 +327,7 @@ router.post(
       }
 
       const result = await importCongNoKhachHang(rows, req.user.id, req.file.originalname);
+      await ghiNhatKy(req.user.id, 'TAO', 'CongNo', undefined, undefined, `Import file: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
