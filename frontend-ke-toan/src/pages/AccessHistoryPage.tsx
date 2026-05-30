@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiX, FiLogOut, FiKey, FiBan, FiEye, FiChevronLeft, FiChevronRight, FiSearch } from 'react-icons/fi';
+import { FiX, FiLogOut, FiKey, FiEye, FiChevronLeft, FiChevronRight, FiSearch } from 'react-icons/fi';
+import { LiaBanSolid } from "react-icons/lia";
 import {
   layLichSuTruyCap,
   layChiTietAccessSession,
@@ -79,9 +80,9 @@ export default function AccessHistoryPage() {
         tuNgay: tuNgay || undefined,
         denNgay: denNgay || undefined,
       });
-      setSessions(res.data as unknown as AccessSession[]);
-      setTotal(res.pagination.total);
-      setTotalPages(res.pagination.totalPages);
+      setSessions(Array.isArray(res.data) ? (res.data as unknown as AccessSession[]) : []);
+      setTotal(res.pagination?.total ?? 0);
+      setTotalPages(res.pagination?.totalPages ?? 1);
     } catch {
       showToast('Lỗi tải dữ liệu', 'error');
     } finally { setLoading(false); }
@@ -203,7 +204,7 @@ export default function AccessHistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sessions.map((s) => (
+                  {(Array.isArray(sessions) ? sessions : []).map((s) => (
                     <tr key={s.id} className={styles.row}>
                       <td className={styles.userCell}>
                         <div className={styles.userName}>{s.hoTen}</div>
@@ -231,7 +232,7 @@ export default function AccessHistoryPage() {
                             <FiKey size={14} />
                           </button>
                           <button className={styles.btnBan} onClick={() => { setBanIpTarget(s); setBanIpInput(s.ipAddress || ''); }} title="Cấm IP">
-                            <FiBan size={14} />
+                            <LiaBanSolid size={14} />
                           </button>
                         </div>
                       </td>
@@ -285,7 +286,7 @@ export default function AccessHistoryPage() {
                   <FiKey size={14} /> Đổi mật khẩu
                 </button>
                 <button className={`btn ${styles.btnSm} ${styles.btnBanModal}`} onClick={() => { setBanIpTarget(detailSession!.session); setBanIpInput(detailSession!.session.ipAddress || ''); setDetailSession(null); }}>
-                  <FiBan size={14} /> Cấm IP
+                  <LiaBanSolid size={14} /> Cấm IP
                 </button>
               </div>
 

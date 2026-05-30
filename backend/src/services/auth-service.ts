@@ -15,8 +15,8 @@ export async function dangNhap(
   ipAddress?: string,
   userAgent?: string,
 ): Promise<LoginResponse> {
-  const users = await query<NguoiDung & { bannedIp: string | null }>(
-    `SELECT *, bannedIp FROM NguoiDung WHERE tenDangNhap = @tenDangNhap AND trangThai = N'hoat_dong'`,
+  const users = await query<NguoiDung>(
+    `SELECT * FROM NguoiDung WHERE tenDangNhap = @tenDangNhap AND trangThai = N'hoat_dong'`,
     { tenDangNhap: data.tenDangNhap }
   );
 
@@ -25,6 +25,23 @@ export async function dangNhap(
   }
 
   const user = users[0];
+
+  // Kiểm tra IP bị cấm (nếu cột bannedIp tồn tại)
+  try {
+    const ipRows = await query<{ id: number; bannedIp: string | null }[]>(
+      `SELECT TOP 1 id, bannedIp FROM NguoiDung WHERE id = @id AND bannedIp IS NOT NULL`,
+      { id: user.id },
+    );
+    if (ipRows.length > 0 && ipRows[0].bannedIp && ipAddress) {
+      const bannedList = ipRows[0].bannedIp.split(',').map((ip) => ip.trim()).filter(Boolean);
+      if (bannedList.includes(ipAddress)) {
+        throw new Error(`Địa chỉ IP "${ipAddress}" đã bị cấm truy cập`);
+      }
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('bị cấm')) throw err;
+    // Cột chưa tồn tại hoặc lỗi khác → bỏ qua kiểm tra IP
+  }
 
   // Kiểm tra IP bị cấm
   if (user.bannedIp && ipAddress) {
@@ -50,11 +67,12 @@ export async function dangNhap(
     expiresIn: config.jwt.expiresIn,
   });
 
-  // Ghi session đăng nhập
-  await ghiDangNhap(user.id, hashToken(token), ipAddress || '', userAgent || '');
+  // Ghi session đăng nhập (bỏ qua nếu bảng chưa tồn tại)
+  try {
+    await ghiDangNhap(user.id, hashToken(token), ipAddress || '', userAgent || '');
+  } catch { /* bỏ qua lỗi ghi session */ }
 
-  const { matKhau: _, bannedIp: __, ...userWithoutPassword } = user as NguoiDung & { bannedIp: string | null };
-  void __;
+  const { matKhau: _, ...userWithoutPassword } = user;
 
   return {
     token,
