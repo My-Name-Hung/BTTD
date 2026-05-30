@@ -408,10 +408,12 @@ export default function CongNoPage() {
                             style={{ cursor: "pointer" }}
                           >
                             <td colSpan={2} className={styles.groupHeaderLabel}>
-                              <span className={styles.groupToggleIcon}>
-                                {isCollapsed ? "▶" : "▼"}
-                              </span>
-                              {group.nhom}
+                              <div className={styles.groupHeaderLabelInner}>
+                                <span className={styles.groupToggleIcon}>
+                                  {isCollapsed ? "▶" : "▼"}
+                                </span>
+                                {group.nhom}
+                              </div>
                             </td>
                             {canWrite ? (
                               <>

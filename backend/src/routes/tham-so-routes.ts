@@ -17,6 +17,7 @@ import {
   xoaXe,
 } from '../services/tham-so-service';
 import { query } from '../config/database';
+import { ghiNhatKy } from '../services/access-history-service';
 
 const router = Router();
 
@@ -37,6 +38,8 @@ router.get('/khach-hang', authMiddleware, async (req: AuthRequest, res: Response
 router.post('/khach-hang', authMiddleware, requireRole('admin', 'ke_toan', 'dieu_phoi', 'sale'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const kh = await taoKhachHang(req.body);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'TAO', 'KhachHang', kh.id, undefined, JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo khách hàng thành công', data: kh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo khách hàng';
@@ -48,6 +51,8 @@ router.put('/khach-hang/:id', authMiddleware, requireRole('admin', 'ke_toan'), a
   try {
     const id = parseInt(req.params.id, 10);
     const kh = await suaKhachHang(id, req.body);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'SUA', 'KhachHang', id, undefined, JSON.stringify(req.body), ip);
     res.json({ success: true, message: 'Cập nhật khách hàng thành công', data: kh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật khách hàng';
@@ -58,6 +63,8 @@ router.put('/khach-hang/:id', authMiddleware, requireRole('admin', 'ke_toan'), a
 router.delete('/khach-hang/:id', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'XOA', 'KhachHang', id, undefined, undefined, ip);
     await xoaKhachHang(id);
     res.json({ success: true, message: 'Xóa khách hàng thành công' });
   } catch (error) {
@@ -80,6 +87,8 @@ router.get('/mac-be-tong', authMiddleware, async (_req: AuthRequest, res: Respon
 router.post('/mac-be-tong', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const mac = await taoMacBeTong(req.body);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'TAO', 'MacBeTong', mac.id, undefined, JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo mác bê tông thành công', data: mac });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo mác bê tông';
@@ -91,6 +100,8 @@ router.put('/mac-be-tong/:id', authMiddleware, requireRole('admin', 'dieu_phoi')
   try {
     const id = parseInt(req.params.id, 10);
     const mac = await suaMacBeTong(id, req.body);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'SUA', 'MacBeTong', id, undefined, JSON.stringify(req.body), ip);
     res.json({ success: true, message: 'Cập nhật mác bê tông thành công', data: mac });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật mác bê tông';
@@ -122,6 +133,8 @@ router.post('/tram-tron', authMiddleware, requireRole('admin'), async (req: Auth
        VALUES (@tenTram, @diaChi, @soDienThoai)`,
       { tenTram, diaChi: diaChi || null, soDienThoai: soDienThoai || null }
     );
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'TAO', 'TramTron', result[0]?.id, undefined, `Tạo trạm: ${tenTram}`, ip);
     res.status(201).json({ success: true, message: 'Tạo trạm trộn thành công', data: result[0] });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo trạm trộn';
@@ -142,6 +155,8 @@ router.put('/tram-tron/:id', authMiddleware, requireRole('admin'), async (req: A
       res.status(404).json({ success: false, message: 'Không tìm thấy trạm trộn' });
       return;
     }
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'SUA', 'TramTron', id, undefined, JSON.stringify(req.body), ip);
     res.json({ success: true, message: 'Cập nhật trạm trộn thành công', data: result[0] });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật trạm trộn';
@@ -152,6 +167,8 @@ router.put('/tram-tron/:id', authMiddleware, requireRole('admin'), async (req: A
 router.delete('/tram-tron/:id', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'XOA', 'TramTron', id, undefined, undefined, ip);
     await query('DELETE FROM TramTron WHERE id = @id', { id });
     res.json({ success: true, message: 'Xóa trạm trộn thành công' });
   } catch (error) {
@@ -188,6 +205,8 @@ router.get('/tai-xe', authMiddleware, async (req: AuthRequest, res: Response<Api
 router.post('/xe', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const xe = await taoXe(req.body);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'TAO', 'Xe', xe.id, undefined, JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo xe thành công', data: xe });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo xe';
@@ -199,6 +218,8 @@ router.put('/xe/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (
   try {
     const id = parseInt(req.params.id, 10);
     const xe = await suaXe(id, req.body);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'SUA', 'Xe', id, undefined, JSON.stringify(req.body), ip);
     res.json({ success: true, message: 'Cập nhật xe thành công', data: xe });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật xe';
@@ -209,6 +230,8 @@ router.put('/xe/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (
 router.delete('/xe/:id', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'XOA', 'Xe', id, undefined, undefined, ip);
     await xoaXe(id);
     res.json({ success: true, message: 'Xóa xe thành công' });
   } catch (error) {
@@ -220,6 +243,8 @@ router.delete('/xe/:id', authMiddleware, requireRole('admin'), async (req: AuthR
 router.delete('/mac-be-tong/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'XOA', 'MacBeTong', id, undefined, undefined, ip);
     await query('DELETE FROM MacBeTong WHERE id = @id', { id });
     res.json({ success: true, message: 'Xóa mác bê tông thành công' });
   } catch (error) {
