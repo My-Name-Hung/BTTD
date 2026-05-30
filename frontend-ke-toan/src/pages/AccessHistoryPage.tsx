@@ -14,7 +14,11 @@ import styles from './AccessHistoryPage.module.css';
 
 function toVN(d: Date | string): Date {
   const s = typeof d === 'string' ? d : d.toISOString();
-  return new Date(s + (s.endsWith('Z') ? '' : 'Z'));
+  // Chuỗi từ backend đã là giờ VN (không có Z), nên append +07:00 để đúng timezone
+  if (!s.endsWith('Z') && !s.endsWith('+07:00') && !s.endsWith('+07')) {
+    return new Date(s + ' +07:00');
+  }
+  return new Date(s);
 }
 
 function formatDate(d: Date | string): string {
