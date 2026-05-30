@@ -98,7 +98,8 @@ router.post(
         },
       );
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-      await ghiNhatKy(req.user?.id, 'TAO', 'NguoiDung', result[0]?.id, undefined, `Tạo user: ${tenDangNhap}`, ip);
+      await ghiNhatKy(req.user?.id, 'TAO', 'NguoiDung', result[0]?.id, undefined,
+        `Tạo tài khoản "${tenDangNhap}", vai trò: ${req.body.vaiTro}`, ip);
       res
         .status(201)
         .json({
@@ -150,7 +151,8 @@ router.put(
 
       await query(sql, params);
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-      await ghiNhatKy(req.user?.id, 'SUA', 'NguoiDung', id, undefined, undefined, ip);
+      await ghiNhatKy(req.user?.id, 'SUA', 'NguoiDung', id, undefined,
+        `Sửa thông tin user #${id}`, ip);
 
       const result = await query<any[]>(
         `SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai, ngayTao FROM NguoiDung WHERE id = @id`,
@@ -193,7 +195,8 @@ router.delete(
         return;
       }
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-      await ghiNhatKy(req.user?.id, 'XOA', 'NguoiDung', id, undefined, undefined, ip);
+      await ghiNhatKy(req.user?.id, 'XOA', 'NguoiDung', id, undefined,
+        `Xóa tài khoản user #${id}`, ip);
       await query("DELETE FROM NguoiDung WHERE id = @id", { id });
       res.json({ success: true, message: "Xóa người dùng thành công" });
     } catch (error) {

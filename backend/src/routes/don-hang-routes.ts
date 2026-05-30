@@ -117,7 +117,9 @@ router.post(
       }
       const donHang = await taoDonHang(req.body, req.user.id);
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-      await ghiNhatKy(req.user.id, 'TAO', 'DonHang', donHang.id, undefined, undefined, ip);
+      await ghiNhatKy(req.user.id, 'TAO', 'DonHang', donHang.id, undefined,
+        `Tạo đơn hàng "${donHang.maDonHang}" cho khách "${req.body.tenKhachHang}", KL: ${req.body.khoiLuongDat}m³, đơn giá: ${req.body.donGia?.toLocaleString()} VNĐ`,
+        ip);
       res.status(201).json({ success: true, message: 'Tạo đơn hàng thành công', data: donHang });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Lỗi tạo đơn hàng';
@@ -132,7 +134,9 @@ router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req
     const id = parseInt(req.params.id, 10);
     const donHang = await suaDonHang(id, req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'SUA', 'DonHang', id, undefined, JSON.stringify(req.body), ip);
+    const fields = Object.keys(req.body).join(', ');
+    await ghiNhatKy(req.user.id, 'SUA', 'DonHang', id, undefined,
+      `Sửa đơn #${id} (${donHang.maDonHang}), thay đổi: ${fields || 'thông tin'}`, ip);
     res.json({ success: true, message: 'Cập nhật đơn hàng thành công', data: donHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật đơn hàng';
@@ -146,7 +150,8 @@ router.put('/:id/duyet', authMiddleware, requireRole('admin', 'ke_toan'), async 
     const id = parseInt(req.params.id, 10);
     const donHang = await duyetDonHang(id, req.user.id);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'DUYET', 'DonHang', id, undefined, undefined, ip);
+    await ghiNhatKy(req.user.id, 'DUYET', 'DonHang', id, undefined,
+      `Duyệt đơn hàng "${donHang.maDonHang}" cho khách "${donHang.tenKhachHang}"`, ip);
     res.json({ success: true, message: 'Duyệt đơn hàng thành công', data: donHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi duyệt đơn hàng';
@@ -162,7 +167,8 @@ router.put('/:id/tu-choi', authMiddleware, requireRole('admin', 'ke_toan'), asyn
     if (!lyDo) { res.status(400).json({ success: false, message: 'Lý do từ chối là bắt buộc' }); return; }
     const donHang = await tuChoiDonHang(id, lyDo);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'TU_CHOI', 'DonHang', id, undefined, undefined, ip);
+    await ghiNhatKy(req.user.id, 'TU_CHOI', 'DonHang', id, undefined,
+      `Từ chối đơn hàng "${donHang.maDonHang}", lý do: ${lyDo}`, ip);
     res.json({ success: true, message: 'Từ chối đơn hàng thành công', data: donHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi từ chối đơn hàng';
@@ -178,7 +184,8 @@ router.put('/:id/trang-thai', authMiddleware, async (req: AuthRequest, res: Resp
     if (!trangThaiDon) { res.status(400).json({ success: false, message: 'Trạng thái là bắt buộc' }); return; }
     const donHang = await capNhatTrangThaiDon(id, trangThaiDon, ghiChu);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'SUA', 'DonHang', id, undefined, undefined, ip);
+    await ghiNhatKy(req.user.id, 'SUA', 'DonHang', id, undefined,
+      `Cập nhật trạng thái đơn "${donHang.maDonHang}" sang "${trangThaiDon}"`, ip);
     res.json({ success: true, message: 'Cập nhật trạng thái thành công', data: donHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật trạng thái';
@@ -191,7 +198,8 @@ router.delete('/:id', authMiddleware, requireRole('admin'), async (req: AuthRequ
     if (!req.user) { res.status(401).json({ success: false, message: 'Chưa đăng nhập' }); return; }
     const id = parseInt(req.params.id, 10);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'XOA', 'DonHang', id, undefined, undefined, ip);
+    await ghiNhatKy(req.user.id, 'XOA', 'DonHang', id, undefined,
+      `Xóa đơn hàng #${id}`, ip);
     await xoaDonHang(id);
     res.json({ success: true, message: 'Xóa đơn hàng thành công' });
   } catch (error) {

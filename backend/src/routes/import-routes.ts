@@ -105,7 +105,8 @@ router.post(
 
       const nguoiTaiId = req.user.id ?? 1;
       const result = await importDonHang(rows, nguoiTaiId, req.file.originalname);
-      await ghiNhatKy(req.user.id, 'TAO', 'DonHang', undefined, undefined, `Tải lên: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
+      await ghiNhatKy(req.user.id, 'IMPORT', 'DonHang', undefined, undefined,
+        `Import đơn hàng từ file "${req.file.originalname}" (${result.success}/${result.total} dòng thành công)`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -142,7 +143,8 @@ router.post(
       }
 
       const result = await importKhachHang(rows, req.user.id, req.file.originalname);
-      await ghiNhatKy(req.user.id, 'TAO', 'KhachHang', undefined, undefined, `Tải lên: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
+      await ghiNhatKy(req.user.id, 'IMPORT', 'KhachHang', undefined, undefined,
+        `Import khách hàng từ file "${req.file.originalname}" (${result.success}/${result.total} dòng thành công)`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -179,7 +181,8 @@ router.post(
       }
 
       const result = await importNguoiDung(rows, req.user.id, req.file.originalname);
-      await ghiNhatKy(req.user.id, 'TAO', 'NguoiDung', undefined, undefined, `Tải lên: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
+      await ghiNhatKy(req.user.id, 'IMPORT', 'NguoiDung', undefined, undefined,
+        `Import người dùng từ file "${req.file.originalname}" (${result.success}/${result.total} dòng thành công)`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -216,7 +219,8 @@ router.post(
       }
 
       const result = await importPhuongTien(rows, req.user.id, req.file.originalname);
-      await ghiNhatKy(req.user.id, 'TAO', 'PhuongTien', undefined, undefined, `Tải lên: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
+      await ghiNhatKy(req.user.id, 'IMPORT', 'Xe', undefined, undefined,
+        `Import phương tiện từ file "${req.file.originalname}" (${result.success}/${result.total} dòng thành công)`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -253,7 +257,8 @@ router.post(
       }
 
       const result = await importMacBeTong(rows, req.user.id, req.file.originalname);
-      await ghiNhatKy(req.user.id, 'TAO', 'MacBeTong', undefined, undefined, `Tải lên: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
+      await ghiNhatKy(req.user.id, 'IMPORT', 'MacBeTong', undefined, undefined,
+        `Import mác bê tông từ file "${req.file.originalname}" (${result.success}/${result.total} dòng thành công)`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -290,7 +295,8 @@ router.post(
       }
 
       const result = await importCongNo(rows, req.user.id, req.file.originalname);
-      await ghiNhatKy(req.user.id, 'TAO', 'CongNo', undefined, undefined, `Tải lên: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
+      await ghiNhatKy(req.user.id, 'IMPORT', 'CongNo', undefined, undefined,
+        `Import công nợ từ file "${req.file.originalname}" (${result.success}/${result.total} dòng thành công)`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,
@@ -327,7 +333,8 @@ router.post(
       }
 
       const result = await importCongNoKhachHang(rows, req.user.id, req.file.originalname);
-      await ghiNhatKy(req.user.id, 'TAO', 'CongNo', undefined, undefined, `Tải lên: ${req.file.originalname} (${result.success}/${result.total})`, getIp(req));
+      await ghiNhatKy(req.user.id, 'IMPORT', 'CongNoKhachHang', undefined, undefined,
+        `Import công nợ khách hàng từ file "${req.file.originalname}" (${result.success}/${result.total} dòng thành công)`, getIp(req));
       res.json({
         success: true,
         message: `Import thành công ${result.success}/${result.total} dòng`,

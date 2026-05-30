@@ -52,7 +52,8 @@ router.post('/', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), as
   try {
     const nghiemThu = await taoNghiemThu(req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'TAO', 'NghiemThu', nghiemThu.id, undefined, JSON.stringify(req.body), ip);
+    await ghiNhatKy(req.user?.id, 'TAO', 'NghiemThu', nghiemThu.id, undefined,
+      `Tạo biên bản nghiệm thu cho đơn #${req.body.idDonHang}`, ip);
     res.status(201).json({ success: true, message: 'Tạo biên bản nghiệm thu thành công', data: nghiemThu });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo biên bản nghiệm thu';
@@ -76,7 +77,8 @@ router.put('/:id', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), 
     const id = parseInt(req.params.id, 10);
     const nghiemThu = await capNhatNghiemThu(id, req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'SUA', 'NghiemThu', id, undefined, JSON.stringify(req.body), ip);
+    await ghiNhatKy(req.user?.id, 'SUA', 'NghiemThu', id, undefined,
+      `Sửa biên bản nghiệm thu #${id}`, ip);
     res.json({ success: true, message: 'Cập nhật nghiệm thu thành công', data: nghiemThu });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật nghiệm thu';
@@ -90,7 +92,8 @@ router.put('/xac-nhan/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan
     const loai = (req.query.loai as string) === 'chua' ? 'chua' : 'da';
     const dh = await xacNhanNghiemThu(idDonHang, loai);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang, undefined, `Xác nhận nghiệm thu loại: ${loai}`, ip);
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang, undefined,
+      `Xác nhận nghiệm thu đơn #${idDonHang} - ${loai === 'chua' ? 'chưa đạt' : 'đạt'}`, ip);
     res.json({ success: true, message: 'Xác nhận nghiệm thu thành công', data: dh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận nghiệm thu';
@@ -128,7 +131,8 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
     }
 
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'UPLOAD', 'NghiemThu', idDonHang, undefined, `Upload file: ${req.file.filename}`, ip);
+    await ghiNhatKy(req.user?.id, 'UPLOAD', 'NghiemThu', idDonHang, undefined,
+      `Upload biên bản nghiệm thu đơn #${idDonHang}, file: ${req.file.filename}`, ip);
 
     res.json({ success: true, message: 'Tải file thành công', data: { bienBanFile: fileUrl } });
   } catch (error) {
@@ -145,7 +149,8 @@ router.post('/xac-nhan-upload/:idDonHang', authMiddleware, requireRole('admin', 
 
     const dh = await xacNhanNghiemThu(idDonHang, 'da', fileUrl);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang, undefined, `Xác nhận + upload file: ${req.file?.filename || 'không có file'}`, ip);
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang, undefined,
+      `Xác nhận nghiệm thu + upload file "${req.file?.filename || 'không có file'}" cho đơn #${idDonHang}`, ip);
 
     res.json({
       success: true,
@@ -164,7 +169,8 @@ router.delete('/:id', authMiddleware, requireRole('admin', 'ke_toan'), async (re
     const id = parseInt(req.params.id, 10);
     await xoaNghiemThu(id);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XOA', 'NghiemThu', id, undefined, undefined, ip);
+    await ghiNhatKy(req.user?.id, 'XOA', 'NghiemThu', id, undefined,
+      `Xóa biên bản nghiệm thu #${id}`, ip);
     res.json({ success: true, message: 'Xóa biên bản nghiệm thu thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xóa biên bản nghiệm thu';

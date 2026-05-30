@@ -57,6 +57,5 @@ export async function execute<T>(
   return { recordset: result.recordset as T[], rowsAffected: result.rowsAffected };
 }
 
-/** Luôn trả về giờ Việt Nam (UTC+7), bất kể múi giờ server SQL. */
-export const vnNow = (): string =>
-  "DATEADD(HOUR, 7, GETUTCDATE())";
+/** Luôn trả về giờ Việt Nam */
+export const vnNow = (): string => "GETDATE()";

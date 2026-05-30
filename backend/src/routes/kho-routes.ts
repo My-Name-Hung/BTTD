@@ -130,7 +130,8 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('kho
     });
 
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined, 'Kho xác nhận sản xuất xong, chuyển sang chờ giao', ip);
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined,
+      `Kho xác nhận sản xuất xong, chuyển đơn #${idDonHang} sang chờ giao`, ip);
 
     res.json({ success: true, message: 'Xác nhận sản xuất xong thành công', data: updatedDonHang });
   } catch (error) {
@@ -183,7 +184,8 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('kho'), asyn
     });
 
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined, `Kho xác nhận giao thành công (KL: ${khoiLuongThucTe || 0})`, ip);
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined,
+      `Kho xác nhận giao thành công đơn #${idDonHang}, KL thực tế: ${khoiLuongThucTe || 0}m³`, ip);
 
     res.json({ success: true, message: 'Xác nhận giao hàng thành công', data: updatedDonHang });
   } catch (error) {

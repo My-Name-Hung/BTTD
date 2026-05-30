@@ -10,6 +10,7 @@ import {
   doiMatKhauUser,
   batBuocDangXuat,
   layDanhSachNguoiDungFilter,
+  ghiNhatKy,
 } from '../services/access-history-service';
 
 const router = Router();
@@ -65,6 +66,9 @@ router.post('/sessions/:id/logout', authMiddleware, requireRole('admin'), async 
 
     // Lấy thông tin phiên để biết userId
     const detail = await layChiTietSession(id);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user!.id, 'DANG_XUAT', 'LoginSession', id, undefined,
+      `Buộc đăng xuất phiên #${id}`, ip);
     if (detail?.session?.idNguoiDung) {
       const io = getSocketIO();
       if (io) {
@@ -91,6 +95,9 @@ router.post('/users/:id/reset-password', authMiddleware, requireRole('admin'), a
     }
     const hash = await bcrypt.hash(matKhauMoi, 10);
     await doiMatKhauUser(id, hash);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user!.id, 'SUA', 'NguoiDung', id, undefined,
+      `Đặt lại mật khẩu cho user #${id}`, ip);
 
     // Bắn socket để user bị đổi mật khẩu phải đăng nhập lại
     const io = getSocketIO();
@@ -113,6 +120,9 @@ router.post('/users/:id/banned-ip', authMiddleware, requireRole('admin'), async 
     const id = parseInt(req.params.id, 10);
     const { bannedIp } = req.body as { bannedIp?: string | null };
     await capNhatBannedIp(id, bannedIp ?? null);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user!.id, 'SUA', 'NguoiDung', id, undefined,
+      bannedIp ? `Cấm IP "${bannedIp}" cho user #${id}` : `Bỏ cấm IP cho user #${id}`, ip);
 
     // Bắn socket buộc user logout + cấm IP
     const io = getSocketIO();

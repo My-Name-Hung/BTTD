@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { ApiResponse } from '../models';
 import { layTrangThaiBaoTri, batBaoTri, tatBaoTri } from '../services/cau-hinh-service';
+import { ghiNhatKy } from '../services/access-history-service';
 import { getSocketIO } from '../socket';
 
 const router = Router();
@@ -36,6 +37,9 @@ router.post(
       }
 
       await batBaoTri({ noiDung, thoiGianBatDau, thoiGianKetThuc });
+      const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+      await ghiNhatKy(req.user!.id, 'BAT_BAO_TRI', 'CauHinh', undefined, undefined,
+        `Bật bảo trì: "${noiDung}"`, ip);
 
       // Gửi thông báo Socket.IO đến ke_toan và dieu_phoi
       const io = getSocketIO();
@@ -68,9 +72,12 @@ router.post(
   '/tat-bao-tri',
   authMiddleware,
   requireRole('admin'),
-  async (_req: AuthRequest, res: Response<ApiResponse>) => {
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
       await tatBaoTri();
+      const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+      await ghiNhatKy(req.user!.id, 'TAT_BAO_TRI', 'CauHinh', undefined, undefined,
+        `Tắt chế độ bảo trì, hệ thống hoạt động trở lại`, ip);
 
       // Gửi thông báo hệ thống đã hoạt động lại
       const io = getSocketIO();

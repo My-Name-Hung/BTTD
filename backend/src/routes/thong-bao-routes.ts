@@ -8,6 +8,7 @@ import {
   xoaThongBao,
   resetThongBaoQuaHan,
 } from '../services/thong-bao-service';
+import { ghiNhatKy } from '../services/access-history-service';
 import { ApiResponse } from '../models';
 
 const router = Router();
@@ -63,6 +64,9 @@ router.patch('/:id/read', authMiddleware, async (req: AuthRequest, res: Response
       return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
     }
     await danhDauDaDoc(id);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user?.id, 'DOC', 'ThongBao', id, undefined,
+      `Đánh dấu đã đọc thông báo #${id}`, ip);
     res.json({ success: true, message: 'Đã đánh dấu đã đọc' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi';
@@ -78,6 +82,9 @@ router.patch('/read-all', authMiddleware, async (req: AuthRequest, res: Response
       return res.status(403).json({ success: false, message: 'Không xác định vai trò' });
     }
     await danhDauTatCaDaDoc(vaiTro);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user?.id, 'DOC', 'ThongBao', undefined, undefined,
+      `Đánh dấu đã đọc tất cả thông báo`, ip);
     res.json({ success: true, message: 'Đã đánh dấu tất cả đã đọc' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi';
@@ -93,6 +100,9 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response<Api
       return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
     }
     await xoaThongBao(id);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user?.id, 'XOA', 'ThongBao', id, undefined,
+      `Xóa thông báo #${id}`, ip);
     res.json({ success: true, message: 'Xóa thông báo thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi';
