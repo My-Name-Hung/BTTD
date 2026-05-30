@@ -28,12 +28,17 @@ router.get('/sessions', authMiddleware, requireRole('admin'), async (req: AuthRe
   try {
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 20;
-    const data = await layLichSuTruyCap(page, limit, {
+    const result = await layLichSuTruyCap(page, limit, {
       idNguoiDung: req.query.idNguoiDung ? parseInt(req.query.idNguoiDung as string, 10) : undefined,
       tuNgay: req.query.tuNgay as string | undefined,
       denNgay: req.query.denNgay as string | undefined,
     });
-    res.json({ success: true, message: 'OK', data });
+    res.json({
+      success: true,
+      message: 'OK',
+      data: result.data,
+      pagination: { page, limit, total: result.total, totalPages: Math.ceil(result.total / limit) },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Lỗi' });
   }
