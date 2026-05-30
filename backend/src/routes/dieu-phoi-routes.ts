@@ -8,6 +8,7 @@ import {
   capNhatLichSanXuat,
   xacNhanDaGiao,
 } from '../services/dieu-phoi-service';
+import { ghiNhatKy } from '../services/access-history-service';
 
 const router = Router();
 
@@ -36,6 +37,8 @@ router.post('/', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: 
       return;
     }
     const lich = await taoLichSanXuat(req.body, req.user.id);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user.id, 'TAO', 'LichSanXuat', lich.id, undefined, JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo lịch sản xuất thành công', data: lich });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo lịch sản xuất';
@@ -58,6 +61,8 @@ router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req
   try {
     const id = parseInt(req.params.id, 10);
     const lich = await capNhatLichSanXuat(id, req.body);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user?.id, 'SUA', 'LichSanXuat', id, undefined, JSON.stringify(req.body), ip);
     res.json({ success: true, message: 'Cập nhật lịch sản xuất thành công', data: lich });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật lịch sản xuất';
@@ -70,6 +75,8 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('admin', 'di
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const { khoiLuongThucTe } = req.body;
     const dh = await xacNhanDaGiao(idDonHang, khoiLuongThucTe);
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined, `Xác nhận giao hàng thành công (KL: ${khoiLuongThucTe || 0})`, ip);
     res.json({ success: true, message: 'Xác nhận giao hàng thành công', data: dh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận giao hàng';

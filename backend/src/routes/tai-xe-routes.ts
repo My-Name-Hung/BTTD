@@ -4,6 +4,7 @@ import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { ApiResponse } from "../models";
 import { xacNhanGiaoThanhCong } from "../services/don-hang-service";
 import { guiThongBao } from "../services/thong-bao-service";
+import { ghiNhatKy } from "../services/access-history-service";
 
 const router = Router();
 
@@ -177,6 +178,8 @@ router.put(
           `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = GETDATE() WHERE id = @id`,
           { id: idDonHang },
         );
+        const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+        await ghiNhatKy(req.user.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined, 'Tài xế xác nhận đang giao', ip);
         const updated = (
           await query<any>(`SELECT * FROM DonHang WHERE id = @id`, {
             id: idDonHang,
@@ -194,6 +197,8 @@ router.put(
           return;
         }
         const updated = await xacNhanGiaoThanhCong(idDonHang, khoiLuongThucTe);
+        const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+        await ghiNhatKy(req.user.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined, `Tài xế xác nhận đã giao (KL: ${khoiLuongThucTe || 0})`, ip);
         guiThongBao("DELIVERY_COMPLETED", {
           id: idDonHang,
           maDonHang: updated.maDonHang,

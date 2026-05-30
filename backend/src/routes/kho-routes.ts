@@ -4,6 +4,7 @@ import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { ApiResponse, ApiResponseWithPagination, LichSanXuat, DonHang } from '../models';
 import { xacNhanGiaoThanhCong, layDonHangTheoId } from '../services/don-hang-service';
 import { guiThongBao } from '../services/thong-bao-service';
+import { ghiNhatKy } from '../services/access-history-service';
 
 const router = Router();
 
@@ -128,6 +129,9 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('kho
       trangThaiLabel: 'Đang chờ giao',
     });
 
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined, 'Kho xác nhận sản xuất xong, chuyển sang chờ giao', ip);
+
     res.json({ success: true, message: 'Xác nhận sản xuất xong thành công', data: updatedDonHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận sản xuất xong';
@@ -177,6 +181,9 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('kho'), asyn
       maDonHang: updatedDonHang.maDonHang,
       khoiLuong: khoiLuongThucTe || updatedDonHang.khoiLuongThucTe || 0,
     });
+
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined, `Kho xác nhận giao thành công (KL: ${khoiLuongThucTe || 0})`, ip);
 
     res.json({ success: true, message: 'Xác nhận giao hàng thành công', data: updatedDonHang });
   } catch (error) {
