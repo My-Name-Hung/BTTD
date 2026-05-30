@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { DonHang, ApiResponseWithPagination } from '../models';
 import { v4 as uuidv4 } from 'uuid';
 import { guiThongBao } from './thong-bao-service';
@@ -156,7 +156,7 @@ export async function suaDonHang(id: number, data: Partial<DonHang>): Promise<Do
       tenMacBeTong = @tenMacBeTong, khoiLuongDat = @khoiLuongDat, donGia = @donGia,
       chiPhiPhatSinh = @chiPhiPhatSinh, buVanChuyen = @buVanChuyen,
       thanhTien = @thanhTien, conLai = @conLai, thoiGianGiaoDuKien = @thoiGianGiaoDuKien,
-      ghiChu = @ghiChu, ngayCapNhat = GETDATE()
+      ghiChu = @ghiChu, ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     {
       id,
@@ -185,9 +185,9 @@ export async function duyetDonHang(id: number, nguoiDuyetId: number): Promise<Do
   await query(
     `UPDATE DonHang SET
       trangThaiDon = N'da_duyet',
-      ngayDuyet = GETDATE(),
+      ngayDuyet = ${vnNow()},
       nguoiDuyetId = @nguoiDuyetId,
-      ngayCapNhat = GETDATE()
+      ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     { id, nguoiDuyetId }
   );
@@ -212,7 +212,7 @@ export async function tuChoiDonHang(id: number, lyDo: string): Promise<DonHang> 
     `UPDATE DonHang SET
       trangThaiDon = N'tu_choi',
       lyDoTuChoi = @lyDo,
-      ngayCapNhat = GETDATE()
+      ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     { id, lyDo }
   );
@@ -230,7 +230,7 @@ export async function capNhatTrangThaiDon(
   ghiChu?: string
 ): Promise<DonHang> {
   await query(
-    `UPDATE DonHang SET trangThaiDon = @trangThaiDon, ghiChu = @ghiChu, ngayCapNhat = GETDATE() WHERE id = @id`,
+    `UPDATE DonHang SET trangThaiDon = @trangThaiDon, ghiChu = @ghiChu, ngayCapNhat = ${vnNow()} WHERE id = @id`,
     { id, trangThaiDon, ghiChu: ghiChu || null }
   );
 
@@ -269,8 +269,8 @@ export async function xacNhanGiaoThanhCong(idDonHang: number, khoiLuongThucTe?: 
     `UPDATE DonHang SET
       trangThaiDon = N'da_giao',
       khoiLuongThucTe = @khoiLuongThucTe,
-      ngayGiao = GETDATE(),
-      ngayCapNhat = GETDATE()
+      ngayGiao = ${vnNow()},
+      ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     { id: idDonHang, khoiLuongThucTe: kltt }
   );

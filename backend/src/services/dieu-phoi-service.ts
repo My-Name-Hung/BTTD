@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { LichSanXuat, DonHang } from '../models';
 import { guiThongBao } from './thong-bao-service';
 
@@ -16,7 +16,7 @@ export async function taoLichSanXuat(
   }
 
   await query(
-    `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = GETDATE() WHERE id = @id`,
+    `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
     { id: data.idDonHang }
   );
 
@@ -139,7 +139,7 @@ export async function capNhatLichSanXuat(
       thoiGianDenCangDat = @thoiGianDenCangDat,
       thoiGianBatDauDo = @thoiGianBatDauDo, thoiGianKetThucDo = @thoiGianKetThucDo,
       trangThai = @trangThai, ghiChu = @ghiChu, driveLink = @driveLink,
-      ngayCapNhat = GETDATE()
+      ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     {
       id,
@@ -165,7 +165,7 @@ export async function capNhatLichSanXuat(
 
   if (data.trangThai === 'da_xong') {
     await query(
-      `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = GETDATE() WHERE id = @id`,
+      `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
       { id: updated.idDonHang }
     );
 
@@ -195,8 +195,8 @@ export async function xacNhanDaGiao(idDonHang: number): Promise<DonHang> {
   await query(
     `UPDATE DonHang SET
       trangThaiDon = N'da_giao',
-      ngayGiao = GETDATE(),
-      ngayCapNhat = GETDATE()
+      ngayGiao = ${vnNow()},
+      ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     { id: idDonHang }
   );

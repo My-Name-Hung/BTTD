@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { CongNoKhachHang, CongNoKhachHangGroup } from '../models';
 
 export async function layCongNoKhachHangGrouped(
@@ -82,7 +82,7 @@ export async function suaCongNoKhachHang(
   if (data.nhom !== undefined) { sets.push('nhom = @nhom'); params.nhom = data.nhom; }
 
   if (sets.length > 0) {
-    sets.push('ngayCapNhat = GETDATE()');
+    sets.push(`ngayCapNhat = ${vnNow()}`);
     await query(
       `UPDATE CongNoKhachHang SET ${sets.join(', ')} WHERE id = @id`,
       params,

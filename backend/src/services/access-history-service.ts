@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 
 export interface LoginSession {
   id: number;
@@ -36,7 +36,7 @@ export async function ghiDangNhap(
 ): Promise<number> {
   // Đánh dấu tất cả phiên cũ của user là dang_xuat
   await query(
-    `UPDATE LoginSession SET thaoTac = N'dang_xuat', ngayKetThuc = GETDATE()
+    `UPDATE LoginSession SET thaoTac = N'dang_xuat', ngayKetThuc = ${vnNow()}
      WHERE idNguoiDung = @idNguoiDung AND thaoTac = N'dang_nhap'`,
     { idNguoiDung },
   );
@@ -54,7 +54,7 @@ export async function ghiDangNhap(
 // Ghi phiên đăng xuất
 export async function ghiDangXuat(sessionId: number): Promise<void> {
   await query(
-    `UPDATE LoginSession SET thaoTac = N'dang_xuat', ngayKetThuc = GETDATE() WHERE id = @id`,
+    `UPDATE LoginSession SET thaoTac = N'dang_xuat', ngayKetThuc = ${vnNow()} WHERE id = @id`,
     { id: sessionId },
   );
 }
@@ -169,7 +169,7 @@ export async function laySessionTheoToken(tokenHash: string): Promise<LoginSessi
 // Cấm/bỏ cấm IP user
 export async function capNhatBannedIp(idNguoiDung: number, bannedIp: string | null): Promise<void> {
   await query(
-    `UPDATE NguoiDung SET bannedIp = @bannedIp, ngayCapNhat = GETDATE() WHERE id = @id`,
+    `UPDATE NguoiDung SET bannedIp = @bannedIp, ngayCapNhat = ${vnNow()} WHERE id = @id`,
     { id: idNguoiDung, bannedIp: bannedIp ?? null },
   );
 }
@@ -181,7 +181,7 @@ export async function doiMatKhauUser(
   ipAddress?: string,
 ): Promise<void> {
   await query(
-    `UPDATE NguoiDung SET matKhau = @matKhau, ngayCapNhat = GETDATE() WHERE id = @id`,
+    `UPDATE NguoiDung SET matKhau = @matKhau, ngayCapNhat = ${vnNow()} WHERE id = @id`,
     { id: idNguoiDung, matKhau: matKhauMoi },
   );
 }
@@ -189,7 +189,7 @@ export async function doiMatKhauUser(
 // Buộc đăng xuất session
 export async function batBuocDangXuat(sessionId: number): Promise<void> {
   await query(
-    `UPDATE LoginSession SET thaoTac = N'dang_xuat', ngayKetThuc = GETDATE() WHERE id = @id`,
+    `UPDATE LoginSession SET thaoTac = N'dang_xuat', ngayKetThuc = ${vnNow()} WHERE id = @id`,
     { id: sessionId },
   );
 }

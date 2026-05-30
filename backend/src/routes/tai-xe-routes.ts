@@ -1,5 +1,5 @@
 import { Response, Router } from "express";
-import { query } from "../config/database";
+import { query, vnNow } from "../config/database";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { ApiResponse } from "../models";
 import { xacNhanGiaoThanhCong } from "../services/don-hang-service";
@@ -175,7 +175,7 @@ router.put(
           return;
         }
         await query(
-          `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = GETDATE() WHERE id = @id`,
+          `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
           { id: idDonHang },
         );
         const ip = req.ip || req.headers['x-forwarded-for'] as string || '';

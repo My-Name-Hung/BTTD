@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { KhachHang, MacBeTong, TramTron, Xe, ApiResponseWithPagination } from '../models';
 
 export async function layTatCaKhachHang(
@@ -56,7 +56,7 @@ export async function suaKhachHang(id: number, data: Partial<KhachHang>): Promis
   await query(
     `UPDATE KhachHang SET
       tenKhachHang = @tenKhachHang, diaChi = @diaChi, soDienThoai = @soDienThoai,
-      email = @email, ghiChu = @ghiChu, ngayCapNhat = GETDATE()
+      email = @email, ghiChu = @ghiChu, ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     {
       id,

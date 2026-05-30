@@ -12,12 +12,10 @@ import { Loading } from '../components/Common';
 import styles from './AccessHistoryDetailPage.module.css';
 
 function toVN(d: Date | string): Date {
-  const s = typeof d === 'string' ? d : d.toISOString();
-  // Backend SQL Server chạy múi giờ VN (UTC+7), không có Z.
-  // Nếu có Z → strip đi rồi treat như giờ VN.
-  // Đảm bảo luôn parse đúng giờ VN.
-  const normalized = s.endsWith('Z') ? s.slice(0, -1) : s;
-  return new Date(normalized + ' +07:00');
+  // d.toISOString() trả về UTC. SQL Server lưu giờ VN nên cần trừ 7 tiếng.
+  const date = typeof d === 'string' ? new Date(d) : d;
+  const utc = date.getTime() + date.getTimezoneOffset() * 60000;
+  return new Date(utc + 7 * 60 * 60000);
 }
 
 function formatDate(d: Date | string): string {

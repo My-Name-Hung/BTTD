@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { ApiResponse, ApiResponseWithPagination, LichSanXuat, DonHang } from '../models';
 import { xacNhanGiaoThanhCong, layDonHangTheoId } from '../services/don-hang-service';
@@ -116,7 +116,7 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('kho
 
     // Cập nhật trạng thái sang dang_cho_giao (đang chờ giao hàng)
     await query(
-      `UPDATE DonHang SET trangThaiDon = N'dang_cho_giao', ngayCapNhat = GETDATE() WHERE id = @id`,
+      `UPDATE DonHang SET trangThaiDon = N'dang_cho_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
       { id: idDonHang }
     );
 

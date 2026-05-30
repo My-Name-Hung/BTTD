@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { ThanhToan, CongNo, DonHang, ApiResponseWithPagination } from '../models';
 import { guiThongBao } from './thong-bao-service';
 
@@ -21,7 +21,7 @@ export async function taoThanhToan(
 
   const result = await query<ThanhToan>(
     `INSERT INTO ThanhToan (idDonHang, soTien, hinhThuc, ngayThanhToan, nguoiNhan, ghiChu, nguoiTaoId)
-     VALUES (@idDonHang, @soTien, @hinhThuc, GETDATE(), @nguoiNhan, @ghiChu, @nguoiTaoId);
+     VALUES (@idDonHang, @soTien, @hinhThuc, ${vnNow()}, @nguoiNhan, @ghiChu, @nguoiTaoId);
      SELECT * FROM ThanhToan WHERE id = SCOPE_IDENTITY();`,
     {
       idDonHang: data.idDonHang,
@@ -47,7 +47,7 @@ export async function taoThanhToan(
     `UPDATE DonHang SET
       daThanhToan = @daThanhToan, conLai = @conLai,
       trangThaiDon = @trangThaiDon, trangThaiHoanThanh = @trangThaiHoanThanh,
-      ngayCapNhat = GETDATE()
+      ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     {
       id: data.idDonHang,
@@ -62,7 +62,7 @@ export async function taoThanhToan(
     await query(
       `IF EXISTS (SELECT * FROM CongNo WHERE idDonHang = @idDonHang)
        BEGIN
-         UPDATE CongNo SET daThanhToan = @daThanhToan, conLai = @conLai, ngayCapNhat = GETDATE() WHERE idDonHang = @idDonHang;
+         UPDATE CongNo SET daThanhToan = @daThanhToan, conLai = @conLai, ngayCapNhat = ${vnNow()} WHERE idDonHang = @idDonHang;
        END
        ELSE
        BEGIN
@@ -96,7 +96,7 @@ export async function taoThanhToan(
 
     // Cập nhật trạng thái thành hoàn thành
     await query(
-      `UPDATE DonHang SET trangThaiDon = N'da_hoan_thanh', trangThaiHoanThanh = N'hoan_thanh', ngayCapNhat = GETDATE() WHERE id = @id`,
+      `UPDATE DonHang SET trangThaiDon = N'da_hoan_thanh', trangThaiHoanThanh = N'hoan_thanh', ngayCapNhat = ${vnNow()} WHERE id = @id`,
       { id: data.idDonHang }
     );
   }
@@ -181,7 +181,7 @@ export async function taoCongNo(
   const result = await query<CongNo>(
     `IF EXISTS (SELECT * FROM CongNo WHERE idDonHang = @idDonHang)
      BEGIN
-       UPDATE CongNo SET tongTien = @tongTien, conLai = @conLai, ngayBatDau = @ngayBatDau, hanThanhToan = @hanThanhToan, ngayCapNhat = GETDATE()
+       UPDATE CongNo SET tongTien = @tongTien, conLai = @conLai, ngayBatDau = @ngayBatDau, hanThanhToan = @hanThanhToan, ngayCapNhat = ${vnNow()}
        WHERE idDonHang = @idDonHang;
        SELECT * FROM CongNo WHERE idDonHang = @idDonHang;
      END
@@ -249,7 +249,7 @@ export async function suaCongNo(
          trangThai = @trangThai,
          ghiChu = @ghiChu,
          nhom = @nhom,
-         ngayCapNhat = GETDATE()
+         ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     {
       id,
@@ -266,7 +266,7 @@ export async function suaCongNo(
 
   // Cập nhật lại đơn hàng tương ứng
   await query(
-    `UPDATE DonHang SET daThanhToan = @daThanhToan, conLai = @conLai, ngayCapNhat = GETDATE() WHERE id = @idDonHang`,
+    `UPDATE DonHang SET daThanhToan = @daThanhToan, conLai = @conLai, ngayCapNhat = ${vnNow()} WHERE id = @idDonHang`,
     { daThanhToan, conLai, idDonHang: existing.idDonHang }
   );
 

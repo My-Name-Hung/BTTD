@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { ThongBao, ThongBaoPayload, NotificationType, NOTIFICATION_MESSAGES } from '../models/thong-bao-model';
 import { getSocketIO } from '../socket';
 
@@ -9,7 +9,7 @@ export async function taoThongBao(payload: ThongBaoPayload): Promise<ThongBao> {
   const result = await query<ThongBao>(
     `INSERT INTO ThongBao (tieuDe, noiDung, role, loai, idThamChieu, duongDan, isRead, ngayTao)
      OUTPUT INSERTED.*
-     VALUES (@tieuDe, @noiDung, @role, @loai, @idThamChieu, @duongDan, 0, GETDATE())`,
+     VALUES (@tieuDe, @noiDung, @role, @loai, @idThamChieu, @duongDan, 0, ${vnNow()})`,
     {
       tieuDe: payload.tieuDe,
       noiDung: payload.noiDung,
@@ -178,13 +178,13 @@ export async function xoaThongBao(id: number): Promise<void> {
 export async function resetThongBaoQuaHan(): Promise<number> {
   // Đếm trước
   const countResult = await query<{ deleted: number }[]>(
-    `SELECT COUNT(*) as deleted FROM ThongBao WHERE CAST(ngayTao AS DATE) < CAST(GETDATE() AS DATE)`,
+    `SELECT COUNT(*) as deleted FROM ThongBao WHERE CAST(ngayTao AS DATE) < CAST(${vnNow()} AS DATE)`,
     {}
   );
   const count = countResult[0]?.deleted ?? 0;
   // Xóa
   await query(
-    `DELETE FROM ThongBao WHERE CAST(ngayTao AS DATE) < CAST(GETDATE() AS DATE)`,
+    `DELETE FROM ThongBao WHERE CAST(ngayTao AS DATE) < CAST(${vnNow()} AS DATE)`,
     {}
   );
   return count;

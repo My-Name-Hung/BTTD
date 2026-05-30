@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { query, vnNow } from '../config/database';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { ApiResponse } from '../models';
 import {
@@ -116,12 +117,12 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
     if (existing.length === 0) {
       await query(
         `INSERT INTO NghiemThu (idDonHang, chatLuong, bienBanFile, ngayTao)
-         VALUES (@idDonHang, N'dat', @bienBanFile, GETDATE())`,
+         VALUES (@idDonHang, N'dat', @bienBanFile, ${vnNow()})`,
         { idDonHang, bienBanFile: fileUrl }
       );
     } else {
       await query(
-        `UPDATE NghiemThu SET bienBanFile = @bienBanFile, ngayCapNhat = GETDATE() WHERE idDonHang = @idDonHang`,
+        `UPDATE NghiemThu SET bienBanFile = @bienBanFile, ngayCapNhat = ${vnNow()} WHERE idDonHang = @idDonHang`,
         { idDonHang, bienBanFile: fileUrl }
       );
     }

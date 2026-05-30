@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { Response, Router } from "express";
 import { body } from "express-validator";
+import { query, vnNow } from "../config/database";
 import { query } from "../config/database";
 import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { ApiResponse } from "../models";
@@ -139,11 +140,11 @@ router.put(
         id,
       };
 
-      let sql = `UPDATE NguoiDung SET hoTen = @hoTen, email = @email, soDienThoai = @soDienThoai, vaiTro = @vaiTro, trangThai = @trangThai, ngayCapNhat = GETDATE() WHERE id = @id`;
+      let sql = `UPDATE NguoiDung SET hoTen = @hoTen, email = @email, soDienThoai = @soDienThoai, vaiTro = @vaiTro, trangThai = @trangThai, ngayCapNhat = ${vnNow()} WHERE id = @id`;
 
       if (matKhauMoi) {
         const hashed = await bcrypt.hash(matKhauMoi, 10);
-        sql = `UPDATE NguoiDung SET matKhau = @matKhau, hoTen = @hoTen, email = @email, soDienThoai = @soDienThoai, vaiTro = @vaiTro, trangThai = @trangThai, ngayCapNhat = GETDATE() WHERE id = @id`;
+        sql = `UPDATE NguoiDung SET matKhau = @matKhau, hoTen = @hoTen, email = @email, soDienThoai = @soDienThoai, vaiTro = @vaiTro, trangThai = @trangThai, ngayCapNhat = ${vnNow()} WHERE id = @id`;
         params.matKhau = hashed;
       }
 

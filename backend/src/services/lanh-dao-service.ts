@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { ApiResponseWithPagination, DonHang, CongNo, ThongKeDashboard, DoanhThuTheoThang, DonHangTheoTrangThai } from '../models';
 
 // ============================================================
@@ -209,8 +209,8 @@ export async function layTatCaCongNoLanhDao(): Promise<CongNoTongHop[]> {
        CONVERT(varchar, cn.hanThanhToan, 103) as hanThanhToan,
        cn.trangThai,
        CASE
-         WHEN cn.trangThai = N'qua_han' THEN DATEDIFF(DAY, cn.hanThanhToan, GETDATE())
-         WHEN cn.hanThanhToan < GETDATE() AND cn.trangThai <> N'da_thanh_toan' THEN DATEDIFF(DAY, cn.hanThanhToan, GETDATE())
+         WHEN cn.trangThai = N'qua_han' THEN DATEDIFF(DAY, cn.hanThanhToan, GETUTCDATE())
+         WHEN cn.hanThanhToan < GETUTCDATE() AND cn.trangThai <> N'da_thanh_toan' THEN DATEDIFF(DAY, cn.hanThanhToan, GETUTCDATE())
          ELSE 0
        END as soNgayQuaHan,
        cn.ghiChu,
@@ -263,11 +263,11 @@ export async function layDanhSachCanhBao(): Promise<CanhBaoDonHang[]> {
        dh.trangThaiDon,
        'don_tre' as loaiCanhBao,
        N'Đơn hàng quá thời gian giao dự kiến ' +
-         CAST(DATEDIFF(DAY, dh.thoiGianGiaoDuKien, GETDATE()) AS NVARCHAR) +
+         CAST(DATEDIFF(DAY, dh.thoiGianGiaoDuKien, GETUTCDATE()) AS NVARCHAR) +
          N' ngày' as moTa
      FROM DonHang dh
      WHERE dh.trangThaiDon NOT IN (N'da_thanh_toan', N'tu_choi')
-       AND dh.thoiGianGiaoDuKien < DATEADD(DAY, -2, GETDATE())
+       AND dh.thoiGianGiaoDuKien < DATEADD(DAY, -2, GETUTCDATE())
      ORDER BY dh.thoiGianGiaoDuKien ASC`
   );
   results.push(...donTre);
@@ -288,7 +288,7 @@ export async function layDanhSachCanhBao(): Promise<CanhBaoDonHang[]> {
        dh.trangThaiDon,
        CASE WHEN cn.trangThai = N'qua_han' THEN 'qua_han' ELSE 'cong_no' END as loaiCanhBao,
        CASE
-         WHEN cn.trangThai = N'qua_han' THEN N'Công nợ quá hạn thanh toán ' + CAST(DATEDIFF(DAY, cn.hanThanhToan, GETDATE()) AS NVARCHAR) + N' ngày'
+         WHEN cn.trangThai = N'qua_han' THEN N'Công nợ quá hạn thanh toán ' + CAST(DATEDIFF(DAY, cn.hanThanhToan, GETUTCDATE()) AS NVARCHAR) + N' ngày'
          ELSE N'Công nợ chưa thanh toán - Còn nợ ' + FORMAT(cn.conLai, 'N0') + N' đ'
        END as moTa
      FROM DonHang dh

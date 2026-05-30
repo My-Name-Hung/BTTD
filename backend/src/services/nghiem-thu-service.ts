@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { NghiemThu, DonHang } from '../models';
 import { guiThongBao } from './thong-bao-service';
 
@@ -27,7 +27,7 @@ export async function taoNghiemThu(data: Partial<NghiemThu>): Promise<NghiemThu>
   );
 
   await query(
-    `UPDATE DonHang SET trangThaiDon = N'nghiem_thu', ngayNghiemThu = GETDATE(), ngayCapNhat = GETDATE() WHERE id = @id`,
+    `UPDATE DonHang SET trangThaiDon = N'nghiem_thu', ngayNghiemThu = ${vnNow()}, ngayCapNhat = ${vnNow()} WHERE id = @id`,
     { id: data.idDonHang }
   );
 
@@ -57,7 +57,7 @@ export async function capNhatNghiemThu(id: number, data: Partial<NghiemThu>): Pr
       chatLuong = @chatLuong, bienBanSo = @bienBanSo, ngayLapBienBan = @ngayLapBienBan,
       nguoiLap = @nguoiLap, nguoiKy = @nguoiKy, chucVu = @chucVu,
       daGuiKhach = @daGuiKhach, ngayGuiKhach = @ngayGuiKhach, ghiChu = @ghiChu,
-      ngayCapNhat = GETDATE()
+      ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     {
       id,
@@ -98,7 +98,7 @@ export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 
     );
   } else {
     await query(
-      `UPDATE NghiemThu SET chatLuong = N'dat', bienBanFile = @bienBanFile, ngayCapNhat = GETDATE() WHERE idDonHang = @idDonHang`,
+      `UPDATE NghiemThu SET chatLuong = N'dat', bienBanFile = @bienBanFile, ngayCapNhat = ${vnNow()} WHERE idDonHang = @idDonHang`,
       { idDonHang, bienBanFile: bienBanFile || existing[0].bienBanFile || null }
     );
   }
@@ -106,8 +106,8 @@ export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 
   await query(
     `UPDATE DonHang SET
       trangThaiDon = N'nghiem_thu',
-      ngayNghiemThu = GETDATE(),
-      ngayCapNhat = GETDATE()
+      ngayNghiemThu = ${vnNow()},
+      ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     { id: idDonHang }
   );

@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
-import { query } from "../config/database";
+import { query, vnNow } from "../config/database";
 
 export interface ImportResult {
   total: number;
@@ -25,7 +25,7 @@ export interface ImportHistory {
 // ===== Lịch sử import =====
 export async function xoaLichSuImportCu(): Promise<number> {
   const result = await query(
-    `DELETE FROM ImportHistory WHERE ngayTai < DATEADD(DAY, -2, GETDATE())`,
+    `DELETE FROM ImportHistory WHERE ngayTai < DATEADD(DAY, -2, ${vnNow()})`,
   );
   return result.rowsAffected[0];
 }
@@ -743,7 +743,7 @@ export async function importCongNo(
         await query(
           `UPDATE CongNo
            SET tongTien = @tongTien, daThanhToan = @daThanhToan, conLai = @conLai,
-               trangThai = @trangThai, nhom = @nhom, ngayCapNhat = GETDATE()
+               trangThai = @trangThai, nhom = @nhom, ngayCapNhat = ${vnNow()}
            WHERE idDonHang = @idDonHang`,
           { idDonHang, tongTien: tongCongNo, daThanhToan, conLai: tongCongNo, trangThai, nhom: currentNhom },
         );
@@ -757,7 +757,7 @@ export async function importCongNo(
 
       // Cập nhật đơn hàng
       await query(
-        `UPDATE DonHang SET daThanhToan = @daThanhToan, conLai = @conLai, ngayCapNhat = GETDATE() WHERE id = @id`,
+        `UPDATE DonHang SET daThanhToan = @daThanhToan, conLai = @conLai, ngayCapNhat = ${vnNow()} WHERE id = @id`,
         { daThanhToan, conLai: tongCongNo, id: idDonHang },
       );
 
@@ -910,7 +910,7 @@ export async function importCongNoKhachHang(
              target.duCuoiNo = source.duCuoiNo,
              target.duCuoiCo = source.duCuoiCo,
              target.nhom = source.nhom,
-             target.ngayCapNhat = GETDATE()
+             target.ngayCapNhat = ${vnNow()}
          WHEN NOT MATCHED THEN
            INSERT (maKhachHang, tenKhachHang, duDauNo, duDauCo, phatSinhNo, phatSinhCo, duCuoiNo, duCuoiCo, nhom)
            VALUES (source.maKhachHang, source.tenKhachHang, source.duDauNo, source.duDauCo, source.phatSinhNo, source.phatSinhCo, source.duCuoiNo, source.duCuoiCo, source.nhom);`,
@@ -938,7 +938,7 @@ export async function importCongNoKhachHang(
              duDauNo = @duDauNo, duDauCo = @duDauCo,
              phatSinhNo = @phatSinhNo, phatSinhCo = @phatSinhCo,
              duCuoiNo = @duCuoiNo, duCuoiCo = @duCuoiCo,
-             nhom = N'Tổng cộng', ngayCapNhat = GETDATE()
+             nhom = N'Tổng cộng', ngayCapNhat = ${vnNow()}
          WHEN NOT MATCHED THEN
            INSERT (maKhachHang, tenKhachHang, duDauNo, duDauCo, phatSinhNo, phatSinhCo, duCuoiNo, duCuoiCo, nhom)
            VALUES (NULL, N'Tổng cộng', @duDauNo, @duDauCo, @phatSinhNo, @phatSinhCo, @duCuoiNo, @duCuoiCo, N'Tổng cộng');`,

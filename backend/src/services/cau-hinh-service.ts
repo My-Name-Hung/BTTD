@@ -1,13 +1,13 @@
 /**
  * Service quản lý cấu hình hệ thống (key/value)
  */
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { CauHinh, MaintenanceStatus } from '../models/cau-hinh-model';
 
 const KEY_MAINTENANCE = 'dang_bao_tri';
 
 export async function layGiaTri(khoa: string): Promise<string | null> {
-  const rows = await query<{ giaTri: string }[]>(
+  const rows = await query<{ giaTri: string }>(
     `SELECT giaTri FROM CauHinh WHERE khoa = @khoa`,
     { khoa }
   );
@@ -21,7 +21,7 @@ export async function datGiaTri(khoa: string, giaTri: string): Promise<void> {
   );
   if (existing.length > 0) {
     await query(
-      `UPDATE CauHinh SET giaTri = @giaTri, ngayCapNhat = GETDATE() WHERE khoa = @khoa`,
+      `UPDATE CauHinh SET giaTri = @giaTri, ngayCapNhat = ${vnNow()} WHERE khoa = @khoa`,
       { khoa, giaTri }
     );
   } else {

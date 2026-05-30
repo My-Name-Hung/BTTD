@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 import { config } from '../config';
 import { NguoiDung, LoginRequest, LoginResponse, JwtPayload } from '../models';
 import { ghiDangNhap } from './access-history-service';
@@ -28,12 +28,12 @@ export async function dangNhap(
 
   // Kiểm tra IP bị cấm (nếu cột bannedIp tồn tại)
   try {
-    const ipRows = await query<{ id: number; bannedIp: string | null }[]>(
+    const ipRows = await query<{ id: number; bannedIp: string | null }>(
       `SELECT TOP 1 id, bannedIp FROM NguoiDung WHERE id = @id AND bannedIp IS NOT NULL`,
       { id: user.id },
     );
     if (ipRows.length > 0 && ipRows[0].bannedIp && ipAddress) {
-      const bannedList = ipRows[0].bannedIp.split(',').map((ip) => ip.trim()).filter(Boolean);
+      const bannedList = ipRows[0].bannedIp.split(',').map((ip: string) => ip.trim()).filter(Boolean);
       if (bannedList.includes(ipAddress)) {
         throw new Error(`Địa chỉ IP "${ipAddress}" đã bị cấm truy cập`);
       }
@@ -44,8 +44,8 @@ export async function dangNhap(
   }
 
   // Kiểm tra IP bị cấm
-  if (user.bannedIp && ipAddress) {
-    const bannedList = user.bannedIp.split(',').map((ip) => ip.trim()).filter(Boolean);
+  if ((user as any).bannedIp && ipAddress) {
+    const bannedList = (user as any).bannedIp.split(',').map((ip: string) => ip.trim()).filter(Boolean);
     if (bannedList.includes(ipAddress)) {
       throw new Error(`Địa chỉ IP "${ipAddress}" đã bị cấm truy cập`);
     }
@@ -71,7 +71,7 @@ export async function dangNhap(
   };
 
   const token = jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn,
+    expiresIn: config.jwt.expiresIn as jwt.SignOptions['expiresIn'],
   });
 
   // Cập nhật tokenHash cho session vừa tạo
@@ -127,7 +127,7 @@ export async function doiMatKhau(
 
   const hashedPassword = await bcrypt.hash(matKhauMoi, 10);
   await query(
-    `UPDATE NguoiDung SET matKhau = @matKhau, ngayCapNhat = GETDATE() WHERE id = @id`,
+    `UPDATE NguoiDung SET matKhau = @matKhau, ngayCapNhat = ${vnNow()} WHERE id = @id`,
     { matKhau: hashedPassword, id }
   );
 }
