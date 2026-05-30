@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiX, FiLogOut, FiKey, FiEye, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiX, FiLogOut, FiKey, FiEye, FiChevronLeft, FiChevronRight, FiShieldOff } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import {
   layLichSuTruyCap,
@@ -9,7 +9,7 @@ import {
 } from '../services/api';
 import { AccessSession } from '../types';
 import { useToast } from '../hooks';
-import { Loading, EmptyState, ConfirmModal } from '../components/Common';
+import { EmptyState } from '../components/Common';
 import styles from './AccessHistoryPage.module.css';
 
 function toVN(d: Date | string): Date {
@@ -47,6 +47,7 @@ export default function AccessHistoryPage() {
   const [banIpTarget, setBanIpTarget] = useState<AccessSession | null>(null);
   const [banIpInput, setBanIpInput] = useState('');
   const [banIpLoading, setBanIpLoading] = useState(false);
+  const [banLoadingId, setBanLoadingId] = useState<number | null>(null);
   const [loadingSessionId, setLoadingSessionId] = useState<number | null>(null);
 
   const LIMIT = 20;
@@ -103,10 +104,11 @@ export default function AccessHistoryPage() {
       loadSessions();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Lỗi', 'error');
-    } finally { setBanIpLoading(false); }
+    } finally { setBanIpLoading(false); setBanLoadingId(null); }
   };
 
   const openBanIp = (s: AccessSession) => {
+    setBanLoadingId(s.id);
     setBanIpTarget(s);
     setBanIpInput(s.ipAddress || '');
   };
@@ -147,7 +149,11 @@ export default function AccessHistoryPage() {
       {/* Table */}
       <div className={styles.card}>
         <div className={styles.tableWrap}>
-          {loading ? <Loading /> : sessions.length === 0 ? (
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+              <span className={styles.spinner} style={{ width: 24, height: 24, borderWidth: 3 }} />
+            </div>
+          ) : sessions.length === 0 ? (
             <EmptyState icon="🔐" text="Không có lịch sử truy cập" />
           ) : (
             <>
@@ -193,7 +199,11 @@ export default function AccessHistoryPage() {
                               disabled={loadingSessionId === s.id}
                               title="Buộc đăng xuất"
                             >
-                              {loadingSessionId === s.id ? <Loading /> : <FiLogOut size={14} />}
+                              {loadingSessionId === s.id ? (
+                                <span className={styles.spinner} />
+                              ) : (
+                                <FiLogOut size={14} />
+                              )}
                             </button>
                           )}
                           <button
@@ -208,7 +218,11 @@ export default function AccessHistoryPage() {
                             onClick={() => openBanIp(s)}
                             title="Cấm IP"
                           >
-                            {banIpLoading && banIpTarget?.id === s.id ? <Loading /> : null}
+                            {banLoadingId === s.id ? (
+                              <span className={styles.spinner} />
+                            ) : (
+                              <FiShieldOff size={14} />
+                            )}
                           </button>
                         </div>
                       </td>
