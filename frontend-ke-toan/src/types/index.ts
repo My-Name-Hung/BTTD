@@ -301,3 +301,32 @@ export const TRANG_THAI_DON_COLORS: Record<string, string> = {
   hoan_thanh: "#22c55e",
   tu_choi: "#ef4444",
 };
+
+export interface AccessSession {
+  id: number;
+  idNguoiDung: number;
+  tokenHash: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  thaoTac: string;
+  ngayTao: Date;
+  ngayKetThuc: Date | null;
+  hoTen: string;
+  vaiTro: string;
+}
+
+export interface AccessLogItem {
+  id: number;
+  hanhDong: string;
+  bangDuocTacDong: string | null;
+  banGhiId: number | null;
+  noiDungCu: string | null;
+  noiDungMoi: string | null;
+  ipAddress: string | null;
+  thoiGian: Date;
+}
+
+export interface AccessSessionDetail {
+  session: AccessSession;
+  logs: AccessLogItem[];
+}

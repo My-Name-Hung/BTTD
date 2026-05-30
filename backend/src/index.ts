@@ -24,6 +24,7 @@ import importRoutes from "./routes/import-routes";
 import taiXeRoutes from "./routes/tai-xe-routes";
 import kyThuatRoutes from "./routes/ky-thuat-routes";
 import congNoKhachHangRoutes from "./routes/cong-no-khach-hang-routes";
+import accessHistoryRoutes from "./routes/access-history-routes";
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -72,6 +73,7 @@ app.use("/api/ky-thuat", authMiddleware, maintenanceMiddleware, kyThuatRoutes);
 app.use("/api", authMiddleware, maintenanceMiddleware, quanLyRoutes);
 app.use("/api/import", authMiddleware, maintenanceMiddleware, importRoutes);
 app.use("/api", authMiddleware, maintenanceMiddleware, congNoKhachHangRoutes);
+app.use("/api/access-history", authMiddleware, maintenanceMiddleware, accessHistoryRoutes);
 
 // Error handler
 app.use(

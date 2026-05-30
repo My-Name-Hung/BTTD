@@ -837,3 +837,47 @@ export async function layDonHangChoNghiemThu(): Promise<DonHang[]> {
   if (!json.success) throw new Error(json.message);
   return json.data || [];
 }
+
+// ===== ACCESS HISTORY — Lịch sử truy cập =====
+export async function layDanhSachNguoiDungAccess(): Promise<{ id: number; hoTen: string; vaiTro: string }[]> {
+  return request(`/access-history/users`);
+}
+
+export async function layLichSuTruyCap(opts?: {
+  idNguoiDung?: number; tuNgay?: string; denNgay?: string; page?: number; limit?: number;
+}): Promise<ApiResponseWithPagination<AccessSession[]>> {
+  const params = new URLSearchParams();
+  if (opts?.page) params.set('page', String(opts.page));
+  if (opts?.limit) params.set('limit', String(opts.limit));
+  if (opts?.idNguoiDung) params.set('idNguoiDung', String(opts.idNguoiDung));
+  if (opts?.tuNgay) params.set('tuNgay', opts.tuNgay);
+  if (opts?.denNgay) params.set('denNgay', opts.denNgay);
+  const res = await fetch(`${BASE_URL}/access-history/sessions?${params}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json;
+}
+
+export async function layChiTietAccessSession(sessionId: number): Promise<AccessSessionDetail> {
+  return request(`/access-history/sessions/${sessionId}`);
+}
+
+export async function batBuocDangXuatSession(sessionId: number): Promise<void> {
+  return request(`/access-history/sessions/${sessionId}/logout`, { method: 'POST' });
+}
+
+export async function resetMatKhauUser(userId: number, matKhauMoi: string): Promise<void> {
+  return request(`/access-history/users/${userId}/reset-password`, {
+    method: 'POST',
+    body: JSON.stringify({ matKhauMoi }),
+  });
+}
+
+export async function capNhatBannedIp(userId: number, bannedIp: string | null): Promise<void> {
+  return request(`/access-history/users/${userId}/banned-ip`, {
+    method: 'POST',
+    body: JSON.stringify({ bannedIp }),
+  });
+}

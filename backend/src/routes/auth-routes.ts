@@ -14,7 +14,9 @@ router.post(
   ],
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
-      const result = await dangNhap(req.body);
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || '';
+      const userAgent = req.headers['user-agent'] || '';
+      const result = await dangNhap(req.body, ipAddress, userAgent);
       res.json({
         success: true,
         message: 'Đăng nhập thành công',

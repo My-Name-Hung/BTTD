@@ -1,12 +1,22 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { query } from '../config/database';
 import { config } from '../config';
 import { NguoiDung, LoginRequest, LoginResponse, JwtPayload } from '../models';
+import { ghiDangNhap } from './access-history-service';
 
-export async function dangNhap(data: LoginRequest): Promise<LoginResponse> {
-  const users = await query<NguoiDung>(
-    `SELECT * FROM NguoiDung WHERE tenDangNhap = @tenDangNhap AND trangThai = N'hoat_dong'`,
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+export async function dangNhap(
+  data: LoginRequest,
+  ipAddress?: string,
+  userAgent?: string,
+): Promise<LoginResponse> {
+  const users = await query<NguoiDung & { bannedIp: string | null }>(
+    `SELECT *, bannedIp FROM NguoiDung WHERE tenDangNhap = @tenDangNhap AND trangThai = N'hoat_dong'`,
     { tenDangNhap: data.tenDangNhap }
   );
 
@@ -15,8 +25,16 @@ export async function dangNhap(data: LoginRequest): Promise<LoginResponse> {
   }
 
   const user = users[0];
-  const isValidPassword = await bcrypt.compare(data.matKhau, user.matKhau);
 
+  // Kiểm tra IP bị cấm
+  if (user.bannedIp && ipAddress) {
+    const bannedList = user.bannedIp.split(',').map((ip) => ip.trim()).filter(Boolean);
+    if (bannedList.includes(ipAddress)) {
+      throw new Error(`Địa chỉ IP "${ipAddress}" đã bị cấm truy cập`);
+    }
+  }
+
+  const isValidPassword = await bcrypt.compare(data.matKhau, user.matKhau);
   if (!isValidPassword) {
     throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
   }
@@ -32,11 +50,15 @@ export async function dangNhap(data: LoginRequest): Promise<LoginResponse> {
     expiresIn: config.jwt.expiresIn,
   });
 
-  const { matKhau: _, ...userWithoutPassword } = user;
+  // Ghi session đăng nhập
+  await ghiDangNhap(user.id, hashToken(token), ipAddress || '', userAgent || '');
+
+  const { matKhau: _, bannedIp: __, ...userWithoutPassword } = user as NguoiDung & { bannedIp: string | null };
+  void __;
 
   return {
     token,
-    user: userWithoutPassword,
+    user: userWithoutPassword as Omit<NguoiDung, 'matKhau'>,
   };
 }
 

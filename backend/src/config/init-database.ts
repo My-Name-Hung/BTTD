@@ -74,6 +74,62 @@ async function initDatabase(): Promise<void> {
       `);
     } else {
       console.log("  ✅ Bảng NguoiDung đã tồn tại");
+      // Migration: thêm cột bannedIp nếu chưa có
+      const colBan = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('NguoiDung') AND name = 'bannedIp'`,
+      );
+      if (colBan.recordset.length === 0) {
+        await db.query(`ALTER TABLE NguoiDung ADD bannedIp NVARCHAR(500) NULL`);
+        console.log("  + Cột bannedIp đã thêm vào NguoiDung");
+      }
+    }
+
+    // Tạo bảng LoginSession (lịch sử đăng nhập)
+    const lsExists = await db.query<{ name: string }[]>(
+      `SELECT name FROM sys.tables WHERE name = 'LoginSession'`,
+    );
+    if (lsExists.recordset.length === 0) {
+      console.log("  ➕ Tạo bảng LoginSession...");
+      await db.query(`
+        CREATE TABLE LoginSession (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          idNguoiDung INT NOT NULL,
+          tokenHash NVARCHAR(255),
+          ipAddress NVARCHAR(45),
+          userAgent NVARCHAR(500),
+          thaoTac NVARCHAR(20) NOT NULL,
+          ngayTao DATETIME DEFAULT GETDATE(),
+          ngayKetThuc DATETIME,
+          FOREIGN KEY (idNguoiDung) REFERENCES NguoiDung(id)
+        )
+      `);
+      console.log("  ✅ Bảng LoginSession đã tạo");
+    } else {
+      console.log("  ✅ Bảng LoginSession đã tồn tại");
+    }
+
+    // Tạo bảng NhatKyHeThong (log thao tác)
+    const nkExists = await db.query<{ name: string }[]>(
+      `SELECT name FROM sys.tables WHERE name = 'NhatKyHeThong'`,
+    );
+    if (nkExists.recordset.length === 0) {
+      console.log("  ➕ Tạo bảng NhatKyHeThong...");
+      await db.query(`
+        CREATE TABLE NhatKyHeThong (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          idNguoiDung INT,
+          hanhDong NVARCHAR(100) NOT NULL,
+          bangDuocTacDong NVARCHAR(100),
+          banGhiId INT,
+          noiDungCu NVARCHAR(MAX),
+          noiDungMoi NVARCHAR(MAX),
+          ipAddress NVARCHAR(45),
+          thoiGian DATETIME DEFAULT GETDATE()
+        )
+      `);
+      console.log("  ✅ Bảng NhatKyHeThong đã tạo");
+    } else {
+      console.log("  ✅ Bảng NhatKyHeThong đã tồn tại");
     }
 
     // Tạo bảng KhachHang

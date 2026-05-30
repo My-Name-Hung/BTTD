@@ -27,6 +27,7 @@ async function resetData() {
   // Các bảng cần xóa data (theo thứ tự để tránh vi phạm FK nếu có)
   const tables = [
     'NhatKyHeThong',
+    'LoginSession',
     'LichSuImport',
     'ThongBao',
     'NghiemThu',

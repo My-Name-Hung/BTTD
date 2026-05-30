@@ -3,6 +3,7 @@ import {
   FiBell,
   FiChevronLeft,
   FiChevronRight,
+  FiActivity,
   FiLogOut,
   FiMenu,
   FiPlusCircle,
@@ -172,6 +173,13 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <FiSettings size={20} />,
     roles: ["admin"],
   },
+  {
+    path: "/lich-su-truy-cap",
+    label: "Lịch sử truy cập",
+    icon: <FiActivity size={20} />,
+    iconActive: <FiActivity size={20} />,
+    roles: ["admin"],
+  },
 ];
 
 // Nhóm menu cho sidebar desktop
@@ -231,7 +239,7 @@ export const SIDEBAR_GROUPS: MenuGroup[] = [
   {
     title: "Quản trị",
     items: SIDEBAR_ITEMS.filter((m) =>
-      ["/quan-ly/nguoi-dung", "/quan-ly/xe", "/quan-ly/tram-tron", "/tai-len-danh-sach", "/bao-tri"].includes(m.path),
+      ["/quan-ly/nguoi-dung", "/quan-ly/xe", "/quan-ly/tram-tron", "/tai-len-danh-sach", "/bao-tri", "/lich-su-truy-cap"].includes(m.path),
     ),
   },
 ];
