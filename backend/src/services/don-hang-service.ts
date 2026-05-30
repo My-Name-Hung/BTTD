@@ -136,12 +136,25 @@ export async function taoDonHang(data: Partial<DonHang>, nguoiTaoId: number): Pr
   return donHangMoi;
 }
 
-export async function suaDonHang(id: number, data: Partial<DonHang>): Promise<DonHang> {
+export async function suaDonHang(id: number, data: Partial<DonHang>): Promise<{ updated: DonHang; cu: Partial<DonHang> }> {
   const existing = await layDonHangTheoId(id);
 
   if (existing.trangThaiDon !== 'cho_duyet') {
     throw new Error('Chỉ có thể sửa đơn hàng đang chờ duyệt');
   }
+
+  const cu: Partial<DonHang> = {
+    tenKhachHang: existing.tenKhachHang,
+    diaChiNhan: existing.diaChiNhan,
+    soDienThoai: existing.soDienThoai,
+    tenMacBeTong: existing.tenMacBeTong,
+    khoiLuongDat: existing.khoiLuongDat,
+    donGia: existing.donGia,
+    chiPhiPhatSinh: existing.chiPhiPhatSinh,
+    buVanChuyen: existing.buVanChuyen,
+    thoiGianGiaoDuKien: existing.thoiGianGiaoDuKien,
+    ghiChu: existing.ghiChu,
+  };
 
   const khoiLuong = data.khoiLuongDat ?? existing.khoiLuongDat;
   const donGia = data.donGia ?? existing.donGia;
@@ -178,7 +191,24 @@ export async function suaDonHang(id: number, data: Partial<DonHang>): Promise<Do
     }
   );
 
-  return (await query<DonHang>(`SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`, { id }))[0];
+  const moi: Partial<DonHang> = {
+    tenKhachHang: data.tenKhachHang ?? existing.tenKhachHang,
+    diaChiNhan: data.diaChiNhan ?? existing.diaChiNhan,
+    soDienThoai: data.soDienThoai ?? existing.soDienThoai,
+    tenMacBeTong: data.tenMacBeTong ?? existing.tenMacBeTong,
+    khoiLuongDat: khoiLuong,
+    donGia,
+    chiPhiPhatSinh,
+    buVanChuyen,
+    thanhTien,
+    conLai: thanhTien - existing.daThanhToan,
+    thoiGianGiaoDuKien: data.thoiGianGiaoDuKien ?? existing.thoiGianGiaoDuKien,
+    ghiChu: data.ghiChu ?? existing.ghiChu,
+  };
+
+  const updated = (await query<DonHang>(`SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`, { id }))[0];
+
+  return { updated, cu };
 }
 
 export async function duyetDonHang(id: number, nguoiDuyetId: number): Promise<DonHang> {
@@ -253,7 +283,7 @@ export async function capNhatTrangThaiDon(
   return donHang;
 }
 
-export async function xoaDonHang(id: number): Promise<void> {
+export async function xoaDonHang(id: number): Promise<DonHang> {
   const existing = await layDonHangTheoId(id);
 
   if (existing.trangThaiDon !== 'cho_duyet' && existing.trangThaiDon !== 'tu_choi') {
@@ -261,6 +291,7 @@ export async function xoaDonHang(id: number): Promise<void> {
   }
 
   await query(`DELETE FROM DonHang WHERE id = @id`, { id });
+  return existing;
 }
 
 export async function xacNhanGiaoThanhCong(idDonHang: number, khoiLuongThucTe?: number): Promise<DonHang> {

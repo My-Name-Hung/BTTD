@@ -39,7 +39,7 @@ router.post('/', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: 
     const lich = await taoLichSanXuat(req.body, req.user.id);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user.id, 'TAO', 'LichSanXuat', lich.id, undefined,
-      `Tạo lịch sản xuất cho đơn #${req.body.idDonHang}`, ip);
+      JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo lịch sản xuất thành công', data: lich });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo lịch sản xuất';
@@ -61,10 +61,13 @@ router.get('/don-hang/:idDonHang', authMiddleware, async (req: AuthRequest, res:
 router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const lichCu = (await query<any[]>(`SELECT * FROM LichSanXuat WHERE id = @id`, { id }))[0];
     const lich = await capNhatLichSanXuat(id, req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'SUA', 'LichSanXuat', id, undefined,
-      `Sửa lịch sản xuất #${id}`, ip);
+    await ghiNhatKy(req.user?.id, 'SUA', 'LichSanXuat', id,
+      JSON.stringify(lichCu),
+      JSON.stringify(req.body),
+      ip);
     res.json({ success: true, message: 'Cập nhật lịch sản xuất thành công', data: lich });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật lịch sản xuất';
@@ -76,10 +79,13 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('admin', 'di
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const { khoiLuongThucTe } = req.body;
+    const dhCu = (await query<any[]>(`SELECT * FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
     const dh = await xacNhanDaGiao(idDonHang, khoiLuongThucTe);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined,
-      `Xác nhận giao thành công đơn #${idDonHang}, KL thực tế: ${khoiLuongThucTe || 0}m³`, ip);
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang,
+      JSON.stringify(dhCu),
+      JSON.stringify({ trangThaiDon: 'da_giao', khoiLuongThucTe }),
+      ip);
     res.json({ success: true, message: 'Xác nhận giao hàng thành công', data: dh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận giao hàng';

@@ -309,8 +309,8 @@ export interface AccessSession {
   ipAddress: string | null;
   userAgent: string | null;
   thaoTac: string;
-  ngayTao: Date;
-  ngayKetThuc: Date | null;
+  ngayTao: string | Date;
+  ngayKetThuc: string | Date | null;
   hoTen: string;
   vaiTro: string;
 }
@@ -323,7 +323,7 @@ export interface AccessLogItem {
   noiDungCu: string | null;
   noiDungMoi: string | null;
   ipAddress: string | null;
-  thoiGian: Date;
+  thoiGian: string | Date;
 }
 
 export interface AccessSessionDetail {

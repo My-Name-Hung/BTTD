@@ -77,6 +77,17 @@
 .formGroup { display: flex; flex-direction: column; gap: 6px; }
 .formGroup label { font-size: 13px; font-weight: 600; color: var(--color-text); }
 
+.formGroup { display: flex; flex-direction: column; gap: 6px; }
+.formGroup label { font-size: 13px; font-weight: 600; color: var(--color-text); }
+.formInput { padding: 10px 12px; border: 1.5px solid var(--color-border); border-radius: var(--radius-md); font-size: 13px; font-family: inherit; color: var(--color-text); width: 100%; box-sizing: border-box; }
+.formInput:focus { outline: none; border-color: var(--color-primary); }
+
+/* Success Modal */
+.successModalOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1100; padding: 16px; }
+.successIcon { display: flex; justify-content: center; margin-bottom: 16px; }
+.successTitle { font-size: 18px; font-weight: 700; color: var(--color-text); text-align: center; margin-bottom: 8px; }
+.successMsg { font-size: 14px; color: #4b5563; text-align: center; padding: 0 20px 20px; }
+
 @media (max-width: 640px) {
   .filterBar { padding: 0 16px 12px; }
   .card { margin: 0 16px 16px; }

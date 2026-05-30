@@ -12,18 +12,11 @@ import { useToast } from '../hooks';
 import { EmptyState } from '../components/Common';
 import styles from './AccessHistoryPage.module.css';
 
-function toVN(d: Date | string): Date {
-  // d.toISOString() trả về UTC. SQL Server lưu giờ VN nên cần trừ 7 tiếng.
-  const date = typeof d === 'string' ? new Date(d) : d;
-  const utc = date.getTime() + date.getTimezoneOffset() * 60000;
-  return new Date(utc + 7 * 60 * 60000);
-}
-
 function formatDate(d: Date | string): string {
-  return toVN(d).toLocaleString('vi-VN', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh',
-  });
+  const s = typeof d === 'string' ? d : d.toISOString();
+  // Strip trailing Z so browser parses as local time (VN +07:00), not UTC
+  const normalized = s.endsWith('Z') ? s.slice(0, -1) + ' +07:00' : s;
+  return new Date(normalized).toLocaleString('vi-VN');
 }
 
 const THAO_TAC_LABELS: Record<string, string> = {
@@ -51,6 +44,7 @@ export default function AccessHistoryPage() {
   const [banIpLoading, setBanIpLoading] = useState(false);
   const [banLoadingId, setBanLoadingId] = useState<number | null>(null);
   const [loadingSessionId, setLoadingSessionId] = useState<number | null>(null);
+  const [successMsg, setSuccessMsg] = useState('');
 
   const LIMIT = 20;
 
@@ -85,7 +79,7 @@ export default function AccessHistoryPage() {
     setLoadingSessionId(s.id);
     try {
       await batBuocDangXuatSession(s.id);
-      showToast(`Đã buộc "${s.hoTen}" đăng xuất`);
+      setSuccessMsg(`Đã buộc "${s.hoTen}" đăng xuất thành công`);
       loadSessions();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Lỗi', 'error');
@@ -100,7 +94,7 @@ export default function AccessHistoryPage() {
     setBanIpLoading(true);
     try {
       await capNhatBannedIp(banIpTarget.idNguoiDung, banIpInput.trim());
-      showToast(`Đã cấm IP "${banIpInput}" và buộc "${banIpTarget.hoTen}" đăng xuất`);
+      setSuccessMsg(`Đã cấm IP "${banIpInput}" và buộc "${banIpTarget.hoTen}" đăng xuất`);
       setBanIpTarget(null);
       setBanIpInput('');
       loadSessions();
@@ -278,6 +272,25 @@ export default function AccessHistoryPage() {
               <button className="btn btn-danger" onClick={handleBanIp} disabled={banIpLoading || !banIpInput.trim()}>
                 {banIpLoading ? 'Đang xử lý...' : 'Cấm IP'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {successMsg && (
+        <div className={styles.modalOverlay} onClick={() => setSuccessMsg('')}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.successIcon}>
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="24" fill="#10b981"/>
+                <path d="M14 24l7 7 13-14" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className={styles.successTitle}>Thành công</div>
+            <div className={styles.successMsg}>{successMsg}</div>
+            <div className={styles.modalFooter}>
+              <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setSuccessMsg('')}>Đóng</button>
             </div>
           </div>
         </div>

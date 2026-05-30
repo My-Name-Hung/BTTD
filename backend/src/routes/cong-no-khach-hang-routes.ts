@@ -8,6 +8,7 @@ import {
   xoaCongNoKhachHang,
 } from '../services/cong-no-khach-hang-service';
 import { ghiNhatKy } from '../services/access-history-service';
+import { query } from '../config/database';
 
 const router = Router();
 
@@ -40,9 +41,12 @@ router.put('/cong-no-khach-hang/:id', authMiddleware, requireRole('admin', 'ke_t
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) { res.status(400).json({ success: false, message: 'ID không hợp lệ' }); return; }
+    const cu = (await query<any[]>(`SELECT * FROM CongNoKhachHang WHERE id = @id`, { id }))[0];
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     const data = await suaCongNoKhachHang(id, req.body);
-    await ghiNhatKy(req.user?.id, 'SUA', 'CongNoKhachHang', id, undefined, JSON.stringify(req.body), ip);
+    await ghiNhatKy(req.user!.id, 'SUA', 'CongNoKhachHang', id!,
+      JSON.stringify(cu),
+      JSON.stringify(req.body), ip);
     res.json({ success: true, message: 'Cập nhật thành công', data });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật';
@@ -55,8 +59,10 @@ router.delete('/cong-no-khach-hang/:id', authMiddleware, requireRole('admin', 'k
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) { res.status(400).json({ success: false, message: 'ID không hợp lệ' }); return; }
+    const cu = (await query<any[]>(`SELECT * FROM CongNoKhachHang WHERE id = @id`, { id }))[0];
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XOA', 'CongNoKhachHang', id, undefined, undefined, ip);
+    await ghiNhatKy(req.user!.id, 'XOA', 'CongNoKhachHang', id!,
+      JSON.stringify(cu), undefined, ip);
     await xoaCongNoKhachHang(id);
     res.json({ success: true, message: 'Xóa thành công' });
   } catch (error) {

@@ -179,8 +179,10 @@ router.put(
           { id: idDonHang },
         );
         const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-        await ghiNhatKy(req.user.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined,
-          `Tài xế xác nhận đang giao đơn #${idDonHang}`, ip);
+        await ghiNhatKy(req.user.id, 'XAC_NHAN', 'DonHang', idDonHang,
+          JSON.stringify({ trangThaiDon: 'dang_cho_giao' }),
+          JSON.stringify({ trangThaiDon: 'dang_giao' }),
+          ip);
         const updated = (
           await query<any>(`SELECT * FROM DonHang WHERE id = @id`, {
             id: idDonHang,
@@ -199,8 +201,10 @@ router.put(
         }
         const updated = await xacNhanGiaoThanhCong(idDonHang, khoiLuongThucTe);
         const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-        await ghiNhatKy(req.user.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined,
-          `Tài xế xác nhận đã giao đơn #${idDonHang}, KL thực tế: ${khoiLuongThucTe || 0}m³`, ip);
+        await ghiNhatKy(req.user.id, 'XAC_NHAN', 'DonHang', idDonHang,
+          JSON.stringify({ trangThaiDon: 'dang_giao' }),
+          JSON.stringify({ trangThaiDon: 'da_giao', khoiLuongThucTe }),
+          ip);
         guiThongBao("DELIVERY_COMPLETED", {
           id: idDonHang,
           maDonHang: updated.maDonHang,

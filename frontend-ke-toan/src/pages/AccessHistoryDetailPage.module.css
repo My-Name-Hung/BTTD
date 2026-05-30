@@ -46,6 +46,11 @@
 .formInput:focus { outline: none; border-color: var(--color-primary); }
 .formHint { font-size: 12px; color: var(--color-text-secondary); margin: 0; }
 
+/* Success Modal */
+.successIcon { display: flex; justify-content: center; margin-bottom: 16px; }
+.successTitle { font-size: 18px; font-weight: 700; color: var(--color-text); text-align: center; margin-bottom: 8px; }
+.successMsg { font-size: 14px; color: #4b5563; text-align: center; padding: 0 20px 20px; }
+
 @media (max-width: 640px) {
   .page { padding: 16px; }
   .infoGrid { grid-template-columns: 1fr; }

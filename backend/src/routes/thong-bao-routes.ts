@@ -9,6 +9,7 @@ import {
   resetThongBaoQuaHan,
 } from '../services/thong-bao-service';
 import { ghiNhatKy } from '../services/access-history-service';
+import { query } from '../config/database';
 import { ApiResponse } from '../models';
 
 const router = Router();
@@ -65,8 +66,10 @@ router.patch('/:id/read', authMiddleware, async (req: AuthRequest, res: Response
     }
     await danhDauDaDoc(id);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'DOC', 'ThongBao', id, undefined,
-      `Đánh dấu đã đọc thông báo #${id}`, ip);
+    await ghiNhatKy(req.user!.id, 'DOC', 'ThongBao', id,
+      JSON.stringify({ isRead: false }),
+      JSON.stringify({ isRead: true }),
+      ip);
     res.json({ success: true, message: 'Đã đánh dấu đã đọc' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi';
@@ -83,8 +86,10 @@ router.patch('/read-all', authMiddleware, async (req: AuthRequest, res: Response
     }
     await danhDauTatCaDaDoc(vaiTro);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'DOC', 'ThongBao', undefined, undefined,
-      `Đánh dấu đã đọc tất cả thông báo`, ip);
+    await ghiNhatKy(req.user!.id, 'DOC', 'ThongBao', undefined,
+      undefined,
+      JSON.stringify({ action: 'mark_all_read' }),
+      ip);
     res.json({ success: true, message: 'Đã đánh dấu tất cả đã đọc' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi';
@@ -99,10 +104,11 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response<Api
     if (isNaN(id)) {
       return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
     }
+    const existing = (await query<any[]>(`SELECT * FROM ThongBao WHERE id = @id`, { id }))[0];
     await xoaThongBao(id);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XOA', 'ThongBao', id, undefined,
-      `Xóa thông báo #${id}`, ip);
+    await ghiNhatKy(req.user!.id, 'XOA', 'ThongBao', id,
+      JSON.stringify(existing), undefined, ip);
     res.json({ success: true, message: 'Xóa thông báo thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi';

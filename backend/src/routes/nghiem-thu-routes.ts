@@ -53,7 +53,7 @@ router.post('/', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), as
     const nghiemThu = await taoNghiemThu(req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user?.id, 'TAO', 'NghiemThu', nghiemThu.id, undefined,
-      `Tạo biên bản nghiệm thu cho đơn #${req.body.idDonHang}`, ip);
+      JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo biên bản nghiệm thu thành công', data: nghiemThu });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo biên bản nghiệm thu';
@@ -75,10 +75,13 @@ router.get('/don-hang/:idDonHang', authMiddleware, async (req: AuthRequest, res:
 router.put('/:id', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const existing = (await query<any[]>(`SELECT * FROM NghiemThu WHERE id = @id`, { id }))[0];
     const nghiemThu = await capNhatNghiemThu(id, req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'SUA', 'NghiemThu', id, undefined,
-      `Sửa biên bản nghiệm thu #${id}`, ip);
+    await ghiNhatKy(req.user?.id, 'SUA', 'NghiemThu', id,
+      JSON.stringify(existing),
+      JSON.stringify(req.body),
+      ip);
     res.json({ success: true, message: 'Cập nhật nghiệm thu thành công', data: nghiemThu });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật nghiệm thu';
@@ -90,10 +93,13 @@ router.put('/xac-nhan/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const loai = (req.query.loai as string) === 'chua' ? 'chua' : 'da';
+    const dhCu = (await query<any[]>(`SELECT * FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
     const dh = await xacNhanNghiemThu(idDonHang, loai);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang, undefined,
-      `Xác nhận nghiệm thu đơn #${idDonHang} - ${loai === 'chua' ? 'chưa đạt' : 'đạt'}`, ip);
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang,
+      JSON.stringify(dhCu),
+      JSON.stringify({ loai, trangThaiDon: 'nghiem_thu' }),
+      ip);
     res.json({ success: true, message: 'Xác nhận nghiệm thu thành công', data: dh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận nghiệm thu';
@@ -132,7 +138,7 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
 
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user?.id, 'UPLOAD', 'NghiemThu', idDonHang, undefined,
-      `Upload biên bản nghiệm thu đơn #${idDonHang}, file: ${req.file.filename}`, ip);
+      JSON.stringify({ bienBanFile: fileUrl }), ip);
 
     res.json({ success: true, message: 'Tải file thành công', data: { bienBanFile: fileUrl } });
   } catch (error) {
@@ -147,10 +153,13 @@ router.post('/xac-nhan-upload/:idDonHang', authMiddleware, requireRole('admin', 
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const fileUrl = req.file ? `/uploads/bien-ban/${req.file.filename}` : undefined;
 
+    const dhCu = (await query<any[]>(`SELECT * FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
     const dh = await xacNhanNghiemThu(idDonHang, 'da', fileUrl);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang, undefined,
-      `Xác nhận nghiệm thu + upload file "${req.file?.filename || 'không có file'}" cho đơn #${idDonHang}`, ip);
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang,
+      JSON.stringify(dhCu),
+      JSON.stringify({ loai: 'da', bienBanFile: fileUrl }),
+      ip);
 
     res.json({
       success: true,
@@ -167,10 +176,11 @@ router.post('/xac-nhan-upload/:idDonHang', authMiddleware, requireRole('admin', 
 router.delete('/:id', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const existing = (await query<any[]>(`SELECT * FROM NghiemThu WHERE id = @id`, { id }))[0];
     await xoaNghiemThu(id);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XOA', 'NghiemThu', id, undefined,
-      `Xóa biên bản nghiệm thu #${id}`, ip);
+    await ghiNhatKy(req.user?.id, 'XOA', 'NghiemThu', id,
+      JSON.stringify(existing), undefined, ip);
     res.json({ success: true, message: 'Xóa biên bản nghiệm thu thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xóa biên bản nghiệm thu';

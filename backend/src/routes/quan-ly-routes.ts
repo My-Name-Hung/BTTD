@@ -99,7 +99,7 @@ router.post(
       );
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
       await ghiNhatKy(req.user?.id, 'TAO', 'NguoiDung', result[0]?.id, undefined,
-        `Tạo tài khoản "${tenDangNhap}", vai trò: ${req.body.vaiTro}`, ip);
+        JSON.stringify(req.body), ip);
       res
         .status(201)
         .json({
@@ -132,6 +132,8 @@ router.put(
       const { hoTen, email, soDienThoai, vaiTro, trangThai, matKhauMoi } =
         req.body;
 
+      const cu = (await query<any[]>(`SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai FROM NguoiDung WHERE id = @id`, { id }))[0];
+
       const params: Record<string, unknown> = {
         hoTen,
         email: email || null,
@@ -151,8 +153,10 @@ router.put(
 
       await query(sql, params);
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-      await ghiNhatKy(req.user?.id, 'SUA', 'NguoiDung', id, undefined,
-        `Sửa thông tin user #${id}`, ip);
+      await ghiNhatKy(req.user?.id, 'SUA', 'NguoiDung', id,
+        JSON.stringify(cu),
+        JSON.stringify(req.body),
+        ip);
 
       const result = await query<any[]>(
         `SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai, ngayTao FROM NguoiDung WHERE id = @id`,
@@ -194,9 +198,10 @@ router.delete(
           });
         return;
       }
+      const cu = (await query<any[]>("SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai FROM NguoiDung WHERE id = @id", { id }))[0];
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-      await ghiNhatKy(req.user?.id, 'XOA', 'NguoiDung', id, undefined,
-        `Xóa tài khoản user #${id}`, ip);
+      await ghiNhatKy(req.user?.id, 'XOA', 'NguoiDung', id,
+        JSON.stringify(cu), undefined, ip);
       await query("DELETE FROM NguoiDung WHERE id = @id", { id });
       res.json({ success: true, message: "Xóa người dùng thành công" });
     } catch (error) {

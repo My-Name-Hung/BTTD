@@ -55,7 +55,7 @@ router.post('/cong-no', authMiddleware, requireRole('admin', 'ke_toan'), async (
     const congNo = await taoCongNo(idDonHang, ngayBatDau, hanThanhToan);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user?.id, 'TAO', 'CongNo', congNo.id, undefined,
-      `Tạo công nợ cho đơn #${idDonHang}`, ip);
+      JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo công nợ thành công', data: congNo });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo công nợ';
@@ -77,8 +77,10 @@ router.post(
       }
       const thanhToan = await taoThanhToan(req.body, req.user.id);
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-      await ghiNhatKy(req.user.id, 'THANH_TOAN', 'ThanhToan', req.body.idDonHang, undefined,
-        `Ghi nhận thanh toán đơn #${req.body.idDonHang}, số tiền: ${Number(req.body.soTien).toLocaleString()} VNĐ`, ip);
+      await ghiNhatKy(req.user.id, 'THANH_TOAN', 'ThanhToan', req.body.idDonHang,
+      JSON.stringify({ soTien: 0 }),
+      JSON.stringify(req.body),
+      ip);
       res.status(201).json({ success: true, message: 'Ghi nhận thanh toán thành công', data: thanhToan });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Lỗi ghi nhận thanh toán';
@@ -142,10 +144,13 @@ router.put('/cong-no/:id', authMiddleware, requireRole('admin', 'ke_toan'), asyn
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) { res.status(400).json({ success: false, message: 'ID không hợp lệ' }); return; }
     const { tongTien, daThanhToan, conLai, ngayBatDau, hanThanhToan, trangThai, ghiChu, nhom } = req.body;
+    const cu = (await query<any[]>(`SELECT * FROM CongNo WHERE id = @id`, { id }))[0];
     const congNo = await suaCongNo(id, { tongTien, daThanhToan, conLai, ngayBatDau, hanThanhToan, trangThai, ghiChu, nhom });
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'SUA', 'CongNo', id, undefined,
-      `Sửa công nợ #${id}`, ip);
+    await ghiNhatKy(req.user?.id, 'SUA', 'CongNo', id,
+      JSON.stringify(cu),
+      JSON.stringify(req.body),
+      ip);
     res.json({ success: true, message: 'Cập nhật công nợ thành công', data: congNo });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật công nợ';
@@ -158,10 +163,11 @@ router.delete('/cong-no/:id', authMiddleware, requireRole('admin', 'ke_toan'), a
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) { res.status(400).json({ success: false, message: 'ID không hợp lệ' }); return; }
+    const cu = (await query<any[]>(`SELECT * FROM CongNo WHERE id = @id`, { id }))[0];
     await xoaCongNo(id);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XOA', 'CongNo', id, undefined,
-      `Xóa công nợ #${id}`, ip);
+    await ghiNhatKy(req.user?.id, 'XOA', 'CongNo', id,
+      JSON.stringify(cu), undefined, ip);
     res.json({ success: true, message: 'Xóa công nợ thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xóa công nợ';

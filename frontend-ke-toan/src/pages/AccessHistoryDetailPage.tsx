@@ -11,18 +11,10 @@ import { useToast } from '../hooks';
 import { Loading } from '../components/Common';
 import styles from './AccessHistoryDetailPage.module.css';
 
-function toVN(d: Date | string): Date {
-  // d.toISOString() trả về UTC. SQL Server lưu giờ VN nên cần trừ 7 tiếng.
-  const date = typeof d === 'string' ? new Date(d) : d;
-  const utc = date.getTime() + date.getTimezoneOffset() * 60000;
-  return new Date(utc + 7 * 60 * 60000);
-}
-
 function formatDate(d: Date | string): string {
-  return toVN(d).toLocaleString('vi-VN', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh',
-  });
+  const s = typeof d === 'string' ? d : d.toISOString();
+  const normalized = s.endsWith('Z') ? s.slice(0, -1) + ' +07:00' : s;
+  return new Date(normalized).toLocaleString('vi-VN');
 }
 
 const HANH_DONG_LABELS: Record<string, string> = {
@@ -43,6 +35,7 @@ export default function AccessHistoryDetailPage() {
   const [resetPwOpen, setResetPwOpen] = useState(searchParams.get('action') === 'reset-pw');
   const [resetPwInput, setResetPwInput] = useState('');
   const [resetPwLoading, setResetPwLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -57,7 +50,7 @@ export default function AccessHistoryDetailPage() {
     if (!detail) return;
     try {
       await batBuocDangXuatSession(detail.session.id);
-      showToast('Đã buộc đăng xuất');
+      setSuccessMsg(`Đã buộc "${detail.session.hoTen}" đăng xuất thành công`);
       navigate('/lich-su-truy-cap');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Lỗi', 'error');
@@ -72,7 +65,7 @@ export default function AccessHistoryDetailPage() {
     setResetPwLoading(true);
     try {
       await resetMatKhauUser(detail.session.idNguoiDung, resetPwInput);
-      showToast(`Đã đổi mật khẩu cho ${detail.session.hoTen}`);
+      setSuccessMsg(`Đã đổi mật khẩu cho "${detail.session.hoTen}" thành công`);
       setResetPwOpen(false);
       setResetPwInput('');
     } catch (err) {
@@ -199,6 +192,25 @@ export default function AccessHistoryDetailPage() {
               <button className="btn btn-primary" onClick={handleResetPw} disabled={resetPwLoading || resetPwInput.length < 6}>
                 {resetPwLoading ? 'Đang xử lý...' : 'Đổi mật khẩu'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {successMsg && (
+        <div className={styles.modalOverlay} onClick={() => setSuccessMsg('')}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.successIcon}>
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="24" fill="#10b981"/>
+                <path d="M14 24l7 7 13-14" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className={styles.successTitle}>Thành công</div>
+            <div className={styles.successMsg}>{successMsg}</div>
+            <div className={styles.modalFooter}>
+              <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setSuccessMsg('')}>Đóng</button>
             </div>
           </div>
         </div>

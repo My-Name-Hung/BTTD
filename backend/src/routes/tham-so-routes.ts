@@ -40,7 +40,7 @@ router.post('/khach-hang', authMiddleware, requireRole('admin', 'ke_toan', 'dieu
     const kh = await taoKhachHang(req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user.id, 'TAO', 'KhachHang', kh.id, undefined,
-      `Tạo khách hàng "${req.body.tenKhachHang}", SĐT: ${req.body.soDienThoai}`, ip);
+      JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo khách hàng thành công', data: kh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo khách hàng';
@@ -51,10 +51,13 @@ router.post('/khach-hang', authMiddleware, requireRole('admin', 'ke_toan', 'dieu
 router.put('/khach-hang/:id', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const khCu = (await query<any[]>(`SELECT * FROM KhachHang WHERE id = @id`, { id }))[0];
     const kh = await suaKhachHang(id, req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'SUA', 'KhachHang', id, undefined,
-      `Sửa khách hàng #${id}`, ip);
+    await ghiNhatKy(req.user.id, 'SUA', 'KhachHang', id,
+      JSON.stringify(khCu),
+      JSON.stringify(req.body),
+      ip);
     res.json({ success: true, message: 'Cập nhật khách hàng thành công', data: kh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật khách hàng';
@@ -65,9 +68,10 @@ router.put('/khach-hang/:id', authMiddleware, requireRole('admin', 'ke_toan'), a
 router.delete('/khach-hang/:id', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const khCu = (await query<any[]>(`SELECT * FROM KhachHang WHERE id = @id`, { id }))[0];
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'XOA', 'KhachHang', id, undefined,
-      `Xóa khách hàng #${id}`, ip);
+    await ghiNhatKy(req.user.id, 'XOA', 'KhachHang', id,
+      JSON.stringify(khCu), undefined, ip);
     await xoaKhachHang(id);
     res.json({ success: true, message: 'Xóa khách hàng thành công' });
   } catch (error) {
@@ -92,7 +96,7 @@ router.post('/mac-be-tong', authMiddleware, requireRole('admin', 'dieu_phoi'), a
     const mac = await taoMacBeTong(req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user.id, 'TAO', 'MacBeTong', mac.id, undefined,
-      `Tạo mác bê tông "${req.body.tenMac || req.body.ten}"`, ip);
+      JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo mác bê tông thành công', data: mac });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo mác bê tông';
@@ -103,10 +107,13 @@ router.post('/mac-be-tong', authMiddleware, requireRole('admin', 'dieu_phoi'), a
 router.put('/mac-be-tong/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const macCu = (await query<any[]>(`SELECT * FROM MacBeTong WHERE id = @id`, { id }))[0];
     const mac = await suaMacBeTong(id, req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'SUA', 'MacBeTong', id, undefined,
-      `Sửa mác bê tông #${id}`, ip);
+    await ghiNhatKy(req.user.id, 'SUA', 'MacBeTong', id,
+      JSON.stringify(macCu),
+      JSON.stringify(req.body),
+      ip);
     res.json({ success: true, message: 'Cập nhật mác bê tông thành công', data: mac });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật mác bê tông';
@@ -140,7 +147,7 @@ router.post('/tram-tron', authMiddleware, requireRole('admin'), async (req: Auth
     );
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user.id, 'TAO', 'TramTron', result[0]?.id, undefined,
-      `Tạo trạm trộn "${tenTram}", ĐC: ${diaChi || 'N/A'}`, ip);
+      JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo trạm trộn thành công', data: result[0] });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo trạm trộn';
@@ -152,6 +159,7 @@ router.put('/tram-tron/:id', authMiddleware, requireRole('admin'), async (req: A
   try {
     const id = parseInt(req.params.id, 10);
     const { tenTram, diaChi, soDienThoai, trangThai } = req.body;
+    const cu = (await query<any[]>(`SELECT * FROM TramTron WHERE id = @id`, { id }))[0];
     await query(
       `UPDATE TramTron SET tenTram = @tenTram, diaChi = @diaChi, soDienThoai = @soDienThoai, trangThai = @trangThai WHERE id = @id`,
       { tenTram, diaChi: diaChi || null, soDienThoai: soDienThoai || null, trangThai: trangThai || 'hoat_dong', id }
@@ -162,8 +170,10 @@ router.put('/tram-tron/:id', authMiddleware, requireRole('admin'), async (req: A
       return;
     }
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'SUA', 'TramTron', id, undefined,
-      `Sửa trạm trộn #${id}`, ip);
+    await ghiNhatKy(req.user.id, 'SUA', 'TramTron', id,
+      JSON.stringify(cu),
+      JSON.stringify(req.body),
+      ip);
     res.json({ success: true, message: 'Cập nhật trạm trộn thành công', data: result[0] });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật trạm trộn';
@@ -174,9 +184,10 @@ router.put('/tram-tron/:id', authMiddleware, requireRole('admin'), async (req: A
 router.delete('/tram-tron/:id', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const cu = (await query<any[]>('SELECT * FROM TramTron WHERE id = @id', { id }))[0];
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'XOA', 'TramTron', id, undefined,
-      `Xóa trạm trộn #${id}`, ip);
+    await ghiNhatKy(req.user.id, 'XOA', 'TramTron', id,
+      JSON.stringify(cu), undefined, ip);
     await query('DELETE FROM TramTron WHERE id = @id', { id });
     res.json({ success: true, message: 'Xóa trạm trộn thành công' });
   } catch (error) {
@@ -215,7 +226,7 @@ router.post('/xe', authMiddleware, requireRole('admin'), async (req: AuthRequest
     const xe = await taoXe(req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user.id, 'TAO', 'Xe', xe.id, undefined,
-      `Tạo xe "${req.body.bienSo}", tài xế: ${req.body.tenTaiXe || 'N/A'}`, ip);
+      JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo xe thành công', data: xe });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo xe';
@@ -226,10 +237,13 @@ router.post('/xe', authMiddleware, requireRole('admin'), async (req: AuthRequest
 router.put('/xe/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const xeCu = (await query<any[]>(`SELECT * FROM Xe WHERE id = @id`, { id }))[0];
     const xe = await suaXe(id, req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'SUA', 'Xe', id, undefined,
-      `Sửa xe #${id}`, ip);
+    await ghiNhatKy(req.user.id, 'SUA', 'Xe', id,
+      JSON.stringify(xeCu),
+      JSON.stringify(req.body),
+      ip);
     res.json({ success: true, message: 'Cập nhật xe thành công', data: xe });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật xe';
@@ -240,9 +254,10 @@ router.put('/xe/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (
 router.delete('/xe/:id', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const xeCu = (await query<any[]>(`SELECT * FROM Xe WHERE id = @id`, { id }))[0];
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'XOA', 'Xe', id, undefined,
-      `Xóa xe #${id}`, ip);
+    await ghiNhatKy(req.user.id, 'XOA', 'Xe', id,
+      JSON.stringify(xeCu), undefined, ip);
     await xoaXe(id);
     res.json({ success: true, message: 'Xóa xe thành công' });
   } catch (error) {
@@ -254,9 +269,10 @@ router.delete('/xe/:id', authMiddleware, requireRole('admin'), async (req: AuthR
 router.delete('/mac-be-tong/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const macCu = (await query<any[]>(`SELECT * FROM MacBeTong WHERE id = @id`, { id }))[0];
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user.id, 'XOA', 'MacBeTong', id, undefined,
-      `Xóa mác bê tông #${id}`, ip);
+    await ghiNhatKy(req.user.id, 'XOA', 'MacBeTong', id,
+      JSON.stringify(macCu), undefined, ip);
     await query('DELETE FROM MacBeTong WHERE id = @id', { id });
     res.json({ success: true, message: 'Xóa mác bê tông thành công' });
   } catch (error) {

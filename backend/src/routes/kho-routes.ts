@@ -130,8 +130,10 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('kho
     });
 
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined,
-      `Kho xác nhận sản xuất xong, chuyển đơn #${idDonHang} sang chờ giao`, ip);
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang,
+      JSON.stringify({ trangThaiDon: 'dang_san_xuat' }),
+      JSON.stringify({ trangThaiDon: 'dang_cho_giao' }),
+      ip);
 
     res.json({ success: true, message: 'Xác nhận sản xuất xong thành công', data: updatedDonHang });
   } catch (error) {
@@ -184,8 +186,10 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('kho'), asyn
     });
 
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang, undefined,
-      `Kho xác nhận giao thành công đơn #${idDonHang}, KL thực tế: ${khoiLuongThucTe || 0}m³`, ip);
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang,
+      JSON.stringify({ trangThaiDon: 'dang_giao' }),
+      JSON.stringify({ trangThaiDon: 'da_giao', khoiLuongThucTe }),
+      ip);
 
     res.json({ success: true, message: 'Xác nhận giao hàng thành công', data: updatedDonHang });
   } catch (error) {
