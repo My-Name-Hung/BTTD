@@ -252,6 +252,7 @@ export interface JwtPayload {
   tenDangNhap: string;
   hoTen: string;
   vaiTro: string;
+  sessionId: number;
 }
 
 export interface LoginRequest {

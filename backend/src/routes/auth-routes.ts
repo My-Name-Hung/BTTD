@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { ApiResponse } from '../models';
 import { dangNhap, layThongTinNguoiDung, doiMatKhau } from '../services/auth-service';
+import { ghiDangXuat } from '../services/access-history-service';
 
 const router = Router();
 
@@ -28,6 +29,17 @@ router.post(
     }
   }
 );
+
+router.post('/logout', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    if (req.user?.sessionId) {
+      await ghiDangXuat(req.user.sessionId);
+    }
+    res.json({ success: true, message: 'Đăng xuất thành công' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Lỗi đăng xuất' });
+  }
+});
 
 router.get('/profile', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {

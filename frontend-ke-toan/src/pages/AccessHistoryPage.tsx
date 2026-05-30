@@ -14,11 +14,11 @@ import styles from './AccessHistoryPage.module.css';
 
 function toVN(d: Date | string): Date {
   const s = typeof d === 'string' ? d : d.toISOString();
-  // Chuỗi từ backend đã là giờ VN (không có Z), nên append +07:00 để đúng timezone
-  if (!s.endsWith('Z') && !s.endsWith('+07:00') && !s.endsWith('+07')) {
-    return new Date(s + ' +07:00');
-  }
-  return new Date(s);
+  // Backend SQL Server chạy múi giờ VN (UTC+7), không có Z.
+  // Nếu có Z → strip đi rồi treat như giờ VN.
+  // Đảm bảo luôn parse đúng giờ VN.
+  const normalized = s.endsWith('Z') ? s.slice(0, -1) : s;
+  return new Date(normalized + ' +07:00');
 }
 
 function formatDate(d: Date | string): string {

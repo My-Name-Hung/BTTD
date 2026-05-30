@@ -56,21 +56,33 @@ export async function dangNhap(
     throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
   }
 
+  // Ghi session đăng nhập trước để lấy sessionId
+  let sessionId = 0;
+  try {
+    sessionId = await ghiDangNhap(user.id, '', ipAddress || '', userAgent || '');
+  } catch { /* bỏ qua lỗi ghi session */ }
+
   const payload: JwtPayload = {
     id: user.id,
     tenDangNhap: user.tenDangNhap,
     hoTen: user.hoTen,
     vaiTro: user.vaiTro,
+    sessionId,
   };
 
   const token = jwt.sign(payload, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn,
   });
 
-  // Ghi session đăng nhập (bỏ qua nếu bảng chưa tồn tại)
-  try {
-    await ghiDangNhap(user.id, hashToken(token), ipAddress || '', userAgent || '');
-  } catch { /* bỏ qua lỗi ghi session */ }
+  // Cập nhật tokenHash cho session vừa tạo
+  if (sessionId > 0) {
+    try {
+      await query(
+        `UPDATE LoginSession SET tokenHash = @tokenHash WHERE id = @id`,
+        { id: sessionId, tokenHash: hashToken(token) },
+      );
+    } catch { /* bỏ qua */ }
+  }
 
   const { matKhau: _, ...userWithoutPassword } = user;
 

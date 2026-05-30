@@ -881,3 +881,7 @@ export async function capNhatBannedIp(userId: number, bannedIp: string | null): 
     body: JSON.stringify({ bannedIp }),
   });
 }
+
+export async function logout(): Promise<void> {
+  await request('/auth/logout', { method: 'POST' });
+}

@@ -27,36 +27,28 @@ export interface SessionDetail {
   }[];
 }
 
-// Ghi phiên đăng nhập — upsert: nếu đã có phiên active thì update, không tạo dòng mới
+// Ghi phiên đăng nhập — tạo dòng mới, đánh dấu dòng cũ (nếu có) là dang_xuat
 export async function ghiDangNhap(
   idNguoiDung: number,
   tokenHash: string,
   ipAddress: string,
   userAgent: string,
 ): Promise<number> {
-  // Tìm phiên đang hoạt động của user
-  const existing = await query<{ id: number }[]>(
-    `SELECT TOP 1 id FROM LoginSession WHERE idNguoiDung = @idNguoiDung AND thaoTac = N'dang_nhap'`,
+  // Đánh dấu tất cả phiên cũ của user là dang_xuat
+  await query(
+    `UPDATE LoginSession SET thaoTac = N'dang_xuat', ngayKetThuc = GETDATE()
+     WHERE idNguoiDung = @idNguoiDung AND thaoTac = N'dang_nhap'`,
     { idNguoiDung },
   );
 
-  if (existing.length > 0) {
-    // Cập nhật phiên hiện tại (token mới, IP mới, thời gian mới)
-    await query(
-      `UPDATE LoginSession SET tokenHash = @tokenHash, ipAddress = @ipAddress, userAgent = @userAgent, ngayTao = GETDATE(), ngayKetThuc = NULL WHERE id = @id`,
-      { id: existing[0].id, tokenHash, ipAddress, userAgent },
-    );
-    return existing[0].id;
-  }
-
   // Tạo phiên mới
-  const result = await query<{ id: number }[]>(
+  const result = await query<{ id: number }>(
     `INSERT INTO LoginSession (idNguoiDung, tokenHash, ipAddress, userAgent, thaoTac)
-     VALUES (@idNguoiDung, @tokenHash, @ipAddress, @userAgent, N'dang_nhap');
-     SELECT SCOPE_IDENTITY() as id;`,
+     OUTPUT INSERTED.id
+     VALUES (@idNguoiDung, @tokenHash, @ipAddress, @userAgent, N'dang_nhap')`,
     { idNguoiDung, tokenHash, ipAddress, userAgent },
   );
-  return result[0].id;
+  return result[0]?.id ?? 0;
 }
 
 // Ghi phiên đăng xuất
@@ -204,7 +196,7 @@ export async function batBuocDangXuat(sessionId: number): Promise<void> {
 
 // Lấy thông tin user + bannedIp
 export async function layThongTinUser(idNguoiDung: number): Promise<{ id: number; hoTen: string; bannedIp: string | null } | null> {
-  const rows = await query<{ id: number; hoTen: string; bannedIp: string | null }[]>(
+  const rows = await query<{ id: number; hoTen: string; bannedIp: string | null }>(
     `SELECT id, hoTen, bannedIp FROM NguoiDung WHERE id = @id`,
     { id: idNguoiDung },
   );

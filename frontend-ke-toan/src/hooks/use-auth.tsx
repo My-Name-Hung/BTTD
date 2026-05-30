@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { NguoiDung } from '../types';
-import { layThongTinNguoiDung } from '../services/api';
+import { layThongTinNguoiDung, logout as apiLogout } from '../services/api';
 
 interface AuthContextType {
   user: NguoiDung | null;
@@ -39,7 +39,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiLogout();
+    } catch { /* ignore */ }
     localStorage.removeItem('bttd_token');
     localStorage.removeItem('bttd_user');
     setUser(null);
