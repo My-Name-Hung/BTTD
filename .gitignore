@@ -9,3 +9,4 @@ backend/dist/
 frontend-ke-toan/dist/
 frontend-lanh-dao/dist/
 .next
+node_modules/

@@ -654,7 +654,7 @@ export async function importCongNo(
     const r = rows[i];
     const rowNum = i + 2;
     try {
-      // Lấy theo index hoặc cell ref
+      // Lấy theo index (cột A=0, B=1...)
       const maRaw = getRowVal(r, 0);
       const tenRaw = getRowVal(r, 1);
       const duDauNoRaw = getRowVal(r, 2);
@@ -666,6 +666,16 @@ export async function importCongNo(
 
       const maKhachHang = String(maRaw ?? "").trim().replace(/\s+$/, "");
       const tenKhachHang = String(tenRaw ?? "").trim();
+
+      // Bỏ dòng trống hoàn toàn
+      if (!tenKhachHang && !maKhachHang && !duDauNoRaw && !duDauCoRaw) continue;
+
+      // Bỏ dòng header số (1-8) ở row 9
+      if (/^[1-8]$/.test(tenKhachHang)) continue;
+
+      // Bỏ header text
+      if (["Tên khách hàng", "Dư đầu", "Phát sinh", "Dư cuối", "Nợ", "Có", "Mã"].includes(tenKhachHang)) continue;
+
       const duDauNo = parseNum(duDauNoRaw);
       const duDauCo = parseNum(duDauCoRaw);
       const phatSinhNo = parseNum(psNoRaw);
@@ -673,25 +683,21 @@ export async function importCongNo(
       const duCuoiNo = parseNum(duCuoiNoRaw);
       const duCuoiCo = parseNum(duCuoiCoRaw);
 
-      // Bỏ qua dòng trống
-      if (!tenKhachHang && !maKhachHang) continue;
-
-      // Bỏ qua dòng số thứ tự 1-8
-      if (/^[1-8]$/.test(tenKhachHang)) continue;
-
-      // Kiểm tra dòng NHÓM
+      // Dòng NHÓM: Mã rỗng + Tên là nhóm hợp lệ
       const isGroupRow = !maKhachHang && NHOM_LABELS[tenKhachHang];
       if (isGroupRow) {
         currentNhom = NHOM_LABELS[tenKhachHang];
         continue;
       }
 
-      // Kiểm tra dòng data thực sự
-      const hasAmounts = duDauNo > 0 || duDauCo > 0 || phatSinhNo > 0 || phatSinhCo > 0 || duCuoiNo > 0 || duCuoiCo > 0;
-      const isDataRow = maKhachHang || (tenKhachHang && hasAmounts);
-      if (!isDataRow) continue;
+      // Dòng "Tổng cộng": Mã rỗng + Tên chứa "Tổng cộng"
+      if (!maKhachHang && tenKhachHang.includes("Tổng cộng")) {
+        continue;
+      }
 
-      // Tính công nợ
+      // Dòng data thực sự: phải có Mã
+      if (!maKhachHang) continue;
+
       const duCuoi = duCuoiNo - duCuoiCo;
       const duDau = duDauNo - duDauCo;
       const phatSinh = phatSinhNo - phatSinhCo;
@@ -831,6 +837,16 @@ export async function importCongNoKhachHang(
 
     const maKhachHang = String(maRaw ?? "").trim().replace(/\s+$/, "");
     const tenKhachHang = String(tenRaw ?? "").trim();
+
+    // Bỏ dòng trống hoàn toàn
+    if (!tenKhachHang && !maKhachHang && !duDauNoRaw && !duDauCoRaw) continue;
+
+    // Bỏ dòng header số (1-8)
+    if (/^[1-8]$/.test(tenKhachHang)) continue;
+
+    // Bỏ header text
+    if (["Tên khách hàng", "Dư đầu", "Phát sinh", "Dư cuối", "Nợ", "Có", "Mã"].includes(tenKhachHang)) continue;
+
     const duDauNo = parseNum(duDauNoRaw);
     const duDauCo = parseNum(duDauCoRaw);
     const phatSinhNo = parseNum(psNoRaw);
@@ -838,23 +854,20 @@ export async function importCongNoKhachHang(
     const duCuoiNo = parseNum(duCuoiNoRaw);
     const duCuoiCo = parseNum(duCuoiCoRaw);
 
-    // Bỏ qua dòng trống
-    if (!tenKhachHang && !maKhachHang) continue;
-
-    // Bỏ qua dòng header (số 1-8)
-    if (/^[1-8]$/.test(tenKhachHang)) continue;
-
-    // Dòng NHÓM
+    // Dòng NHÓM: Mã rỗng + Tên là nhóm hợp lệ
     const isGroupRow = !maKhachHang && NHOM_LABELS[tenKhachHang];
     if (isGroupRow) {
       currentNhom = NHOM_LABELS[tenKhachHang];
       continue;
     }
 
-    // Dòng data thực sự: phải có mã hoặc có số tiền
-    const hasAmounts = duDauNo > 0 || duDauCo > 0 || phatSinhNo > 0 || phatSinhCo > 0 || duCuoiNo > 0 || duCuoiCo > 0;
-    const isDataRow = maKhachHang || (tenKhachHang && hasAmounts);
-    if (!isDataRow) continue;
+    // Dòng "Tổng cộng": Mã rỗng + Tên chứa "Tổng cộng"
+    if (!maKhachHang && tenKhachHang.includes("Tổng cộng")) {
+      continue;
+    }
+
+    // Dòng data thực sự: phải có Mã
+    if (!maKhachHang) continue;
 
     dataRows.push({
       maKhachHang,
