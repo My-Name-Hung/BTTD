@@ -1,5 +1,6 @@
 import mssql from "mssql";
 import { config } from "./index";
+import { xoaLichSuImportCu } from "../services/import-service";
 
 async function initDatabase(): Promise<void> {
   console.log("\n📦 Đang khởi tạo database...");
@@ -487,8 +488,7 @@ async function initDatabase(): Promise<void> {
       console.log("  ✅ Bảng CongNoKhachHang đã tồn tại");
       const colCheck = async (col: string, def: string) => {
         const c = await db.query<{ name: string }[]>(
-          `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('CongNoKhachHang') AND name = @col`,
-          { col },
+          `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('CongNoKhachHang') AND name = '${col}'`,
         );
         if (c.recordset.length === 0) {
           await db.query(`ALTER TABLE CongNoKhachHang ADD ${col} ${def}`);
@@ -526,6 +526,12 @@ async function initDatabase(): Promise<void> {
     }
 
     await dbPool.close();
+
+    // Xóa lịch sử import quá 2 ngày
+    try {
+      const deleted = await xoaLichSuImportCu();
+      if (deleted > 0) console.log(`  🗑️  Đã xóa ${deleted} dòng lịch sử import quá 2 ngày`);
+    } catch { /* ignore if table doesn't exist yet */ }
 
     console.log("  ✅ Khởi tạo database hoàn tất!\n");
   } catch (error) {

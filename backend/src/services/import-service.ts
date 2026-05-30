@@ -23,6 +23,12 @@ export interface ImportHistory {
 }
 
 // ===== Lịch sử import =====
+export async function xoaLichSuImportCu(): Promise<number> {
+  const result = await query(
+    `DELETE FROM ImportHistory WHERE ngayTai < DATEADD(DAY, -2, GETDATE())`,
+  );
+  return result.rowsAffected[0];
+}
 export async function layLichSuImport(
   loai: string,
   page = 1,
