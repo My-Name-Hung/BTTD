@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiChevronLeft, FiLogOut, FiKey, FiBan } from 'react-icons/fi';
+import { FiChevronLeft, FiLogOut, FiKey } from 'react-icons/fi';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   layChiTietAccessSession,
@@ -9,7 +9,7 @@ import {
 import { AccessSessionDetail } from '../types';
 import { useToast } from '../hooks';
 import { Loading } from '../components/Common';
-import styles from './AccessHistoryDetail.module.css';
+import styles from './AccessHistoryDetailPage.module.css';
 
 function toVN(d: Date | string): Date {
   const s = typeof d === 'string' ? d : d.toISOString();

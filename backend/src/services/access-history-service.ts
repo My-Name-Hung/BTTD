@@ -116,9 +116,8 @@ export async function layLichSuTruyCap(
   }
 
   const [countRow] = await query<{ total: number }>(
-    `SELECT COUNT(DISTINCT ls.idNguoiDung) as total
-     FROM (
-       SELECT idNguoiDung, ROW_NUMBER() OVER (PARTITION BY idNguoiDung ORDER BY ngayTao DESC) as rn
+    `SELECT COUNT(*) as total FROM (
+       SELECT ROW_NUMBER() OVER (PARTITION BY idNguoiDung ORDER BY ngayTao DESC) as rn
        FROM LoginSession ls
        ${where}
      ) t WHERE t.rn = 1`,
