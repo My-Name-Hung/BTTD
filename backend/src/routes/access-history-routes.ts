@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { ApiResponse } from '../models';
+import { getSocketIO } from '../socket';
 import {
   layLichSuTruyCap,
   layChiTietSession,
@@ -61,6 +62,19 @@ router.post('/sessions/:id/logout', authMiddleware, requireRole('admin'), async 
   try {
     const id = parseInt(req.params.id, 10);
     await batBuocDangXuat(id);
+
+    // Lấy thông tin phiên để biết userId
+    const detail = await layChiTietSession(id);
+    if (detail?.session?.idNguoiDung) {
+      const io = getSocketIO();
+      if (io) {
+        io.to(`user:${detail.session.idNguoiDung}`).emit('force_logout', {
+          message: 'Bạn đã bị quản trị viên buộc đăng xuất.',
+          sessionId: id,
+        });
+      }
+    }
+
     res.json({ success: true, message: 'Đã buộc đăng xuất' });
   } catch (error) {
     res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Lỗi' });
@@ -77,6 +91,16 @@ router.post('/users/:id/reset-password', authMiddleware, requireRole('admin'), a
     }
     const hash = await bcrypt.hash(matKhauMoi, 10);
     await doiMatKhauUser(id, hash);
+
+    // Bắn socket để user bị đổi mật khẩu phải đăng nhập lại
+    const io = getSocketIO();
+    if (io) {
+      io.to(`user:${id}`).emit('force_logout', {
+        message: 'Mật khẩu của bạn đã được đổi. Vui lòng đăng nhập lại.',
+        reason: 'password_changed',
+      });
+    }
+
     res.json({ success: true, message: 'Đã đổi mật khẩu' });
   } catch (error) {
     res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Lỗi' });

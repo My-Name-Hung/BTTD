@@ -38,6 +38,20 @@ export function initSocket(vaiTro: string, userId?: number): Socket {
     console.log('[Socket] Disconnected:', reason);
   });
 
+  socket.on('force_logout', (data: { message?: string; reason?: string }) => {
+    console.log('[Socket] Force logout received:', data);
+    localStorage.removeItem('bttd_token');
+    localStorage.removeItem('bttd_user');
+    localStorage.removeItem('bttd_sessionId');
+    localStorage.removeItem('bttd_redirect_after_login');
+    if (socket) {
+      socket.disconnect();
+      socket = null;
+    }
+    const msg = data.message || 'Bạn đã bị đăng xuất khỏi hệ thống.';
+    window.location.href = `/login?reason=${encodeURIComponent(msg)}`;
+  });
+
   socket.on('connect_error', (error) => {
     reconnectAttempts++;
     console.error(`[Socket] Connection error (attempt ${reconnectAttempts}):`, error.message, error);
