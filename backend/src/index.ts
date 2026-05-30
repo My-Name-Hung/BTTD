@@ -64,7 +64,7 @@ app.use("/api/nghiem-thu", authMiddleware, maintenanceMiddleware, nghiemThuRoute
 app.use("/api/thanh-toan", authMiddleware, maintenanceMiddleware, thanhToanRoutes);
 app.use("/api/tham-so", authMiddleware, maintenanceMiddleware, thamSoRoutes);
 app.use("/api/notifications", authMiddleware, maintenanceMiddleware, thongBaoRoutes);
-app.use("/api/cau-hinh", authMiddleware, maintenanceMiddleware, cauHinhRoutes);
+app.use("/api/cau-hinh", cauHinhRoutes); // /trang-thai public, các route khác tự xử lý auth
 app.use("/api/lanh-dao", authMiddleware, maintenanceMiddleware, lanhDaoRoutes);
 app.use("/api/kho", authMiddleware, maintenanceMiddleware, khoRoutes);
 app.use("/api/tai-xe", authMiddleware, maintenanceMiddleware, taiXeRoutes);
