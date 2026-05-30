@@ -27,13 +27,29 @@ export interface SessionDetail {
   }[];
 }
 
-// Ghi phiên đăng nhập
+// Ghi phiên đăng nhập — upsert: nếu đã có phiên active thì update, không tạo dòng mới
 export async function ghiDangNhap(
   idNguoiDung: number,
   tokenHash: string,
   ipAddress: string,
   userAgent: string,
 ): Promise<number> {
+  // Tìm phiên đang hoạt động của user
+  const existing = await query<{ id: number }[]>(
+    `SELECT TOP 1 id FROM LoginSession WHERE idNguoiDung = @idNguoiDung AND thaoTac = N'dang_nhap'`,
+    { idNguoiDung },
+  );
+
+  if (existing.length > 0) {
+    // Cập nhật phiên hiện tại (token mới, IP mới, thời gian mới)
+    await query(
+      `UPDATE LoginSession SET tokenHash = @tokenHash, ipAddress = @ipAddress, userAgent = @userAgent, ngayTao = GETDATE(), ngayKetThuc = NULL WHERE id = @id`,
+      { id: existing[0].id, tokenHash, ipAddress, userAgent },
+    );
+    return existing[0].id;
+  }
+
+  // Tạo phiên mới
   const result = await query<{ id: number }[]>(
     `INSERT INTO LoginSession (idNguoiDung, tokenHash, ipAddress, userAgent, thaoTac)
      VALUES (@idNguoiDung, @tokenHash, @ipAddress, @userAgent, N'dang_nhap');
@@ -100,16 +116,25 @@ export async function layLichSuTruyCap(
   }
 
   const [countRow] = await query<{ total: number }>(
-    `SELECT COUNT(*) as total FROM LoginSession ls ${where}`,
+    `SELECT COUNT(DISTINCT ls.idNguoiDung) as total
+     FROM (
+       SELECT idNguoiDung, ROW_NUMBER() OVER (PARTITION BY idNguoiDung ORDER BY ngayTao DESC) as rn
+       FROM LoginSession ls
+       ${where}
+     ) t WHERE t.rn = 1`,
     params,
   );
 
   const rows = await query<LoginSession>(
-    `SELECT ls.*, nd.hoTen, nd.vaiTro
-     FROM LoginSession ls
-     LEFT JOIN NguoiDung nd ON ls.idNguoiDung = nd.id
-     ${where}
-     ORDER BY ls.ngayTao DESC
+    `SELECT * FROM (
+       SELECT ls.id, ls.idNguoiDung, ls.tokenHash, ls.ipAddress, ls.userAgent,
+              ls.thaoTac, ls.ngayTao, ls.ngayKetThuc, nd.hoTen, nd.vaiTro,
+              ROW_NUMBER() OVER (PARTITION BY ls.idNguoiDung ORDER BY ls.ngayTao DESC) as rn
+       FROM LoginSession ls
+       LEFT JOIN NguoiDung nd ON ls.idNguoiDung = nd.id
+       ${where}
+     ) t WHERE t.rn = 1
+     ORDER BY t.ngayTao DESC
      OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
     params,
   );
