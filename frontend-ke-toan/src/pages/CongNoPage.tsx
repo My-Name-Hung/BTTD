@@ -84,11 +84,11 @@ export default function CongNoPage() {
     setSearchTimeoutState(t);
   };
 
-  const tongDuCuoiNo = tongCong?.duCuoiNo ?? groups.reduce((s, g) => s + g.tongDuCuoiNo, 0);
-  const tongDuCuoiCo = tongCong?.duCuoiCo ?? groups.reduce((s, g) => s + g.tongDuCuoiCo, 0);
-
   const tongCong = groups.flatMap(g => g.items).find(cn => cn.tenKhachHang === 'Tổng cộng');
   const displayGroups = groups.filter(g => g.nhom !== 'Tổng cộng');
+
+  const tongDuCuoiNo = tongCong?.duCuoiNo ?? displayGroups.reduce((s, g) => s + g.tongDuCuoiNo, 0);
+  const tongDuCuoiCo = tongCong?.duCuoiCo ?? displayGroups.reduce((s, g) => s + g.tongDuCuoiCo, 0);
 
   const toggleGroup = (nhom: string) => {
     const next = new Set(collapsed);

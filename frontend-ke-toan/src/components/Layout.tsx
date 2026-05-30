@@ -50,26 +50,16 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Tổng quan",
     icon: <MdDashboard size={20} />,
     iconActive: <MdDashboard size={20} />,
-    roles: [
-      "admin",
-      "ke_toan",
-      "dieu_phoi",
-      "lanh_dao",
-      "kho",
-      "sale",
-      "tai_xe",
-      "ky_thuat",
-    ],
+    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"],
   },
-  // Đơn hàng
+  // Bán hàng
   {
     path: "/quan-ly/don-hang",
     label: "Đơn hàng",
     icon: <FiShoppingBag size={20} />,
     iconActive: <FiShoppingBag size={20} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "sale"],
+    roles: ["admin", "ke_toan", "dieu_phoi", "sale", "tai_xe", "ky_thuat", "lanh_dao"],
   },
-  // Tạo đơn (sale)
   {
     path: "/quan-ly/don-hang/tao",
     label: "Tạo đơn hàng",
@@ -77,13 +67,20 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <FiPlusCircle size={20} />,
     roles: ["admin", "sale"],
   },
-  // Khách hàng
   {
     path: "/khach-hang",
     label: "Khách hàng",
     icon: <MdPeople size={20} />,
     iconActive: <MdPeople size={20} />,
     roles: ["admin", "ke_toan", "dieu_phoi", "sale"],
+  },
+  // Sản xuất
+  {
+    path: "/kho/lich-san-xuat",
+    label: "Lịch sản xuất",
+    icon: <MdFactory size={20} />,
+    iconActive: <MdFactory size={20} />,
+    roles: ["admin", "kho"],
   },
   // Điều phối
   {
@@ -93,7 +90,6 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdLocalShipping size={20} />,
     roles: ["admin", "dieu_phoi"],
   },
-  // Quản lý mác bê tông
   {
     path: "/dieu-phoi/mac-be-tong",
     label: "Mác bê tông",
@@ -101,13 +97,28 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdFactory size={20} />,
     roles: ["admin", "dieu_phoi"],
   },
+  // Giao hàng
+  {
+    path: "/tai-xe",
+    label: "Giao hàng",
+    icon: <MdDeliveryDining size={20} />,
+    iconActive: <MdDeliveryDining size={20} />,
+    roles: ["admin", "tai_xe"],
+  },
+  {
+    path: "/tai-xe/lich-su-giao",
+    label: "Lịch sử giao",
+    icon: <MdDeliveryDining size={20} />,
+    iconActive: <MdDeliveryDining size={20} />,
+    roles: ["admin", "tai_xe"],
+  },
   // Nghiệm thu
   {
     path: "/nghiem-thu",
     label: "Nghiệm thu",
     icon: <MdAssignment size={20} />,
     iconActive: <MdAssignment size={20} />,
-    roles: ["admin", "ke_toan", "ky_thuat"],
+    roles: ["admin", "ky_thuat", "ke_toan"],
   },
   // Thanh toán
   {
@@ -125,38 +136,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdPayments size={20} />,
     roles: ["admin", "ke_toan", "lanh_dao"],
   },
-  // Kho
-  {
-    path: "/kho/lich-san-xuat",
-    label: "Lịch sản xuất",
-    icon: <MdFactory size={20} />,
-    iconActive: <MdFactory size={20} />,
-    roles: ["admin", "kho"],
-  },
-  // Tài xế
-  {
-    path: "/tai-xe",
-    label: "Giao hàng",
-    icon: <MdDeliveryDining size={20} />,
-    iconActive: <MdDeliveryDining size={20} />,
-    roles: ["admin", "tai_xe"],
-  },
-  {
-    path: "/tai-xe/lich-su-giao",
-    label: "Lịch sử giao",
-    icon: <MdDeliveryDining size={20} />,
-    iconActive: <MdDeliveryDining size={20} />,
-    roles: ["admin", "tai_xe"],
-  },
-  // Kỹ thuật — đã ẩn, chỉ dùng menu Nghiệm thu
-  {
-    path: "/ky-thuat",
-    label: "Công trình",
-    icon: <MdCheckCircle size={20} />,
-    iconActive: <MdCheckCircle size={20} />,
-    roles: [],
-  },
-  // Người dùng
+  // Quản trị (admin only)
   {
     path: "/quan-ly/nguoi-dung",
     label: "Người dùng",
@@ -164,7 +144,6 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <FiUsers size={20} />,
     roles: ["admin"],
   },
-  // Phương tiện
   {
     path: "/quan-ly/xe",
     label: "Phương tiện",
@@ -172,7 +151,6 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <FiTruck size={20} />,
     roles: ["admin"],
   },
-  // Trạm trộn
   {
     path: "/quan-ly/tram-tron",
     label: "Trạm trộn",
@@ -180,15 +158,13 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdSettings size={20} />,
     roles: ["admin"],
   },
-  // Tải danh sách
   {
     path: "/tai-len-danh-sach",
     label: "Tải lên DS",
     icon: <FiUpload size={20} />,
     iconActive: <FiUpload size={20} />,
-    roles: ["admin", "dieu_phoi"],
+    roles: ["admin"],
   },
-  // Bảo trì
   {
     path: "/bao-tri",
     label: "Bảo trì",
@@ -209,40 +185,53 @@ export const SIDEBAR_GROUPS: MenuGroup[] = [
     title: "Tổng quan",
     items: SIDEBAR_ITEMS.filter((m) => m.path === "/dashboard"),
   },
+  // === BÁN HÀNG ===
   {
-    title: "Kinh doanh",
+    title: "Bán hàng",
     items: SIDEBAR_ITEMS.filter((m) =>
-      ["/quan-ly/don-hang", "/quan-ly/don-hang/tao", "/khach-hang"].includes(
-        m.path,
-      ),
+      ["/quan-ly/don-hang", "/quan-ly/don-hang/tao", "/khach-hang"].includes(m.path),
     ),
   },
+  // === SẢN XUẤT ===
   {
-    title: "Vận hành",
+    title: "Sản xuất",
     items: SIDEBAR_ITEMS.filter((m) =>
-      [
-        "/dieu-phoi",
-        "/dieu-phoi/mac-be-tong",
-        "/nghiem-thu",
-        "/thanh-toan",
-        "/cong-no",
-        "/kho/lich-san-xuat",
-        "/tai-xe",
-        "/tai-xe/lich-su-giao",
-        "/ky-thuat",
-      ].includes(m.path),
+      ["/kho/lich-san-xuat"].includes(m.path),
     ),
   },
+  // === ĐIỀU PHỐI ===
+  {
+    title: "Điều phối",
+    items: SIDEBAR_ITEMS.filter((m) =>
+      ["/dieu-phoi", "/dieu-phoi/mac-be-tong"].includes(m.path),
+    ),
+  },
+  // === GIAO HÀNG ===
+  {
+    title: "Giao hàng",
+    items: SIDEBAR_ITEMS.filter((m) =>
+      ["/tai-xe", "/tai-xe/lich-su-giao"].includes(m.path),
+    ),
+  },
+  // === NGHIỆM THU ===
+  {
+    title: "Nghiệm thu",
+    items: SIDEBAR_ITEMS.filter((m) =>
+      ["/nghiem-thu"].includes(m.path),
+    ),
+  },
+  // === THANH TOÁN & CÔNG NỢ ===
+  {
+    title: "Thanh toán",
+    items: SIDEBAR_ITEMS.filter((m) =>
+      ["/thanh-toan", "/cong-no"].includes(m.path),
+    ),
+  },
+  // === QUẢN TRỊ (admin only) ===
   {
     title: "Quản trị",
     items: SIDEBAR_ITEMS.filter((m) =>
-      [
-        "/quan-ly/nguoi-dung",
-        "/quan-ly/xe",
-        "/quan-ly/tram-tron",
-        "/tai-len-danh-sach",
-        "/bao-tri",
-      ].includes(m.path),
+      ["/quan-ly/nguoi-dung", "/quan-ly/xe", "/quan-ly/tram-tron", "/tai-len-danh-sach", "/bao-tri"].includes(m.path),
     ),
   },
 ];
@@ -254,46 +243,35 @@ const BOTTOM_TABS = [
     label: "Tổng quan",
     icon: <MdDashboard size={22} />,
     iconActive: <MdDashboard size={22} />,
-    roles: [
-      "admin",
-      "ke_toan",
-      "dieu_phoi",
-      "lanh_dao",
-      "kho",
-      "sale",
-      "tai_xe",
-      "ky_thuat",
-    ],
+    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"],
   },
   {
     path: "/quan-ly/don-hang",
     label: "Đơn hàng",
     icon: <FiShoppingBag size={22} />,
     iconActive: <FiShoppingBag size={22} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "sale", "tai_xe", "ky_thuat"],
+    roles: ["admin", "ke_toan", "dieu_phoi", "sale", "tai_xe", "ky_thuat", "lanh_dao"],
+  },
+  {
+    path: "/tai-xe",
+    label: "Giao hàng",
+    icon: <MdDeliveryDining size={22} />,
+    iconActive: <MdDeliveryDining size={22} />,
+    roles: ["admin", "tai_xe"],
+  },
+  {
+    path: "/nghiem-thu",
+    label: "Nghiệm thu",
+    icon: <MdAssignment size={22} />,
+    iconActive: <MdAssignment size={22} />,
+    roles: ["admin", "ky_thuat"],
   },
   {
     path: "/thong-bao",
     label: "Thông báo",
     icon: <FiBell size={22} />,
     iconActive: <FiBell size={22} />,
-    roles: [
-      "admin",
-      "ke_toan",
-      "dieu_phoi",
-      "lanh_dao",
-      "kho",
-      "sale",
-      "tai_xe",
-      "ky_thuat",
-    ],
-  },
-  {
-    path: "/dieu-phoi/mac-be-tong",
-    label: "Mác BT",
-    icon: <MdFactory size={22} />,
-    iconActive: <MdFactory size={22} />,
-    roles: ["admin", "dieu_phoi"],
+    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"],
   },
 ];
 
