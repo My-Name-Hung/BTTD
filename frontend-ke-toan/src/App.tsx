@@ -29,6 +29,7 @@ const KhoLichSanXuatPage = lazy(() => import("./pages/KhoLichSanXuatPage"));
 const KhoDonHangPage = lazy(() => import("./pages/KhoDonHangPage"));
 const QuanLyMacBeTongPage = lazy(() => import("./pages/QuanLyMacBeTongPage"));
 const AccessHistoryPage = lazy(() => import("./pages/AccessHistoryPage"));
+const AccessHistoryDetailPage = lazy(() => import("./pages/AccessHistoryDetailPage"));
 
 // Role-specific pages
 const SaleDonHangPage = lazy(() => import("./pages/SaleDonHangPage"));
@@ -189,6 +190,7 @@ function App() {
                     <Route path="/bao-tri" element={<BaoTriPage />} />
                     <Route path="/tham-so" element={<ThamSoPage />} />
                     <Route path="/lich-su-truy-cap" element={<AccessHistoryPage />} />
+                    <Route path="/lich-su-truy-cap/:id" element={<AccessHistoryDetailPage />} />
 
                     {/* Redirects */}
                     <Route

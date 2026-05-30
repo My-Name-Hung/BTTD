@@ -113,6 +113,17 @@ router.post('/users/:id/banned-ip', authMiddleware, requireRole('admin'), async 
     const id = parseInt(req.params.id, 10);
     const { bannedIp } = req.body as { bannedIp?: string | null };
     await capNhatBannedIp(id, bannedIp ?? null);
+
+    // Bắn socket buộc user logout + cấm IP
+    const io = getSocketIO();
+    if (io && bannedIp) {
+      io.to(`user:${id}`).emit('force_logout', {
+        message: `Địa chỉ IP của bạn đã bị cấm. Không thể đăng nhập từ IP này.`,
+        reason: 'ip_banned',
+        bannedIp,
+      });
+    }
+
     res.json({ success: true, message: bannedIp ? 'Đã cấm IP' : 'Đã bỏ cấm IP' });
   } catch (error) {
     res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Lỗi' });

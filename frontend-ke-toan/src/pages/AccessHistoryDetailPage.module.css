@@ -1,0 +1,52 @@
+/* AccessHistoryDetailPage.module.css */
+
+.page { padding: 24px; max-width: 800px; }
+
+.header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.backBtn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; border: 1.5px solid var(--color-border); background: var(--color-white); color: var(--color-text); cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+.backBtn:hover { background: var(--color-bg); color: var(--color-primary); border-color: var(--color-primary); }
+.title { font-size: 18px; font-weight: 700; color: var(--color-text); }
+.subtitle { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
+
+.card { background: var(--color-white); border-radius: var(--radius-lg); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm); padding: 20px; margin-bottom: 20px; }
+.cardTitle { font-size: 14px; font-weight: 700; color: var(--color-text); margin-bottom: 16px; }
+
+.infoGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.infoItem { display: flex; flex-direction: column; gap: 4px; }
+.infoLabel { font-size: 11px; font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.infoValue { font-size: 13px; color: var(--color-text); }
+.mono { font-family: monospace; font-size: 12px; }
+.wrap { word-break: break-all; }
+.online { color: #10b981; font-weight: 600; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--color-border); padding-top: 16px; }
+.actionBtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
+
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 60px; }
+
+.emptyLogs { font-size: 13px; color: var(--color-text-secondary); text-align: center; padding: 24px; }
+.logsList { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+.logItem { padding: 12px 14px; background: var(--color-bg); border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+.logHeader { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.logAction { font-size: 12px; font-weight: 700; color: #073ceb; }
+.logTable { font-size: 11px; color: var(--color-text-secondary); }
+.logTime { font-size: 11px; color: #9ca3af; margin-left: auto; }
+.logDetail { font-size: 12px; color: #6b7280; margin-top: 6px; padding-left: 8px; border-left: 2px solid var(--color-border); }
+
+/* Modal */
+.modalOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+.modal { background: var(--color-white); border-radius: var(--radius-lg); width: 100%; max-width: 400px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.modalHeader { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--color-border); font-size: 15px; font-weight: 700; color: var(--color-text); }
+.modalClose { background: none; border: none; font-size: 18px; color: var(--color-text-secondary); cursor: pointer; padding: 0; }
+.modalBody { padding: 20px; }
+.modalFooter { display: flex; gap: 8px; justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--color-border); }
+.formGroup { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.formGroup label { font-size: 13px; font-weight: 600; color: var(--color-text); }
+.formInput { padding: 10px 12px; border: 1.5px solid var(--color-border); border-radius: var(--radius-md); font-size: 13px; font-family: inherit; color: var(--color-text); width: 100%; box-sizing: border-box; }
+.formInput:focus { outline: none; border-color: var(--color-primary); }
+.formHint { font-size: 12px; color: var(--color-text-secondary); margin: 0; }
+
+@media (max-width: 640px) {
+  .page { padding: 16px; }
+  .infoGrid { grid-template-columns: 1fr; }
+}
