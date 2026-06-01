@@ -16,6 +16,7 @@ import { useToast, usePageRole, VaiTro } from '../hooks';
 import { Loading } from '../components/Common';
 import { generateCongNoBravoTemplate } from '../utils/exportCongNo';
 import styles from './TaiLenDanhSachPage.module.css';
+import { formatDateVN } from '../utils/dateUtils';
 
 type TabKey = 'don_hang' | 'khach_hang' | 'nguoi_dung' | 'phuong_tien' | 'mac_be_tong' | 'cong_no';
 
@@ -127,7 +128,7 @@ const TABS: TabConfig[] = [
 ];
 
 function formatDate(d: string) {
-  return d ? new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  return d ? formatDateVN(d) : '';
 }
 
 function generateTemplate(tab: TabConfig): void {

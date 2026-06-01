@@ -10,7 +10,7 @@ function toExcelNum(v: number | string): number {
   return isNaN(n) ? 0 : n;
 }
 
-export async function generateCongNoBravoTemplate(): Promise<Buffer> {
+export async function generateCongNoBravoTemplate(): Promise<Blob> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "BTTD";
   wb.created = new Date();
@@ -230,8 +230,8 @@ export async function generateCongNoBravoTemplate(): Promise<Buffer> {
     fitToWidth: 1,
     fitToHeight: 0,
   };
-  ws.pageMargins = { left: 0.5, right: 0.5, top: 0.75, bottom: 0.75 };
+  (ws as any).pageMargins = { left: 0.5, right: 0.5, top: 0.75, bottom: 0.75 };
 
-  const buf = (await wb.xlsx.writeBuffer()) as Buffer;
-  return buf;
+  const buf = await wb.xlsx.writeBuffer();
+  return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }

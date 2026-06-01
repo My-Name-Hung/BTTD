@@ -15,6 +15,7 @@ import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from "../types";
 import { useToast } from "../hooks";
 import { Loading } from "../components/Common";
 import styles from "./KhoDonHangPage.module.css";
+import { formatDateVN } from "../utils/dateUtils";
 
 const TRANG_THAI_STEPS = [
   { key: "dang_san_xuat", label: "Đang SX" },
@@ -30,23 +31,11 @@ function formatCurrency(v: number) {
 }
 
 function formatDate(d: string) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  return d ? formatDateVN(d) : '';
 }
 
 function formatDateTime(d: string) {
-  if (!d) return "—";
-  return new Date(d).toLocaleString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return d ? formatDateVN(d) : '';
 }
 
 function statusColor(key: string) {

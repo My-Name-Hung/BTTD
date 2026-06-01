@@ -28,12 +28,13 @@ import {
   TRANG_THAI_DON_LABELS,
 } from "../types";
 import styles from "./QuanLyDonHangPage.module.css";
+import { formatDateVN } from "../utils/dateUtils";
 
 function formatCurrency(v: number) {
   return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
 }
 function formatDate(d: string) {
-  return d ? new Date(d).toLocaleDateString("vi-VN") : "";
+  return d ? formatDateVN(d) : '';
 }
 
 export default function QuanLyDonHangPage() {

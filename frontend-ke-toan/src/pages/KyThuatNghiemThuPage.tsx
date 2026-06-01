@@ -9,9 +9,12 @@ import { DonHang, TRANG_THAI_DON_LABELS } from '../types';
 import { useToast, useAuth } from '../hooks';
 import { Loading, ConfirmModal } from '../components/Common';
 import styles from './KyThuatNghiemThuPage.module.css';
+import { formatDateVN } from '../utils/dateUtils';
 
 function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' || '0 đ'; }
-function formatDate(d: string) { return d ? new Date(d).toLocaleDateString('vi-VN') : ''; }
+function formatDate(d: string | null | undefined): string {
+  return d ? formatDateVN(d) : '';
+}
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';

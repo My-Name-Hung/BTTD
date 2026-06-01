@@ -6,6 +6,7 @@ import { useAuth } from "../hooks";
 import { layLichSanXuatKho } from "../services/api";
 import { TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./KhoDashboardPage.module.css";
+import { formatDateVN } from "../utils/dateUtils";
 
 interface KpiItem {
   label: string;
@@ -29,12 +30,7 @@ interface LichSanXuatItem {
 }
 
 function formatDate(d: string) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  return d ? formatDateVN(d) : '';
 }
 
 function statusColor(key: string) {

@@ -11,12 +11,10 @@ import { AccessSession } from '../types';
 import { useToast } from '../hooks';
 import { EmptyState } from '../components/Common';
 import styles from './AccessHistoryPage.module.css';
+import { formatDateVN } from '../utils/dateUtils';
 
-function formatDate(d: Date | string): string {
-  const s = typeof d === 'string' ? d : d.toISOString();
-  // Strip trailing Z so browser parses as local time (VN +07:00), not UTC
-  const normalized = s.endsWith('Z') ? s.slice(0, -1) + ' +07:00' : s;
-  return new Date(normalized).toLocaleString('vi-VN');
+function formatDate(d: Date | string | null | undefined): string {
+  return d ? formatDateVN(d) : '—';
 }
 
 const THAO_TAC_LABELS: Record<string, string> = {

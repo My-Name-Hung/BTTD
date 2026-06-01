@@ -98,6 +98,7 @@ export interface DonHang {
     | "cho_duyet"
     | "da_duyet"
     | "dang_san_xuat"
+    | "dang_cho_giao"
     | "dang_giao"
     | "da_giao"
     | "nghiem_thu"

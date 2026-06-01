@@ -10,11 +10,10 @@ import { AccessSessionDetail } from '../types';
 import { useToast } from '../hooks';
 import { Loading } from '../components/Common';
 import styles from './AccessHistoryDetailPage.module.css';
+import { formatDateVN } from '../utils/dateUtils';
 
-function formatDate(d: Date | string): string {
-  const s = typeof d === 'string' ? d : d.toISOString();
-  const normalized = s.endsWith('Z') ? s.slice(0, -1) + ' +07:00' : s;
-  return new Date(normalized).toLocaleString('vi-VN');
+function formatDate(d: Date | string | null | undefined): string {
+  return d ? formatDateVN(d) : '';
 }
 
 const HANH_DONG_LABELS: Record<string, string> = {
@@ -98,72 +97,75 @@ export default function AccessHistoryDetailPage() {
         </div>
       </div>
 
-      {/* Session Info Card */}
-      <div className={styles.card}>
-        <div className={styles.cardTitle}>Thông tin phiên</div>
-        <div className={styles.infoGrid}>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Người dùng</span>
-            <span className={styles.infoValue}>{session.hoTen}</span>
+      {/* 2-column grid */}
+      <div className={styles.grid}>
+        {/* Col 1: Session Info */}
+        <div className={styles.card}>
+          <div className={styles.cardTitle}>Thông tin phiên</div>
+          <div className={styles.infoGrid}>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>Người dùng</span>
+              <span className={styles.infoValue}>{session.hoTen}</span>
+            </div>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>Vai trò</span>
+              <span className={styles.infoValue}>{session.vaiTro}</span>
+            </div>
+            <div className={`${styles.infoItem} ${styles.span2}`}>
+              <span className={styles.infoLabel}>Địa chỉ IP</span>
+              <span className={`${styles.infoValue} ${styles.mono}`}>{session.ipAddress || '—'}</span>
+            </div>
+            <div className={`${styles.infoItem} ${styles.span2}`}>
+              <span className={styles.infoLabel}>User-Agent</span>
+              <span className={`${styles.infoValue} ${styles.mono} ${styles.wrap}`}>{session.userAgent || '—'}</span>
+            </div>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>Đăng nhập lúc</span>
+              <span className={styles.infoValue}>{formatDate(session.ngayTao)}</span>
+            </div>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>Kết thúc</span>
+              <span className={styles.infoValue}>
+                {session.ngayKetThuc ? formatDate(session.ngayKetThuc) : <span className={styles.online}>Đang hoạt động</span>}
+              </span>
+            </div>
           </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Vai trò</span>
-            <span className={styles.infoValue}>{session.vaiTro}</span>
-          </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Địa chỉ IP</span>
-            <span className={`${styles.infoValue} ${styles.mono}`}>{session.ipAddress || '—'}</span>
-          </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>User-Agent</span>
-            <span className={`${styles.infoValue} ${styles.mono} ${styles.wrap}`}>{session.userAgent || '—'}</span>
-          </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Đăng nhập lúc</span>
-            <span className={styles.infoValue}>{formatDate(session.ngayTao)}</span>
-          </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Kết thúc</span>
-            <span className={styles.infoValue}>
-              {session.ngayKetThuc ? formatDate(session.ngayKetThuc) : <span className={styles.online}>Đang hoạt động</span>}
-            </span>
-          </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className={styles.actions}>
-          {session.thaoTac === 'dang_nhap' && (
-            <button className={`btn btn-danger ${styles.actionBtn}`} onClick={handleForceLogout}>
-              <FiLogOut size={16} /> Buộc đăng xuất
+          {/* Action Buttons */}
+          <div className={styles.actions}>
+            {session.thaoTac === 'dang_nhap' && (
+              <button className={`btn btn-danger ${styles.actionBtn}`} onClick={handleForceLogout}>
+                <FiLogOut size={16} /> Buộc đăng xuất
+              </button>
+            )}
+            <button className={`btn btn-primary ${styles.actionBtn}`} onClick={() => setResetPwOpen(true)}>
+              <FiKey size={16} /> Đổi mật khẩu
             </button>
-          )}
-          <button className={`btn btn-primary ${styles.actionBtn}`} onClick={() => setResetPwOpen(true)}>
-            <FiKey size={16} /> Đổi mật khẩu
-          </button>
-        </div>
-      </div>
-
-      {/* Logs Card */}
-      <div className={styles.card}>
-        <div className={styles.cardTitle}>Nhật ký thao tác ({logs.length})</div>
-        {logs.length === 0 ? (
-          <div className={styles.emptyLogs}>Chưa có thao tác nào được ghi nhận.</div>
-        ) : (
-          <div className={styles.logsList}>
-            {logs.map((log) => (
-              <div key={log.id} className={styles.logItem}>
-                <div className={styles.logHeader}>
-                  <span className={styles.logAction}>{HANH_DONG_LABELS[log.hanhDong] || log.hanhDong}</span>
-                  {log.bangDuocTacDong && <span className={styles.logTable}>trên {log.bangDuocTacDong}</span>}
-                  <span className={styles.logTime}>{formatDate(log.thoiGian)}</span>
-                </div>
-                {log.noiDungMoi && <div className={styles.logDetail}><strong>Mới:</strong> {log.noiDungMoi}</div>}
-                {log.noiDungCu && <div className={styles.logDetail}><strong>Cũ:</strong> {log.noiDungCu}</div>}
-                {log.ipAddress && <div className={styles.logDetail}><strong>IP:</strong> {log.ipAddress}</div>}
-              </div>
-            ))}
           </div>
-        )}
+        </div>
+
+        {/* Col 2: Activity Logs */}
+        <div className={styles.card}>
+          <div className={styles.cardTitle}>Nhật ký thao tác ({logs.length})</div>
+          {logs.length === 0 ? (
+            <div className={styles.emptyLogs}>Chưa có thao tác nào được ghi nhận.</div>
+          ) : (
+            <div className={styles.logsList}>
+              {logs.map((log) => (
+                <div key={log.id} className={styles.logItem}>
+                  <div className={styles.logHeader}>
+                    <span className={styles.logAction}>{HANH_DONG_LABELS[log.hanhDong] || log.hanhDong}</span>
+                    {log.bangDuocTacDong && <span className={styles.logTable}>trên {log.bangDuocTacDong}</span>}
+                    <span className={styles.logTime}>{formatDate(log.thoiGian)}</span>
+                  </div>
+                  {log.noiDungMoi && <div className={styles.logDetail}><strong>Mới:</strong> {log.noiDungMoi}</div>}
+                  {log.noiDungCu && <div className={styles.logDetail}><strong>Cũ:</strong> {log.noiDungCu}</div>}
+                  {log.ipAddress && <div className={styles.logDetail}><strong>IP:</strong> {log.ipAddress}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Reset Password Modal */}

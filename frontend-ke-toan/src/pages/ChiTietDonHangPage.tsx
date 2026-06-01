@@ -22,6 +22,7 @@ import {
 import { useToast } from '../hooks';
 import { Loading, ConfirmModal } from '../components/Common';
 import styles from './ChiTietDonHangPage.module.css';
+import { formatDateVN } from '../utils/dateUtils';
 
 const TRANG_THAI_STEPS = [
   { key: 'cho_duyet',      label: 'Chờ duyệt' },
@@ -37,17 +38,12 @@ function formatCurrency(v: number) {
   return v?.toLocaleString('vi-VN') + ' đ' || '0 đ';
 }
 
-function formatDate(d: string) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+function formatDate(d: string | null | undefined) {
+  return d ? formatDateVN(d) : '';
 }
 
-function formatDateTime(d: string) {
-  if (!d) return '—';
-  return new Date(d).toLocaleString('vi-VN', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
+function formatDateTime(d: string | null | undefined): string {
+  return d ? formatDateVN(d) : '';
 }
 
 function statusColor(key: string) {

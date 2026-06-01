@@ -6,9 +6,10 @@ import { useAuth, useToast } from "../hooks";
 import { layLichSuGiaoHangTaiXe } from "../services/api";
 import { DonHang } from "../types";
 import styles from "./TaiXeGiaoHangPage.module.css";
+import { formatDateVN } from "../utils/dateUtils";
 
-function formatDate(d: string) {
-  return d ? new Date(d).toLocaleDateString("vi-VN") : "";
+function formatDate(d: string | null | undefined): string {
+  return d ? formatDateVN(d) : '';
 }
 
 export default function LichSuGiaoHangPage() {

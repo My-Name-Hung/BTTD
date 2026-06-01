@@ -6,6 +6,7 @@ import { useToast } from "../hooks";
 import { layLichSanXuatKho, xacNhanBatDauGiao } from "../services/api";
 import { TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./KhoLichSanXuatPage.module.css";
+import { formatDateVN } from "../utils/dateUtils";
 
 interface LichSanXuatItem {
   id: number;
@@ -27,12 +28,7 @@ interface LichSanXuatItem {
 type FilterMode = "ngay" | "thang" | "nam";
 
 function formatDate(d: string) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  return d ? formatDateVN(d) : '';
 }
 
 function getDateKey(d: string) {
