@@ -37,6 +37,7 @@ app.use(
       "http://localhost:5174",
       "http://localhost:3000",
       "https://bttd.netlify.app",
+      "https://quanlybetong.netlify.app",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
