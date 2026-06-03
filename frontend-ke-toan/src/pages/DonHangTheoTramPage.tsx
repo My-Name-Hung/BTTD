@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FiArrowLeft, FiSearch, FiX } from "react-icons/fi";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Loading } from "../components/Common";
 import { usePagination, useToast } from "../hooks";
 import { layDanhSachDonHang, layDanhSachTramTron, layTatCaLichSanXuat } from "../services/api";
@@ -9,6 +9,7 @@ import styles from "./DonHangTheoTramPage.module.css";
 
 export default function DonHangTheoTramPage() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toasts, showToast } = useToast();
   const { page, resetPage, goToPage } = usePagination(1, 20);
@@ -18,8 +19,10 @@ export default function DonHangTheoTramPage() {
   const [lichSans, setLichSans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
-  const [tramFilter, setTramFilter] = useState(searchParams.get("tram") || "");
+  // Filters - auto-select tram from URL param
+  const [tramFilter, setTramFilter] = useState<string>(() => {
+    return id || searchParams.get("tram") || "";
+  });
   const [maDonFilter, setMaDonFilter] = useState(searchParams.get("maDon") || "");
 
   const loadData = useCallback(async () => {
@@ -32,7 +35,7 @@ export default function DonHangTheoTramPage() {
       ]);
       setTrams(tramData || []);
       setLichSans(Array.isArray(lsData) ? lsData : []);
-      setAllOrders(Array.isArray(dhData?.data) ? dhData.data : (Array.isArray(dhData) ? dhData : []));
+      setAllOrders(Array.isArray(dhData) ? dhData : []);
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {

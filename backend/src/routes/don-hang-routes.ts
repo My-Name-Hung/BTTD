@@ -22,7 +22,7 @@ router.get(
   authMiddleware,
   [
     queryValidator('page').optional().isInt({ min: 1 }).toInt(),
-    queryValidator('limit').optional().isInt({ min: 1, max: 500 }).toInt(),
+    queryValidator('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
     queryValidator('trangThai').optional().trim(),
     queryValidator('tuKhoa').optional().trim(),
   ],

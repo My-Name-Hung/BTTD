@@ -40,7 +40,7 @@ export default function DonHangTheoXePage() {
       setXes(xeData || []);
       setTaiXes(txData || []);
       setLichSans(Array.isArray(lsData) ? lsData : []);
-      setAllOrders(Array.isArray(dhData?.data) ? dhData.data : (Array.isArray(dhData) ? dhData : []));
+      setAllOrders(Array.isArray(dhData) ? dhData : []);
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {

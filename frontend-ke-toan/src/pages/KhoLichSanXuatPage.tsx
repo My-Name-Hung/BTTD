@@ -418,13 +418,13 @@ export default function KhoLichSanXuatPage() {
                               <FiCheck size={12} /> Đã giao
                             </span>
                           )}
-                          {/* Xem danh sách đơn hàng theo trạm */}
+                          {/* Xem chi tiết */}
                           <button
                             className={`${styles.actionBtn} ${styles.actionBtnView}`}
                             onClick={() =>
-                              navigate(`/tram-tron/don-hang-list?tram=${item.idTramTron}`)
+                              navigate(`/tram-tron/don-hang/${item.idDonHang}`)
                             }
-                            title="Xem đơn hàng theo trạm"
+                            title="Xem chi tiết"
                           >
                             <FiEye size={15} />
                           </button>

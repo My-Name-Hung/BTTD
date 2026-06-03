@@ -148,6 +148,12 @@ function App() {
                       element={<DonHangTheoTramPage />}
                     />
 
+                    {/* Quản lý trạm trộn - đơn hàng theo trạm */}
+                    <Route
+                      path="/quan-ly/tram/don-hang/:id"
+                      element={<DonHangTheoTramPage />}
+                    />
+
                     {/* Quản lý xe */}
                     <Route
                       path="/quan-ly/xe/don-hang/:id"

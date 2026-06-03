@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiX, FiEye } from 'react-icons/fi';
-import { layDanhSachTramTron, taoTramTron, suaTramTron, xoaTramTron, layDanhSachDonHang, layTatCaLichSanXuat } from '../services/api';
-import { TramTron, DonHang } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { layDanhSachTramTron, taoTramTron, suaTramTron, xoaTramTron } from '../services/api';
+import { TramTron } from '../types';
 import { usePagination, useToast } from '../hooks';
 import { Modal, Loading, EmptyState, ConfirmModal, Pagination } from '../components/Common';
-import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from '../types';
 import styles from './QuanLyTramTronPage.module.css';
 
 const TRANG_THAI_LABELS: Record<string, string> = {
@@ -18,6 +18,7 @@ const TRANG_THAI_CLASS: Record<string, string> = {
 };
 
 export default function QuanLyTramTronPage() {
+  const navigate = useNavigate();
   const { toasts, showToast } = useToast();
   const { page, resetPage, goToPage } = usePagination(1, 10);
   const userVaiTro = JSON.parse(localStorage.getItem('bttd_user') || '{}')?.vaiTro;
@@ -36,11 +37,6 @@ export default function QuanLyTramTronPage() {
   // Filters
   const [tuKhoa, setTuKhoa] = useState('');
   const [trangThaiFilter, setTrangThaiFilter] = useState('');
-  const [orderModalOpen, setOrderModalOpen] = useState(false);
-  const [selectedTram, setSelectedTram] = useState<TramTron | null>(null);
-  const [orders, setOrders] = useState<DonHang[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-  const [ordersTotal, setOrdersTotal] = useState(0);
 
   const [form, setForm] = useState({
     tenTram: '',
@@ -78,24 +74,6 @@ export default function QuanLyTramTronPage() {
   const total = filteredTramTrons.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const paginatedTramTrons = filteredTramTrons.slice((page - 1) * limit, page * limit);
-
-  const openViewOrders = async (tram: TramTron) => {
-    setSelectedTram(tram);
-    setOrderModalOpen(true);
-    setOrdersLoading(true);
-    try {
-      const allOrders = await layDanhSachDonHang(1, 100);
-      const matchedOrders = (Array.isArray(allOrders) ? allOrders : []).filter(
-        (o) => o.idTramTron === tram.id,
-      );
-      setOrders(matchedOrders);
-      setOrdersTotal(matchedOrders.length);
-    } catch {
-      showToast('Lỗi tải đơn hàng', 'error');
-    } finally {
-      setOrdersLoading(false);
-    }
-  };
 
   const openCreate = () => {
     const f: typeof form = { tenTram: '', diaChi: '', soDienThoai: '', trangThai: 'hoat_dong' };
@@ -240,7 +218,7 @@ export default function QuanLyTramTronPage() {
                     <td><span className={`${styles.badge} ${TRANG_THAI_CLASS[t.trangThai] || ''}`}>{TRANG_THAI_LABELS[t.trangThai] || t.trangThai}</span></td>
                     <td>
                       <div className={styles.rowActions}>
-                        <button className={`${styles.actionBtn} ${styles.actionBtnEye}`} onClick={() => openViewOrders(t)} title="Xem đơn hàng"><FiEye size={14} /></button>
+                        <button className={`${styles.actionBtn} ${styles.actionBtnEye}`} onClick={() => navigate(`/quan-ly/tram/don-hang/${t.id}`)} title="Xem đơn hàng"><FiEye size={14} /></button>
                         <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`} onClick={() => openEdit(t)} title="Sửa"><FiEdit2 size={14} /></button>
                         {canDelete && (
                           <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} onClick={() => setDeleteTarget(t)} title="Xóa"><FiTrash2 size={14} /></button>
@@ -265,57 +243,6 @@ export default function QuanLyTramTronPage() {
           />
         )}
       </div>
-
-      {/* Order Modal */}
-      <Modal
-        isOpen={orderModalOpen}
-        onClose={() => { setOrderModalOpen(false); setSelectedTram(null); setOrders([]); }}
-        title={selectedTram ? `Đơn hàng của trạm ${selectedTram.tenTram}` : 'Đơn hàng'}
-        size="lg"
-      >
-        {ordersLoading ? (
-          <div className={styles.orderLoading}><Loading /></div>
-        ) : orders.length === 0 ? (
-          <div className={styles.orderEmpty}>
-            <span className={styles.orderEmptyIcon}>📦</span>
-            <p>Chưa có đơn hàng nào cho trạm này</p>
-          </div>
-        ) : (
-          <div className={styles.orderList}>
-            {orders.map((o) => (
-              <div key={o.id} className={styles.orderItem}>
-                <div className={styles.orderItemHeader}>
-                  <span className={styles.orderMa}>{o.maDonHang}</span>
-                  <span
-                    className={styles.orderStatus}
-                    style={{ background: `${TRANG_THAI_DON_COLORS[o.trangThaiDon] || '#6b7280'}18`, color: TRANG_THAI_DON_COLORS[o.trangThaiDon] || '#6b7280' }}
-                  >
-                    {TRANG_THAI_DON_LABELS[o.trangThaiDon] || o.trangThaiDon}
-                  </span>
-                </div>
-                <div className={styles.orderItemBody}>
-                  <div className={styles.orderInfoRow}>
-                    <span className={styles.orderLabel}>Khách hàng</span>
-                    <span className={styles.orderValue}>{o.tenKhachHang}</span>
-                  </div>
-                  <div className={styles.orderInfoRow}>
-                    <span className={styles.orderLabel}>Địa chỉ</span>
-                    <span className={styles.orderValue}>{o.diaChiNhan}</span>
-                  </div>
-                  <div className={styles.orderInfoRow}>
-                    <span className={styles.orderLabel}>Khối lượng</span>
-                    <span className={styles.orderValue}>{o.khoiLuongDat} m³</span>
-                  </div>
-                  <div className={styles.orderInfoRow}>
-                    <span className={styles.orderLabel}>Đơn giá</span>
-                    <span className={styles.orderValue}>{o.donGia.toLocaleString('vi-VN')} đ</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Modal>
 
       <Modal isOpen={modalOpen} onClose={closeModal} title={editingId ? 'Sửa trạm trộn' : 'Thêm trạm trộn mới'}
         footer={<><button className="btn btn-cancel" onClick={closeModal} disabled={formLoading}>Hủy</button><button className="btn btn-save" onClick={handleSubmit} disabled={formLoading}>{formLoading ? 'Đang lưu...' : (editingId ? 'Cập nhật' : 'Thêm trạm trộn')}</button></>}
