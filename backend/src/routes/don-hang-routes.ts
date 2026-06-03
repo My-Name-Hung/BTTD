@@ -34,6 +34,91 @@ router.get(
       const trangThai = req.query.trangThai as string | undefined;
       const tuKhoa = req.query.tuKhoa as string | undefined;
 
+      const vaiTro = req.user?.vaiTro;
+      const idTram = req.user?.idTramTron ?? null;
+
+      // Phân quyền xem đơn hàng:
+      // - admin, ke_toan, dieu_phoi: xem tất cả
+      // - sale: chỉ xem đơn của mình (nguoiTaoId)
+      // - tram_tron: chỉ xem đơn thuộc trạm của mình (idTramTron)
+      // - tai_xe, ky_thuat: xem tất cả (điều phối/xem đơn)
+      const isAdmin = vaiTro === 'admin';
+      const isKeToan = vaiTro === 'ke_toan';
+      const isDieuPhoi = vaiTro === 'dieu_phoi';
+      const isSale = vaiTro === 'sale';
+      const isTramTron = vaiTro === 'tram_tron';
+
+      // Neu la sale hoac tram_tron, chuyen huong sang endpoint cua-toi hoac theo-tram
+      if (isSale) {
+        // Sale xem don cua minh
+        const offset = (page - 1) * limit;
+        let whereClause = 'WHERE dh.nguoiTaoId = @nguoiTaoId';
+        if (trangThai) whereClause += ` AND dh.trangThaiDon = @trangThai`;
+        if (tuKhoa) whereClause += ` AND (dh.maDonHang LIKE @tuKhoa OR dh.tenKhachHang LIKE @tuKhoa)`;
+
+        const dbModule = await import('../config/database');
+        const countResult = await dbModule.query<{ total: number }>(
+          `SELECT COUNT(*) as total FROM DonHang dh ${whereClause}`,
+          { nguoiTaoId: req.user!.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined }
+        );
+        const total = countResult[0]?.total || 0;
+
+        const data = await dbModule.query<any>(
+          `SELECT dh.*, t.tenTram as tenTramTron FROM DonHang dh
+           LEFT JOIN TramTron t ON dh.idTramTron = t.id
+           ${whereClause}
+           ORDER BY dh.ngayTao DESC
+           OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+          { nguoiTaoId: req.user!.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined, offset, limit }
+        );
+
+        res.json({
+          success: true,
+          message: 'Lấy đơn hàng của bạn thành công',
+          data,
+          pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        });
+        return;
+      }
+
+      if (isTramTron && !idTram) {
+        res.status(403).json({ success: false, message: 'Tài khoản chưa được gắn trạm trộn nào' });
+        return;
+      }
+
+      if (isTramTron) {
+        // Trạm trộn xem đơn thuộc trạm của mình
+        const offset = (page - 1) * limit;
+        let whereClause = 'WHERE dh.idTramTron = @idTram';
+        if (trangThai) whereClause += ` AND dh.trangThaiDon = @trangThai`;
+        if (tuKhoa) whereClause += ` AND (dh.maDonHang LIKE @tuKhoa OR dh.tenKhachHang LIKE @tuKhoa)`;
+
+        const dbModule = await import('../config/database');
+        const countResult = await dbModule.query<{ total: number }>(
+          `SELECT COUNT(*) as total FROM DonHang dh ${whereClause}`,
+          { idTram, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined }
+        );
+        const total = countResult[0]?.total || 0;
+
+        const data = await dbModule.query<any>(
+          `SELECT dh.*, t.tenTram as tenTramTron FROM DonHang dh
+           LEFT JOIN TramTron t ON dh.idTramTron = t.id
+           ${whereClause}
+           ORDER BY dh.ngayTao DESC
+           OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+          { idTram, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined, offset, limit }
+        );
+
+        res.json({
+          success: true,
+          message: 'Lấy đơn hàng theo trạm thành công',
+          data,
+          pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        });
+        return;
+      }
+
+      // admin, ke_toan, dieu_phoi: xem tất cả
       const result = await layTatCaDonHang(page, limit, trangThai, tuKhoa);
       res.json(result);
     } catch (error) {

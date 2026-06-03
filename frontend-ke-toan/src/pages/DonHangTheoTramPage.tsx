@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FiArrowLeft, FiSearch, FiX } from "react-icons/fi";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Loading } from "../components/Common";
 import { usePagination, useToast } from "../hooks";
 import { layDonHangTheoTram } from "../services/api";
@@ -9,19 +9,14 @@ import styles from "./DonHangTheoTramPage.module.css";
 
 export default function DonHangTheoTramPage() {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { toasts, showToast } = useToast();
   const { page, resetPage, goToPage } = usePagination(1, 20);
 
   const [data, setData] = useState<{ data: DonHang[]; pagination: { total: number; totalPages: number } }>({ data: [], pagination: { total: 0, totalPages: 1 } });
   const [loading, setLoading] = useState(true);
 
-  // Filters - auto-select tram from URL param
-  const [tramFilter, setTramFilter] = useState<string>(() => {
-    return id || searchParams.get("tram") || "";
-  });
-  const [maDonFilter, setMaDonFilter] = useState(searchParams.get("maDon") || "");
+  // Filters - the backend already filters by user's tram
+  const [maDonFilter, setMaDonFilter] = useState("");
   const [trangThaiFilter, setTrangThaiFilter] = useState("");
 
   const loadData = useCallback(async () => {
@@ -40,34 +35,23 @@ export default function DonHangTheoTramPage() {
     loadData();
   }, [loadData]);
 
-  const filteredOrders = useMemo(() => {
-    if (!data.data) return [];
-    let orders = data.data;
+  // Client-side filter by mã đơn
+  const filteredOrders = data.data?.filter(o =>
+    !maDonFilter || (o.maDonHang || "").toLowerCase().includes(maDonFilter.toLowerCase())
+  ) || [];
 
-    // Lọc theo mã đơn
-    if (maDonFilter) {
-      orders = orders.filter(o =>
-        (o.maDonHang || "").toLowerCase().includes(maDonFilter.toLowerCase())
-      );
-    }
-
-    return orders;
-  }, [allOrders, tramFilter, maDonFilter, tramToDonHangIds]);
-
-  const LIMIT = 20;
-  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / LIMIT));
-  const paginatedOrders = filteredOrders.slice((page - 1) * LIMIT, page * LIMIT);
-
-  const hasFilters = !!tramFilter || !!maDonFilter;
+  const totalPages = data.pagination.totalPages;
+  const hasFilters = !!maDonFilter || !!trangThaiFilter;
 
   const clearFilters = () => {
-    setTramFilter("");
     setMaDonFilter("");
-    setSearchParams({});
+    setTrangThaiFilter("");
     resetPage();
   };
 
   const formatCurrency = (v: number) => v?.toLocaleString("vi-VN") + " đ" || "0 đ";
+
+  const statusColor = (s: string) => TRANG_THAI_DON_COLORS[s] || "#64748b";
 
   if (loading) return <Loading />;
 
@@ -80,9 +64,7 @@ export default function DonHangTheoTramPage() {
           </button>
           <div>
             <div className={styles.pageHeaderTitle}>Đơn hàng theo trạm trộn</div>
-            <div className={styles.pageHeaderDesc}>
-              {tramFilter ? `Đơn hàng của trạm ${trams.find(t => String(t.id) === tramFilter)?.tenTram}` : "Tất cả đơn hàng"}
-            </div>
+            <div className={styles.pageHeaderDesc}>Danh sách đơn hàng thuộc trạm của bạn</div>
           </div>
         </div>
       </div>
@@ -95,30 +77,20 @@ export default function DonHangTheoTramPage() {
             className={styles.filterSearchInput}
             placeholder="Tìm mã đơn hàng..."
             value={maDonFilter}
-            onChange={(e) => { setMaDonFilter(e.target.value); resetPage(); }}
+            onChange={(e) => { setMaDonFilter(e.target.value); }}
           />
         </div>
         <div className={styles.selectWrap}>
-          <span className={styles.selectLabel}>Trạm trộn</span>
-          <div className={styles.selectControl}>
-            <select
-              className={styles.selectInput}
-              value={tramFilter}
-              onChange={(e) => {
-                setTramFilter(e.target.value);
-                setSearchParams(e.target.value ? { tram: e.target.value } : {});
-                resetPage();
-              }}
-            >
-              <option value="">Tất cả trạm</option>
-              {trams.map((t) => (
-                <option key={t.id} value={String(t.id)}>
-                  {t.tenTram}
-                </option>
-              ))}
-            </select>
-            <span className={styles.selectArrow}>▼</span>
-          </div>
+          <select
+            className={styles.selectInput}
+            value={trangThaiFilter}
+            onChange={(e) => { setTrangThaiFilter(e.target.value); resetPage(); }}
+          >
+            <option value="">Tất cả trạng thái</option>
+            {Object.entries(TRANG_THAI_DON_LABELS).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
         </div>
         {hasFilters && (
           <button className={styles.filterClearBtn} onClick={clearFilters}>
@@ -130,15 +102,14 @@ export default function DonHangTheoTramPage() {
       {/* Stats */}
       <div className={styles.statsRow}>
         <div className={styles.statItem}>
-          <span className={styles.statNum}>{filteredOrders.length}</span> đơn hàng
-          {hasFilters && <> / {allOrders.length} tổng</>}
+          <span className={styles.statNum}>{data.pagination.total}</span> đơn hàng
         </div>
       </div>
 
       {/* Table */}
       <div className={styles.card}>
         <div className={styles.tableWrap}>
-          {paginatedOrders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <div className={styles.emptyState}>
               <span>📦</span>
               <p>Không có đơn hàng nào</p>
@@ -158,55 +129,48 @@ export default function DonHangTheoTramPage() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedOrders.map((o) => {
-                  // Tìm trạm trộn của đơn hàng này
-                  const tramId = lichSans.find(ls => ls.idDonHang === o.id)?.idTramTron;
-                  const tramName = tramId ? (trams.find(t => t.id === tramId)?.tenTram || "—") : "—";
-                  return (
-                    <tr key={o.id}>
-                      <td>
-                        <span className={styles.tableCode}>{o.maDonHang}</span>
-                      </td>
-                      <td>
-                        <div className={styles.tableName}>{o.tenKhachHang}</div>
-                      </td>
-                      <td className={styles.hideOnMobile}>
-                        <div className={styles.tableAddress}>{o.diaChiNhan || "—"}</div>
-                      </td>
-                      <td className={styles.hideOnMobile}>
-                        <div>{o.tenMacBeTong || "—"}</div>
-                      </td>
-                      <td>{o.khoiLuongDat ? `${o.khoiLuongDat} m³` : "—"}</td>
-                      <td className={`${styles.tableRight} ${styles.hideOnMobile}`}>
-                        {formatCurrency(o.thanhTien)}
-                      </td>
-                      <td>
-                        <span
-                          className={styles.statusBadge}
-                          style={{
-                            background: `${TRANG_THAI_DON_COLORS[o.trangThaiDon] || "#6b7280"}18`,
-                            color: TRANG_THAI_DON_COLORS[o.trangThaiDon] || "#6b7280",
-                          }}
-                        >
-                          {TRANG_THAI_DON_LABELS[o.trangThaiDon] || o.trangThaiDon}
-                        </span>
-                      </td>
-                      <td className={styles.hideOnMobile}>{tramName}</td>
-                    </tr>
-                  );
-                })}
+                {filteredOrders.map((o) => (
+                  <tr key={o.id}>
+                    <td>
+                      <span className={styles.tableCode}>{o.maDonHang}</span>
+                    </td>
+                    <td>
+                      <div className={styles.tableName}>{o.tenKhachHang}</div>
+                    </td>
+                    <td className={styles.hideOnMobile}>
+                      <div className={styles.tableAddress}>{o.diaChiNhan || "—"}</div>
+                    </td>
+                    <td className={styles.hideOnMobile}>
+                      <div>{o.tenMacBeTong || "—"}</div>
+                    </td>
+                    <td>{o.khoiLuongDat ? `${o.khoiLuongDat} m³` : "—"}</td>
+                    <td className={`${styles.tableRight} ${styles.hideOnMobile}`}>
+                      {formatCurrency(o.thanhTien)}
+                    </td>
+                    <td>
+                      <span
+                        className={styles.statusBadge}
+                        style={{
+                          background: `${statusColor(o.trangThaiDon)}18`,
+                          color: statusColor(o.trangThaiDon),
+                        }}
+                      >
+                        {TRANG_THAI_DON_LABELS[o.trangThaiDon] || o.trangThaiDon}
+                      </span>
+                    </td>
+                    <td className={styles.hideOnMobile}>{(o as any).tenTramTron || "—"}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           )}
         </div>
 
-        {filteredOrders.length > LIMIT && (
+        {totalPages > 1 && (
           <div className={styles.paginationWrap}>
             <Pagination
               page={page}
               totalPages={totalPages}
-              total={filteredOrders.length}
-              limit={LIMIT}
               onPageChange={goToPage}
             />
           </div>
@@ -225,8 +189,8 @@ export default function DonHangTheoTramPage() {
 }
 
 // Inline Pagination component
-function Pagination({ page, totalPages, total, limit, onPageChange }: {
-  page: number; totalPages: number; total: number; limit: number; onPageChange: (p: number) => void;
+function Pagination({ page, totalPages, onPageChange }: {
+  page: number; totalPages: number; onPageChange: (p: number) => void;
 }) {
   const pages = [];
   for (let i = 1; i <= totalPages; i++) pages.push(i);
