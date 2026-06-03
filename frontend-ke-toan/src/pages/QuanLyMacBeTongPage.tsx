@@ -6,7 +6,7 @@ import {
   layDanhSachMacBeTong, taoMacBeTong, suaMacBeTong, xoaMacBeTong,
 } from '../services/api';
 import { MacBeTong } from '../types';
-import { useToast } from '../hooks';
+import { useToast, usePageRole } from '../hooks';
 import { Modal, Loading, EmptyState } from '../components/Common';
 import styles from './QuanLyMacBeTongPage.module.css';
 
@@ -14,6 +14,7 @@ function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' |
 
 export default function QuanLyMacBeTongPage() {
   const { toasts, showToast } = useToast();
+  const { hasAnyRole } = usePageRole();
   const [macBeTongs, setMacBeTongs] = useState<MacBeTong[]>([]);
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState('');
@@ -23,6 +24,9 @@ export default function QuanLyMacBeTongPage() {
   const [form, setForm] = useState({ tenMac: '', donGia: '', chiPhiPhatSinh: '', buVanChuyen: '', moTa: '' });
   const [formLoading, setFormLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Ẩn 2 cột Chi phí phát sinh & Bù vận chuyển với vai trò admin, dieu_phoi, sale
+  const hideChiPhiBuVC = hasAnyRole(['admin', 'dieu_phoi', 'sale']);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -144,8 +148,12 @@ export default function QuanLyMacBeTongPage() {
                 <tr>
                   <th style={{ minWidth: 80 }}>Tên mác</th>
                   <th style={{ minWidth: 100, textAlign: 'right' }}>Đơn giá</th>
-                  <th style={{ minWidth: 120, textAlign: 'right' }}>Chi phí phát sinh</th>
-                  <th style={{ minWidth: 110, textAlign: 'right' }}>Bù vận chuyển</th>
+                  {!hideChiPhiBuVC && (
+                    <>
+                      <th style={{ minWidth: 120, textAlign: 'right' }}>Chi phí phát sinh</th>
+                      <th style={{ minWidth: 110, textAlign: 'right' }}>Bù vận chuyển</th>
+                    </>
+                  )}
                   <th style={{ minWidth: 80 }}>Ghi chú</th>
                   <th style={{ minWidth: 80 }}>Thao tác</th>
                 </tr>
@@ -153,26 +161,30 @@ export default function QuanLyMacBeTongPage() {
               <tbody>
                 {filtered.map((m) => (
                   <tr key={m.id}>
-                  <td>
-                    <span className={styles.macName}>{m.tenMac}</span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {m.donGia > 0 ? (
-                      <strong>{formatCurrency(m.donGia)}</strong>
-                    ) : (
-                      <span className={styles.buEmpty}>-</span>
+                    <td>
+                      <span className={styles.macName}>{m.tenMac}</span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {m.donGia > 0 ? (
+                        <strong>{formatCurrency(m.donGia)}</strong>
+                      ) : (
+                        <span className={styles.buEmpty}>-</span>
+                      )}
+                    </td>
+                    {!hideChiPhiBuVC && (
+                      <>
+                        <td style={{ textAlign: 'right' }}>
+                          <strong>{formatCurrency(m.chiPhiPhatSinh)}</strong>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          {m.buVanChuyen > 0 ? (
+                            <span className={styles.buHighlight}>{formatCurrency(m.buVanChuyen)}</span>
+                          ) : (
+                            <span className={styles.buEmpty}>-</span>
+                          )}
+                        </td>
+                      </>
                     )}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <strong>{formatCurrency(m.chiPhiPhatSinh)}</strong>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {m.buVanChuyen > 0 ? (
-                      <span className={styles.buHighlight}>{formatCurrency(m.buVanChuyen)}</span>
-                    ) : (
-                      <span className={styles.buEmpty}>-</span>
-                    )}
-                  </td>
                     <td>
                       <span className={styles.moTa}>{m.moTa || '-'}</span>
                     </td>
