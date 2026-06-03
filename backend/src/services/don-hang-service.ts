@@ -67,9 +67,10 @@ export async function layTatCaDonHang(
 
 export async function layDonHangTheoId(id: number): Promise<DonHang> {
   const donHangs = await query<DonHang>(
-    `SELECT d.*, t.tenTram as tenTramTron
+    `SELECT d.*, t.tenTram as tenTramTron, m.donGia as giaNiemYet
      FROM DonHang d
      LEFT JOIN TramTron t ON d.idTramTron = t.id
+     LEFT JOIN MacBeTong m ON d.idMacBeTong = m.id
      WHERE d.id = @id`,
     { id }
   );

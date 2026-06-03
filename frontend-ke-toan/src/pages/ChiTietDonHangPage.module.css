@@ -282,6 +282,23 @@
   box-shadow: var(--shadow-sm);
 }
 
+.chiTietThanhToanGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+.chiTietThanhToanGrid .chiTietRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.chiTietThanhToanGrid .chiTietRow:last-child {
+  border-bottom: none;
+}
+
 .infoCardTitle {
   font-size: 13px;
   font-weight: 700;

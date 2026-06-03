@@ -20,7 +20,7 @@ import {
   DonHang, LichSanXuat, NghiemThu, HoaDon,
   TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS,
 } from '../types';
-import { useToast } from '../hooks';
+import { useToast, usePageRole } from '../hooks';
 import { Loading, ConfirmModal } from '../components/Common';
 import styles from './ChiTietDonHangPage.module.css';
 import { formatDateVN } from '../utils/dateUtils';
@@ -68,6 +68,10 @@ export default function ChiTietDonHangPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toasts, showToast } = useToast();
+  const { hasAnyRole } = usePageRole();
+
+  // Hiển thị chi tiết thanh toán cho vai trò admin, sale, dieu_phoi, tram_tron
+  const hienThiChiTietThanhToan = hasAnyRole(['admin', 'sale', 'dieu_phoi', 'tram_tron']);
 
   const [donHang, setDonHang] = useState<DonHang | null>(null);
   const [lichSX, setLichSX] = useState<LichSanXuat | null>(null);
@@ -335,6 +339,33 @@ export default function ChiTietDonHangPage() {
           <div className={styles.infoCardTitle}>
             <FiDollarSign size={14} /> Thông tin thanh toán
           </div>
+
+          {/* Hiển thị chi tiết cho vai trò admin, sale, dieu_phoi, tram_tron */}
+          {hienThiChiTietThanhToan && (
+            <div className={styles.chiTietThanhToanGrid}>
+              <div>
+                <div className={`${styles.chiTietRow}`}>
+                  <span className={styles.infoLabel}>Giá niêm yết</span>
+                  <span className={styles.infoValue}>{formatCurrency(donHang.giaNiemYet ?? donHang.donGia)}</span>
+                </div>
+                <div className={`${styles.chiTietRow}`}>
+                  <span className={styles.infoLabel}>Chi phí phát sinh</span>
+                  <span className={styles.infoValue}>{formatCurrency(donHang.chiPhiPhatSinh ?? 0)}</span>
+                </div>
+              </div>
+              <div>
+                <div className={`${styles.chiTietRow}`}>
+                  <span className={styles.infoLabel}>Phí bù vận chuyển</span>
+                  <span className={styles.infoValue}>{formatCurrency(donHang.buVanChuyen ?? 0)}</span>
+                </div>
+                <div className={`${styles.chiTietRow}`}>
+                  <span className={styles.infoLabel}>Giảm trừ</span>
+                  <span className={styles.infoValue}>{formatCurrency(donHang.giamTru ?? 0)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Tổng tiền</span>
             <span className={`${styles.infoValue} ${styles.infoValuePrimary}`}>{formatCurrency(donHang.thanhTien || 0)}</span>
