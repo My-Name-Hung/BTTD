@@ -1,31 +1,32 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
-  FiAlertCircle,
   FiArrowLeft,
+  FiPrinter,
+  FiDownload,
   FiCheck,
-  FiClock,
-  FiDollarSign,
-  FiFileText,
-  FiPackage,
+  FiAlertCircle,
   FiTruck,
   FiUser,
+  FiFileText,
+  FiDollarSign,
+  FiClock,
+  FiPackage,
 } from "react-icons/fi";
-import { useNavigate, useParams } from "react-router-dom";
 import { Loading } from "../components/Common";
 import { useToast } from "../hooks";
 import {
   layDonHang,
-  layDonHangGiaoTrongNgay,
   layLichSanXuat,
-  taiHoaDonDoc,
   taoHoaDon,
+  taiHoaDonDoc,
+  layDonHangGiaoTrongNgay,
 } from "../services/api";
 import { DonHang, LichSanXuat } from "../types";
 import styles from "./XuatHoaDonPage.module.css";
 
 type TabType = "tra_het" | "cong_no";
 
-// Formatting helpers
 function formatCurrency(v: number): string {
   return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
 }
@@ -49,25 +50,7 @@ function formatDate(d: string | null | undefined): string {
   return `${y}-${m}-${day}`;
 }
 
-function formatDateDisplay(d: string | null | undefined): string {
-  if (!d) return "";
-  const dt = new Date(d);
-  return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}/${dt.getFullYear()}`;
-}
-
-function formatDateTimeLocal(d: string | null | undefined): string {
-  if (!d) return "";
-  const dt = new Date(d);
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth() + 1).padStart(2, "0");
-  const day = String(dt.getDate()).padStart(2, "0");
-  const h = String(dt.getHours()).padStart(2, "0");
-  const mi = String(dt.getMinutes()).padStart(2, "0");
-  const s = String(dt.getSeconds()).padStart(2, "0");
-  return `${y}-${m}-${day}T${h}:${mi}:${s}`;
-}
-
-const MUC_GIA_BU_VC = 110000; // mặc định
+const MUC_GIA_BU_VC = 110000;
 const NGƯỠNG_TOI_THIEU_M3 = 5;
 
 export default function XuatHoaDonPage() {
@@ -83,14 +66,11 @@ export default function XuatHoaDonPage() {
   const [khoiLuongNgay, setKhoiLuongNgay] = useState(0);
   const [soDonNgay, setSoDonNgay] = useState(0);
 
-  // Form state
   const [buVanChuyen, setBuVanChuyen] = useState("");
   const [phiPhatSinh, setPhiPhatSinh] = useState("");
   const [giamTru, setGiamTru] = useState("");
-  const [soTienThanhToanTruoc, setSoTienThanhToanTruoc] = useState(""); // Tiền thanh toán trước (công nợ 1 phần)
-  const [ngayLap, setNgayLap] = useState(() =>
-    formatDate(new Date().toISOString()),
-  );
+  const [soTienThanhToanTruoc, setSoTienThanhToanTruoc] = useState("");
+  const [ngayLap, setNgayLap] = useState(() => formatDate(new Date().toISOString()));
   const [khachHang, setKhachHang] = useState("");
   const [loaiXiMang, setLoaiXiMang] = useState("");
   const [gioDo, setGioDo] = useState("");
@@ -98,7 +78,6 @@ export default function XuatHoaDonPage() {
   const [ghiChu, setGhiChu] = useState("");
   const [hanTraCongNo, setHanTraCongNo] = useState("");
 
-  // Auto-generate soHoaDon
   const [soHoaDon] = useState(() => {
     const random = Math.floor(1000 + Math.random() * 9000);
     return `BBTD-${random}`;
@@ -114,21 +93,14 @@ export default function XuatHoaDonPage() {
       ]);
       setDonHang(dh);
       setLichSX(ls);
-
-      // Set auto-fill fields
       setKhachHang(dh.tenKhachHang || "");
 
-      // Lấy tổng khối lượng trong ngày từ đơn hàng cùng ngày giao
       if (dh.ngayGiao) {
         try {
           const dsNgay = await layDonHangGiaoTrongNgay(dh.ngayGiao);
-          const tongKL = dsNgay.reduce(
-            (sum: number, d: any) => sum + (d.khoiLuongDat || 0),
-            0,
-          );
-          const soDon = dsNgay.length;
+          const tongKL = dsNgay.reduce((sum: number, d: any) => sum + (d.khoiLuongDat || 0), 0);
           setKhoiLuongNgay(tongKL);
-          setSoDonNgay(soDon);
+          setSoDonNgay(dsNgay.length);
         } catch {
           setKhoiLuongNgay(dh.khoiLuongDat || 0);
           setSoDonNgay(1);
@@ -148,21 +120,15 @@ export default function XuatHoaDonPage() {
     loadData();
   }, [loadData]);
 
-  // Tính toán
   const buVanChuyenSo = parseCurrency(buVanChuyen);
   const phiPhatSinhSo = parseCurrency(phiPhatSinh);
   const giamTruSo = parseCurrency(giamTru);
   const soTTTS = parseCurrency(soTienThanhToanTruoc);
 
-  // Tiền bê tông = khối lượng trong ngày x đơn giá
   const khoiLuongDisplay = donHang?.khoiLuongDat || 0;
   const donGiaDisplay = donHang?.donGia || 0;
   const tienBeTong = khoiLuongDisplay * donGiaDisplay;
-
-  // Tổng cộng
   const tongCong = tienBeTong + buVanChuyenSo + phiPhatSinhSo - giamTruSo;
-
-  // Số tiền còn lại cần thanh toán (khi chọn công nợ 1 phần)
   const soTienConLai = Math.max(0, tongCong - soTTTS);
 
   const handleSubmit = async () => {
@@ -186,13 +152,10 @@ export default function XuatHoaDonPage() {
         phuongThucThanhToan: phuongThuc,
         ghiChu,
         hanTraCongNo: activeTab === "cong_no" ? hanTraCongNo : undefined,
-        soTienThanhToan: tongCong, // tổng hóa đơn này
+        soTienThanhToan: tongCong,
       });
 
-      // Mở trang in
       window.open(`/in-hoa-don/${hoaDon.id}`, "_blank");
-
-      // Tải DOC
       await taiHoaDonDoc(hoaDon.id);
 
       showToast(
@@ -226,9 +189,12 @@ export default function XuatHoaDonPage() {
     );
   }
 
+  const khoiBuVC = Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay);
+  const tienBuVCAuto = khoiBuVC * MUC_GIA_BU_VC;
+
   return (
     <div className={styles.pageWrapper}>
-      {/* Header */}
+      {/* Header bar */}
       <div className={styles.pageHeader}>
         <div className={styles.headerLeft}>
           <button className={styles.backBtn} onClick={() => navigate(-1)}>
@@ -237,8 +203,7 @@ export default function XuatHoaDonPage() {
           <div>
             <div className={styles.pageTitle}>Xuất hóa đơn</div>
             <div className={styles.pageSubtitle}>
-              Mã đơn: <strong>{donHang.maDonHang}</strong> ·{" "}
-              {donHang.tenKhachHang}
+              Mã đơn: <strong>{donHang.maDonHang}</strong> · {donHang.tenKhachHang}
             </div>
           </div>
         </div>
@@ -248,78 +213,73 @@ export default function XuatHoaDonPage() {
         </div>
       </div>
 
-      {/* Order Summary Card */}
-      <div className={styles.orderSummary}>
-        <div className={styles.summaryLeft}>
-          <div className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>Mác bê tông</span>
-            <span className={styles.summaryValue}>{donHang.tenMacBeTong}</span>
-          </div>
-          <div className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>Khối lượng đặt</span>
-            <span className={styles.summaryValue}>{khoiLuongDisplay} m³</span>
-          </div>
-          <div className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>Đơn giá</span>
-            <span className={styles.summaryValue}>
-              {formatCurrency(donHang.donGia)}
-            </span>
-          </div>
-          <div className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>Thành tiền</span>
-            <span className={styles.summaryValue}>
-              {formatCurrency(donHang.thanhTien)}
-            </span>
-          </div>
-        </div>
-        <div className={styles.summaryRight}>
-          <div className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>Còn lại</span>
-            <span
-              className={styles.summaryValue}
-              style={{ color: "var(--color-warning)" }}
-            >
-              {formatCurrency(donHang.conLai || 0)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className={styles.tabBar}>
-        <button
-          className={`${styles.tabBtn} ${activeTab === "tra_het" ? styles.tabBtnActive : ""}`}
-          onClick={() => setActiveTab("tra_het")}
-        >
-          <FiDollarSign size={16} />
-          Trả hết
-        </button>
-        <button
-          className={`${styles.tabBtn} ${activeTab === "cong_no" ? styles.tabBtnActive : ""}`}
-          onClick={() => setActiveTab("cong_no")}
-        >
-          <FiClock size={16} />
-          Công nợ
-        </button>
-      </div>
-
       <div className={styles.formBody}>
-        {/* ====== Section: Bù vận chuyển ====== */}
+        {/* Order Summary - full width */}
+        <div className={`${styles.section} ${styles.fullWidth}`}>
+          <div className={styles.summaryGrid}>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>Mác bê tông</span>
+              <span className={styles.summaryValue}>{donHang.tenMacBeTong}</span>
+            </div>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>Khối lượng đặt</span>
+              <span className={styles.summaryValue}>{khoiLuongDisplay} m³</span>
+            </div>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>Đơn giá</span>
+              <span className={styles.summaryValue}>{formatCurrency(donHang.donGia)}</span>
+            </div>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>Thành tiền</span>
+              <span className={styles.summaryValue}>{formatCurrency(donHang.thanhTien)}</span>
+            </div>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>Còn lại</span>
+              <span className={styles.summaryValue} style={{ color: "var(--color-warning)" }}>
+                {formatCurrency(donHang.conLai || 0)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab bar - full width */}
+        <div className={`${styles.tabBarWrap} ${styles.fullWidth}`}>
+          <div className={styles.tabBar}>
+            <button
+              className={`${styles.tabBtn} ${activeTab === "tra_het" ? styles.tabBtnActive : ""}`}
+              onClick={() => setActiveTab("tra_het")}
+            >
+              <FiDollarSign size={16} />
+              Trả hết
+            </button>
+            <button
+              className={`${styles.tabBtn} ${activeTab === "cong_no" ? styles.tabBtnActive : ""}`}
+              onClick={() => setActiveTab("cong_no")}
+            >
+              <FiClock size={16} />
+              Công nợ
+            </button>
+          </div>
+        </div>
+
+        {/* ====== LEFT COLUMN ====== */}
+        {/* Bù vận chuyển */}
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <FiTruck size={18} />
             <h3>Bù vận chuyển</h3>
           </div>
           <div className={styles.sectionHint}>
-            Đơn tối thiểu <strong>{NGƯỠNG_TOI_THIEU_M3}m³</strong>. Nếu khối
-            lượng giao trong ngày thấp hơn, sẽ tính bù vận chuyển.
+            <strong>Quy tắc tính bù vận chuyển:</strong><br />
+            • Đơn hàng có khối lượng giao trong ngày dưới <strong>{NGƯỠNG_TOI_THIEU_M3}m³</strong> sẽ tính bù vận chuyển<br />
+            • <strong>Công thức:</strong> Số khối bù = {NGƯỠNG_TOI_THIEU_M3} - Tổng khối lượng giao trong ngày<br />
+            • <strong>Tiền bù VC</strong> = Số khối bù × Đơn giá bù VC (<strong>{formatCurrency(MUC_GIA_BU_VC)}/m³</strong>)<br />
+            • <strong>Ví dụ:</strong> Giao {khoiLuongNgay} m³ → Bù {khoiBuVC} m³ → Tiền bù = {khoiBuVC} × {formatCurrency(MUC_GIA_BU_VC)} = <strong>{formatCurrency(tienBuVCAuto)}</strong>
           </div>
 
           <div className={styles.buVcGrid}>
             <div className={styles.buVcCard}>
-              <span className={styles.buVcLabel}>
-                Tổng khối lượng trong ngày
-              </span>
+              <span className={styles.buVcLabel}>Tổng khối lượng trong ngày</span>
               <span className={styles.buVcValue}>{khoiLuongNgay} m³</span>
             </div>
             <div className={styles.buVcCard}>
@@ -328,66 +288,38 @@ export default function XuatHoaDonPage() {
             </div>
             <div className={styles.buVcCard}>
               <span className={styles.buVcLabel}>Số khối cần bù</span>
-              <span
-                className={`${styles.buVcValue} ${khoiLuongNgay < NGƯỠNG_TOI_THIEU_M3 ? styles.buVcWarning : styles.buVcOk}`}
-              >
-                {Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay)} m³
+              <span className={`${styles.buVcValue} ${khoiLuongNgay < NGƯỠNG_TOI_THIEU_M3 ? styles.buVcWarning : styles.buVcOk}`}>
+                {khoiBuVC} m³
               </span>
-              {khoiLuongNgay < NGƯỠNG_TOI_THIEU_M3 && (
-                <span className={styles.buVcNote}>
-                  Công thức: {NGƯỠNG_TOI_THIEU_M3} - {khoiLuongNgay} ={" "}
-                  {Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay)}m³
-                </span>
-              )}
             </div>
             <div className={styles.buVcCard}>
               <span className={styles.buVcLabel}>Đơn giá bù VC</span>
-              <span className={styles.buVcValue}>
-                {formatCurrency(MUC_GIA_BU_VC)}/m³
-              </span>
+              <span className={styles.buVcValue}>{formatCurrency(MUC_GIA_BU_VC)}/m³</span>
             </div>
           </div>
 
           <div className={styles.formRow}>
-            <div className={styles.formGroup}>
+            <div className={styles.formGroup} style={{ flex: 1 }}>
               <label className={styles.formLabel}>Tiền bù vận chuyển (đ)</label>
               <input
                 className={styles.formInput}
                 type="text"
                 value={buVanChuyen}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/[^\d]/g, "");
-                  const num = parseInt(raw, 10) || 0;
-                  const khoiBu = Math.max(
-                    0,
-                    NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay,
-                  );
-                  if (!buVanChuyen) {
-                    // auto fill lần đầu
-                    setBuVanChuyen(formatNumberInput(khoiBu * MUC_GIA_BU_VC));
-                  } else {
-                    setBuVanChuyen(formatNumberInput(num));
-                  }
-                }}
+                onChange={(e) => setBuVanChuyen(formatNumberInput(e.target.value))}
                 placeholder="0"
               />
               <span className={styles.formHint}>
-                Auto: {Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay)} x{" "}
-                {formatCurrency(MUC_GIA_BU_VC)} ={" "}
-                {formatCurrency(
-                  Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay) *
-                    MUC_GIA_BU_VC,
-                )}
+                Auto: {khoiBuVC} × {formatCurrency(MUC_GIA_BU_VC)} = {formatCurrency(tienBuVCAuto)}
               </span>
             </div>
           </div>
         </div>
 
-        {/* ====== Section: Chi phí phát sinh & Khuyến mãi ====== */}
+        {/* Chi phí phát sinh & Khuyến mãi */}
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <FiDollarSign size={18} />
-            <h3>Chi phí phát sinh & Khuyến mãi</h3>
+            <h3>Chi phí phát sinh &amp; Khuyến mãi</h3>
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
@@ -396,16 +328,12 @@ export default function XuatHoaDonPage() {
                 className={styles.formInput}
                 type="text"
                 value={phiPhatSinh}
-                onChange={(e) =>
-                  setPhiPhatSinh(formatNumberInput(e.target.value))
-                }
+                onChange={(e) => setPhiPhatSinh(formatNumberInput(e.target.value))}
                 placeholder="0"
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>
-                Giảm trừ / Khuyến mãi (đ)
-              </label>
+              <label className={styles.formLabel}>Giảm trừ / Khuyến mãi (đ)</label>
               <input
                 className={styles.formInput}
                 type="text"
@@ -417,41 +345,27 @@ export default function XuatHoaDonPage() {
           </div>
         </div>
 
-        {/* ====== Section: Thông tin nhân sự & xe ====== */}
+        {/* ====== RIGHT COLUMN ====== */}
+        {/* Thông tin nhân sự & xe */}
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <FiUser size={18} />
-            <h3>Thông tin nhân sự & xe</h3>
+            <h3>Thông tin nhân sự &amp; xe</h3>
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Kỹ sư</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                defaultValue={lichSX?.kyThuatCongTrinh || ""}
-                placeholder="Tên kỹ sư"
-              />
+              <input className={styles.formInput} type="text" defaultValue={lichSX?.kyThuatCongTrinh || ""} placeholder="Tên kỹ sư" />
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Vận hành bơm</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                defaultValue={lichSX?.nguoiOmOng || ""}
-                placeholder="Tên vận hành bơm"
-              />
+              <input className={styles.formInput} type="text" defaultValue={lichSX?.nguoiOmOng || ""} placeholder="Tên vận hành bơm" />
             </div>
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Lắp ống</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                defaultValue={lichSX?.nguoiBatOng || ""}
-                placeholder="Tên người lắp ống"
-              />
+              <input className={styles.formInput} type="text" defaultValue={lichSX?.nguoiBatOng || ""} placeholder="Tên người lắp ống" />
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Xe (Biển số - Tài xế)</label>
@@ -460,7 +374,7 @@ export default function XuatHoaDonPage() {
                 type="text"
                 defaultValue={
                   lichSX?.bienSoXe
-                    ? `${lichSX.bienSoXe} ${lichSX.tenTaiXe ? "- " + (lichSX as any).tenTaiXe : ""}`
+                    ? `${lichSX.bienSoXe} ${(lichSX as any).tenTaiXe ? "- " + (lichSX as any).tenTaiXe : ""}`
                     : ""
                 }
                 placeholder="VD: 59C1-12345 - Nguyễn Văn A"
@@ -469,7 +383,7 @@ export default function XuatHoaDonPage() {
           </div>
         </div>
 
-        {/* ====== Section: Thông tin hóa đơn ====== */}
+        {/* Thông tin hóa đơn */}
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <FiFileText size={18} />
@@ -478,62 +392,31 @@ export default function XuatHoaDonPage() {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Số hóa đơn</label>
-              <input
-                className={`${styles.formInput} ${styles.inputReadOnly}`}
-                type="text"
-                value={`${soHoaDon}-${donHang.maDonHang}`}
-                readOnly
-              />
+              <input className={`${styles.formInput} ${styles.inputReadOnly}`} type="text" value={`${soHoaDon}-${donHang.maDonHang}`} readOnly />
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Ngày lập hóa đơn</label>
-              <input
-                className={styles.formInput}
-                type="date"
-                value={ngayLap}
-                onChange={(e) => setNgayLap(e.target.value)}
-              />
+              <input className={styles.formInput} type="date" value={ngayLap} onChange={(e) => setNgayLap(e.target.value)} />
             </div>
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Khách hàng</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                value={khachHang}
-                onChange={(e) => setKhachHang(e.target.value)}
-                placeholder="Tên khách hàng"
-              />
+              <input className={styles.formInput} type="text" value={khachHang} onChange={(e) => setKhachHang(e.target.value)} placeholder="Tên khách hàng" />
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Loại xi măng</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                value={loaiXiMang}
-                onChange={(e) => setLoaiXiMang(e.target.value)}
-                placeholder="VD: PCB40"
-              />
+              <input className={styles.formInput} type="text" value={loaiXiMang} onChange={(e) => setLoaiXiMang(e.target.value)} placeholder="VD: PCB40" />
             </div>
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Giờ đổ</label>
-              <input
-                className={styles.formInput}
-                type="datetime-local"
-                value={gioDo}
-                onChange={(e) => setGioDo(e.target.value)}
-              />
+              <input className={styles.formInput} type="datetime-local" value={gioDo} onChange={(e) => setGioDo(e.target.value)} />
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Phương thức thanh toán</label>
-              <select
-                className={styles.formSelect}
-                value={phuongThuc}
-                onChange={(e) => setPhuongThuc(e.target.value)}
-              >
+              <select className={styles.formSelect} value={phuongThuc} onChange={(e) => setPhuongThuc(e.target.value)}>
                 <option value="tien_mat">Tiền mặt</option>
                 <option value="chuyen_khoan">Chuyển khoản</option>
               </select>
@@ -542,20 +425,15 @@ export default function XuatHoaDonPage() {
           <div className={styles.formRow}>
             <div className={styles.formGroup} style={{ flex: 1 }}>
               <label className={styles.formLabel}>Ghi chú</label>
-              <textarea
-                className={styles.formTextarea}
-                value={ghiChu}
-                onChange={(e) => setGhiChu(e.target.value)}
-                placeholder="Nhập ghi chú (nếu có)"
-                rows={3}
-              />
+              <textarea className={styles.formTextarea} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} placeholder="Nhập ghi chú (nếu có)" rows={2} />
             </div>
           </div>
         </div>
 
-        {/* ====== Hạn trả công nợ (chỉ tab công nợ) ====== */}
+        {/* ====== FULL WIDTH SECTIONS ====== */}
+        {/* Thông tin công nợ */}
         {activeTab === "cong_no" && (
-          <div className={styles.section}>
+          <div className={`${styles.section} ${styles.fullWidth}`}>
             <div className={styles.sectionHeader}>
               <FiClock size={18} />
               <h3>Thông tin công nợ</h3>
@@ -570,18 +448,11 @@ export default function XuatHoaDonPage() {
                   onChange={(e) => setSoTienThanhToanTruoc(formatNumberInput(e.target.value))}
                   placeholder="0"
                 />
-                <span className={styles.formHint}>
-                  Nhập số tiền khách thanh toán trước (auto phân cách phần nghìn)
-                </span>
+                <span className={styles.formHint}>Nhập số tiền khách thanh toán trước (auto phân cách phần nghìn)</span>
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Hạn thanh toán</label>
-                <input
-                  className={styles.formInput}
-                  type="date"
-                  value={hanTraCongNo}
-                  onChange={(e) => setHanTraCongNo(e.target.value)}
-                />
+                <input className={styles.formInput} type="date" value={hanTraCongNo} onChange={(e) => setHanTraCongNo(e.target.value)} />
               </div>
             </div>
             {soTTTS > 0 && (
@@ -593,8 +464,8 @@ export default function XuatHoaDonPage() {
           </div>
         )}
 
-        {/* ====== Section: Tổng ====== */}
-        <div className={`${styles.section} ${styles.sectionTotal}`}>
+        {/* Tổng hợp */}
+        <div className={`${styles.section} ${styles.sectionTotal} ${styles.fullWidth}`}>
           <div className={styles.sectionHeader}>
             <FiPackage size={18} />
             <h3>Tổng hợp</h3>
@@ -617,9 +488,7 @@ export default function XuatHoaDonPage() {
             {giamTruSo > 0 && (
               <div className={styles.totalRow}>
                 <span>Giảm trừ / Khuyến mãi</span>
-                <span style={{ color: "var(--color-success)" }}>
-                  - {formatCurrency(giamTruSo)}
-                </span>
+                <span style={{ color: "var(--color-success)" }}>- {formatCurrency(giamTruSo)}</span>
               </div>
             )}
             {soTTTS > 0 && (
@@ -636,30 +505,22 @@ export default function XuatHoaDonPage() {
         </div>
 
         {/* Actions */}
-        <div className={styles.actions}>
-          <button
-            className={styles.btnCancel}
-            onClick={() => navigate(-1)}
-            disabled={submitting}
-          >
-            Hủy
-          </button>
-          <button
-            className={styles.btnSubmit}
-            onClick={handleSubmit}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <Loading small />
-            ) : (
-              <>
-                <FiCheck size={16} />
-                {activeTab === "tra_het"
-                  ? "Xác nhận trả hết & xuất hóa đơn"
-                  : "Ghi công nợ & xuất hóa đơn"}
-              </>
-            )}
-          </button>
+        <div className={`${styles.actionsWrap} ${styles.fullWidth}`}>
+          <div className={styles.actions}>
+            <button className={styles.btnCancel} onClick={() => navigate(-1)} disabled={submitting}>
+              Hủy
+            </button>
+            <button className={styles.btnSubmit} onClick={handleSubmit} disabled={submitting}>
+              {submitting ? (
+                <Loading small />
+              ) : (
+                <>
+                  <FiCheck size={16} />
+                  {activeTab === "tra_het" ? "Xác nhận trả hết & xuất hóa đơn" : "Ghi công nợ & xuất hóa đơn"}
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,9 +1,12 @@
-/* XuatHoaDonPage - Modern Form Design */
+/* XuatHoaDonPage - Full Width Modern Form */
 
 .pageWrapper {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px;
+  width: 100%;
+  padding: 24px 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* ── Header ── */
@@ -11,8 +14,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
   gap: 16px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 16px 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .headerLeft {
@@ -72,15 +79,10 @@
 }
 
 /* ── Order Summary ── */
-.orderSummary {
-  display: flex;
-  gap: 16px;
-  padding: 16px 20px;
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
 }
 
 .summaryLeft {
@@ -113,6 +115,15 @@
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text);
+}
+
+/* ── Tab Bar Wrap ── */
+.tabBarWrap {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0 16px 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 /* ── Tab Bar ── */
@@ -165,9 +176,14 @@
 
 /* ── Form Body ── */
 .formBody {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+/* Section chiếm full width (header, order summary, tabs, actions) */
+.fullWidth {
+  grid-column: 1 / -1;
 }
 
 /* ── Section ── */
@@ -382,7 +398,11 @@
 .actions {
   display: flex;
   gap: 12px;
-  padding: 20px 0;
+}
+
+.actionsWrap {
+  display: flex;
+  align-items: center;
 }
 
 .btnCancel {
@@ -465,40 +485,41 @@
 }
 
 /* ── Responsive ── */
+@media (max-width: 1200px) {
+  .formBody {
+    grid-template-columns: 1fr;
+  }
+  .fullWidth {
+    grid-column: 1;
+  }
+}
+
 @media (max-width: 768px) {
   .pageWrapper {
     padding: 16px;
   }
-
   .orderSummary {
     flex-direction: column;
   }
-
   .summaryLeft {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .buVcGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .formRow {
     flex-direction: column;
     gap: 12px;
   }
-
   .tabBar {
     overflow-x: auto;
   }
-
   .tabBtn {
     white-space: nowrap;
   }
-
   .actions {
     flex-direction: column;
   }
-
   .btnCancel {
     width: 100%;
   }
