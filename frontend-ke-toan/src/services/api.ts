@@ -161,6 +161,37 @@ export async function layDonHangTheoTrangThai(): Promise<
   return request<DonHangTheoTrangThai[]>("/dashboard/trang-thai");
 }
 
+export async function layThongKeThanhToan(): Promise<{
+  daThanhToan: number;
+  chuaThanhToan: number;
+  congNo: number;
+}> {
+  return request<{ daThanhToan: number; chuaThanhToan: number; congNo: number }>("/dashboard/thanh-toan");
+}
+
+export async function layThongKeNghiemThu(): Promise<{
+  daNghiemThu: number;
+  chuaNghiemThu: number;
+  dangNghiemThu: number;
+}> {
+  return request<{ daNghiemThu: number; chuaNghiemThu: number; dangNghiemThu: number }>("/dashboard/nghiem-thu");
+}
+
+export async function layThongKeTheoTramTron(): Promise<{
+  tramTron: string;
+  soDonHang: number;
+  doanhThu: number;
+}[]> {
+  return request<{ tramTron: string; soDonHang: number; doanhThu: number }[]>("/dashboard/tram-tron");
+}
+
+export async function layCongNoTheoThang(): Promise<{
+  thang: string;
+  congNoCu: number;
+}[]> {
+  return request<{ thang: string; congNoCu: number }[]>("/dashboard/cong-no");
+}
+
 export async function layDanhSachKhachHang(
   page = 1,
   limit = 50,

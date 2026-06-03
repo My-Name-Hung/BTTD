@@ -5,6 +5,30 @@ import {
   DonHangTheoTrangThai,
 } from '../models';
 
+export interface ThongKeThanhToan {
+  daThanhToan: number;
+  chuaThanhToan: number;
+  congNo: number;
+}
+
+export interface ThongKeNghiemThu {
+  daNghiemThu: number;
+  chuaNghiemThu: number;
+  dangNghiemThu: number;
+}
+
+export interface ThongKeTramTron {
+  tramTron: string;
+  soDonHang: number;
+  doanhThu: number;
+}
+
+export interface CongNoTheoThang {
+  thang: string;
+  congNoCu: number;
+  congNoMoi: number;
+}
+
 export async function layThongKeDashboard(): Promise<ThongKeDashboard> {
   // Gộp query COUNT riêng lẻ thành 1 query duy nhất
   const results = await query<{
@@ -84,4 +108,55 @@ export async function layDonHangTheoTrangThai(): Promise<DonHangTheoTrangThai[]>
     trangThai: status,
     soLuong: dataMap[status] || 0
   }));
+}
+
+// Thống kê thanh toán
+export async function layThongKeThanhToan(): Promise<ThongKeThanhToan> {
+  const result = await query<ThongKeThanhToan>(`
+    SELECT
+      (SELECT ISNULL(SUM(daThanhToan), 0) FROM DonHang WHERE trangThaiDon IN (N'da_thanh_toan', N'hoan_thanh')) AS daThanhToan,
+      (SELECT ISNULL(SUM(thanhTien - daThanhToan), 0) FROM DonHang WHERE (thanhTien - daThanhToan) > 0 AND trangThaiDon NOT IN (N'tu_choi', N'cho_duyet')) AS chuaThanhToan,
+      (SELECT ISNULL(SUM(thanhTien - daThanhToan), 0) FROM DonHang WHERE (thanhTien - daThanhToan) > 0 AND trangThaiDon NOT IN (N'tu_choi', N'cho_duyet')) AS congNo
+  `);
+  return result[0] || { daThanhToan: 0, chuaThanhToan: 0, congNo: 0 };
+}
+
+// Thống kê nghiệm thu
+export async function layThongKeNghiemThu(): Promise<ThongKeNghiemThu> {
+  const result = await query<ThongKeNghiemThu>(`
+    SELECT
+      (SELECT COUNT(*) FROM DonHang WHERE trangThaiDon IN (N'da_nghiem_thu', N'da_thanh_toan', N'hoan_thanh')) AS daNghiemThu,
+      (SELECT COUNT(*) FROM DonHang WHERE trangThaiDon IN (N'da_giao')) AS chuaNghiemThu,
+      (SELECT COUNT(*) FROM DonHang WHERE trangThaiDon IN (N'nghiem_thu')) AS dangNghiemThu
+  `);
+  return result[0] || { daNghiemThu: 0, chuaNghiemThu: 0, dangNghiemThu: 0 };
+}
+
+// Thống kê theo trạm trộn
+export async function layThongKeTheoTramTron(): Promise<ThongKeTramTron[]> {
+  return await query<ThongKeTramTron>(`
+    SELECT
+      ISNULL(tt.tenTram, N'Không xác định') AS tramTron,
+      COUNT(dh.id) AS soDonHang,
+      ISNULL(SUM(dh.thanhTien), 0) AS doanhThu
+    FROM DonHang dh
+    LEFT JOIN TramTron tt ON dh.idTramTron = tt.id
+    WHERE dh.trangThaiDon IN (N'da_thanh_toan', N'hoan_thanh')
+    GROUP BY tt.tenTram
+    ORDER BY doanhThu DESC
+  `);
+}
+
+// Công nợ theo tháng (6 tháng gần nhất)
+export async function layCongNoTheoThang(): Promise<CongNoTheoThang[]> {
+  return await query<CongNoTheoThang>(`
+    SELECT
+      CONVERT(char(7), ngayTao, 120) as thang,
+      ISNULL(SUM(thanhTien - daThanhToan), 0) as congNoCu
+    FROM DonHang
+    WHERE trangThaiDon NOT IN (N'tu_choi', N'cho_duyet')
+      AND CONVERT(char(7), ngayTao, 120) >= CONVERT(char(7), DATEADD(MONTH, -6, GETDATE()), 120)
+    GROUP BY CONVERT(char(7), ngayTao, 120)
+    ORDER BY thang
+  `);
 }
