@@ -121,6 +121,11 @@ export default function ThanhToanPage() {
     window.open(`/in-hoa-don/${hoaDonId}`, "_blank");
   };
 
+  // Xác định trạng thái đơn hàng
+  // - daThanhToan === 0 && conLai > 0: chưa thanh toán gì -> ẩn nút
+  // - daThanhToan > 0 && conLai > 0: còn công nợ -> hiện "Xuất HĐ"
+  // - conLai === 0: đã tất toán -> hiện "Xem HĐ"
+
   return (
     <div>
       <div className={styles.pageHeader}>
@@ -237,8 +242,8 @@ export default function ThanhToanPage() {
                       </td>
                       <td>
                         <div className={styles.actionBtns}>
-                          {/* Đã tất toán: chỉ hiện nút xem HĐ */}
-                          {daTatToanOrder && hds.length > 0 && canCreate && (
+                          {/* Đã tất toán: hiện nút Xem HĐ */}
+                          {conLai <= 0 && hds.length > 0 && canCreate && (
                             <button
                               className={styles.btnView}
                               onClick={() => handleOpenModal(dh)}
@@ -248,25 +253,15 @@ export default function ThanhToanPage() {
                             </button>
                           )}
 
-                          {/* Chưa tất toán: hiện nút thanh toán + xuất HĐ */}
-                          {!daTatToanOrder && canCreate && (
-                            <>
-                              <button
-                                className={styles.btnPay}
-                                onClick={() => navigate(`/thanh-toan/xuat/${dh.id}`)}
-                                title="Thanh toán"
-                              >
-                                <FiDollarSign size={13} />{" "}
-                                {conLai < (dh.thanhTien || 0) ? formatCurrency(conLai) : "Thanh toán"}
-                              </button>
-                              <button
-                                className={styles.btnHoaDon}
-                                onClick={() => navigate(`/thanh-toan/xuat/${dh.id}`)}
-                                title="Xuất hóa đơn"
-                              >
-                                <FiFileText size={13} /> Xuất HĐ
-                              </button>
-                            </>
+                          {/* Còn công nợ (đã thanh toán 1 phần): hiện nút Xuất HĐ */}
+                          {conLai > 0 && (dh.daThanhToan || 0) > 0 && canCreate && (
+                            <button
+                              className={styles.btnHoaDon}
+                              onClick={() => navigate(`/thanh-toan/xuat/${dh.id}`)}
+                              title="Xuất hóa đơn"
+                            >
+                              <FiFileText size={13} /> Xuất HĐ
+                            </button>
                           )}
                         </div>
                       </td>

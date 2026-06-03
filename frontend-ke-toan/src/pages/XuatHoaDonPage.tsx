@@ -242,24 +242,46 @@ export default function XuatHoaDonPage() {
           </div>
         </div>
 
-        {/* Tab bar - full width */}
-        <div className={`${styles.tabBarWrap} ${styles.fullWidth}`}>
-          <div className={styles.tabBar}>
-            <button
-              className={`${styles.tabBtn} ${activeTab === "tra_het" ? styles.tabBtnActive : ""}`}
-              onClick={() => setActiveTab("tra_het")}
-            >
-              <FiDollarSign size={16} />
-              Trả hết
-            </button>
-            <button
-              className={`${styles.tabBtn} ${activeTab === "cong_no" ? styles.tabBtnActive : ""}`}
-              onClick={() => setActiveTab("cong_no")}
-            >
-              <FiClock size={16} />
-              Công nợ
-            </button>
-          </div>
+        {/* Tab cards - full width */}
+        <div className={`${styles.tabCardWrap} ${styles.fullWidth}`}>
+          <button
+            className={`${styles.tabCard} ${activeTab === "tra_het" ? styles.tabCardActive : ""}`}
+            onClick={() => setActiveTab("tra_het")}
+          >
+            <div className={styles.tabCardIcon}>
+              <FiDollarSign size={28} />
+            </div>
+            <div className={styles.tabCardContent}>
+              <div className={styles.tabCardTitle}>Trả hết</div>
+              <div className={styles.tabCardDesc}>Thanh toán toàn bộ số tiền còn lại của đơn hàng</div>
+            </div>
+            <div className={styles.tabCardCheck}>
+              {activeTab === "tra_het" && (
+                <div className={styles.tabCardCheckInner}>
+                  <FiCheck size={16} />
+                </div>
+              )}
+            </div>
+          </button>
+          <button
+            className={`${styles.tabCard} ${activeTab === "cong_no" ? styles.tabCardActive : ""}`}
+            onClick={() => setActiveTab("cong_no")}
+          >
+            <div className={styles.tabCardIcon}>
+              <FiClock size={28} />
+            </div>
+            <div className={styles.tabCardContent}>
+              <div className={styles.tabCardTitle}>Công nợ</div>
+              <div className={styles.tabCardDesc}>Ghi nhận công nợ, thanh toán trước một phần hoặc ghi hạn trả</div>
+            </div>
+            <div className={styles.tabCardCheck}>
+              {activeTab === "cong_no" && (
+                <div className={styles.tabCardCheckInner}>
+                  <FiCheck size={16} />
+                </div>
+              )}
+            </div>
+          </button>
         </div>
 
         {/* ====== LEFT COLUMN ====== */}

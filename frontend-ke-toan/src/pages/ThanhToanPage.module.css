@@ -618,7 +618,8 @@
   white-space: nowrap;
 }
 .btnPay:hover {
-  background: rgba(7, 60, 235, 0.08);
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .btnHoaDon {
