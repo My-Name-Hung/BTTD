@@ -28,8 +28,12 @@ const KhoDashboardPage = lazy(() => import("./pages/KhoDashboardPage"));
 const KhoLichSanXuatPage = lazy(() => import("./pages/KhoLichSanXuatPage"));
 const KhoDonHangPage = lazy(() => import("./pages/KhoDonHangPage"));
 const QuanLyMacBeTongPage = lazy(() => import("./pages/QuanLyMacBeTongPage"));
+const DonHangTheoXePage = lazy(() => import("./pages/DonHangTheoXePage"));
+const DonHangTheoTramPage = lazy(() => import("./pages/DonHangTheoTramPage"));
 const AccessHistoryPage = lazy(() => import("./pages/AccessHistoryPage"));
-const AccessHistoryDetailPage = lazy(() => import("./pages/AccessHistoryDetailPage"));
+const AccessHistoryDetailPage = lazy(
+  () => import("./pages/AccessHistoryDetailPage"),
+);
 const TaoNguoiDungPage = lazy(() => import("./pages/TaoNguoiDungPage"));
 
 // Role-specific pages
@@ -104,6 +108,10 @@ function App() {
                       path="/quan-ly/don-hang/tao"
                       element={<TaoDonHangPage />}
                     />
+                    <Route
+                      path="/quan-ly/don-hang/sua/:id"
+                      element={<TaoDonHangPage />}
+                    />
 
                     {/* Sales - chỉ tạo đơn + xem đơn của mình */}
                     <Route
@@ -134,6 +142,16 @@ function App() {
                     <Route
                       path="/tram-tron/don-hang/:id"
                       element={<KhoDonHangPage />}
+                    />
+                    <Route
+                      path="/tram-tron/don-hang-list"
+                      element={<DonHangTheoTramPage />}
+                    />
+
+                    {/* Quản lý xe */}
+                    <Route
+                      path="/quan-ly/xe/don-hang/:id"
+                      element={<DonHangTheoXePage />}
                     />
 
                     {/* Tài xế */}
@@ -190,8 +208,14 @@ function App() {
                     />
                     <Route path="/bao-tri" element={<BaoTriPage />} />
                     <Route path="/tham-so" element={<ThamSoPage />} />
-                    <Route path="/lich-su-truy-cap" element={<AccessHistoryPage />} />
-                    <Route path="/lich-su-truy-cap/:id" element={<AccessHistoryDetailPage />} />
+                    <Route
+                      path="/lich-su-truy-cap"
+                      element={<AccessHistoryPage />}
+                    />
+                    <Route
+                      path="/lich-su-truy-cap/:id"
+                      element={<AccessHistoryDetailPage />}
+                    />
 
                     {/* Redirects */}
                     <Route

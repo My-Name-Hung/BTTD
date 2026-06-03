@@ -106,17 +106,30 @@ router.get(
         return;
       }
 
-      const idTaiXe = req.user.id;
+      const isAdmin = req.user.vaiTro === 'admin';
+      let data;
 
-      const data = await query<any>(
-        `SELECT dh.* FROM DonHang dh
-         INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-         INNER JOIN Xe xe ON ls.idXe = xe.id
-         WHERE xe.idTaiKhoan = @idTaiXe
-           AND dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')
-         ORDER BY dh.ngayGiao DESC`,
-        { idTaiXe },
-      );
+      if (isAdmin) {
+        // Admin xem tất cả lịch sử giao hàng
+        data = await query<any>(
+          `SELECT dh.* FROM DonHang dh
+           WHERE dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')
+           ORDER BY dh.ngayGiao DESC`,
+          {}
+        );
+      } else {
+        // Tài xế chỉ xem đơn của mình
+        const idTaiXe = req.user.id;
+        data = await query<any>(
+          `SELECT dh.* FROM DonHang dh
+           INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
+           INNER JOIN Xe xe ON ls.idXe = xe.id
+           WHERE xe.idTaiKhoan = @idTaiXe
+             AND dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')
+           ORDER BY dh.ngayGiao DESC`,
+          { idTaiXe },
+        );
+      }
 
       res.json({ success: true, message: "Lấy lịch sử giao hàng thành công", data });
     } catch (error) {

@@ -18,7 +18,7 @@ export default function ThanhToanPage() {
   const [tuKhoa, setTuKhoa] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
-  const [form, setForm] = useState({ soTien: '', hinhThuc: 'tien_mat', nguoiNhan: '', ghiChu: '' });
+  const [form, setForm] = useState({ soTien: '', hinhThuc: 'tien_mat', ghiChu: '' });
   const [formLoading, setFormLoading] = useState(false);
 
   const canCreate = hasPermission('thanhtoan.create');
@@ -45,7 +45,7 @@ export default function ThanhToanPage() {
   const openThanhToan = (dh: DonHang) => {
     setSelectedDonHang(dh);
     const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
-    setForm({ soTien: conLai > 0 ? Number(Math.round(conLai)).toLocaleString('vi-VN') : '', hinhThuc: 'tien_mat', nguoiNhan: '', ghiChu: '' });
+    setForm({ soTien: conLai > 0 ? Number(Math.round(conLai)).toLocaleString('vi-VN') : '', hinhThuc: 'tien_mat', ghiChu: '' });
     setModalOpen(true);
   };
 
@@ -56,8 +56,7 @@ export default function ThanhToanPage() {
       await taoThanhToan({
         idDonHang: selectedDonHang.id,
         soTien: parseFloat(form.soTien.replace(/[^\d]/g, '')),
-        hinhThuc: form.hinhThuc as 'tien_mat' | 'chuyen_khoan' | 'truct_hop_dong',
-        nguoiNhan: form.nguoiNhan || undefined,
+        hinhThuc: form.hinhThuc as 'tien_mat' | 'chuyen_khoan',
         ghiChu: form.ghiChu || undefined,
       });
       showToast('Ghi nhận thanh toán thành công');
@@ -229,12 +228,7 @@ export default function ThanhToanPage() {
           <select className={styles.formSelect} value={form.hinhThuc} onChange={(e) => setForm({ ...form, hinhThuc: e.target.value })}>
             <option value="tien_mat">Tiền mặt</option>
             <option value="chuyen_khoan">Chuyển khoản</option>
-            <option value="truct_hop_dong">Trực tiếp</option>
           </select>
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Người nhận</label>
-          <input className={styles.formInput} value={form.nguoiNhan} onChange={(e) => setForm({ ...form, nguoiNhan: e.target.value })} />
         </div>
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Ghi chú</label>

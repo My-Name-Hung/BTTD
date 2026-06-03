@@ -302,8 +302,9 @@ export default function KhoLichSanXuatPage() {
                   <th>Mác bê tông</th>
                   <th>Khối lượng</th>
                   <th>Trạng thái</th>
-                  <th>Biển số xe</th>
-                  <th>Tài xế</th>
+                  <th className={styles.hideOnMobile}>Trạm trộn</th>
+                  <th className={styles.hideOnMobile}>Biển số xe</th>
+                  <th className={styles.hideOnMobile}>Tài xế</th>
                   <th>Ngày tạo lịch</th>
                   <th>Hành động</th>
                 </tr>
@@ -354,12 +355,17 @@ export default function KhoLichSanXuatPage() {
                           {TRANG_THAI_DON_LABELS[trangThai] || trangThai}
                         </span>
                       </td>
-                      <td>
+                      <td className={styles.hideOnMobile}>
+                        <span className={styles.tableXe}>
+                          {(item as any).tenTram || "—"}
+                        </span>
+                      </td>
+                      <td className={styles.hideOnMobile}>
                         <span className={styles.tableXe}>
                           {item.bienSoXe || "—"}
                         </span>
                       </td>
-                      <td>
+                      <td className={styles.hideOnMobile}>
                         <span className={styles.tableTaiXe}>
                           {item.tenTaiXe || "—"}
                         </span>

@@ -1,9 +1,9 @@
 import { ReactNode, useEffect, useState } from "react";
 import {
+  FiActivity,
   FiBell,
   FiChevronLeft,
   FiChevronRight,
-  FiActivity,
   FiLogOut,
   FiMenu,
   FiPlusCircle,
@@ -16,7 +16,6 @@ import {
 } from "react-icons/fi";
 import {
   MdAssignment,
-  MdCheckCircle,
   MdDashboard,
   MdDeliveryDining,
   MdFactory,
@@ -51,7 +50,16 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Tổng quan",
     icon: <MdDashboard size={20} />,
     iconActive: <MdDashboard size={20} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "tram_tron", "sale", "tai_xe", "ky_thuat"],
+    roles: [
+      "admin",
+      "ke_toan",
+      "dieu_phoi",
+      "lanh_dao",
+      "tram_tron",
+      "sale",
+      "tai_xe",
+      "ky_thuat",
+    ],
   },
   // Bán hàng
   {
@@ -59,14 +67,23 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Đơn hàng",
     icon: <FiShoppingBag size={20} />,
     iconActive: <FiShoppingBag size={20} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "sale", "tai_xe", "ky_thuat", "lanh_dao"],
+    roles: [
+      "admin",
+      "ke_toan",
+      "dieu_phoi",
+      "sale",
+      "tram_tron",
+      "tai_xe",
+      "ky_thuat",
+      "lanh_dao",
+    ],
   },
   {
     path: "/quan-ly/don-hang/tao",
     label: "Tạo đơn hàng",
     icon: <FiPlusCircle size={20} />,
     iconActive: <FiPlusCircle size={20} />,
-    roles: ["admin", "sale"],
+    roles: ["admin", "sale", "dieu_phoi"],
   },
   {
     path: "/khach-hang",
@@ -96,7 +113,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Mác bê tông",
     icon: <MdFactory size={20} />,
     iconActive: <MdFactory size={20} />,
-    roles: ["admin", "dieu_phoi"],
+    roles: ["admin", "dieu_phoi", "sale"],
   },
   // Giao hàng
   {
@@ -197,14 +214,16 @@ export const SIDEBAR_GROUPS: MenuGroup[] = [
   {
     title: "Bán hàng",
     items: SIDEBAR_ITEMS.filter((m) =>
-      ["/quan-ly/don-hang", "/quan-ly/don-hang/tao", "/khach-hang"].includes(m.path),
+      ["/quan-ly/don-hang", "/quan-ly/don-hang/tao", "/khach-hang"].includes(
+        m.path,
+      ),
     ),
   },
   // === SẢN XUẤT / TRẠM TRỘN ===
   {
     title: "Trạm trộn",
     items: SIDEBAR_ITEMS.filter((m) =>
-      ["/tram-tron/lich-san-xuat"].includes(m.path),
+      ["/tram-tron/lich-san-xuat", "/dieu-phoi/mac-be-tong"].includes(m.path),
     ),
   },
   // === ĐIỀU PHỐI ===
@@ -224,9 +243,7 @@ export const SIDEBAR_GROUPS: MenuGroup[] = [
   // === NGHIỆM THU ===
   {
     title: "Nghiệm thu",
-    items: SIDEBAR_ITEMS.filter((m) =>
-      ["/nghiem-thu"].includes(m.path),
-    ),
+    items: SIDEBAR_ITEMS.filter((m) => ["/nghiem-thu"].includes(m.path)),
   },
   // === THANH TOÁN & CÔNG NỢ ===
   {
@@ -239,7 +256,14 @@ export const SIDEBAR_GROUPS: MenuGroup[] = [
   {
     title: "Quản trị",
     items: SIDEBAR_ITEMS.filter((m) =>
-      ["/quan-ly/nguoi-dung", "/quan-ly/xe", "/quan-ly/tram-tron", "/tai-len-danh-sach", "/bao-tri", "/lich-su-truy-cap"].includes(m.path),
+      [
+        "/quan-ly/nguoi-dung",
+        "/quan-ly/xe",
+        "/quan-ly/tram-tron",
+        "/tai-len-danh-sach",
+        "/bao-tri",
+        "/lich-su-truy-cap",
+      ].includes(m.path),
     ),
   },
 ];
@@ -251,21 +275,46 @@ const BOTTOM_TABS = [
     label: "Tổng quan",
     icon: <MdDashboard size={22} />,
     iconActive: <MdDashboard size={22} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "tram_tron", "sale", "tai_xe", "ky_thuat"],
+    roles: [
+      "admin",
+      "ke_toan",
+      "dieu_phoi",
+      "lanh_dao",
+      "tram_tron",
+      "sale",
+      "tai_xe",
+      "ky_thuat",
+    ],
   },
   {
     path: "/quan-ly/don-hang",
     label: "Đơn hàng",
     icon: <FiShoppingBag size={22} />,
     iconActive: <FiShoppingBag size={22} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "sale", "tai_xe", "ky_thuat", "lanh_dao"],
+    roles: [
+      "admin",
+      "ke_toan",
+      "dieu_phoi",
+      "sale",
+      "tram_tron",
+      "tai_xe",
+      "ky_thuat",
+      "lanh_dao",
+    ],
   },
   {
     path: "/tram-tron/lich-san-xuat",
     label: "Trạm trộn",
     icon: <MdFactory size={22} />,
     iconActive: <MdFactory size={22} />,
-    roles: ["admin", "tram_tron"],
+    roles: ["admin", "tram_tron", "dieu_phoi", "sale"],
+  },
+  {
+    path: "/dieu-phoi",
+    label: "Điều phối",
+    icon: <MdLocalShipping size={22} />,
+    iconActive: <MdLocalShipping size={22} />,
+    roles: ["admin", "dieu_phoi"],
   },
   {
     path: "/tai-xe",
@@ -286,7 +335,16 @@ const BOTTOM_TABS = [
     label: "Thông báo",
     icon: <FiBell size={22} />,
     iconActive: <FiBell size={22} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "tram_tron", "sale", "tai_xe", "ky_thuat"],
+    roles: [
+      "admin",
+      "ke_toan",
+      "dieu_phoi",
+      "lanh_dao",
+      "tram_tron",
+      "sale",
+      "tai_xe",
+      "ky_thuat",
+    ],
   },
 ];
 
@@ -376,12 +434,12 @@ export function Layout({ children }: LayoutProps) {
             </button>
             {!sidebarCollapsed && (
               <>
-              <a href="/">
-                <img
-                  src={LOGO_URL}
-                  alt="Bê Tông Tây Đô"
-                  className="sidebar-logo-img"
-                />
+                <a href="/">
+                  <img
+                    src={LOGO_URL}
+                    alt="Bê Tông Tây Đô"
+                    className="sidebar-logo-img"
+                  />
                 </a>
                 <div className="sidebar-logo-text">
                   <span className="sidebar-logo-name">Bê Tông Tây Đô</span>

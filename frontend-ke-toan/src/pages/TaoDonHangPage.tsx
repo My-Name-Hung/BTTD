@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSave, FiCalendar, FiArrowLeft } from 'react-icons/fi';
+import { FiSave, FiCalendar, FiArrowLeft, FiPlus } from 'react-icons/fi';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
   taoDonHang, suaDonHang, layDonHang,
   layDanhSachKhachHang, layDanhSachMacBeTong, layDanhSachTramTron,
+  taoKhachHang,
 } from '../services/api';
 import { DonHang, KhachHang, MacBeTong, TramTron } from '../types';
 import { useToast } from '../hooks';
-import { ConfirmModal } from '../components/Common';
+import { ConfirmModal, Modal } from '../components/Common';
 import styles from './TaoDonHangPage.module.css';
 
 function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' || '0 đ'; }
@@ -60,6 +61,12 @@ export default function TaoDonHangPage() {
   const [showCancel, setShowCancel] = useState(false);
   const [macSearchOpen, setMacSearchOpen] = useState(false);
   const [macSearchQuery, setMacSearchQuery] = useState('');
+  const [khachSearchOpen, setKhachSearchOpen] = useState(false);
+  const [khachSearchQuery, setKhachSearchQuery] = useState('');
+  const [showKhachHangModal, setShowKhachHangModal] = useState(false);
+  const [newKhachHang, setNewKhachHang] = useState({ tenKhachHang: '', soDienThoai: '', diaChi: '' });
+  const [newKhachLoading, setNewKhachLoading] = useState(false);
+  const khachDropdownRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [thoiGianGiaoDuKien, setThoiGianGiaoDuKien] = useState<Date | null>(null);
@@ -107,6 +114,10 @@ export default function TaoDonHangPage() {
       if (macDropdownRef.current && !macDropdownRef.current.contains(e.target as Node)) {
         setMacSearchOpen(false);
         setMacSearchQuery('');
+      }
+      if (khachDropdownRef.current && !khachDropdownRef.current.contains(e.target as Node)) {
+        setKhachSearchOpen(false);
+        setKhachSearchQuery('');
       }
     };
     document.addEventListener('mousedown', handler);
@@ -172,6 +183,42 @@ export default function TaoDonHangPage() {
     }));
     setMacSearchOpen(false);
     setMacSearchQuery('');
+  };
+
+  const handleKhachHangChange = (kh: KhachHang) => {
+    setForm((prev) => ({
+      ...prev,
+      idKhachHang: String(kh.id || ''),
+      tenKhachHang: kh.tenKhachHang || '',
+      soDienThoai: kh.soDienThoai || '',
+      diaChiNhan: kh.diaChi || '',
+    }));
+    setKhachSearchOpen(false);
+    setKhachSearchQuery('');
+  };
+
+  const handleAddKhachHang = async () => {
+    if (!newKhachHang.tenKhachHang.trim()) {
+      showToast('Vui lòng nhập tên khách hàng', 'error');
+      return;
+    }
+    setNewKhachLoading(true);
+    try {
+      const created = await taoKhachHang({
+        tenKhachHang: newKhachHang.tenKhachHang,
+        soDienThoai: newKhachHang.soDienThoai,
+        diaChi: newKhachHang.diaChi,
+      });
+      setKhachHangs((prev) => [created, ...prev]);
+      handleKhachHangChange(created);
+      setShowKhachHangModal(false);
+      setNewKhachHang({ tenKhachHang: '', soDienThoai: '', diaChi: '' });
+      showToast('Thêm khách hàng thành công');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Lỗi thêm khách hàng', 'error');
+    } finally {
+      setNewKhachLoading(false);
+    }
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -270,25 +317,44 @@ export default function TaoDonHangPage() {
         <form onSubmit={handleSubmit}>
           <div className={styles.sectionTitle}>Thông tin khách hàng</div>
           <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Tên khách hàng *</label>
-              <input
-                className={styles.formInput}
-                value={form.tenKhachHang}
-                onChange={(e) => setForm({ ...form, tenKhachHang: e.target.value })}
-                placeholder="VD: Công ty TNHH ABC"
-                required
-              />
+            <div className={styles.formGroup} ref={khachDropdownRef} style={{ position: 'relative' }}>
+              <label className={styles.formLabel}>Khách hàng</label>
+              <div className={styles.searchDropdownDisplay} onClick={() => setKhachSearchOpen(o => !o)}
+                role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setKhachSearchOpen(o => !o)}>
+                <span className={form.idKhachHang ? '' : styles.searchDropdownPlaceholder}>
+                  {form.tenKhachHang || '— Chọn khách hàng —'}
+                </span>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                  <button type="button" className={styles.iconBtnSmall} onClick={(e) => { e.stopPropagation(); setKhachSearchOpen(false); setKhachSearchQuery(''); setShowKhachHangModal(true); }} title="Thêm khách hàng mới">
+                    <FiPlus size={14} />
+                  </button>
+                  <svg className={`${styles.searchDropdownArrow} ${khachSearchOpen ? styles.searchDropdownArrowOpen : ''}`} width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+              {khachSearchOpen && (
+                <div className={styles.searchDropdownPanel}>
+                  <input className={styles.searchDropdownInput} placeholder="Tìm tên khách hàng..." value={khachSearchQuery}
+                    onChange={(e) => setKhachSearchQuery(e.target.value)} autoFocus />
+                  <div className={styles.searchDropdownList}>
+                    {khachHangs.filter(k => (k.tenKhachHang || '').toLowerCase().includes(khachSearchQuery.toLowerCase())).length === 0 && (
+                      <div className={styles.searchDropdownEmpty}>Không tìm thấy</div>
+                    )}
+                    {khachHangs.filter(k => (k.tenKhachHang || '').toLowerCase().includes(khachSearchQuery.toLowerCase())).map((k) => (
+                      <div key={k.id} className={`${styles.searchDropdownItem} ${parseInt(form.idKhachHang) === k.id ? styles.searchDropdownItemActive : ''}`}
+                        onClick={() => handleKhachHangChange(k)}>
+                        <div className={styles.searchDropdownItemName}>{k.tenKhachHang}</div>
+                        <div className={styles.searchDropdownItemSub}>{k.soDienThoai || '—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Số điện thoại *</label>
-              <input
-                className={styles.formInput}
-                value={form.soDienThoai}
-                onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })}
-                placeholder="VD: 0901 234 567"
-                required
-              />
+              <input className={styles.formInput} value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} placeholder="VD: 0901 234 567" required />
             </div>
           </div>
           <div className={styles.formGroup}>
@@ -525,6 +591,37 @@ export default function TaoDonHangPage() {
         title="Xác nhận hủy bỏ"
         type="warning"
       />
+
+      {/* Modal thêm khách hàng mới */}
+      <Modal
+        isOpen={showKhachHangModal}
+        onClose={() => setShowKhachHangModal(false)}
+        title="Thêm khách hàng mới"
+        footer={
+          <>
+            <button className="btn btn-cancel" onClick={() => setShowKhachHangModal(false)} disabled={newKhachLoading}>Hủy</button>
+            <button className="btn btn-save" onClick={handleAddKhachHang} disabled={newKhachLoading}>
+              {newKhachLoading ? 'Đang lưu...' : 'Thêm mới'}
+            </button>
+          </>
+        }
+      >
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Tên khách hàng *</label>
+          <input className={styles.formInput} value={newKhachHang.tenKhachHang}
+            onChange={(e) => setNewKhachHang({ ...newKhachHang, tenKhachHang: e.target.value })} placeholder="VD: Công ty TNHH ABC" />
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Số điện thoại</label>
+          <input className={styles.formInput} value={newKhachHang.soDienThoai}
+            onChange={(e) => setNewKhachHang({ ...newKhachHang, soDienThoai: e.target.value })} placeholder="VD: 0901 234 567" />
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Địa chỉ</label>
+          <input className={styles.formInput} value={newKhachHang.diaChi}
+            onChange={(e) => setNewKhachHang({ ...newKhachHang, diaChi: e.target.value })} placeholder="VD: Số 123, Đường Nguyễn Huệ, TP.Cần Thơ" />
+        </div>
+      </Modal>
 
       <div className={styles.toastContainer}>
         {toasts.map((t) => (

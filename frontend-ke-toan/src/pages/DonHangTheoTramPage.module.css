@@ -1,0 +1,326 @@
+/* DonHangTheoTramPage - reuse DonHangTheoXePage styles */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pageHeaderBack {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.backBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.04);
+}
+
+.pageHeaderTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.pageHeaderDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.card {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  padding: 24px;
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filterSearchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+  max-width: 300px;
+}
+
+.filterSearchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-placeholder);
+  pointer-events: none;
+}
+
+.filterSearchInput {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.filterSearchInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.1);
+}
+
+.selectWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selectLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.selectControl {
+  position: relative;
+}
+
+.selectInput {
+  padding: 9px 32px 9px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  cursor: pointer;
+  appearance: none;
+  min-width: 140px;
+}
+
+.selectInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.selectArrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.filterClearBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(7, 60, 235, 0.08);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filterClearBtn:hover {
+  background: rgba(7, 60, 235, 0.15);
+}
+
+.statsRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.statItem {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.statNum {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-text);
+  margin-right: 4px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--color-bg);
+}
+
+.tableCode {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 13px;
+}
+
+.tableName {
+  font-weight: 600;
+  max-width: 180px;
+}
+
+.tableAddress {
+  max-width: 200px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.tableRight {
+  text-align: right;
+  font-weight: 600;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--color-text-secondary);
+}
+
+.emptyState span {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.emptyState p {
+  font-size: 15px;
+}
+
+.paginationWrap {
+  border-top: 1px solid var(--color-border);
+  margin-top: 16px;
+}
+
+.toastContainer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideIn 0.3s ease;
+  min-width: 280px;
+}
+
+.toastSuccess {
+  background: var(--color-success);
+  color: white;
+}
+
+.toastError {
+  background: var(--color-danger);
+  color: white;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .filterBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filterSearchWrap {
+    max-width: 100%;
+  }
+  .hideOnMobile {
+    display: none;
+  }
+  .card {
+    padding: 16px;
+  }
+}
