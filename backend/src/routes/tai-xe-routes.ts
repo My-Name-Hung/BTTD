@@ -23,10 +23,10 @@ router.get(
       let data;
 
       if (isAdmin) {
-        // Admin xem tất cả đơn đang giao
+        // Admin xem tất cả đơn đang chờ giao (đã xác nhận sản xuất)
         data = await query<any>(
           `SELECT dh.* FROM DonHang dh
-           WHERE dh.trangThaiDon IN (N'dang_giao', N'da_giao', N'dang_san_xuat')
+           WHERE dh.trangThaiDon IN (N'dang_giao', N'da_giao')
            ORDER BY dh.ngayGiao DESC`,
           {}
         );
@@ -38,7 +38,7 @@ router.get(
            INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
            INNER JOIN Xe xe ON ls.idXe = xe.id
            WHERE xe.idTaiKhoan = @idTaiXe
-             AND dh.trangThaiDon IN (N'dang_giao', N'da_giao', N'dang_san_xuat')
+             AND dh.trangThaiDon IN (N'dang_giao', N'da_giao')
            ORDER BY dh.ngayGiao DESC`,
           { idTaiXe },
         );
