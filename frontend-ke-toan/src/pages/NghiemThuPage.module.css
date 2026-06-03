@@ -123,6 +123,112 @@
 .bienBanLink { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--color-primary); text-decoration: none; }
 .bienBanLink:hover { text-decoration: underline; }
 
+/* Upload file list */
+.uploadFileList {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 12px;
+}
+.uploadFileListHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.clearAllBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-danger);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.clearAllBtn:hover {
+  background: var(--color-danger);
+  color: white;
+}
+.uploadFileItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.uploadFileItem:last-child { border-bottom: none; }
+.uploadFileIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(7, 60, 235, 0.08);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.uploadFileInfo {
+  flex: 1;
+  min-width: 0;
+}
+.uploadFileName {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 0;
+  color: inherit;
+  font-weight: inherit;
+}
+.uploadFileSize {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+.removeFileBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(244, 67, 54, 0.1);
+  color: var(--color-danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.removeFileBtn:hover {
+  background: var(--color-danger);
+  color: white;
+}
+
+/* Bien ban multi links */
+.bienBanFileList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.bienBanMultiLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 /* Toast */
 .toastContainer { position: fixed; top: 20px; right: 20px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
 .toast { padding: 12px 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-md); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; animation: taSlideIn 0.3s ease; min-width: 280px; }

@@ -24,7 +24,7 @@ if (!fs.existsSync(BIEN_BAN_DIR)) {
   fs.mkdirSync(BIEN_BAN_DIR, { recursive: true });
 }
 
-// Cấu hình multer để lưu file biên bản nghiệm thu
+// Cấu hình multer để lưu file biên bản nghiệm thu (nhiều file)
 const uploadBienBan = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => {
@@ -36,14 +36,14 @@ const uploadBienBan = multer({
       cb(null, `bien-ban-${unique}${ext}`);
     },
   }),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  limits: { fileSize: 50 * 1024 * 1024, files: 10 }, // 50MB mỗi file, tối đa 10 file
   fileFilter: (_req, file, cb) => {
-    const allowed = ['.doc', '.docx', '.pdf', '.jpg', '.jpeg', '.png'];
+    const allowed = ['.doc', '.docx', '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowed.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Chỉ chấp nhận file .doc, .docx, .pdf, .jpg, .png'));
+      cb(new Error('Chỉ chấp nhận file .doc, .docx, .pdf, .jpg, .jpeg, .png, .gif, .webp'));
     }
   },
 });
@@ -107,16 +107,17 @@ router.put('/xac-nhan/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan
   }
 });
 
-// Upload file biên bản nghiệm thu (tùy chọn)
-router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), uploadBienBan.single('file'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+// Upload file biên bản nghiệm thu (nhiều file)
+router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), uploadBienBan.array('files', 10), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
-    if (!req.file) {
-      res.status(400).json({ success: false, message: 'Không có file được tải lên' });
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      res.status(400).json({ success: false, message: 'Không có file nào được tải lên' });
       return;
     }
 
     const idDonHang = parseInt(req.params.idDonHang, 10);
-    const fileUrl = `/uploads/bien-ban/${req.file.filename}`;
+    const fileUrls = files.map(f => `/uploads/bien-ban/${f.filename}`);
 
     const existing = await query<NghiemThu>(
       `SELECT * FROM NghiemThu WHERE idDonHang = @idDonHang`,
@@ -127,44 +128,48 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
       await query(
         `INSERT INTO NghiemThu (idDonHang, chatLuong, bienBanFile, ngayTao)
          VALUES (@idDonHang, N'dat', @bienBanFile, ${vnNow()})`,
-        { idDonHang, bienBanFile: fileUrl }
+        { idDonHang, bienBanFile: JSON.stringify(fileUrls) }
       );
     } else {
+      // Merge file cũ và mới
+      const existingFiles = existing[0].bienBanFile ? JSON.parse(existing[0].bienBanFile as unknown as string) : [];
+      const allFiles = [...existingFiles, ...fileUrls];
       await query(
         `UPDATE NghiemThu SET bienBanFile = @bienBanFile, ngayCapNhat = ${vnNow()} WHERE idDonHang = @idDonHang`,
-        { idDonHang, bienBanFile: fileUrl }
+        { idDonHang, bienBanFile: JSON.stringify(allFiles) }
       );
     }
 
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user?.id, 'UPLOAD', 'NghiemThu', idDonHang, undefined,
-      JSON.stringify({ bienBanFile: fileUrl }), ip);
+      JSON.stringify({ bienBanFiles: fileUrls }), ip);
 
-    res.json({ success: true, message: 'Tải file thành công', data: { bienBanFile: fileUrl } });
+    res.json({ success: true, message: `Đã tải lên ${files.length} file thành công`, data: { bienBanFiles: fileUrls } });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tải file';
     res.status(500).json({ success: false, message });
   }
 });
 
-// Xác nhận nghiệm thu kèm upload file trong 1 request
-router.post('/xac-nhan-upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), uploadBienBan.single('file'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+// Xác nhận nghiệm thu kèm upload file trong 1 request (nhiều file)
+router.post('/xac-nhan-upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), uploadBienBan.array('files', 10), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
+    const files = req.files as Express.Multer.File[];
     const idDonHang = parseInt(req.params.idDonHang, 10);
-    const fileUrl = req.file ? `/uploads/bien-ban/${req.file.filename}` : undefined;
+    const fileUrls = files?.map(f => `/uploads/bien-ban/${f.filename}`) || [];
 
     const dhCu = (await query<any[]>(`SELECT * FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
-    const dh = await xacNhanNghiemThu(idDonHang, 'da', fileUrl);
+    const dh = await xacNhanNghiemThu(idDonHang, 'da', fileUrls.length > 0 ? JSON.stringify(fileUrls) : undefined);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang,
       JSON.stringify(dhCu),
-      JSON.stringify({ loai: 'da', bienBanFile: fileUrl }),
+      JSON.stringify({ loai: 'da', bienBanFiles: fileUrls }),
       ip);
 
     res.json({
       success: true,
-      message: 'Xác nhận nghiệm thu thành công',
-      data: { donHang: dh, bienBanFile: fileUrl },
+      message: `Xác nhận nghiệm thu thành công${files ? `, đã tải lên ${files.length} file` : ''}`,
+      data: { donHang: dh, bienBanFiles: fileUrls },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận nghiệm thu';

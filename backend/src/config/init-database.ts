@@ -657,6 +657,70 @@ async function initDatabase(): Promise<void> {
 
     await dbPool.close();
 
+    // ===== MIGRATIONS: Cập nhật các cột mới =====
+    try {
+      const migPool = await mssql.connect({
+        server: config.db.server,
+        port: config.db.port,
+        database: config.db.database,
+        user: config.db.user,
+        password: config.db.password,
+        options: {
+          encrypt: config.db.encrypt,
+          trustServerCertificate: config.db.trustServerCertificate,
+        },
+      });
+
+      const migReq = migPool.request();
+
+      // 1. DonHang: thêm cột giaNiemYet
+      const colGiaNiemYet = await migReq.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('DonHang') AND name = 'giaNiemYet'`
+      );
+      if (colGiaNiemYet.recordset.length === 0) {
+        await migReq.query(`ALTER TABLE DonHang ADD giaNiemYet DECIMAL(18,2) DEFAULT 0`);
+        console.log("  ➕ Đã thêm cột giaNiemYet vào DonHang");
+      } else {
+        console.log("  ✅ Cột giaNiemYet đã tồn tại trong DonHang");
+      }
+
+      // 2. DonHang: thêm cột giamTru
+      const colGiamTru = await migReq.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('DonHang') AND name = 'giamTru'`
+      );
+      if (colGiamTru.recordset.length === 0) {
+        await migReq.query(`ALTER TABLE DonHang ADD giamTru DECIMAL(18,2) DEFAULT 0`);
+        console.log("  ➕ Đã thêm cột giamTru vào DonHang");
+      } else {
+        console.log("  ✅ Cột giamTru đã tồn tại trong DonHang");
+      }
+
+      // 3. NghiemThu: đảm bảo bienBanFile là NVARCHAR(MAX)
+      const colBienBanFile = await migReq.query<{ name: string; system_type_id: number }[]>(
+        `SELECT name, system_type_id FROM sys.columns WHERE object_id = OBJECT_ID('NghiemThu') AND name = 'bienBanFile'`
+      );
+      if (colBienBanFile.recordset.length === 0) {
+        await migReq.query(`ALTER TABLE NghiemThu ADD bienBanFile NVARCHAR(MAX) NULL`);
+        console.log("  ➕ Đã thêm cột bienBanFile vào NghiemThu");
+      } else {
+        const typeId = colBienBanFile.recordset[0].system_type_id;
+        // type_id 231 = nvarchar, 1 = sysname (which is also nvarchar)
+        // type_id 35 = text (legacy), 99 = ntext (legacy) — these can't hold JSON well
+        if (typeId === 35 || typeId === 99) {
+          await migReq.query(`ALTER TABLE NghiemThu ALTER COLUMN bienBanFile NVARCHAR(MAX) NULL`);
+          console.log("  🔄 Đã chuyển bienBanFile sang NVARCHAR(MAX) trong NghiemThu");
+        } else {
+          console.log("  ✅ Cột bienBanFile đã đúng kiểu trong NghiemThu");
+        }
+      }
+
+      await migPool.close();
+      console.log("  ✅ Migrations hoàn tất!");
+    } catch (error) {
+      console.error("  ⚠️  Lỗi migrations:", error instanceof Error ? error.message : error);
+    }
+    // ===== END MIGRATIONS =====
+
     // Xóa lịch sử import quá 2 ngày
     try {
       const deleted = await xoaLichSuImportCu();

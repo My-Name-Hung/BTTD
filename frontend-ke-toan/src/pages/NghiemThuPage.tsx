@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiSearch, FiCheck, FiFileText, FiX, FiUpload, FiExternalLink, FiCheckCircle, FiClock } from 'react-icons/fi';
+import { FiSearch, FiCheck, FiFileText, FiX, FiUpload, FiExternalLink, FiCheckCircle, FiClock, FiImage, FiFile } from 'react-icons/fi';
 import {
   layDanhSachDonHang, layNghiemThu,
   xacNhanNghiemThu, layLichSuThanhToan,
@@ -14,6 +14,23 @@ function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' |
 
 type TabType = 'can_nghiem_thu' | 'da_nghiem_thu';
 
+// Parse bienBanFile: có thể là string, string[], hoặc JSON string
+function parseBienBanFiles(bienBanFile: string | string[] | null | undefined): string[] {
+  if (!bienBanFile) return [];
+  if (Array.isArray(bienBanFile)) return bienBanFile;
+  if (typeof bienBanFile === 'string') {
+    if (bienBanFile.startsWith('[')) {
+      try { return JSON.parse(bienBanFile); } catch { return []; }
+    }
+    return [bienBanFile];
+  }
+  return [];
+}
+
+function getBaseUrl() {
+  return import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3433';
+}
+
 export default function NghiemThuPage() {
   const { hasPermission } = usePageRole();
   const { toasts, showToast } = useToast();
@@ -27,7 +44,7 @@ export default function NghiemThuPage() {
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
   const [selectedNt, setSelectedNt] = useState<NghiemThu | null>(null);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadLoading, setUploadLoading] = useState(false);
 
   const canConfirm = hasPermission('nghiemthu.confirm');
@@ -39,7 +56,7 @@ export default function NghiemThuPage() {
     setUploadModalOpen(false);
     setSelectedDonHang(null);
     setSelectedNt(null);
-    setUploadFile(null);
+    setUploadFiles([]);
   };
 
   const loadData = useCallback(async () => {
@@ -93,14 +110,14 @@ export default function NghiemThuPage() {
   };
 
   const handleUpload = async () => {
-    if (!selectedDonHang || !uploadFile) return;
+    if (!selectedDonHang || uploadFiles.length === 0) return;
     setUploadLoading(true);
     try {
       await xacNhanNghiemThu(selectedDonHang.id, 'da');
-      await uploadBienBanNghiemThu(selectedDonHang.id, uploadFile);
-      showToast('Đã tải file và xác nhận nghiệm thu thành công');
+      await uploadBienBanNghiemThu(selectedDonHang.id, uploadFiles);
+      showToast(`Đã tải ${uploadFiles.length} file và xác nhận nghiệm thu thành công`);
       setUploadModalOpen(false);
-      setUploadFile(null);
+      setUploadFiles([]);
       loadData();
     } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi tải file', 'error'); }
     finally { setUploadLoading(false); }
@@ -109,12 +126,8 @@ export default function NghiemThuPage() {
   const openUploadFile = (dh: DonHang, nt: NghiemThu) => {
     setSelectedDonHang(dh);
     setSelectedNt(nt);
-    setUploadFile(null);
+    setUploadFiles([]);
     setUploadModalOpen(true);
-  };
-
-  const getBaseUrl = () => {
-    return import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://bttd.onrender.com';
   };
 
   const currentList = tab === 'can_nghiem_thu' ? filteredCan : filteredDa;
@@ -220,13 +233,17 @@ export default function NghiemThuPage() {
                           <div className={`${styles.infoBoxValue} ${styles.infoBoxValueHighlight}`}>{formatCurrency(dh.thanhTien || 0)}</div>
                         </div>
                       </div>
-                      {nt.bienBanFile && (
+                      {parseBienBanFiles(nt?.bienBanFile).length > 0 && (
                         <div className={styles.infoBoxRow}>
                           <div>
-                            <div className={styles.infoBoxLabel}>Biên bản</div>
-                            <a href={`${baseUrl}${nt.bienBanFile}`} target="_blank" rel="noopener noreferrer" className={styles.bienBanLink}>
-                              <FiExternalLink size={12} /> Mở file
-                            </a>
+                            <div className={styles.infoBoxLabel}>Biên bản ({parseBienBanFiles(nt?.bienBanFile).length} file)</div>
+                            <div className={styles.bienBanFileList}>
+                              {parseBienBanFiles(nt?.bienBanFile).map((fileUrl, idx) => (
+                                <a key={idx} href={`${baseUrl}${fileUrl}`} target="_blank" rel="noopener noreferrer" className={styles.bienBanLink}>
+                                  <FiExternalLink size={12} /> File {idx + 1}
+                                </a>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -240,15 +257,20 @@ export default function NghiemThuPage() {
                       <FiCheck /> Đã nghiệm thu
                     </button>
                   )}
-                  {isDaNT && (
-                    <a
-                      href={`${baseUrl}${nt?.bienBanFile}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.bienBanLink}
-                    >
-                      <FiExternalLink size={14} /> Mở file biên bản
-                    </a>
+                  {isDaNT && parseBienBanFiles(nt?.bienBanFile).length > 0 && (
+                    <div className={styles.bienBanMultiLinks}>
+                      {parseBienBanFiles(nt?.bienBanFile).map((fileUrl, idx) => (
+                        <a
+                          key={idx}
+                          href={`${baseUrl}${fileUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.bienBanLink}
+                        >
+                          <FiExternalLink size={14} /> File {idx + 1}
+                        </a>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
@@ -268,7 +290,7 @@ export default function NghiemThuPage() {
             <button
               className="btn btn-save"
               onClick={handleUpload}
-              disabled={!uploadFile || uploadLoading}
+              disabled={uploadFiles.length === 0 || uploadLoading}
             >
               {uploadLoading ? 'Đang tải...' : 'Xác nhận nghiệm thu'}
             </button>
@@ -276,20 +298,51 @@ export default function NghiemThuPage() {
         }
       >
         <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16 }}>
-          Vui lòng tải lên <strong>biên bản nghiệm thu</strong> đã ký với khách hàng. Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .png</strong> (tối đa 50MB)
+          Vui lòng tải lên <strong>biên bản nghiệm thu</strong> đã ký với khách hàng. Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .jpeg, .png</strong> (tối đa 10 file, 50MB/file)
         </p>
         <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Chọn file biên bản nghiệm thu *</label>
+          <label className={styles.formLabel}>Chọn file biên bản nghiệm thu (có thể chọn nhiều file) *</label>
           <input
             type="file"
             className={styles.formInput}
             accept=".doc,.docx,.pdf,.jpg,.jpeg,.png"
-            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+            multiple
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              setUploadFiles(prev => [...prev, ...files]);
+            }}
           />
         </div>
-        {uploadFile && (
-          <div className={styles.uploadFileName}>
-            <FiFileText size={14} /> {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
+
+        {/* Preview files đã chọn */}
+        {uploadFiles.length > 0 && (
+          <div className={styles.uploadFileList}>
+            <div className={styles.uploadFileListHeader}>
+              <span>Đã chọn {uploadFiles.length} file</span>
+              <button className={styles.clearAllBtn} onClick={() => setUploadFiles([])}>
+                <FiX size={12} /> Xóa tất cả
+              </button>
+            </div>
+            {uploadFiles.map((file, idx) => {
+              const isImage = file.type.startsWith('image/');
+              return (
+                <div key={idx} className={styles.uploadFileItem}>
+                  <div className={styles.uploadFileIcon}>
+                    {isImage ? <FiImage size={16} /> : <FiFile size={16} />}
+                  </div>
+                  <div className={styles.uploadFileInfo}>
+                    <span className={styles.uploadFileName}>{file.name}</span>
+                    <span className={styles.uploadFileSize}>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                  </div>
+                  <button
+                    className={styles.removeFileBtn}
+                    onClick={() => setUploadFiles(prev => prev.filter((_, i) => i !== idx))}
+                  >
+                    <FiX size={14} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </Modal>

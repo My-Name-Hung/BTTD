@@ -373,11 +373,11 @@ export async function xacNhanNghiemThuUploadFile(
 
 export async function uploadBienBanNghiemThu(
   idDonHang: number,
-  file: File,
-): Promise<{ bienBanFile: string }> {
+  files: File[],
+): Promise<{ bienBanFiles: string[] }> {
   const token = getToken();
   const formData = new FormData();
-  formData.append("file", file);
+  files.forEach((file) => formData.append("files", file));
 
   const response = await fetch(
     `${BASE_URL}/nghiem-thu/upload/${idDonHang}`,

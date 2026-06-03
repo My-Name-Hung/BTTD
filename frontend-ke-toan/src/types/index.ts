@@ -145,7 +145,8 @@ export interface NghiemThu {
   khoiLuongXacNhan: number | null;
   khoiLuongThucTe: number | null;
   chatLuong: "dat" | "khong_dat" | "chua" | null;
-  bienBanFile: string | null;
+  bienBanFile: string | string[] | null;
+  bienBanFiles?: string[];
   bienBanSo: string | null;
   ngayLapBienBan: string | null;
   nguoiLap: string | null;
