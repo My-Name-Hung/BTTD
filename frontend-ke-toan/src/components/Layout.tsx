@@ -2,7 +2,6 @@ import { ReactNode, useEffect, useState } from "react";
 import {
   FiActivity,
   FiBell,
-  FiChevronLeft,
   FiChevronRight,
   FiLogOut,
   FiMenu,
@@ -546,7 +545,7 @@ export function Layout({ children }: LayoutProps) {
                 {sidebarCollapsed ? (
                   <FiChevronRight size={18} />
                 ) : (
-                  <FiChevronLeft size={18} />
+                  <FiMenu size={18} />
                 )}
               </button>
               <div className="header-title-group">

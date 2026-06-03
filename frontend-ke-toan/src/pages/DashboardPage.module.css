@@ -72,6 +72,90 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* ── Tab Navigation ── */
+.tabNav {
+  display: flex;
+  gap: 4px;
+  background: var(--color-bg);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.tabBtn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tabBtn:hover {
+  color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.06);
+}
+
+.tabBtnActive {
+  background: var(--color-white) !important;
+  color: var(--color-primary) !important;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Stats Row ── */
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.statCard {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.statIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
+}
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statValue {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
 /* ── KPI Cards ── */
 .kpiGrid {
   display: grid;
@@ -203,11 +287,13 @@
 /* ── Responsive ── */
 @media (max-width: 1200px) {
   .kpiGrid { grid-template-columns: repeat(3, 1fr); }
+  .statsRow { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 900px) {
   .chartGrid { grid-template-columns: 1fr; }
   .kpiGrid { grid-template-columns: repeat(2, 1fr); }
+  .statsRow { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 600px) {
@@ -216,6 +302,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
+  .statsRow { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .kpiCard {
     padding: 14px 12px;
     gap: 10px;

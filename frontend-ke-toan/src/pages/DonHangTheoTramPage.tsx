@@ -28,11 +28,11 @@ export default function DonHangTheoTramPage() {
       const [tramData, lsData, dhData] = await Promise.all([
         layDanhSachTramTron(),
         layTatCaLichSanXuat(),
-        layDanhSachDonHang(1, 500),
+        layDanhSachDonHang(1, 100),
       ]);
       setTrams(tramData || []);
       setLichSans(Array.isArray(lsData) ? lsData : []);
-      setAllOrders(Array.isArray(dhData) ? dhData : []);
+      setAllOrders(Array.isArray(dhData?.data) ? dhData.data : (Array.isArray(dhData) ? dhData : []));
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {

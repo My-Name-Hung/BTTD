@@ -6,7 +6,7 @@ import {
 } from '../models';
 
 export async function layThongKeDashboard(): Promise<ThongKeDashboard> {
-  // Gộp 7 query COUNT riêng lẻ thành 1 query duy nhất — giảm 6 round-trip DB
+  // Gộp query COUNT riêng lẻ thành 1 query duy nhất
   const results = await query<{
     tongDonHang: number;
     donChoDuyet: number;
@@ -18,14 +18,14 @@ export async function layThongKeDashboard(): Promise<ThongKeDashboard> {
     SELECT
       (SELECT COUNT(*) FROM DonHang) AS tongDonHang,
       (SELECT COUNT(*) FROM DonHang WHERE trangThaiDon = N'cho_duyet') AS donChoDuyet,
-      (SELECT COUNT(*) FROM DonHang WHERE trangThaiDon NOT IN (N'cho_duyet', N'nghiem_thu', N'da_thanh_toan', N'tu_choi')) AS donDangXuLy,
-      (SELECT COUNT(*) FROM DonHang WHERE trangThaiHoanThanh = N'da_hoan_thanh') AS donDaHoanThanh,
-      (SELECT ISNULL(SUM(thanhTien), 0) FROM DonHang WHERE trangThaiDon = N'da_thanh_toan') AS tongDoanhThu,
-      (SELECT ISNULL(SUM(conLai), 0) FROM DonHang WHERE conLai > 0 AND trangThaiDon NOT IN (N'tu_choi', N'cho_duyet')) AS tongCongNo
+      (SELECT COUNT(*) FROM DonHang WHERE trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao', N'nghiem_thu')) AS donDangXuLy,
+      (SELECT COUNT(*) FROM DonHang WHERE trangThaiDon IN (N'da_thanh_toan', N'hoan_thanh')) AS donDaHoanThanh,
+      (SELECT ISNULL(SUM(thanhTien), 0) FROM DonHang WHERE trangThaiDon IN (N'da_thanh_toan', N'hoan_thanh')) AS tongDoanhThu,
+      (SELECT ISNULL(SUM(thanhTien - daThanhToan), 0) FROM DonHang WHERE (thanhTien - daThanhToan) > 0 AND trangThaiDon NOT IN (N'tu_choi', N'cho_duyet')) AS tongCongNo
   `);
 
   const [donQuaHan] = await query<{ soLuong: number }>(
-    `SELECT COUNT(*) as soLuong FROM CongNo WHERE trangThai = N'qua_han'`
+    `SELECT COUNT(*) as soLuong FROM DonHang WHERE trangThaiDon = N'hoan_thanh' AND daThanhToan < thanhTien AND DATEDIFF(DAY, ngayGiao, GETDATE()) > 30`
   );
 
   const r = results[0];
@@ -51,7 +51,7 @@ export async function layDoanhThuTheoThang(
        ISNULL(SUM(thanhTien), 0) as doanhThu,
        COUNT(*) as soDonHang
      FROM DonHang
-     WHERE trangThaiDon = N'da_thanh_toan'
+     WHERE trangThaiDon IN (N'da_thanh_toan', N'hoan_thanh')
        AND CONVERT(char(7), ngayTao, 120) BETWEEN @thangBatDau AND @thangKetThuc
      GROUP BY CONVERT(char(7), ngayTao, 120)
      ORDER BY thang`,

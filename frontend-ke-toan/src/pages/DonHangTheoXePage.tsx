@@ -35,12 +35,12 @@ export default function DonHangTheoXePage() {
         layDanhSachXe(),
         layDanhSachTaiXe(),
         layTatCaLichSanXuat(),
-        layDanhSachDonHang(1, 500),
+        layDanhSachDonHang(1, 100),
       ]);
       setXes(xeData || []);
       setTaiXes(txData || []);
       setLichSans(Array.isArray(lsData) ? lsData : []);
-      setAllOrders(Array.isArray(dhData) ? dhData : []);
+      setAllOrders(Array.isArray(dhData?.data) ? dhData.data : (Array.isArray(dhData) ? dhData : []));
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {

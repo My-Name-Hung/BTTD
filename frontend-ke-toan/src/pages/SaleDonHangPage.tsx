@@ -50,8 +50,8 @@ export default function SaleDonHangPage() {
       dang_giao: "#009688",
       da_giao: "#4caf50",
       nghiem_thu: "#795548",
-      da_nghiem_thu: "#795548",
       da_thanh_toan: "#2e7d32",
+      chua_thanh_toan: "#eab308",
       hoan_thanh: "#2e7d32",
       tu_choi: "#f44336",
     };

@@ -12,8 +12,8 @@ import {
   Tooltip,
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
-import { useCallback, useEffect, useState } from "react";
-import { Bar, Pie } from "react-chartjs-2";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Bar, Doughnut, Line, Pie } from "react-chartjs-2";
 import {
   FiAlertTriangle,
   FiCheckCircle,
@@ -22,6 +22,8 @@ import {
   FiPackage,
   FiShoppingCart,
   FiTrendingUp,
+  FiUsers,
+  FiTruck,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../components/Common";
@@ -31,6 +33,10 @@ import {
   layDonHangTheoTrangThai,
   layThongKeDashboard,
   layThongKeTaiXe,
+  layDanhSachXe,
+  layDanhSachKhachHang,
+  layDanhSachTramTron,
+  layDanhSachTaiXe,
 } from "../services/api";
 import {
   DoanhThuTheoThang,
@@ -127,6 +133,11 @@ export default function DashboardPage() {
   const [trangThai, setTrangThai] = useState<DonHangTheoTrangThai[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thang");
+  const [tongXe, setTongXe] = useState(0);
+  const [tongKhach, setTongKhach] = useState(0);
+  const [tongTram, setTongTram] = useState(0);
+  const [tongTaiXe, setTongTaiXe] = useState(0);
+  const [activeTab, setActiveTab] = useState<"kpi" | "doanh-thu" | "trang-thai" | "san-luong">("kpi");
 
   const loadData = useCallback(async (period: FilterPeriod) => {
     setLoading(true);
@@ -142,14 +153,22 @@ export default function DashboardPage() {
         setTrangThai([]);
       } else {
         const { tuNgay, denNgay } = getDateRange(period);
-        const [dashRes, revenueRes, statusRes] = await Promise.all([
+        const [dashRes, revenueRes, statusRes, xeRes, khachRes, tramRes, txRes] = await Promise.all([
           layThongKeDashboard(),
           layDoanhThuTheoThang(tuNgay, denNgay),
           layDonHangTheoTrangThai(),
+          layDanhSachXe(),
+          layDanhSachKhachHang(),
+          layDanhSachTramTron(),
+          layDanhSachTaiXe(),
         ]);
         setDashboard(dashRes);
         setDoanhThu(revenueRes);
         setTrangThai(statusRes);
+        setTongXe(Array.isArray(xeRes) ? xeRes.length : 0);
+        setTongKhach(Array.isArray(khachRes?.data) ? khachRes.data.length : 0);
+        setTongTram(Array.isArray(tramRes) ? tramRes.length : 0);
+        setTongTaiXe(Array.isArray(txRes) ? txRes.length : 0);
       }
     } catch (err) {
       console.error("Lỗi tải dashboard:", err);
@@ -169,7 +188,6 @@ export default function DashboardPage() {
   const showRevenueChart = vaiTro === "admin" || vaiTro === "ke_toan";
   const showStatusChart = trangThai.length > 0;
 
-  // ── KPI Cards theo vai trò ──────────────────────────────────────────────
   const isTaiXe = vaiTro === "tai_xe";
 
   const kpiCards: KpiItem[] = [
@@ -262,6 +280,14 @@ export default function DashboardPage() {
       : []),
   ].filter((k) => !k.roles || k.roles.includes(vaiTro!));
 
+  // Additional stats cards for admin
+  const statCards = [
+    { label: "Phương tiện", value: tongXe, icon: <FiTruck size={20} />, color: "#6366f1", bg: "rgba(99,102,241,0.1)" },
+    { label: "Khách hàng", value: tongKhach, icon: <FiUsers size={20} />, color: "#ec4899", bg: "rgba(236,72,153,0.1)" },
+    { label: "Trạm trộn", value: tongTram, icon: <FiPackage size={20} />, color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
+    { label: "Tài xế", value: tongTaiXe, icon: <FiUsers size={20} />, color: "#14b8a6", bg: "rgba(20,184,166,0.1)" },
+  ].filter(() => vaiTro === "admin" || vaiTro === "ke_toan");
+
   // ── Chart data ─────────────────────────────────────────────────────────
   const pieData = trangThai.map((item) => ({
     name: TRANG_THAI_DON_LABELS[item.trangThai] || item.trangThai,
@@ -313,6 +339,90 @@ export default function DashboardPage() {
       y: {
         grid: { color: "rgba(226,232,240,0.6)" },
         ticks: { font: { size: 11 }, callback: (v: unknown) => `${v}M` },
+      },
+    },
+  };
+
+  // Line chart data cho doanh thu
+  const lineChartData = {
+    labels: doanhThu.map((d) => d.thang),
+    datasets: [
+      {
+        label: "Doanh thu (triệu)",
+        data: doanhThu.map((d) => d.doanhThu / 1_000_000),
+        borderColor: "#073ceb",
+        backgroundColor: "rgba(7, 60, 235, 0.1)",
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: "#073ceb",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      },
+    ],
+  };
+
+  const lineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { raw: unknown }) =>
+            `${formatCurrencyFull((ctx.raw as number) * 1_000_000)}`,
+        },
+      },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: {
+        grid: { color: "rgba(226,232,240,0.6)" },
+        ticks: { font: { size: 11 }, callback: (v: unknown) => `${v}M` },
+      },
+    },
+  };
+
+  // Biểu đồ số đơn hàng theo tháng
+  const orderBarChartData = {
+    labels: doanhThu.map((d) => d.thang),
+    datasets: [
+      {
+        label: "Số đơn hàng",
+        data: doanhThu.map((d) => d.soDonHang),
+        backgroundColor: "rgba(16, 185, 129, 0.85)",
+        borderColor: "#10b981",
+        borderWidth: 1,
+        borderRadius: 6,
+        barThickness: 32,
+      },
+    ],
+  };
+
+  const orderChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { raw: unknown }) => `${ctx.raw} đơn`,
+        },
+      },
+      datalabels: {
+        anchor: "end" as const,
+        align: "top" as const,
+        font: { size: 11, weight: "bold" as const },
+        color: "#10b981",
+        formatter: (v: unknown) => (v as number) > 0 ? v : "",
+      },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: {
+        grid: { color: "rgba(226,232,240,0.6)" },
+        ticks: { font: { size: 11 }, stepSize: 1 },
       },
     },
   };
@@ -387,50 +497,114 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Tab Navigation for Admin/Kế toán */}
+      {showRevenueChart && (
+        <div className={styles.tabNav}>
+          {[
+            { key: "kpi", label: "Tổng quan" },
+            { key: "doanh-thu", label: "Doanh thu" },
+            { key: "trang-thai", label: "Trạng thái" },
+            { key: "san-luong", label: "Sản lượng" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              className={`${styles.tabBtn} ${activeTab === tab.key ? styles.tabBtnActive : ""}`}
+              onClick={() => setActiveTab(tab.key as typeof activeTab)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* KPI Cards */}
-      <div className={styles.kpiGrid}>
-        {kpiCards.map((kpi, idx) => (
-          <div key={idx} className={styles.kpiCard}>
-            <div className={styles.kpiCardLeft}>
-              <div className={styles.kpiLabel}>{kpi.label}</div>
-              <div className={styles.kpiValue} style={kpi.isCurrency ? { fontSize: 18 } : {}}>
-                {kpi.value}
+      {(activeTab === "kpi" || !showRevenueChart) && (
+        <>
+          <div className={styles.kpiGrid}>
+            {kpiCards.map((kpi, idx) => (
+              <div key={idx} className={styles.kpiCard}>
+                <div className={styles.kpiCardLeft}>
+                  <div className={styles.kpiLabel}>{kpi.label}</div>
+                  <div className={styles.kpiValue} style={kpi.isCurrency ? { fontSize: 18 } : {}}>
+                    {kpi.value}
+                  </div>
+                </div>
+                <div className={styles.kpiIconWrap} style={{ background: kpi.bg, color: kpi.color }}>
+                  {kpi.icon}
+                </div>
               </div>
-            </div>
-            <div className={styles.kpiIconWrap} style={{ background: kpi.bg, color: kpi.color }}>
-              {kpi.icon}
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+
+          {/* Stats row for admin */}
+          {statCards.length > 0 && (
+            <div className={styles.statsRow}>
+              {statCards.map((s, idx) => (
+                <div key={idx} className={styles.statCard}>
+                  <div className={styles.statIcon} style={{ background: s.bg, color: s.color }}>
+                    {s.icon}
+                  </div>
+                  <div className={styles.statContent}>
+                    <div className={styles.statValue}>{s.value}</div>
+                    <div className={styles.statLabel}>{s.label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {/* Charts */}
       <div className={styles.chartGrid}>
-        {/* Biểu đồ doanh thu — chỉ admin & kế toán */}
-        {showRevenueChart && (
-          <div className={styles.chartCard}>
-            <div className={styles.chartCardHeader}>
-              <div>
-                <h3 className={styles.chartCardTitle}>Doanh thu theo tháng</h3>
-                <p className={styles.chartCardDesc}>
-                  {FILTER_LABELS[filterPeriod]} · Đơn vị: triệu đồng
-                </p>
+        {/* Biểu đồ doanh thu Line */}
+        {showRevenueChart && (activeTab === "doanh-thu" || activeTab === "kpi") && (
+          <>
+            <div className={styles.chartCard}>
+              <div className={styles.chartCardHeader}>
+                <div>
+                  <h3 className={styles.chartCardTitle}>Doanh thu theo tháng</h3>
+                  <p className={styles.chartCardDesc}>
+                    {FILTER_LABELS[filterPeriod]} · Đơn vị: triệu đồng
+                  </p>
+                </div>
+              </div>
+              <div className={styles.chartArea}>
+                {doanhThu.length > 0 ? (
+                  <Line data={lineChartData} options={lineChartOptions} />
+                ) : (
+                  <div className={styles.chartEmpty}>
+                    <FiTrendingUp size={40} />
+                    <p>Không có dữ liệu doanh thu</p>
+                  </div>
+                )}
               </div>
             </div>
-            <div className={styles.chartArea}>
-              {doanhThu.length > 0 ? (
-                <Bar data={barChartData} options={barChartOptions} />
-              ) : (
-                <div className={styles.chartEmpty}>
-                  <FiTrendingUp size={40} />
-                  <p>Không có dữ liệu doanh thu</p>
+
+            <div className={styles.chartCard}>
+              <div className={styles.chartCardHeader}>
+                <div>
+                  <h3 className={styles.chartCardTitle}>Doanh thu theo tháng (Cột)</h3>
+                  <p className={styles.chartCardDesc}>
+                    {FILTER_LABELS[filterPeriod]} · Đơn vị: triệu đồng
+                  </p>
                 </div>
-              )}
+              </div>
+              <div className={styles.chartArea}>
+                {doanhThu.length > 0 ? (
+                  <Bar data={barChartData} options={barChartOptions} />
+                ) : (
+                  <div className={styles.chartEmpty}>
+                    <FiTrendingUp size={40} />
+                    <p>Không có dữ liệu doanh thu</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
 
-        {/* Biểu đồ donut tài xế — tỷ lệ giao hàng */}
+        {/* Biểu đồ donut tài xế */}
         {isTaiXe && (
           <div className={styles.chartCard}>
             <div className={styles.chartCardHeader}>
@@ -480,7 +654,6 @@ export default function DashboardPage() {
                         font: { size: 12 },
                         generateLabels: (chart: any) => {
                           const { tongDonTaiXe, chuaGiaoTaiXe, daGiaoTaiXe } = (dashboard as any) || {};
-                          const total = tongDonTaiXe || 0;
                           return [
                             {
                               text: `Chưa giao: ${chuaGiaoTaiXe || 0}`,
@@ -510,23 +683,105 @@ export default function DashboardPage() {
         )}
 
         {/* Biểu đồ trạng thái đơn hàng */}
-        {showStatusChart && (
-          <div className={styles.chartCard}>
+        {showStatusChart && (activeTab === "trang-thai" || activeTab === "kpi") && (
+          <>
+            <div className={styles.chartCard}>
+              <div className={styles.chartCardHeader}>
+                <div>
+                  <h3 className={styles.chartCardTitle}>Đơn hàng theo trạng thái</h3>
+                  <p className={styles.chartCardDesc}>
+                    Tổng {trangThai.reduce((sum, d) => sum + d.soLuong, 0)} đơn hàng
+                  </p>
+                </div>
+              </div>
+              <div className={styles.chartArea}>
+                {pieData.length > 0 ? (
+                  <Doughnut data={donutChartData} options={donutChartOptions} />
+                ) : (
+                  <div className={styles.chartEmpty}>
+                    <FiShoppingCart size={40} />
+                    <p>Không có dữ liệu trạng thái</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className={styles.chartCard}>
+              <div className={styles.chartCardHeader}>
+                <div>
+                  <h3 className={styles.chartCardTitle}>Đơn hàng theo trạng thái (Cột)</h3>
+                  <p className={styles.chartCardDesc}>
+                    Tổng {trangThai.reduce((sum, d) => sum + d.soLuong, 0)} đơn hàng
+                  </p>
+                </div>
+              </div>
+              <div className={styles.chartArea}>
+                {trangThai.length > 0 ? (
+                  <Bar
+                    data={{
+                      labels: trangThai.map((d) => TRANG_THAI_DON_LABELS[d.trangThai] || d.trangThai),
+                      datasets: [
+                        {
+                          label: "Số đơn",
+                          data: trangThai.map((d) => d.soLuong),
+                          backgroundColor: trangThai.map((d) => `${TRANG_THAI_DON_COLORS[d.trangThai] || "#64748b"}cc`),
+                          borderColor: trangThai.map((d) => TRANG_THAI_DON_COLORS[d.trangThai] || "#64748b"),
+                          borderWidth: 1,
+                          borderRadius: 6,
+                          barThickness: 40,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                          anchor: "end" as const,
+                          align: "top" as const,
+                          font: { size: 11, weight: "bold" as const },
+                          formatter: (v: unknown) => (v as number) > 0 ? v : "",
+                        },
+                      },
+                      scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: {
+                          grid: { color: "rgba(226,232,240,0.6)" },
+                          ticks: { font: { size: 11 }, stepSize: 1 },
+                        },
+                      },
+                    }}
+                  />
+                ) : (
+                  <div className={styles.chartEmpty}>
+                    <FiShoppingCart size={40} />
+                    <p>Không có dữ liệu trạng thái</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Biểu đồ sản lượng */}
+        {showRevenueChart && (activeTab === "san-luong" || activeTab === "kpi") && (
+          <div className={styles.chartCard} style={{ gridColumn: "1 / -1" }}>
             <div className={styles.chartCardHeader}>
               <div>
-                <h3 className={styles.chartCardTitle}>Đơn hàng theo trạng thái</h3>
+                <h3 className={styles.chartCardTitle}>Sản lượng đơn hàng theo tháng</h3>
                 <p className={styles.chartCardDesc}>
-                  Tổng {trangThai.reduce((sum, d) => sum + d.soLuong, 0)} đơn hàng
+                  {FILTER_LABELS[filterPeriod]}
                 </p>
               </div>
             </div>
-            <div className={styles.chartArea}>
-              {pieData.length > 0 ? (
-                <Pie data={donutChartData} options={donutChartOptions} />
+            <div className={styles.chartArea} style={{ height: 300 }}>
+              {doanhThu.length > 0 ? (
+                <Bar data={orderBarChartData} options={orderChartOptions} />
               ) : (
                 <div className={styles.chartEmpty}>
-                  <FiShoppingCart size={40} />
-                  <p>Không có dữ liệu trạng thái</p>
+                  <FiPackage size={40} />
+                  <p>Không có dữ liệu sản lượng</p>
                 </div>
               )}
             </div>
