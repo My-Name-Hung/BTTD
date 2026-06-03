@@ -122,8 +122,76 @@
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: 14px;
-  padding: 0 16px 0;
+  padding: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── Tab Card ── */
+.tabCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: inherit;
+  text-align: left;
+  position: relative;
+}
+.tabCard:hover {
+  border-color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.03);
+}
+.tabCardActive {
+  border-color: var(--color-primary) !important;
+  background: rgba(7, 60, 235, 0.06) !important;
+  box-shadow: 0 4px 16px rgba(7, 60, 235, 0.15);
+}
+.tabCardIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(7, 60, 235, 0.08);
+  color: var(--color-primary);
+}
+.tabCardActive .tabCardIcon {
+  background: var(--color-primary);
+  color: white;
+}
+.tabCardContent {
+  flex: 1;
+}
+.tabCardTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+.tabCardDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+.tabCardCheck {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 /* ── Tab Bar ── */
@@ -498,11 +566,8 @@
   .pageWrapper {
     padding: 16px;
   }
-  .orderSummary {
-    flex-direction: column;
-  }
-  .summaryLeft {
-    grid-template-columns: repeat(2, 1fr);
+  .summaryGrid {
+    grid-template-columns: repeat(3, 1fr);
   }
   .buVcGrid {
     grid-template-columns: repeat(2, 1fr);
@@ -511,11 +576,15 @@
     flex-direction: column;
     gap: 12px;
   }
-  .tabBar {
-    overflow-x: auto;
+  .tabBarWrap {
+    grid-template-columns: 1fr;
   }
-  .tabBtn {
-    white-space: nowrap;
+  .tabCard {
+    padding: 14px 16px;
+  }
+  .tabCardIcon {
+    width: 44px;
+    height: 44px;
   }
   .actions {
     flex-direction: column;

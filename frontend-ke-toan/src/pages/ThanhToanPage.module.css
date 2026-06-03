@@ -619,7 +619,7 @@
 }
 .btnPay:hover {
   background: var(--color-primary);
-  color: #fff;
+  color: white;
 }
 
 .btnHoaDon {
@@ -661,6 +661,25 @@
 }
 .btnView:hover {
   background: rgba(34, 197, 94, 0.12);
+}
+
+.btnViewIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--color-success);
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.08);
+  color: var(--color-success);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btnViewIcon:hover {
+  background: var(--color-success);
+  color: white;
 }
 
 /* ── Modal Hóa Đơn ── */

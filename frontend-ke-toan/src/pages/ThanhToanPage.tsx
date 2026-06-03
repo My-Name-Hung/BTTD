@@ -90,15 +90,15 @@ export default function ThanhToanPage() {
     loadData();
   }, [loadData]);
 
-  // Lọc theo tab
+  // Lọc theo tab — chỉ dựa vào tiền, không dựa vào trạng thái đơn hàng
   const chuaTatToan = donHangs.filter((dh) => {
     const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
-    return conLai > 0 || dh.trangThaiDon !== "da_thanh_toan";
+    return conLai > 0;
   });
 
   const daTatToan = donHangs.filter((dh) => {
     const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
-    return conLai <= 0 && dh.trangThaiDon === "da_thanh_toan";
+    return conLai <= 0;
   });
 
   const displayList = activeTab === "chua_tat_toan" ? chuaTatToan : daTatToan;
@@ -120,11 +120,6 @@ export default function ThanhToanPage() {
   const handlePrintHD = (hoaDonId: number) => {
     window.open(`/in-hoa-don/${hoaDonId}`, "_blank");
   };
-
-  // Xác định trạng thái đơn hàng
-  // - daThanhToan === 0 && conLai > 0: chưa thanh toán gì -> ẩn nút
-  // - daThanhToan > 0 && conLai > 0: còn công nợ -> hiện "Xuất HĐ"
-  // - conLai === 0: đã tất toán -> hiện "Xem HĐ"
 
   return (
     <div>
@@ -206,15 +201,13 @@ export default function ThanhToanPage() {
                     Đã Thanh Toán
                   </th>
                   <th style={{ minWidth: 80 }}>Còn lại</th>
-                  <th className={styles.hideOnMobile} style={{ minWidth: 90 }}>
-                    Trạng thái
-                  </th>
                   <th style={{ minWidth: 160 }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedList.map((dh) => {
-                  const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
+                  const daThanhToan = dh.daThanhToan || 0;
+                  const conLai = Math.max(0, (dh.thanhTien || 0) - daThanhToan);
                   const hds = hoaDons[dh.id] || [];
                   const daTatToanOrder = conLai <= 0;
 
@@ -230,38 +223,47 @@ export default function ThanhToanPage() {
                         <strong>{formatCurrency(dh.thanhTien || 0)}</strong>
                       </td>
                       <td className={`${styles.tableRight} ${styles.hideOnMobile}`} style={{ color: "var(--color-success)" }}>
-                        {formatCurrency(dh.daThanhToan || 0)}
+                        {formatCurrency(daThanhToan)}
                       </td>
                       <td>
                         <span style={{ color: conLai > 0 ? "var(--color-warning)" : "var(--color-success)", fontWeight: 700 }}>
                           {formatCurrency(conLai)}
                         </span>
                       </td>
-                      <td className={styles.hideOnMobile}>
-                        <span className={styles.badge}>{TRANG_THAI_DON_LABELS[dh.trangThaiDon]}</span>
-                      </td>
                       <td>
                         <div className={styles.actionBtns}>
-                          {/* Đã tất toán: hiện nút Xem HĐ */}
-                          {conLai <= 0 && hds.length > 0 && canCreate && (
+                          {/* Đã tất toán: chỉ hiện icon mắt xem HĐ */}
+                          {daTatToanOrder && hds.length > 0 && canCreate && (
                             <button
-                              className={styles.btnView}
+                              className={styles.btnViewIcon}
                               onClick={() => handleOpenModal(dh)}
                               title="Xem hóa đơn"
                             >
-                              <FiEye size={13} /> Xem HĐ
+                              <FiEye size={16} />
                             </button>
                           )}
 
-                          {/* Còn công nợ (đã thanh toán 1 phần): hiện nút Xuất HĐ */}
-                          {conLai > 0 && (dh.daThanhToan || 0) > 0 && canCreate && (
-                            <button
-                              className={styles.btnHoaDon}
-                              onClick={() => navigate(`/thanh-toan/xuat/${dh.id}`)}
-                              title="Xuất hóa đơn"
-                            >
-                              <FiFileText size={13} /> Xuất HĐ
-                            </button>
+                          {/* Chưa tất toán: hiện nút thanh toán + xuất HĐ (nếu đã thanh toán > 0) */}
+                          {!daTatToanOrder && canCreate && (
+                            <>
+                              <button
+                                className={styles.btnPay}
+                                onClick={() => navigate(`/thanh-toan/xuat/${dh.id}`)}
+                                title="Thanh toán"
+                              >
+                                <FiDollarSign size={13} />{" "}
+                                {daThanhToan > 0 && conLai > 0 ? formatCurrency(conLai) : "Thanh toán"}
+                              </button>
+                              {daThanhToan > 0 && (
+                                <button
+                                  className={styles.btnHoaDon}
+                                  onClick={() => navigate(`/thanh-toan/xuat/${dh.id}`)}
+                                  title="Xuất hóa đơn"
+                                >
+                                  <FiFileText size={13} /> Xuất HĐ
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>

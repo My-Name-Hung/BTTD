@@ -242,45 +242,33 @@ export default function XuatHoaDonPage() {
           </div>
         </div>
 
-        {/* Tab cards - full width */}
-        <div className={`${styles.tabCardWrap} ${styles.fullWidth}`}>
+        {/* Tab bar - full width */}
+        <div className={`${styles.tabBarWrap} ${styles.fullWidth}`}>
           <button
             className={`${styles.tabCard} ${activeTab === "tra_het" ? styles.tabCardActive : ""}`}
             onClick={() => setActiveTab("tra_het")}
           >
             <div className={styles.tabCardIcon}>
-              <FiDollarSign size={28} />
+              <FiDollarSign size={24} />
             </div>
             <div className={styles.tabCardContent}>
               <div className={styles.tabCardTitle}>Trả hết</div>
-              <div className={styles.tabCardDesc}>Thanh toán toàn bộ số tiền còn lại của đơn hàng</div>
+              <div className={styles.tabCardDesc}>Thanh toán đầy đủ và xuất hóa đơn</div>
             </div>
-            <div className={styles.tabCardCheck}>
-              {activeTab === "tra_het" && (
-                <div className={styles.tabCardCheckInner}>
-                  <FiCheck size={16} />
-                </div>
-              )}
-            </div>
+            {activeTab === "tra_het" && <div className={styles.tabCardCheck}><FiCheck size={18} /></div>}
           </button>
           <button
             className={`${styles.tabCard} ${activeTab === "cong_no" ? styles.tabCardActive : ""}`}
             onClick={() => setActiveTab("cong_no")}
           >
             <div className={styles.tabCardIcon}>
-              <FiClock size={28} />
+              <FiClock size={24} />
             </div>
             <div className={styles.tabCardContent}>
               <div className={styles.tabCardTitle}>Công nợ</div>
-              <div className={styles.tabCardDesc}>Ghi nhận công nợ, thanh toán trước một phần hoặc ghi hạn trả</div>
+              <div className={styles.tabCardDesc}>Thanh toán trước một phần và ghi nợ</div>
             </div>
-            <div className={styles.tabCardCheck}>
-              {activeTab === "cong_no" && (
-                <div className={styles.tabCardCheckInner}>
-                  <FiCheck size={16} />
-                </div>
-              )}
-            </div>
+            {activeTab === "cong_no" && <div className={styles.tabCardCheck}><FiCheck size={18} /></div>}
           </button>
         </div>
 
