@@ -8,7 +8,7 @@ import { ghiNhatKy } from "../services/access-history-service";
 
 const router = Router();
 
-/** Lấy đơn hàng của tài xế đang giao */
+/** Lấy đơn hàng của tài xế đang giao (admin xem tất cả) */
 router.get(
   "/don-hang-cua-toi",
   authMiddleware,
@@ -19,18 +19,30 @@ router.get(
         return;
       }
 
-      const idTaiXe = req.user.id;
+      const isAdmin = req.user.vaiTro === 'admin';
+      let data;
 
-      // Join qua Xe để lấy đơn của tài xế đang login
-      const data = await query<any>(
-        `SELECT dh.* FROM DonHang dh
-         INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-         INNER JOIN Xe xe ON ls.idXe = xe.id
-         WHERE xe.idTaiKhoan = @idTaiXe
-           AND dh.trangThaiDon IN (N'dang_giao', N'da_giao')
-         ORDER BY dh.ngayGiao DESC`,
-        { idTaiXe },
-      );
+      if (isAdmin) {
+        // Admin xem tất cả đơn đang giao
+        data = await query<any>(
+          `SELECT dh.* FROM DonHang dh
+           WHERE dh.trangThaiDon IN (N'dang_giao', N'da_giao', N'dang_san_xuat')
+           ORDER BY dh.ngayGiao DESC`,
+          {}
+        );
+      } else {
+        // Tài xế chỉ xem đơn của mình
+        const idTaiXe = req.user.id;
+        data = await query<any>(
+          `SELECT dh.* FROM DonHang dh
+           INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
+           INNER JOIN Xe xe ON ls.idXe = xe.id
+           WHERE xe.idTaiKhoan = @idTaiXe
+             AND dh.trangThaiDon IN (N'dang_giao', N'da_giao', N'dang_san_xuat')
+           ORDER BY dh.ngayGiao DESC`,
+          { idTaiXe },
+        );
+      }
 
       res.json({ success: true, message: "Lấy đơn giao thành công", data });
     } catch (error) {
@@ -41,7 +53,7 @@ router.get(
   },
 );
 
-/** Tài xế thống kê đơn hàng */
+/** Tài xế thống kê đơn hàng (admin xem tất cả) */
 router.get(
   "/thong-ke",
   authMiddleware,
@@ -52,41 +64,65 @@ router.get(
         return;
       }
 
-      const idTaiXe = req.user.id;
+      const isAdmin = req.user.vaiTro === 'admin';
 
-      // Join qua Xe để lấy đơn của tài xế đang login
-      const [tongRes, chuaGiaoRes, daGiaoRes] = await Promise.all([
-        query<any>(
-          `SELECT COUNT(*) as cnt FROM LichSanXuat ls
-           INNER JOIN Xe xe ON ls.idXe = xe.id
-           WHERE xe.idTaiKhoan = @idTaiXe`,
-          { idTaiXe },
-        ),
-        query<any>(
-          `SELECT COUNT(*) as cnt FROM DonHang dh
-           INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-           INNER JOIN Xe xe ON ls.idXe = xe.id
-           WHERE xe.idTaiKhoan = @idTaiXe
-             AND dh.trangThaiDon NOT IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'dang_giao')`,
-          { idTaiXe },
-        ),
-        query<any>(
-          `SELECT COUNT(*) as cnt FROM DonHang dh
-           INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-           INNER JOIN Xe xe ON ls.idXe = xe.id
-           WHERE xe.idTaiKhoan = @idTaiXe
-             AND dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')`,
-          { idTaiXe },
-        ),
-      ]);
+      if (isAdmin) {
+        // Admin xem tất cả thống kê
+        const [tongRes, chuaGiaoRes, daGiaoRes] = await Promise.all([
+          query<any>(`SELECT COUNT(*) as cnt FROM DonHang dh`, {}),
+          query<any>(
+            `SELECT COUNT(*) as cnt FROM DonHang dh
+             WHERE dh.trangThaiDon NOT IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'dang_giao')`,
+            {}
+          ),
+          query<any>(
+            `SELECT COUNT(*) as cnt FROM DonHang dh
+             WHERE dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')`,
+            {}
+          ),
+        ]);
 
-      const data = {
-        tongDon: tongRes[0]?.cnt || 0,
-        chuaGiao: chuaGiaoRes[0]?.cnt || 0,
-        daGiao: daGiaoRes[0]?.cnt || 0,
-      };
+        const data = {
+          tongDon: tongRes[0]?.cnt || 0,
+          chuaGiao: chuaGiaoRes[0]?.cnt || 0,
+          daGiao: daGiaoRes[0]?.cnt || 0,
+        };
+        res.json({ success: true, message: "Lấy thống kê thành công", data });
+      } else {
+        // Tài xế chỉ xem thống kê của mình
+        const idTaiXe = req.user.id;
+        const [tongRes, chuaGiaoRes, daGiaoRes] = await Promise.all([
+          query<any>(
+            `SELECT COUNT(*) as cnt FROM LichSanXuat ls
+             INNER JOIN Xe xe ON ls.idXe = xe.id
+             WHERE xe.idTaiKhoan = @idTaiXe`,
+            { idTaiXe },
+          ),
+          query<any>(
+            `SELECT COUNT(*) as cnt FROM DonHang dh
+             INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
+             INNER JOIN Xe xe ON ls.idXe = xe.id
+             WHERE xe.idTaiKhoan = @idTaiXe
+               AND dh.trangThaiDon NOT IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'dang_giao')`,
+            { idTaiXe },
+          ),
+          query<any>(
+            `SELECT COUNT(*) as cnt FROM DonHang dh
+             INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
+             INNER JOIN Xe xe ON ls.idXe = xe.id
+             WHERE xe.idTaiKhoan = @idTaiXe
+               AND dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')`,
+            { idTaiXe },
+          ),
+        ]);
 
-      res.json({ success: true, message: "Lấy thống kê thành công", data });
+        const data = {
+          tongDon: tongRes[0]?.cnt || 0,
+          chuaGiao: chuaGiaoRes[0]?.cnt || 0,
+          daGiao: daGiaoRes[0]?.cnt || 0,
+        };
+        res.json({ success: true, message: "Lấy thống kê thành công", data });
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Lỗi lấy thống kê";
@@ -169,16 +205,19 @@ router.put(
         return;
       }
 
-      // Kiểm tra tài xế có phải người được giao đơn này không
-      const ls = await query<any>(
-        `SELECT ls.*, xe.idTaiKhoan FROM LichSanXuat ls
-         INNER JOIN Xe xe ON ls.idXe = xe.id
-         WHERE ls.idDonHang = @idDonHang`,
-        { idDonHang }
-      );
-      if (ls.length === 0 || ls[0].idTaiKhoan !== req.user.id) {
-        res.status(403).json({ success: false, message: "Bạn không có quyền cập nhật đơn hàng này" });
-        return;
+      // Kiểm tra tài xế có phải người được giao đơn này không (admin được phép tất cả)
+      const isAdmin = req.user.vaiTro === 'admin';
+      if (!isAdmin) {
+        const ls = await query<any>(
+          `SELECT ls.*, xe.idTaiKhoan FROM LichSanXuat ls
+           INNER JOIN Xe xe ON ls.idXe = xe.id
+           WHERE ls.idDonHang = @idDonHang`,
+          { idDonHang }
+        );
+        if (ls.length === 0 || ls[0].idTaiKhoan !== req.user.id) {
+          res.status(403).json({ success: false, message: "Bạn không có quyền cập nhật đơn hàng này" });
+          return;
+        }
       }
 
       // Tài xế xác nhận đang giao: dang_san_xuat -> dang_giao
