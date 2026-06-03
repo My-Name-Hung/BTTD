@@ -125,6 +125,7 @@ export interface LichSanXuat {
   nguoiBatOng: string | null;
   phuongAnDo: string | null;
   bienSoXe: string | null;
+  tenTaiXe: string | null;
   thoiGianTron: string | null;
   thoiGianXuatBen: string | null;
   thoiGianDenCangDat: string | null;

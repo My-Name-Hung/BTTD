@@ -74,9 +74,16 @@ export async function taoLichSanXuat(
   return result[0];
 }
 
-export async function layLichSanXuatTheoDonHang(idDonHang: number): Promise<LichSanXuat[]> {
-  return await query<LichSanXuat>(
-    `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang ORDER BY ngayTao DESC`,
+export async function layLichSanXuatTheoDonHang(idDonHang: number): Promise<any[]> {
+  return await query<any[]>(
+    `SELECT ls.*,
+            xe.bienSoXe,
+            nd.hoTen as tenTaiXe
+     FROM LichSanXuat ls
+     LEFT JOIN Xe xe ON ls.idXe = xe.id
+     LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
+     WHERE ls.idDonHang = @idDonHang
+     ORDER BY ls.ngayTao DESC`,
     { idDonHang }
   );
 }

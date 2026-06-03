@@ -427,18 +427,20 @@ export default function ChiTietDonHangPage() {
               <tr>
                 <th style={{ width: 160 }}>Biển số xe</th>
                 <td>{lichSX.bienSoXe || '—'}</td>
-                <th style={{ width: 160 }}>Kỹ thuật</th>
-                <td>{lichSX.kyThuatCongTrinh || '—'}</td>
+                <th style={{ width: 160 }}>Tài xế</th>
+                <td>{lichSX.tenTaiXe || '—'}</td>
               </tr>
               <tr>
+                <th>Kỹ thuật</th>
+                <td>{lichSX.kyThuatCongTrinh || '—'}</td>
                 <th>Người ôm ống</th>
                 <td>{lichSX.nguoiOmOng || '—'}</td>
-                <th>Người bắt ống</th>
-                <td>{lichSX.nguoiBatOng || '—'}</td>
               </tr>
               <tr>
+                <th>Người bắt ống</th>
+                <td>{lichSX.nguoiBatOng || '—'}</td>
                 <th>Phương án đổ</th>
-                <td colSpan={3}>{lichSX.phuongAnDo || '—'}</td>
+                <td>{lichSX.phuongAnDo || '—'}</td>
               </tr>
               {lichSX.ghiChu && (
                 <tr>
