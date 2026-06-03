@@ -547,6 +547,7 @@ export async function taoNguoiDung(data: {
   email?: string;
   soDienThoai?: string;
   vaiTro: string;
+  idTramTron?: number;
 }): Promise<NguoiDung> {
   return request<NguoiDung>("/quan-ly/nguoi-dung", {
     method: "POST",
@@ -563,6 +564,7 @@ export async function suaNguoiDung(
     vaiTro: string;
     trangThai?: string;
     matKhauMoi?: string;
+    idTramTron?: number;
   },
 ): Promise<NguoiDung> {
   return request<NguoiDung>(`/quan-ly/nguoi-dung/${id}`, {
@@ -750,6 +752,16 @@ export async function tatBaoTri(): Promise<void> {
 // Lấy danh sách lịch sản xuất (tất cả đơn có lịch sx)
 export async function layLichSanXuatKho(): Promise<any[]> {
   return request<any[]>("/kho/lich-san-xuat");
+}
+
+// Trạm trộn
+export async function layLichSanXuatTramTron(): Promise<any[]> {
+  return request<any[]>("/tram-tron/lich-san-xuat");
+}
+
+// Lấy chi tiết đơn hàng cho tram_tron (kèm lịch sx)
+export async function layDonHangTramTron(idDonHang: number): Promise<{ donHang: any; lichSanXuat: any | null }> {
+  return request<{ donHang: any; lichSanXuat: any | null }>(`/tram-tron/don-hang/${idDonHang}`);
 }
 
 // Lấy chi tiết đơn hàng cho kho (kèm lịch sx)

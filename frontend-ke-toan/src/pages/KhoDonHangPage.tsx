@@ -10,7 +10,7 @@ import {
   FiCheckCircle,
   FiClock,
 } from "react-icons/fi";
-import { layDonHangKho, xacNhanBatDauGiao } from "../services/api";
+import { layDonHangTramTron, xacNhanBatDauGiao } from "../services/api";
 import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from "../types";
 import { useToast } from "../hooks";
 import { Loading } from "../components/Common";
@@ -93,7 +93,7 @@ export default function KhoDonHangPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const res = await layDonHangKho(parseInt(id));
+      const res = await layDonHangTramTron(parseInt(id));
       setDonHang(res.donHang);
       setLichSanXuat(res.lichSanXuat);
     } catch {
@@ -145,7 +145,7 @@ export default function KhoDonHangPage() {
         <div className={styles.pageHeaderLeft}>
           <button
             className={styles.backBtn}
-            onClick={() => navigate("/kho/lich-san-xuat")}
+            onClick={() => navigate("/tram-tron/lich-san-xuat")}
           >
             <FiArrowLeft size={18} />
           </button>

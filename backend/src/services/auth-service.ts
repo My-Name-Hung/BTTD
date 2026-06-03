@@ -67,6 +67,7 @@ export async function dangNhap(
     tenDangNhap: user.tenDangNhap,
     hoTen: user.hoTen,
     vaiTro: user.vaiTro,
+    idTramTron: (user as any).idTramTron ?? null,
     sessionId,
   };
 

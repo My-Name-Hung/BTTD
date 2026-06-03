@@ -19,10 +19,11 @@ export interface NguoiDung {
     | "ke_toan"
     | "dieu_phoi"
     | "lanh_dao"
-    | "kho"
+    | "tram_tron"
     | "sale"
     | "tai_xe"
     | "ky_thuat";
+  idTramTron?: number | null;
   trangThai: "hoat_dong" | "khong_hoat_dong";
   ngayTao: Date;
   ngayCapNhat: Date;
@@ -252,6 +253,7 @@ export interface JwtPayload {
   tenDangNhap: string;
   hoTen: string;
   vaiTro: string;
+  idTramTron?: number | null;
   sessionId: number;
 }
 

@@ -51,7 +51,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Tổng quan",
     icon: <MdDashboard size={20} />,
     iconActive: <MdDashboard size={20} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"],
+    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "tram_tron", "sale", "tai_xe", "ky_thuat"],
   },
   // Bán hàng
   {
@@ -75,13 +75,13 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdPeople size={20} />,
     roles: ["admin", "ke_toan", "dieu_phoi", "sale"],
   },
-  // Sản xuất
+  // Sản xuất - Trạm trộn
   {
-    path: "/kho/lich-san-xuat",
+    path: "/tram-tron/lich-san-xuat",
     label: "Lịch sản xuất",
     icon: <MdFactory size={20} />,
     iconActive: <MdFactory size={20} />,
-    roles: ["admin", "kho"],
+    roles: ["admin", "tram_tron"],
   },
   // Điều phối
   {
@@ -200,11 +200,11 @@ export const SIDEBAR_GROUPS: MenuGroup[] = [
       ["/quan-ly/don-hang", "/quan-ly/don-hang/tao", "/khach-hang"].includes(m.path),
     ),
   },
-  // === SẢN XUẤT ===
+  // === SẢN XUẤT / TRẠM TRỘN ===
   {
-    title: "Sản xuất",
+    title: "Trạm trộn",
     items: SIDEBAR_ITEMS.filter((m) =>
-      ["/kho/lich-san-xuat"].includes(m.path),
+      ["/tram-tron/lich-san-xuat"].includes(m.path),
     ),
   },
   // === ĐIỀU PHỐI ===
@@ -251,7 +251,7 @@ const BOTTOM_TABS = [
     label: "Tổng quan",
     icon: <MdDashboard size={22} />,
     iconActive: <MdDashboard size={22} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"],
+    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "tram_tron", "sale", "tai_xe", "ky_thuat"],
   },
   {
     path: "/quan-ly/don-hang",
@@ -259,6 +259,13 @@ const BOTTOM_TABS = [
     icon: <FiShoppingBag size={22} />,
     iconActive: <FiShoppingBag size={22} />,
     roles: ["admin", "ke_toan", "dieu_phoi", "sale", "tai_xe", "ky_thuat", "lanh_dao"],
+  },
+  {
+    path: "/tram-tron/lich-san-xuat",
+    label: "Trạm trộn",
+    icon: <MdFactory size={22} />,
+    iconActive: <MdFactory size={22} />,
+    roles: ["admin", "tram_tron"],
   },
   {
     path: "/tai-xe",
@@ -279,7 +286,7 @@ const BOTTOM_TABS = [
     label: "Thông báo",
     icon: <FiBell size={22} />,
     iconActive: <FiBell size={22} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"],
+    roles: ["admin", "ke_toan", "dieu_phoi", "lanh_dao", "tram_tron", "sale", "tai_xe", "ky_thuat"],
   },
 ];
 

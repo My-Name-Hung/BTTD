@@ -125,17 +125,13 @@ function App() {
                       element={<QuanLyMacBeTongPage />}
                     />
 
-                    {/* Kho */}
+                    {/* Trạm trộn */}
                     <Route
-                      path="/kho/dashboard"
-                      element={<KhoDashboardPage />}
-                    />
-                    <Route
-                      path="/kho/lich-san-xuat"
+                      path="/tram-tron/lich-san-xuat"
                       element={<KhoLichSanXuatPage />}
                     />
                     <Route
-                      path="/kho/don-hang/:id"
+                      path="/tram-tron/don-hang/:id"
                       element={<KhoDonHangPage />}
                     />
 

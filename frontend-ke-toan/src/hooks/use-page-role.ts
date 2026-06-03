@@ -1,13 +1,13 @@
 import { useAuth } from './use-auth';
 
-export type VaiTro = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho' | 'sale' | 'tai_xe' | 'ky_thuat';
+export type VaiTro = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'tram_tron' | 'sale' | 'tai_xe' | 'ky_thuat';
 
 export const ROLE_LABELS: Record<VaiTro, string> = {
   admin: 'Quản trị viên',
   ke_toan: 'Kế toán',
   dieu_phoi: 'Điều phối',
   lanh_dao: 'Lãnh đạo',
-  kho: 'Kho',
+  tram_tron: 'Trạm trộn',
   sale: 'Sales',
   tai_xe: 'Tài xế',
   ky_thuat: 'Kỹ thuật',
@@ -15,7 +15,7 @@ export const ROLE_LABELS: Record<VaiTro, string> = {
 
 export const PERMISSIONS = {
   // === ROLE ACCESS ===
-  'role': ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'kho', 'sale', 'tai_xe', 'ky_thuat'],
+  'role': ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'tram_tron', 'sale', 'tai_xe', 'ky_thuat'],
 
   // === DON HANG ===
   'donhang.create': ['admin', 'sale'],
@@ -50,10 +50,10 @@ export const PERMISSIONS = {
   'khachhang.edit': ['admin', 'ke_toan'],
   'khachhang.delete': ['admin'],
 
-  // === KHO ===
-  'kho.access': ['admin', 'kho'],
-  'kho.confirm_delivery': ['admin', 'kho'],
-  'kho.confirm_complete': ['admin', 'kho'],
+  // === TRAM TRON ===
+  'tramtron.access': ['admin', 'tram_tron'],
+  'tramtron.confirm_delivery': ['admin', 'tram_tron'],
+  'tramtron.confirm_complete': ['admin', 'tram_tron'],
 
   // === TAI XE ===
   'taixe.access': ['admin', 'tai_xe'],

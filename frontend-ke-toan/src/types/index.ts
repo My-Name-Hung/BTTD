@@ -22,7 +22,8 @@ export interface NguoiDung {
   hoTen: string;
   email: string | null;
   soDienThoai: string | null;
-  vaiTro: "admin" | "ke_toan" | "dieu_phoi" | "lanh_dao" | "kho" | "sale" | "tai_xe" | "ky_thuat";
+  vaiTro: "admin" | "ke_toan" | "dieu_phoi" | "lanh_dao" | "tram_tron" | "sale" | "tai_xe" | "ky_thuat";
+  idTramTron?: number | null;
   trangThai: "hoat_dong" | "khong_hoat_dong";
   ngayTao?: string | Date;
   ngayCapNhat?: string | Date;

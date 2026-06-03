@@ -75,7 +75,7 @@ router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req
   }
 });
 
-router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('admin', 'dieu_phoi', 'ke_toan', 'kho'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('admin', 'dieu_phoi', 'ke_toan', 'tram_tron'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const { khoiLuongThucTe } = req.body;

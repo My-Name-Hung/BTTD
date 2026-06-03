@@ -3,7 +3,7 @@ import { FiCheck, FiClock, FiEye, FiPackage, FiTruck } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../components/Common";
 import { useToast } from "../hooks";
-import { layLichSanXuatKho, xacNhanBatDauGiao } from "../services/api";
+import { layLichSanXuatTramTron, xacNhanBatDauGiao } from "../services/api";
 import { TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./KhoLichSanXuatPage.module.css";
 import { formatDateVN } from "../utils/dateUtils";
@@ -76,7 +76,7 @@ export default function KhoLichSanXuatPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await layLichSanXuatKho();
+      const res = await layLichSanXuatTramTron();
       setData(res || []);
     } catch (err) {
       console.error("Lỗi tải lịch sản xuất:", err);
@@ -413,7 +413,7 @@ export default function KhoLichSanXuatPage() {
                           <button
                             className={`${styles.actionBtn} ${styles.actionBtnView}`}
                             onClick={() =>
-                              navigate(`/kho/don-hang/${item.idDonHang}`)
+                              navigate(`/tram-tron/don-hang/${item.idDonHang}`)
                             }
                             title="Xem chi tiết"
                           >

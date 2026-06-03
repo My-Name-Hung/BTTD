@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { Response, Router } from "express";
 import { body } from "express-validator";
 import { query, vnNow } from "../config/database";
-import { query } from "../config/database";
 import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { ApiResponse } from "../models";
 import { ghiNhatKy } from "../services/access-history-service";
@@ -76,18 +75,25 @@ router.post(
       .withMessage("Mật khẩu phải ít nhất 6 ký tự"),
     body("hoTen").trim().notEmpty().withMessage("Họ tên là bắt buộc"),
     body("vaiTro")
-      .isIn(["admin", "ke_toan", "dieu_phoi", "lanh_dao", "kho", "sale", "tai_xe", "ky_thuat"])
+      .isIn(["admin", "ke_toan", "dieu_phoi", "lanh_dao", "tram_tron", "sale", "tai_xe", "ky_thuat"])
       .withMessage("Vai trò không hợp lệ"),
   ],
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
-      const { tenDangNhap, matKhau, hoTen, email, soDienThoai, vaiTro } =
+      const { tenDangNhap, matKhau, hoTen, email, soDienThoai, vaiTro, idTramTron } =
         req.body;
+
+      // Nếu là tram_tron thì bắt buộc chọn trạm
+      if (vaiTro === 'tram_tron' && !idTramTron) {
+        res.status(400).json({ success: false, message: 'Vui lòng chọn trạm trộn cho tài khoản trạm trộn' });
+        return;
+      }
+
       const hashed = await bcrypt.hash(matKhau, 10);
       const result = await query<any>(
-        `INSERT INTO NguoiDung (tenDangNhap, matKhau, hoTen, email, soDienThoai, vaiTro)
-         OUTPUT INSERTED.id, INSERTED.tenDangNhap, INSERTED.hoTen, INSERTED.email, INSERTED.soDienThoai, INSERTED.vaiTro, INSERTED.trangThai, INSERTED.ngayTao
-         VALUES (@tenDangNhap, @matKhau, @hoTen, @email, @soDienThoai, @vaiTro)`,
+        `INSERT INTO NguoiDung (tenDangNhap, matKhau, hoTen, email, soDienThoai, vaiTro, idTramTron)
+         OUTPUT INSERTED.id, INSERTED.tenDangNhap, INSERTED.hoTen, INSERTED.email, INSERTED.soDienThoai, INSERTED.vaiTro, INSERTED.idTramTron, INSERTED.trangThai, INSERTED.ngayTao
+         VALUES (@tenDangNhap, @matKhau, @hoTen, @email, @soDienThoai, @vaiTro, @idTramTron)`,
         {
           tenDangNhap,
           matKhau: hashed,
@@ -95,6 +101,7 @@ router.post(
           email: email || null,
           soDienThoai: soDienThoai || null,
           vaiTro,
+          idTramTron: vaiTro === 'tram_tron' ? idTramTron : null,
         },
       );
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
@@ -129,10 +136,10 @@ router.put(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
       const id = parseInt(req.params.id, 10);
-      const { hoTen, email, soDienThoai, vaiTro, trangThai, matKhauMoi } =
+      const { hoTen, email, soDienThoai, vaiTro, trangThai, matKhauMoi, idTramTron } =
         req.body;
 
-      const cu = (await query<any[]>(`SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai FROM NguoiDung WHERE id = @id`, { id }))[0];
+      const cu = (await query<any[]>(`SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai, idTramTron FROM NguoiDung WHERE id = @id`, { id }))[0];
 
       const params: Record<string, unknown> = {
         hoTen,
@@ -140,14 +147,15 @@ router.put(
         soDienThoai: soDienThoai || null,
         vaiTro,
         trangThai: trangThai || "hoat_dong",
+        idTramTron: vaiTro === 'tram_tron' ? idTramTron : null,
         id,
       };
 
-      let sql = `UPDATE NguoiDung SET hoTen = @hoTen, email = @email, soDienThoai = @soDienThoai, vaiTro = @vaiTro, trangThai = @trangThai, ngayCapNhat = ${vnNow()} WHERE id = @id`;
+      let sql = `UPDATE NguoiDung SET hoTen = @hoTen, email = @email, soDienThoai = @soDienThoai, vaiTro = @vaiTro, trangThai = @trangThai, idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @id`;
 
       if (matKhauMoi) {
         const hashed = await bcrypt.hash(matKhauMoi, 10);
-        sql = `UPDATE NguoiDung SET matKhau = @matKhau, hoTen = @hoTen, email = @email, soDienThoai = @soDienThoai, vaiTro = @vaiTro, trangThai = @trangThai, ngayCapNhat = ${vnNow()} WHERE id = @id`;
+        sql = `UPDATE NguoiDung SET matKhau = @matKhau, hoTen = @hoTen, email = @email, soDienThoai = @soDienThoai, vaiTro = @vaiTro, trangThai = @trangThai, idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @id`;
         params.matKhau = hashed;
       }
 
@@ -159,7 +167,7 @@ router.put(
         ip);
 
       const result = await query<any[]>(
-        `SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai, ngayTao FROM NguoiDung WHERE id = @id`,
+        `SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai, idTramTron, ngayTao FROM NguoiDung WHERE id = @id`,
         { id },
       );
       if (!result[0]) {

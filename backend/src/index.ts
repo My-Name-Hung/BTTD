@@ -20,6 +20,7 @@ import thongBaoRoutes from "./routes/thong-bao-routes";
 import cauHinhRoutes from "./routes/cau-hinh-routes";
 import lanhDaoRoutes from "./routes/lanh-dao-routes";
 import khoRoutes from "./routes/kho-routes";
+import tramTrongRoutes from "./routes/tram-tron-routes";
 import importRoutes from "./routes/import-routes";
 import taiXeRoutes from "./routes/tai-xe-routes";
 import kyThuatRoutes from "./routes/ky-thuat-routes";
@@ -68,7 +69,8 @@ app.use("/api/tham-so", authMiddleware, maintenanceMiddleware, thamSoRoutes);
 app.use("/api/notifications", authMiddleware, maintenanceMiddleware, thongBaoRoutes);
 app.use("/api/cau-hinh", cauHinhRoutes); // /trang-thai public, các route khác tự xử lý auth
 app.use("/api/lanh-dao", authMiddleware, maintenanceMiddleware, lanhDaoRoutes);
-app.use("/api/kho", authMiddleware, maintenanceMiddleware, khoRoutes);
+app.use("/api/kho", authMiddleware, maintenanceMiddleware, khoRoutes); // kept for backward compat
+app.use("/api/tram-tron", authMiddleware, maintenanceMiddleware, tramTrongRoutes);
 app.use("/api/tai-xe", authMiddleware, maintenanceMiddleware, taiXeRoutes);
 app.use("/api/ky-thuat", authMiddleware, maintenanceMiddleware, kyThuatRoutes);
 app.use("/api", authMiddleware, maintenanceMiddleware, quanLyRoutes);

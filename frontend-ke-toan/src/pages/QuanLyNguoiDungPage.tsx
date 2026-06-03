@@ -8,6 +8,7 @@ import {
   Pagination,
 } from "../components/Common";
 import { SearchableDropdown } from "../components/SearchableDropdown";
+import { TramTronSelect } from "../components/TramTronSelect";
 import { usePagination, useToast } from "../hooks";
 import {
   layDanhSachNguoiDung,
@@ -23,7 +24,7 @@ const VAI_TRO_SORT_ORDER: Record<string, number> = {
   lanh_dao: 2,
   ke_toan: 3,
   dieu_phoi: 4,
-  kho: 5,
+  tram_tron: 5,
   sale: 6,
   tai_xe: 7,
   ky_thuat: 8,
@@ -34,7 +35,7 @@ const VAI_TRO_LABELS: Record<string, string> = {
   ke_toan: "Kế toán",
   dieu_phoi: "Điều phối",
   lanh_dao: "Lãnh đạo",
-  kho: "Kho",
+  tram_tron: "Trạm trộn",
   sale: "Sales",
   tai_xe: "Tài xế",
   ky_thuat: "Kỹ thuật",
@@ -45,7 +46,7 @@ const VAI_TRO_CLASS: Record<string, string> = {
   ke_toan: styles.roleBadgeKeToan,
   dieu_phoi: styles.roleBadgeDieuPhoi,
   lanh_dao: styles.roleBadgeLanhDao,
-  kho: styles.roleBadgeKho,
+  tram_tron: styles.roleBadgeTramTron,
   sale: styles.roleBadgeSale,
   tai_xe: styles.roleBadgeTaiXe,
   ky_thuat: styles.roleBadgeKyThuat,
@@ -56,7 +57,7 @@ const VAI_TRO_COLORS: Record<string, string> = {
   ke_toan: "#047857",
   dieu_phoi: "#ea6b00",
   lanh_dao: "#7c3aed",
-  kho: "#0369a1",
+  tram_tron: "#0369a1",
   sale: "#dc2626",
   tai_xe: "#0d9488",
   ky_thuat: "#9333ea",
@@ -95,6 +96,7 @@ export default function QuanLyNguoiDungPage() {
     soDienThoai: "",
     vaiTro: "ke_toan",
     trangThai: "hoat_dong",
+    idTramTron: undefined as number | undefined,
   });
   const [initialForm, setInitialForm] = useState(form);
 
@@ -146,6 +148,7 @@ export default function QuanLyNguoiDungPage() {
       soDienThoai: "",
       vaiTro: "ke_toan",
       trangThai: "hoat_dong",
+      idTramTron: undefined as number | undefined,
     };
     setEditingUser(null);
     setForm(f);
@@ -163,6 +166,7 @@ export default function QuanLyNguoiDungPage() {
       soDienThoai: u.soDienThoai || "",
       vaiTro: u.vaiTro,
       trangThai: u.trangThai,
+      idTramTron: u.idTramTron ?? undefined,
     };
     setForm(f);
     setInitialForm(f);
@@ -188,6 +192,7 @@ export default function QuanLyNguoiDungPage() {
           vaiTro: form.vaiTro,
           trangThai: form.trangThai,
           matKhauMoi: form.matKhau || undefined,
+          idTramTron: form.idTramTron,
         });
       } else {
         await taoNguoiDung({
@@ -197,6 +202,7 @@ export default function QuanLyNguoiDungPage() {
           email: form.email || undefined,
           soDienThoai: form.soDienThoai || undefined,
           vaiTro: form.vaiTro,
+          idTramTron: form.idTramTron,
         });
       }
       setModalOpen(false);
@@ -209,7 +215,7 @@ export default function QuanLyNguoiDungPage() {
   };
 
   const resetForm = () => {
-    const f = { tenDangNhap: "", matKhau: "", hoTen: "", email: "", soDienThoai: "", vaiTro: "ke_toan", trangThai: "hoat_dong" };
+    const f = { tenDangNhap: "", matKhau: "", hoTen: "", email: "", soDienThoai: "", vaiTro: "ke_toan", trangThai: "hoat_dong", idTramTron: undefined as number | undefined };
     setForm(f);
     setInitialForm(f);
     setEditingUser(null);
@@ -284,7 +290,7 @@ export default function QuanLyNguoiDungPage() {
               { id: "ke_toan", label: "Kế toán" },
               { id: "dieu_phoi", label: "Điều phối" },
               { id: "lanh_dao", label: "Lãnh đạo" },
-              { id: "kho", label: "Kho" },
+              { id: "tram_tron", label: "Trạm trộn" },
               { id: "sale", label: "Sales" },
               { id: "tai_xe", label: "Tài xế" },
               { id: "ky_thuat", label: "Kỹ thuật" },
@@ -526,13 +532,19 @@ export default function QuanLyNguoiDungPage() {
               { id: "lanh_dao", label: "Lãnh đạo", subLabel: "Xem KPI & báo cáo" },
               { id: "ke_toan", label: "Kế toán", subLabel: "Duyệt đơn & thanh toán" },
               { id: "dieu_phoi", label: "Điều phối", subLabel: "Lên lịch & điều xe" },
-              { id: "kho", label: "Kho", subLabel: "Xác nhận sản xuất" },
+              { id: "tram_tron", label: "Trạm trộn", subLabel: "Xác nhận sản xuất" },
               { id: "sale", label: "Sales", subLabel: "Tạo đơn hàng" },
               { id: "tai_xe", label: "Tài xế", subLabel: "Giao hàng" },
               { id: "ky_thuat", label: "Kỹ thuật", subLabel: "Nghiệm thu công trình" },
             ]}
           />
         </div>
+        {form.vaiTro === "tram_tron" && (
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Trạm trộn *</label>
+            <TramTronSelect value={form.idTramTron} onChange={(v) => setForm({ ...form, idTramTron: v })} />
+          </div>
+        )}
         {editingUser && (
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Trạng thái</label>
