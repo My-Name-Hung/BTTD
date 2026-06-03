@@ -56,10 +56,13 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
   const soHoaDon = `BBTD-${randomNum}-${dh.maDonHang}`;
   const maHoaDon = soHoaDon;
 
+  // Tiền bê tông = số tiền thanh toán trước (nếu có) hoặc tổng thanh tiền đơn hàng
+  // Khi user nhập "tiền thanh toán trước" ở tab công nợ -> đó chính là tienBeTong
   const tienBeTong = data.soTienThanhToan || dh.thanhTien || 0;
   const buuVanChuyen = data.buuVanChuyen || 0;
   const phiPhatSinh = data.phiPhatSinh || 0;
   const giamTru = data.giamTru || 0;
+  // tổng hóa đơn = tiền bê tông + bù vận chuyển + phí phát sinh - giảm trừ
   const tongCong = tienBeTong + buuVanChuyen + phiPhatSinh - giamTru;
 
   const result = await query<HoaDon>(
@@ -121,6 +124,43 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       {
         id: data.idDonHang,
         daThanhToan: tongCong,
+      }
+    );
+  }
+
+  // Nếu là công nợ (thanh toán 1 phần): tạo bản ghi thanh toán + cập nhật đơn hàng
+  if (data.loaiThanhToan === 'cong_no') {
+    // Lấy đơn hàng hiện tại để tính lại daThanhToan
+    const dhHienTai = (await query<DonHang>(
+      `SELECT * FROM DonHang WHERE id = @id`, { id: data.idDonHang }
+    ))[0];
+    const daThanhToanMoi = (dhHienTai.daThanhToan || 0) + tongCong;
+    const conLaiMoi = (dhHienTai.thanhTien || 0) - daThanhToanMoi;
+
+    await query<ThanhToan>(
+      `INSERT INTO ThanhToan (idDonHang, soTien, hinhThuc, ngayThanhToan, nguoiNhan, ghiChu, nguoiTaoId)
+       VALUES (@idDonHang, @soTien, @hinhThuc, ${vnNow()}, @nguoiNhan, @ghiChu, @nguoiTaoId);`,
+      {
+        idDonHang: data.idDonHang,
+        soTien: tongCong,
+        hinhThuc: data.phuongThucThanhToan || 'tien_mat',
+        nguoiNhan: '',
+        ghiChu: `Hóa đơn công nợ ${maHoaDon}`,
+        nguoiTaoId,
+      }
+    );
+
+    await query(
+      `UPDATE DonHang SET
+        daThanhToan = @daThanhToan, conLai = @conLai,
+        trangThaiDon = CASE WHEN @conLai <= 0 THEN N'da_thanh_toan' ELSE trangThaiDon END,
+        trangThaiHoanThanh = CASE WHEN @conLai <= 0 THEN N'da_hoan_thanh' ELSE trangThaiHoanThanh END,
+        ngayCapNhat = ${vnNow()}
+       WHERE id = @id`,
+      {
+        id: data.idDonHang,
+        daThanhToan: daThanhToanMoi,
+        conLai: conLaiMoi < 0 ? 0 : conLaiMoi,
       }
     );
   }

@@ -5,18 +5,19 @@ import {
   FiUser, FiMapPin, FiPhone, FiPackage,
   FiDollarSign, FiClock, FiTruck, FiCheckCircle,
   FiAlertTriangle, FiFileText, FiCheckSquare, FiExternalLink,
-  FiAlertCircle,
+  FiAlertCircle, FiPrinter,
 } from 'react-icons/fi';
 import {
   layDonHang,
   layLichSanXuat,
   layNghiemThu,
+  layHoaDonTheoDonHang,
   duyetDonHang,
   tuChoiDonHang,
   xoaDonHang,
 } from '../services/api';
 import {
-  DonHang, LichSanXuat, NghiemThu,
+  DonHang, LichSanXuat, NghiemThu, HoaDon,
   TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS,
 } from '../types';
 import { useToast } from '../hooks';
@@ -71,6 +72,7 @@ export default function ChiTietDonHangPage() {
   const [donHang, setDonHang] = useState<DonHang | null>(null);
   const [lichSX, setLichSX] = useState<LichSanXuat | null>(null);
   const [nghiemThu, setNghiemThu] = useState<NghiemThu | null>(null);
+  const [hoaDons, setHoaDons] = useState<HoaDon[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejectLoading, setRejectLoading] = useState(false);
   const [approveLoading, setApproveLoading] = useState(false);
@@ -88,14 +90,16 @@ export default function ChiTietDonHangPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const [dh, lsArr, ntArr] = await Promise.all([
+      const [dh, lsArr, ntArr, hdArr] = await Promise.all([
         layDonHang(parseInt(id)),
         layLichSanXuat(parseInt(id)),
         layNghiemThu(parseInt(id)),
+        layHoaDonTheoDonHang(parseInt(id)),
       ]);
       setDonHang(dh);
       setLichSX(lsArr[0] || null);
       setNghiemThu(ntArr || null);
+      setHoaDons(hdArr || []);
     } catch {
       showToast('Không tải được thông tin đơn hàng', 'error');
     } finally {
@@ -490,6 +494,87 @@ export default function ChiTietDonHangPage() {
           </div>
         </div>
       )}
+
+      {/* Hóa đơn */}
+      <div className={styles.sectionCard}>
+        <div className={styles.sectionHeader}>
+          <div className={styles.sectionTitle}>
+            <div className={`${styles.sectionAccent} ${styles.sectionAccentBlue}`} />
+            <FiFileText size={16} style={{ color: 'var(--color-primary)' }} />
+            Hóa đơn
+            {hoaDons.length > 0 && (
+              <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--color-text-secondary)', marginLeft: 4 }}>
+                ({hoaDons.length} hóa đơn)
+              </span>
+            )}
+          </div>
+        </div>
+        <div style={{ padding: '8px 0' }}>
+          {hoaDons.length === 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text-secondary)', fontSize: 14 }}>
+              <FiAlertCircle size={16} />
+              Chưa có hóa đơn nào
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {hoaDons.map((hd, idx) => (
+                <div key={hd.id} style={{ border: '1px solid var(--color-border)', borderRadius: 10, overflow: 'hidden' }}>
+                  <div style={{ padding: '10px 14px', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: 13 }}>HĐ #{idx + 1}</strong>
+                      <span style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontWeight: 600 }}>{hd.maHoaDon}</span>
+                      {hd.ngayLap && (
+                        <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                          {new Date(hd.ngayLap).toLocaleDateString('vi-VN')}
+                        </span>
+                      )}
+                      <span style={{
+                        padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                        background: hd.loaiThanhToan === 'tra_het' ? 'rgba(34,197,94,0.12)' : 'rgba(255,152,0,0.12)',
+                        color: hd.loaiThanhToan === 'tra_het' ? 'var(--color-success)' : 'var(--color-warning)',
+                      }}>
+                        {hd.loaiThanhToan === 'tra_het' ? 'Trả hết' : 'Công nợ'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        onClick={() => window.open(`/in-hoa-don/${hd.id}`, '_blank')}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', border: '1.5px solid var(--color-primary)', borderRadius: 7, background: 'transparent', color: 'var(--color-primary)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                      >
+                        <FiPrinter size={12} /> In
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ padding: '10px 14px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                        <span style={{ color: 'var(--color-text-secondary)' }}>Tiền bê tông:</span>
+                        <span style={{ fontWeight: 600 }}>{hd.tienBeTong?.toLocaleString('vi-VN')} đ</span>
+                      </div>
+                      {hd.buuVanChuyen > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                          <span style={{ color: 'var(--color-text-secondary)' }}>Bù VC:</span>
+                          <span style={{ fontWeight: 600 }}>{hd.buuVanChuyen?.toLocaleString('vi-VN')} đ</span>
+                        </div>
+                      )}
+                      {hd.giamTru > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                          <span style={{ color: 'var(--color-text-secondary)' }}>Giảm trừ:</span>
+                          <span style={{ fontWeight: 600, color: 'var(--color-success)' }}>-{hd.giamTru?.toLocaleString('vi-VN')} đ</span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, borderTop: '1px solid var(--color-border)', paddingTop: 6, gridColumn: '1 / -1' }}>
+                        <span>Tổng cộng:</span>
+                        <span>{hd.tongCong?.toLocaleString('vi-VN')} đ</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Toast */}
       <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 300, display: 'flex', flexDirection: 'column', gap: 8 }}>

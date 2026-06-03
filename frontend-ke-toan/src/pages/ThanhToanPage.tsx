@@ -1,13 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FiPlus, FiX, FiSearch, FiFileText } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
-import { layDanhSachDonHang, layLichSuThanhToan } from '../services/api';
-import { DonHang, ThanhToan, TRANG_THAI_DON_LABELS } from '../types';
-import { useToast, usePagination, usePageRole } from '../hooks';
-import { Loading, EmptyState, Pagination } from '../components/Common';
-import styles from './ThanhToanPage.module.css';
+import { useCallback, useEffect, useState } from "react";
+import {
+  FiFileText, FiSearch, FiX, FiPrinter, FiEye, FiDollarSign,
+} from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { EmptyState, Loading, Pagination, Modal } from "../components/Common";
+import { usePageRole, usePagination, useToast } from "../hooks";
+import {
+  layDanhSachDonHang,
+  layLichSuThanhToan,
+  layHoaDonTheoDonHang,
+} from "../services/api";
+import { DonHang, ThanhToan, HoaDon } from "../types";
+import styles from "./ThanhToanPage.module.css";
 
-function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' || '0 đ'; }
+function formatCurrency(v: number) {
+  return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
+}
+
+type TabFilter = "chua_tat_toan" | "da_tat_toan";
+
+interface HoaDonItem {
+  id: number;
+  maHoaDon: string;
+  ngayLap: string | null;
+  khachHang: string;
+  tienBeTong: number;
+  buuVanChuyen: number;
+  phiPhatSinh: number;
+  giamTru: number;
+  tongCong: number;
+  loaiThanhToan: string;
+}
 
 export default function ThanhToanPage() {
   const { hasPermission } = usePageRole();
@@ -16,56 +39,128 @@ export default function ThanhToanPage() {
   const navigate = useNavigate();
   const [donHangs, setDonHangs] = useState<DonHang[]>([]);
   const [thanhToans, setThanhToans] = useState<Record<number, ThanhToan[]>>({});
+  const [hoaDons, setHoaDons] = useState<Record<number, HoaDonItem[]>>({});
   const [loading, setLoading] = useState(true);
-  const [tuKhoa, setTuKhoa] = useState('');
+  const [tuKhoa, setTuKhoa] = useState("");
+  const [activeTab, setActiveTab] = useState<TabFilter>("chua_tat_toan");
+  const [modalHoaDon, setModalHoaDon] = useState<{ donHang: DonHang; hoaDons: HoaDonItem[] } | null>(null);
 
-  const canCreate = hasPermission('thanhtoan.create');
+  const canCreate = hasPermission("thanhtoan.create");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const dhRes = await layDanhSachDonHang(page, 20, undefined, tuKhoa || undefined);
-      const dhs = (dhRes.data || []).filter((dh: DonHang) =>
-        ['nghiem_thu', 'da_thanh_toan', 'da_giao'].includes(dh.trangThaiDon)
-      );
-      setDonHangs(dhs);
-      const histories = await Promise.all(dhs.map((dh: DonHang) => layLichSuThanhToan(dh.id)));
-      const map: Record<number, ThanhToan[]> = {};
-      dhs.forEach((dh: DonHang, i: number) => { map[dh.id] = histories[i] || []; });
-      setThanhToans(map);
-    } catch { showToast('Lỗi tải dữ liệu', 'error'); }
-    finally { setLoading(false); }
+      const dhRes = await layDanhSachDonHang(page, 50, undefined, tuKhoa || undefined);
+      setDonHangs(dhRes.data || []);
+
+      const dhs = dhRes.data || [];
+
+      const [histories, hoaDonLists] = await Promise.all([
+        Promise.all(dhs.map((dh: DonHang) => layLichSuThanhToan(dh.id))),
+        Promise.all(dhs.map((dh: DonHang) => layHoaDonTheoDonHang(dh.id))),
+      ]);
+
+      const mapTT: Record<number, ThanhToan[]> = {};
+      const mapHD: Record<number, HoaDonItem[]> = {};
+      dhs.forEach((dh: DonHang, i: number) => {
+        mapTT[dh.id] = histories[i] || [];
+        mapHD[dh.id] = (hoaDonLists[i] || []).map((h: any) => ({
+          id: h.id,
+          maHoaDon: h.maHoaDon,
+          ngayLap: h.ngayLap,
+          khachHang: h.khachHang,
+          tienBeTong: h.tienBeTong,
+          buuVanChuyen: h.buuVanChuyen,
+          phiPhatSinh: h.phiPhatSinh,
+          giamTru: h.giamTru,
+          tongCong: h.tongCong,
+          loaiThanhToan: h.loaiThanhToan,
+        }));
+      });
+      setThanhToans(mapTT);
+      setHoaDons(mapHD);
+    } catch {
+      showToast("Lỗi tải dữ liệu", "error");
+    } finally {
+      setLoading(false);
+    }
   }, [page, tuKhoa, showToast]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  const handleXuatHoaDon = (dh: DonHang) => {
-    navigate(`/thanh-toan/xuat/${dh.id}`);
+  // Lọc theo tab
+  const chuaTatToan = donHangs.filter((dh) => {
+    const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
+    return conLai > 0 || dh.trangThaiDon !== "da_thanh_toan";
+  });
+
+  const daTatToan = donHangs.filter((dh) => {
+    const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
+    return conLai <= 0 && dh.trangThaiDon === "da_thanh_toan";
+  });
+
+  const displayList = activeTab === "chua_tat_toan" ? chuaTatToan : daTatToan;
+  const LIMIT = 20;
+  const totalPages = Math.max(1, Math.ceil(displayList.length / LIMIT));
+  const paginatedList = displayList.slice((page - 1) * LIMIT, page * LIMIT);
+
+  const tongCongNo = chuaTatToan.reduce(
+    (sum, dh) => sum + Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0)),
+    0,
+  );
+  const tongDaTT = donHangs.reduce((sum, dh) => sum + (dh.daThanhToan || 0), 0);
+
+  const handleOpenModal = (dh: DonHang) => {
+    const hds = hoaDons[dh.id] || [];
+    setModalHoaDon({ donHang: dh, hoaDons: hds });
   };
 
-  const tongCongNo = donHangs.reduce((sum, dh) => sum + Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0)), 0);
-  const tongDaTT = donHangs.reduce((sum, dh) => sum + (dh.daThanhToan || 0), 0);
-  const LIMIT = 20;
-  const totalPages = Math.max(1, Math.ceil(donHangs.length / LIMIT));
+  const handlePrintHD = (hoaDonId: number) => {
+    window.open(`/in-hoa-don/${hoaDonId}`, "_blank");
+  };
 
   return (
     <div>
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageHeaderTitle}>Thanh toán</div>
-          <div className={styles.pageHeaderDesc}>Ghi nhận thanh toán và theo dõi công nợ</div>
+          <div className={styles.pageHeaderDesc}>
+            Ghi nhận thanh toán và theo dõi công nợ
+          </div>
         </div>
       </div>
 
       <div className={styles.kpiGrid} style={{ marginBottom: 20 }}>
         <div className={styles.kpiCard}>
           <div className={styles.kpiLabel}>Tổng công nợ</div>
-          <div className={styles.kpiValue} style={{ color: 'var(--color-warning)' }}>{formatCurrency(tongCongNo)}</div>
+          <div className={styles.kpiValue} style={{ color: "var(--color-warning)" }}>
+            {formatCurrency(tongCongNo)}
+          </div>
         </div>
         <div className={styles.kpiCard}>
           <div className={styles.kpiLabel}>Đã thanh toán</div>
-          <div className={styles.kpiValue} style={{ color: 'var(--color-success)' }}>{formatCurrency(tongDaTT)}</div>
+          <div className={styles.kpiValue} style={{ color: "var(--color-success)" }}>
+            {formatCurrency(tongDaTT)}
+          </div>
         </div>
+      </div>
+
+      {/* Tab filter */}
+      <div className={styles.tabBar}>
+        <button
+          className={`${styles.tabBtn} ${activeTab === "chua_tat_toan" ? styles.tabBtnActive : ""}`}
+          onClick={() => { setActiveTab("chua_tat_toan"); resetPage(); }}
+        >
+          Chưa tất toán ({chuaTatToan.length})
+        </button>
+        <button
+          className={`${styles.tabBtn} ${activeTab === "da_tat_toan" ? styles.tabBtnActive : ""}`}
+          onClick={() => { setActiveTab("da_tat_toan"); resetPage(); }}
+        >
+          Đã tất toán ({daTatToan.length})
+        </button>
       </div>
 
       <div className={styles.filterBar}>
@@ -80,7 +175,7 @@ export default function ThanhToanPage() {
             />
           </div>
           {tuKhoa && (
-            <button className={styles.filterClearBtn} onClick={() => { setTuKhoa(''); resetPage(); }}>
+            <button className={styles.filterClearBtn} onClick={() => { setTuKhoa(""); resetPage(); }}>
               <FiX size={13} /> Xóa lọc
             </button>
           )}
@@ -89,7 +184,9 @@ export default function ThanhToanPage() {
 
       <div className={styles.card}>
         <div className={styles.tableWrap}>
-          {loading ? <Loading /> : donHangs.length === 0 ? (
+          {loading ? (
+            <Loading />
+          ) : paginatedList.length === 0 ? (
             <EmptyState icon="💰" text="Không có dữ liệu" />
           ) : (
             <table className={styles.table}>
@@ -97,16 +194,25 @@ export default function ThanhToanPage() {
                 <tr>
                   <th style={{ minWidth: 90 }}>Mã đơn</th>
                   <th style={{ minWidth: 110 }}>Khách hàng</th>
-                  <th className={styles.hideOnMobile} style={{ minWidth: 100, textAlign: 'right' }}>Tổng tiền</th>
-                  <th className={styles.hideOnMobile} style={{ minWidth: 90, textAlign: 'right' }}>Đã Thanh Toán</th>
+                  <th className={styles.hideOnMobile} style={{ minWidth: 100, textAlign: "right" }}>
+                    Tổng tiền
+                  </th>
+                  <th className={styles.hideOnMobile} style={{ minWidth: 90, textAlign: "right" }}>
+                    Đã Thanh Toán
+                  </th>
                   <th style={{ minWidth: 80 }}>Còn lại</th>
-                  <th className={styles.hideOnMobile} style={{ minWidth: 90 }}>Trạng thái</th>
-                  <th style={{ minWidth: 90 }}>Thao tác</th>
+                  <th className={styles.hideOnMobile} style={{ minWidth: 90 }}>
+                    Trạng thái
+                  </th>
+                  <th style={{ minWidth: 160 }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {donHangs.map((dh) => {
+                {paginatedList.map((dh) => {
                   const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
+                  const hds = hoaDons[dh.id] || [];
+                  const daTatToanOrder = conLai <= 0;
+
                   return (
                     <tr key={dh.id}>
                       <td>
@@ -118,11 +224,11 @@ export default function ThanhToanPage() {
                       <td className={`${styles.tableRight} ${styles.hideOnMobile}`}>
                         <strong>{formatCurrency(dh.thanhTien || 0)}</strong>
                       </td>
-                      <td className={`${styles.tableRight} ${styles.hideOnMobile}`} style={{ color: 'var(--color-success)' }}>
+                      <td className={`${styles.tableRight} ${styles.hideOnMobile}`} style={{ color: "var(--color-success)" }}>
                         {formatCurrency(dh.daThanhToan || 0)}
                       </td>
                       <td>
-                        <span style={{ color: conLai > 0 ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 700 }}>
+                        <span style={{ color: conLai > 0 ? "var(--color-warning)" : "var(--color-success)", fontWeight: 700 }}>
                           {formatCurrency(conLai)}
                         </span>
                       </td>
@@ -130,11 +236,39 @@ export default function ThanhToanPage() {
                         <span className={styles.badge}>{TRANG_THAI_DON_LABELS[dh.trangThaiDon]}</span>
                       </td>
                       <td>
-                        {canCreate && (
-                          <button className={`${styles.btnPay}`} onClick={() => handleXuatHoaDon(dh)}>
-                            <FiFileText size={14} /> Xuất HĐ
-                          </button>
-                        )}
+                        <div className={styles.actionBtns}>
+                          {/* Đã tất toán: chỉ hiện nút xem HĐ */}
+                          {daTatToanOrder && hds.length > 0 && canCreate && (
+                            <button
+                              className={styles.btnView}
+                              onClick={() => handleOpenModal(dh)}
+                              title="Xem hóa đơn"
+                            >
+                              <FiEye size={13} /> Xem HĐ
+                            </button>
+                          )}
+
+                          {/* Chưa tất toán: hiện nút thanh toán + xuất HĐ */}
+                          {!daTatToanOrder && canCreate && (
+                            <>
+                              <button
+                                className={styles.btnPay}
+                                onClick={() => navigate(`/thanh-toan/xuat/${dh.id}`)}
+                                title="Thanh toán"
+                              >
+                                <FiDollarSign size={13} />{" "}
+                                {conLai < (dh.thanhTien || 0) ? formatCurrency(conLai) : "Thanh toán"}
+                              </button>
+                              <button
+                                className={styles.btnHoaDon}
+                                onClick={() => navigate(`/thanh-toan/xuat/${dh.id}`)}
+                                title="Xuất hóa đơn"
+                              >
+                                <FiFileText size={13} /> Xuất HĐ
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -144,20 +278,30 @@ export default function ThanhToanPage() {
           )}
         </div>
 
-        {!loading && donHangs.length > 0 && (
+        {!loading && displayList.length > LIMIT && (
           <Pagination
             page={page}
             totalPages={totalPages}
-            total={donHangs.length}
+            total={displayList.length}
             limit={LIMIT}
             onPageChange={goToPage}
           />
         )}
       </div>
 
+      {/* Modal xem hóa đơn */}
+      {modalHoaDon && (
+        <ModalHoaDon
+          donHang={modalHoaDon.donHang}
+          hoaDons={modalHoaDon.hoaDons}
+          onClose={() => setModalHoaDon(null)}
+          onPrint={handlePrintHD}
+        />
+      )}
+
       <div className={styles.toastContainer}>
         {toasts.map((t) => (
-          <div key={t.id} className={`${styles.toast} ${t.type === 'error' ? styles.toastError : styles.toastSuccess}`}>
+          <div key={t.id} className={`${styles.toast} ${t.type === "error" ? styles.toastError : styles.toastSuccess}`}>
             {t.message}
           </div>
         ))}
@@ -165,3 +309,77 @@ export default function ThanhToanPage() {
     </div>
   );
 }
+
+// ─── Modal xem hóa đơn ───────────────────────────────────────────────────────
+function ModalHoaDon({
+  donHang,
+  hoaDons,
+  onClose,
+  onPrint,
+}: {
+  donHang: DonHang;
+  hoaDons: HoaDonItem[];
+  onClose: () => void;
+  onPrint: (id: number) => void;
+}) {
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>
+            <FiFileText size={18} />
+            Hóa đơn - {donHang.maDonHang}
+          </h3>
+          <button className={styles.modalClose} onClick={onClose}>×</button>
+        </div>
+        <div className={styles.modalBody}>
+          {hoaDons.length === 0 ? (
+            <div className={styles.emptyHoaDon}>Chưa có hóa đơn nào</div>
+          ) : (
+            hoaDons.map((hd, idx) => (
+              <div key={hd.id} className={styles.hoaDonItem}>
+                <div className={styles.hoaDonItemHeader}>
+                  <div>
+                    <strong>Hóa đơn #{idx + 1}</strong>
+                    <span className={styles.hoaDonSo}>Số: {hd.maHoaDon}</span>
+                    {hd.ngayLap && (
+                      <span className={styles.hoaDonNgay}>
+                        Ngày: {new Date(hd.ngayLap).toLocaleDateString("vi-VN")}
+                      </span>
+                    )}
+                    <span className={`${styles.hoaDonBadge} ${hd.loaiThanhToan === "tra_het" ? styles.badgeTraHet : styles.badgeCongNo}`}>
+                      {hd.loaiThanhToan === "tra_het" ? "Trả hết" : "Công nợ"}
+                    </span>
+                  </div>
+                  <button className={styles.btnPrint} onClick={() => onPrint(hd.id)}>
+                    <FiPrinter size={14} /> In
+                  </button>
+                </div>
+                <div className={styles.hoaDonDetails}>
+                  <div className={styles.hdRow}><span>Tiền bê tông:</span><span>{formatCurrency(hd.tienBeTong)}</span></div>
+                  {hd.buuVanChuyen > 0 && <div className={styles.hdRow}><span>Bù vận chuyển:</span><span>{formatCurrency(hd.buuVanChuyen)}</span></div>}
+                  {hd.phiPhatSinh > 0 && <div className={styles.hdRow}><span>Chi phí phát sinh:</span><span>{formatCurrency(hd.phiPhatSinh)}</span></div>}
+                  {hd.giamTru > 0 && <div className={styles.hdRow}><span>Giảm trừ:</span><span style={{ color: "var(--color-success)" }}>- {formatCurrency(hd.giamTru)}</span></div>}
+                  <div className={`${styles.hdRow} ${styles.hdTotal}`}><span>Tổng cộng:</span><span>{formatCurrency(hd.tongCong)}</span></div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Label map
+const TRANG_THAI_DON_LABELS: Record<string, string> = {
+  cho_duyet: "Chờ duyệt",
+  da_duyet: "Đã duyệt",
+  dang_san_xuat: "Đang sản xuất",
+  dang_giao: "Đang giao",
+  da_giao: "Đã giao",
+  nghiem_thu: "Nghiệm thu",
+  da_thanh_toan: "Thanh toán",
+  da_hoan_thanh: "Hoàn thành",
+  tu_choi: "Từ chối",
+};
