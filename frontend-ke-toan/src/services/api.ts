@@ -834,6 +834,22 @@ export async function layDonHangCuaToi(
   return json as ApiResponseWithPagination<DonHang[]>;
 }
 
+// ===== TRẠM TRỘN — lấy đơn hàng theo trạm =====
+export async function layDonHangTheoTram(
+  page = 1,
+  limit = 20,
+  trangThai?: string,
+): Promise<ApiResponseWithPagination<DonHang[]>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (trangThai) params.append("trangThai", trangThai);
+  const res = await fetch(`${BASE_URL}/don-hang/theo-tram?${params}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json as ApiResponseWithPagination<DonHang[]>;
+}
+
 // ===== TÀI XẾ — lấy đơn giao của mình =====
 export async function layDonHangGiaoCuaToi(): Promise<any[]> {
   const res = await fetch(`${BASE_URL}/tai-xe/don-hang-cua-toi`, {

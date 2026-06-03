@@ -395,6 +395,8 @@ async function initDatabase(): Promise<void> {
           id INT IDENTITY(1,1) PRIMARY KEY,
           idDonHang INT NOT NULL,
           idXe INT,
+          idTramTron INT NULL,
+          idTaiXe INT NULL,
           kyThuatCongTrinh NVARCHAR(200),
           nguoiOmOng NVARCHAR(200),
           nguoiBatOng NVARCHAR(200),
@@ -414,6 +416,22 @@ async function initDatabase(): Promise<void> {
       `);
     } else {
       console.log("  ✅ Bảng LichSanXuat đã tồn tại");
+      // Migration: thêm cột idTramTron nếu chưa có
+      const colTram = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('LichSanXuat') AND name = 'idTramTron'`,
+      );
+      if (colTram.recordset.length === 0) {
+        await db.query(`ALTER TABLE LichSanXuat ADD idTramTron INT NULL`);
+        console.log("  + Cột idTramTron đã thêm vào LichSanXuat");
+      }
+      // Migration: thêm cột idTaiXe nếu chưa có
+      const colTaiXe = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('LichSanXuat') AND name = 'idTaiXe'`,
+      );
+      if (colTaiXe.recordset.length === 0) {
+        await db.query(`ALTER TABLE LichSanXuat ADD idTaiXe INT NULL`);
+        console.log("  + Cột idTaiXe đã thêm vào LichSanXuat");
+      }
     }
 
     // Tạo bảng NghiemThu

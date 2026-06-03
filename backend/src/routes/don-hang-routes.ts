@@ -43,17 +43,6 @@ router.get(
   }
 );
 
-router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
-  try {
-    const id = parseInt(req.params.id, 10);
-    const donHang = await layDonHangTheoId(id);
-    res.json({ success: true, message: 'Lấy đơn hàng thành công', data: donHang });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Lỗi lấy đơn hàng';
-    res.status(404).json({ success: false, message });
-  }
-});
-
 /** Lấy đơn hàng của người tạo (sale) */
 router.get('/cua-toi', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
@@ -68,21 +57,24 @@ router.get('/cua-toi', authMiddleware, async (req: AuthRequest, res: Response<Ap
     const tuKhoa = req.query.tuKhoa as string | undefined;
     const offset = (page - 1) * limit;
 
-    let whereClause = 'WHERE dh.idNguoiTao = @idNguoiTao';
+    let whereClause = 'WHERE dh.nguoiTaoId = @nguoiTaoId';
     if (trangThai) whereClause += ` AND dh.trangThaiDon = @trangThai`;
     if (tuKhoa) whereClause += ` AND (dh.maDonHang LIKE @tuKhoa OR dh.tenKhachHang LIKE @tuKhoa)`;
 
-    const countResult = await (await import('../config/database')).query<{ total: number }>(
+    const dbModule = await import('../config/database');
+    const countResult = await dbModule.query<{ total: number }>(
       `SELECT COUNT(*) as total FROM DonHang dh ${whereClause}`,
-      { idNguoiTao: req.user.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined }
+      { nguoiTaoId: req.user.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined }
     );
     const total = countResult[0]?.total || 0;
 
-    const data = await (await import('../config/database')).query<any>(
-      `SELECT dh.* FROM DonHang dh ${whereClause}
+    const data = await dbModule.query<any>(
+      `SELECT dh.*, t.tenTram as tenTramTron FROM DonHang dh
+       LEFT JOIN TramTron t ON dh.idTramTron = t.id
+       ${whereClause}
        ORDER BY dh.ngayTao DESC
        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
-      { idNguoiTao: req.user.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined, offset, limit }
+      { nguoiTaoId: req.user.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined, offset, limit }
     );
 
     res.json({
@@ -94,6 +86,17 @@ router.get('/cua-toi', authMiddleware, async (req: AuthRequest, res: Response<Ap
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi lấy đơn hàng';
     res.status(500).json({ success: false, message });
+  }
+});
+
+router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const donHang = await layDonHangTheoId(id);
+    res.json({ success: true, message: 'Lấy đơn hàng thành công', data: donHang });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy đơn hàng';
+    res.status(404).json({ success: false, message });
   }
 });
 
@@ -126,6 +129,74 @@ router.post(
     }
   }
 );
+
+/** Lấy đơn hàng theo trạm trộn (tram_tron) */
+router.get('/theo-tram', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+      return;
+    }
+
+    const isAdmin = req.user.vaiTro === 'admin';
+    const idTram = req.user.idTramTron ?? null;
+
+    if (!isAdmin && !idTram) {
+      res.status(403).json({ success: false, message: 'Tài khoản chưa được gắn trạm trộn nào' });
+      return;
+    }
+
+    const page = parseInt(String(req.query.page || '1'), 10);
+    const limit = parseInt(String(req.query.limit || '20'), 10);
+    const trangThai = req.query.trangThai as string | undefined;
+    const tuKhoa = req.query.tuKhoa as string | undefined;
+    const offset = (page - 1) * limit;
+
+    let whereClause = '';
+    const params: Record<string, unknown> = { offset, limit };
+
+    if (!isAdmin) {
+      whereClause = 'WHERE dh.idTramTron = @idTram';
+      params.idTram = idTram;
+    }
+
+    if (trangThai) {
+      whereClause += whereClause ? ` AND dh.trangThaiDon = @trangThai` : 'WHERE dh.trangThaiDon = @trangThai';
+      params.trangThai = trangThai;
+    }
+
+    if (tuKhoa) {
+      whereClause += whereClause ? ` AND (dh.maDonHang LIKE @tuKhoa OR dh.tenKhachHang LIKE @tuKhoa)` : 'WHERE (dh.maDonHang LIKE @tuKhoa OR dh.tenKhachHang LIKE @tuKhoa)';
+      params.tuKhoa = `%${tuKhoa}%`;
+    }
+
+    const dbModule = await import('../config/database');
+    const countResult = await dbModule.query<{ total: number }>(
+      `SELECT COUNT(*) as total FROM DonHang dh ${whereClause}`,
+      params
+    );
+    const total = countResult[0]?.total || 0;
+
+    const data = await dbModule.query<any>(
+      `SELECT dh.*, t.tenTram as tenTramTron FROM DonHang dh
+       LEFT JOIN TramTron t ON dh.idTramTron = t.id
+       ${whereClause}
+       ORDER BY dh.ngayTao DESC
+       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+      params
+    );
+
+    res.json({
+      success: true,
+      message: 'Lấy đơn hàng theo trạm thành công',
+      data,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy đơn hàng';
+    res.status(500).json({ success: false, message });
+  }
+});
 
 router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {

@@ -3,8 +3,8 @@ import { FiArrowLeft, FiSearch, FiX } from "react-icons/fi";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Loading } from "../components/Common";
 import { usePagination, useToast } from "../hooks";
-import { layDanhSachDonHang, layDanhSachTramTron, layTatCaLichSanXuat } from "../services/api";
-import { DonHang, TramTron, TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
+import { layDonHangTheoTram } from "../services/api";
+import { DonHang, TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./DonHangTheoTramPage.module.css";
 
 export default function DonHangTheoTramPage() {
@@ -14,9 +14,7 @@ export default function DonHangTheoTramPage() {
   const { toasts, showToast } = useToast();
   const { page, resetPage, goToPage } = usePagination(1, 20);
 
-  const [trams, setTrams] = useState<TramTron[]>([]);
-  const [allOrders, setAllOrders] = useState<DonHang[]>([]);
-  const [lichSans, setLichSans] = useState<any[]>([]);
+  const [data, setData] = useState<{ data: DonHang[]; pagination: { total: number; totalPages: number } }>({ data: [], pagination: { total: 0, totalPages: 1 } });
   const [loading, setLoading] = useState(true);
 
   // Filters - auto-select tram from URL param
@@ -24,51 +22,27 @@ export default function DonHangTheoTramPage() {
     return id || searchParams.get("tram") || "";
   });
   const [maDonFilter, setMaDonFilter] = useState(searchParams.get("maDon") || "");
+  const [trangThaiFilter, setTrangThaiFilter] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [tramData, lsData, dhData] = await Promise.all([
-        layDanhSachTramTron(),
-        layTatCaLichSanXuat(),
-        layDanhSachDonHang(1, 100),
-      ]);
-      setTrams(tramData || []);
-      setLichSans(Array.isArray(lsData) ? lsData : []);
-      setAllOrders(Array.isArray(dhData) ? dhData : []);
+      const res = await layDonHangTheoTram(page, 20, trangThaiFilter || undefined);
+      setData(res);
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [page, trangThaiFilter, showToast]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Map tram -> don hang ids
-  const tramToDonHangIds = useMemo(() => {
-    const map: Record<number, Set<number>> = {};
-    lichSans.forEach((ls) => {
-      const idTram = ls.idTramTron;
-      if (idTram) {
-        if (!map[idTram]) map[idTram] = new Set();
-        map[idTram].add(ls.idDonHang);
-      }
-    });
-    return map;
-  }, [lichSans]);
-
   const filteredOrders = useMemo(() => {
-    let orders = allOrders;
-
-    // Lọc theo trạm
-    if (tramFilter) {
-      const tramId = parseInt(tramFilter);
-      const ids = tramToDonHangIds[tramId] || new Set();
-      orders = orders.filter(o => ids.has(o.id));
-    }
+    if (!data.data) return [];
+    let orders = data.data;
 
     // Lọc theo mã đơn
     if (maDonFilter) {
