@@ -96,7 +96,7 @@ export async function taoThanhToan(
 
     // Cập nhật trạng thái thành hoàn thành
     await query(
-      `UPDATE DonHang SET trangThaiDon = N'da_hoan_thanh', trangThaiHoanThanh = N'hoan_thanh', ngayCapNhat = ${vnNow()} WHERE id = @id`,
+      `UPDATE DonHang SET trangThaiDon = N'hoan_thanh', trangThaiHoanThanh = N'hoan_thanh', ngayCapNhat = ${vnNow()} WHERE id = @id`,
       { id: data.idDonHang }
     );
   }

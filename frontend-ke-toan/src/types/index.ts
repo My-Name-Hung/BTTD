@@ -286,7 +286,7 @@ export const TRANG_THAI_DON_LABELS: Record<string, string> = {
   da_giao: "Đã giao",
   nghiem_thu: "Nghiệm thu",
   da_nghiem_thu: "Đã nghiệm thu",
-  da_thanh_toan: "Chưa thanh toán",
+  da_thanh_toan: "Đã thanh toán",
   hoan_thanh: "Hoàn thành",
 };
 
