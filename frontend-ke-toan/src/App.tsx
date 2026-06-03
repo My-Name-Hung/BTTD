@@ -41,6 +41,8 @@ const SaleDonHangPage = lazy(() => import("./pages/SaleDonHangPage"));
 const TaiXeGiaoHangPage = lazy(() => import("./pages/TaiXeGiaoHangPage"));
 const LichSuGiaoHangPage = lazy(() => import("./pages/LichSuGiaoHangPage"));
 const KyThuatNghiemThuPage = lazy(() => import("./pages/KyThuatNghiemThuPage"));
+const XuatHoaDonPage = lazy(() => import("./pages/XuatHoaDonPage"));
+const InHoaDonPage = lazy(() => import("./pages/InHoaDonPage"));
 
 function PageFallback() {
   return (
@@ -186,6 +188,8 @@ function App() {
 
                     {/* Tài chính */}
                     <Route path="/thanh-toan" element={<ThanhToanPage />} />
+                    <Route path="/thanh-toan/xuat/:id" element={<XuatHoaDonPage />} />
+                    <Route path="/in-hoa-don/:id" element={<InHoaDonPage />} />
                     <Route path="/cong-no" element={<CongNoPage />} />
 
                     {/* Thông báo */}

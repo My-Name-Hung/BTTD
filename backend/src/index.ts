@@ -16,6 +16,7 @@ import nghiemThuRoutes from "./routes/nghiem-thu-routes";
 import quanLyRoutes from "./routes/quan-ly-routes";
 import thamSoRoutes from "./routes/tham-so-routes";
 import thanhToanRoutes from "./routes/thanh-toan-routes";
+import hoaDonRoutes from "./routes/hoa-don-routes";
 import thongBaoRoutes from "./routes/thong-bao-routes";
 import cauHinhRoutes from "./routes/cau-hinh-routes";
 import lanhDaoRoutes from "./routes/lanh-dao-routes";
@@ -65,6 +66,7 @@ app.use("/api/dashboard", authMiddleware, maintenanceMiddleware, dashboardRoutes
 app.use("/api/dieu-phoi", authMiddleware, maintenanceMiddleware, dieuPhoiRoutes);
 app.use("/api/nghiem-thu", authMiddleware, maintenanceMiddleware, nghiemThuRoutes);
 app.use("/api/thanh-toan", authMiddleware, maintenanceMiddleware, thanhToanRoutes);
+app.use("/api/hoa-don", authMiddleware, maintenanceMiddleware, hoaDonRoutes);
 app.use("/api/tham-so", authMiddleware, maintenanceMiddleware, thamSoRoutes);
 app.use("/api/notifications", authMiddleware, maintenanceMiddleware, thongBaoRoutes);
 app.use("/api/cau-hinh", cauHinhRoutes); // /trang-thai public, các route khác tự xử lý auth

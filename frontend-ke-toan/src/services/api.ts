@@ -142,6 +142,16 @@ export async function xoaDonHang(id: number): Promise<void> {
   await request(`/don-hang/${id}`, { method: "DELETE" });
 }
 
+export async function layDonHangGiaoTrongNgay(ngayGiao: string): Promise<DonHang[]> {
+  const params = new URLSearchParams({ ngayGiao });
+  const res = await fetch(`${BASE_URL}/don-hang/giao-trong-ngay?${params}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
 export async function layThongKeDashboard(): Promise<ThongKeDashboard> {
   return request<ThongKeDashboard>("/dashboard/tong-quan");
 }
@@ -949,3 +959,47 @@ export async function capNhatBannedIp(userId: number, bannedIp: string | null): 
 export async function logout(): Promise<void> {
   await request('/auth/logout', { method: 'POST' });
 }
+
+// ===== HÓA ĐƠN =====
+export async function taoHoaDon(data: {
+  idDonHang: number;
+  loaiThanhToan: 'tra_het' | 'cong_no';
+  buuVanChuyen?: number;
+  phiPhatSinh?: number;
+  giamTru?: number;
+  soTienThanhToan?: number;
+  ngayLap?: string;
+  khachHang?: string;
+  loaiXiMang?: string;
+  gioDo?: string;
+  phuongThucThanhToan?: string;
+  ghiChu?: string;
+  hanTraCongNo?: string;
+}): Promise<any> {
+  return request('/hoa-don', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function layHoaDonTheoDonHang(idDonHang: number): Promise<any[]> {
+  return request<any[]>(`/hoa-don/don-hang/${idDonHang}`);
+}
+
+export async function taiHoaDonDoc(id: number): Promise<void> {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}/hoa-don/tai/${id}/doc`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error('Lỗi tải hóa đơn');
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `hoa-don-${id}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+

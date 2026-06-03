@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiPlus, FiX, FiSearch } from 'react-icons/fi';
-import { layDanhSachDonHang, taoThanhToan, layLichSuThanhToan } from '../services/api';
+import { FiPlus, FiX, FiSearch, FiFileText } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { layDanhSachDonHang, layLichSuThanhToan } from '../services/api';
 import { DonHang, ThanhToan, TRANG_THAI_DON_LABELS } from '../types';
 import { useToast, usePagination, usePageRole } from '../hooks';
-import { Modal, Loading, EmptyState, Pagination } from '../components/Common';
+import { Loading, EmptyState, Pagination } from '../components/Common';
 import styles from './ThanhToanPage.module.css';
 
 function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' || '0 đ'; }
@@ -12,14 +13,11 @@ export default function ThanhToanPage() {
   const { hasPermission } = usePageRole();
   const { toasts, showToast } = useToast();
   const { page, resetPage, goToPage } = usePagination(1, 20);
+  const navigate = useNavigate();
   const [donHangs, setDonHangs] = useState<DonHang[]>([]);
   const [thanhToans, setThanhToans] = useState<Record<number, ThanhToan[]>>({});
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
-  const [form, setForm] = useState({ soTien: '', hinhThuc: 'tien_mat', ghiChu: '' });
-  const [formLoading, setFormLoading] = useState(false);
 
   const canCreate = hasPermission('thanhtoan.create');
 
@@ -28,10 +26,9 @@ export default function ThanhToanPage() {
     try {
       const dhRes = await layDanhSachDonHang(page, 20, undefined, tuKhoa || undefined);
       const dhs = (dhRes.data || []).filter((dh: DonHang) =>
-        ['nghiem_thu', 'da_thanh_toan'].includes(dh.trangThaiDon)
+        ['nghiem_thu', 'da_thanh_toan', 'da_giao'].includes(dh.trangThaiDon)
       );
       setDonHangs(dhs);
-      // Gọi song song tất cả lịch sử thanh toán
       const histories = await Promise.all(dhs.map((dh: DonHang) => layLichSuThanhToan(dh.id)));
       const map: Record<number, ThanhToan[]> = {};
       dhs.forEach((dh: DonHang, i: number) => { map[dh.id] = histories[i] || []; });
@@ -42,28 +39,8 @@ export default function ThanhToanPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const openThanhToan = (dh: DonHang) => {
-    setSelectedDonHang(dh);
-    const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
-    setForm({ soTien: conLai > 0 ? Number(Math.round(conLai)).toLocaleString('vi-VN') : '', hinhThuc: 'tien_mat', ghiChu: '' });
-    setModalOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedDonHang || !form.soTien) return;
-    setFormLoading(true);
-    try {
-      await taoThanhToan({
-        idDonHang: selectedDonHang.id,
-        soTien: parseFloat(form.soTien.replace(/[^\d]/g, '')),
-        hinhThuc: form.hinhThuc as 'tien_mat' | 'chuyen_khoan',
-        ghiChu: form.ghiChu || undefined,
-      });
-      showToast('Ghi nhận thanh toán thành công');
-      setModalOpen(false);
-      loadData();
-    } catch (err) { showToast(err instanceof Error ? err.message : 'Lỗi', 'error'); }
-    finally { setFormLoading(false); }
+  const handleXuatHoaDon = (dh: DonHang) => {
+    navigate(`/thanh-toan/xuat/${dh.id}`);
   };
 
   const tongCongNo = donHangs.reduce((sum, dh) => sum + Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0)), 0);
@@ -154,8 +131,8 @@ export default function ThanhToanPage() {
                       </td>
                       <td>
                         {canCreate && (
-                          <button className={`${styles.btnPay} ${conLai <= 0 ? styles.btnPayDisabled : ''}`} onClick={() => openThanhToan(dh)} disabled={conLai <= 0}>
-                            <FiPlus size={14} /> Thanh toán
+                          <button className={`${styles.btnPay}`} onClick={() => handleXuatHoaDon(dh)}>
+                            <FiFileText size={14} /> Xuất HĐ
                           </button>
                         )}
                       </td>
@@ -177,64 +154,6 @@ export default function ThanhToanPage() {
           />
         )}
       </div>
-
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={`Thanh toán - ${selectedDonHang?.maDonHang}`}
-        footer={
-          <>
-            <button className="btn btn-cancel" onClick={() => setModalOpen(false)} disabled={formLoading}>Hủy</button>
-            <button className="btn btn-save" onClick={handleSubmit} disabled={formLoading}>
-              {formLoading ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
-            </button>
-          </>
-        }
-      >
-        <div className={styles.modalInfoBox}>
-          <div className={styles.modalInfoRow}>
-            <span className={styles.modalInfoLabel}>Khách hàng</span>
-            <span className={styles.modalInfoValue}>{selectedDonHang?.tenKhachHang}</span>
-          </div>
-          <div className={styles.modalInfoRow}>
-            <span className={styles.modalInfoLabel}>Tổng tiền</span>
-            <span className={styles.modalInfoValue}>{formatCurrency(selectedDonHang?.thanhTien || 0)}</span>
-          </div>
-          <div className={styles.modalInfoRow}>
-            <span className={styles.modalInfoLabel}>Đã thanh toán</span>
-            <span className={styles.modalInfoSuccess}>{formatCurrency(selectedDonHang?.daThanhToan || 0)}</span>
-          </div>
-          <div className={styles.modalInfoRow}>
-            <span className={styles.modalInfoLabel}>Còn lại</span>
-            <span className={styles.modalInfoWarning}>{formatCurrency((selectedDonHang?.thanhTien || 0) - (selectedDonHang?.daThanhToan || 0))}</span>
-          </div>
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Số tiền thanh toán (VNĐ) *</label>
-          <input
-            type="text"
-            className={styles.formInput}
-            value={form.soTien}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/[^\d]/g, '');
-              const formatted = raw ? Number(raw).toLocaleString('vi-VN') : '';
-              setForm({ ...form, soTien: formatted });
-            }}
-            placeholder="Nhập số tiền..."
-          />
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Hình thức</label>
-          <select className={styles.formSelect} value={form.hinhThuc} onChange={(e) => setForm({ ...form, hinhThuc: e.target.value })}>
-            <option value="tien_mat">Tiền mặt</option>
-            <option value="chuyen_khoan">Chuyển khoản</option>
-          </select>
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Ghi chú</label>
-          <textarea className={styles.formTextarea} value={form.ghiChu} onChange={(e) => setForm({ ...form, ghiChu: e.target.value })} />
-        </div>
-      </Modal>
 
       <div className={styles.toastContainer}>
         {toasts.map((t) => (

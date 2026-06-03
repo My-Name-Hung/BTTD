@@ -370,4 +370,27 @@ router.delete('/:id', authMiddleware, requireRole('admin'), async (req: AuthRequ
   }
 });
 
+// Lấy đơn hàng giao trong ngày (dùng cho tính bù vận chuyển)
+router.get('/giao-trong-ngay', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const ngayGiao = req.query.ngayGiao as string;
+    if (!ngayGiao) {
+      res.status(400).json({ success: false, message: 'Thiếu tham số ngayGiao' });
+      return;
+    }
+    const dbModule = await import('../config/database');
+    const data = await dbModule.query<any[]>(
+      `SELECT * FROM DonHang
+       WHERE CAST(ngayGiao AS DATE) = CAST(@ngayGiao AS DATE)
+         AND trangThaiDon NOT IN (N'tu_choi', N'cho_duyet')
+       ORDER BY ngayTao ASC`,
+      { ngayGiao }
+    );
+    res.json({ success: true, message: 'Lấy đơn trong ngày thành công', data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy đơn trong ngày';
+    res.status(500).json({ success: false, message });
+  }
+});
+
 export default router;

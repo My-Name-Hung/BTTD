@@ -192,6 +192,32 @@ export interface CongNoGroup {
   tongConLai: number;
 }
 
+export interface HoaDon {
+  id: number;
+  idDonHang: number;
+  maHoaDon: string;
+  soHoaDon: string;
+  ngayLap: string | null;
+  khachHang: string;
+  loaiXiMang: string;
+  gioDo: string;
+  phuongThucThanhToan: string;
+  ghiChu: string;
+  tienBeTong: number;
+  buuVanChuyen: number;
+  phiPhatSinh: number;
+  giamTru: number;
+  tongCong: number;
+  soTienThanhToan: number;
+  loaiThanhToan: 'tra_het' | 'cong_no';
+  hanTraCongNo: string | null;
+  maDonHang?: string;
+  tenMacBeTong?: string;
+  khoiLuongDat?: number;
+  donGia?: number;
+  thanhTien?: number;
+}
+
 export interface CongNoKhachHang {
   id: number;
   maKhachHang: string | null;

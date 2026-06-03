@@ -1,0 +1,381 @@
+/* InHoaDonPage - Print-optimized invoice layout */
+
+.wrapper {
+  min-height: 100vh;
+  background: #f0f2f5;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.backBtn,
+.printBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.backBtn {
+  border: 1.5px solid var(--color-border);
+  background: white;
+  color: var(--color-text-secondary);
+}
+
+.backBtn:hover {
+  border-color: var(--color-text);
+  color: var(--color-text);
+}
+
+.printBtn {
+  border: none;
+  background: var(--color-primary);
+  color: white;
+}
+
+.printBtn:hover {
+  background: #062fa8;
+}
+
+/* ── Invoice ── */
+.invoice {
+  max-width: 800px;
+  margin: 24px auto;
+  background: white;
+  padding: 40px 48px;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Invoice Header ── */
+.invoiceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #073ceb;
+}
+
+.companyInfo {
+  flex: 1;
+}
+
+.companyName {
+  font-size: 22px;
+  font-weight: 800;
+  color: #073ceb;
+  margin: 0 0 8px;
+  letter-spacing: 1px;
+}
+
+.companyInfo p {
+  font-size: 13px;
+  color: #555;
+  margin: 3px 0;
+}
+
+.invoiceTitle {
+  text-align: right;
+}
+
+.invoiceTitle h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #073ceb;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.soHoaDon {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 4px;
+}
+
+.ngayLap {
+  font-size: 13px;
+  color: #555;
+  margin: 0;
+}
+
+/* ── Info Grid ── */
+.infoGrid {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 20px;
+}
+
+.infoCol {
+  flex: 1;
+}
+
+.infoRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.infoLabel {
+  font-weight: 600;
+  color: #555;
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+.infoValue {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+/* ── Table ── */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 13px;
+}
+
+.table thead th {
+  background: #073ceb;
+  color: white;
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.table thead th:nth-child(n+3) {
+  text-align: right;
+}
+
+.table thead th:first-child {
+  text-align: center;
+  width: 40px;
+}
+
+.table tbody td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  color: var(--color-text);
+  vertical-align: top;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tfoot td {
+  padding: 10px 8px;
+  border-top: 2px solid #073ceb;
+}
+
+.center {
+  text-align: center !important;
+}
+
+.right {
+  text-align: right !important;
+}
+
+.red {
+  color: #dc2626;
+}
+
+.totalRow {
+  font-size: 15px;
+}
+
+.totalRow td {
+  padding: 12px 8px;
+  background: #f8fafc;
+}
+
+/* ── Payment Badge ── */
+.paymentInfo {
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.paymentBadge {
+  display: inline-block;
+  padding: 6px 20px;
+  background: #073ceb;
+  color: white;
+  font-weight: 800;
+  font-size: 16px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hanTra {
+  font-size: 13px;
+  color: #555;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ── Ghi chú ── */
+.ghiChu {
+  padding: 10px 14px;
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #92400e;
+  margin: 12px 0;
+}
+
+/* ── Signatures ── */
+.signatures {
+  display: flex;
+  gap: 60px;
+  margin-top: 48px;
+}
+
+.sigCol {
+  flex: 1;
+  text-align: center;
+}
+
+.sigTitle {
+  font-size: 13px;
+  margin: 0 0 4px;
+  color: var(--color-text);
+}
+
+.sigNote {
+  font-size: 11px;
+  color: #888;
+  margin: 0 0 48px;
+  font-style: italic;
+}
+
+.sigArea {
+  height: 48px;
+}
+
+/* ── Footer ── */
+.invoiceFooter {
+  text-align: center;
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.invoiceFooter p {
+  font-size: 13px;
+  color: #888;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── Not Found ── */
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 60px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.notFound button {
+  padding: 10px 24px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ── Print Styles ── */
+@media print {
+  .toolbar {
+    display: none !important;
+  }
+
+  .wrapper {
+    background: white;
+    padding: 0;
+  }
+
+  .invoice {
+    box-shadow: none;
+    margin: 0;
+    padding: 24px;
+    border-radius: 0;
+    max-width: 100%;
+  }
+
+  .table thead th {
+    background: #073ceb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .paymentBadge {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .invoice {
+    padding: 24px 20px;
+    margin: 12px;
+  }
+
+  .invoiceHeader {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .invoiceTitle {
+    text-align: left;
+  }
+
+  .infoGrid {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .signatures {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .toolbar {
+    padding: 10px 16px;
+  }
+}

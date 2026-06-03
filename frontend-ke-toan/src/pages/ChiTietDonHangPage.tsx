@@ -215,9 +215,9 @@ export default function ChiTietDonHangPage() {
               <FiCheckSquare /> Nghiệm thu
             </button>
           )}
-          {canApproveReject && ['nghiem_thu', 'da_thanh_toan'].includes(donHang.trangThaiDon) && (
-            <button className={`${styles.actionBtn} ${styles.actionBtnSecondary}`} onClick={() => navigate('/thanh-toan')}>
-              <FiDollarSign /> Thanh toán
+          {canApproveReject && ['nghiem_thu', 'da_giao'].includes(donHang.trangThaiDon) && (
+            <button className={`${styles.actionBtn} ${styles.actionBtnSecondary}`} onClick={() => navigate(`/thanh-toan/xuat/${donHang.id}`)}>
+              <FiDollarSign /> Xuất hóa đơn
             </button>
           )}
         </div>

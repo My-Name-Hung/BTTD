@@ -476,6 +476,40 @@ async function initDatabase(): Promise<void> {
       console.log("  ✅ Bảng NghiemThu đã tồn tại");
     }
 
+    // Tạo bảng HoaDon
+    const hoaDonExists = await db.query<{ name: string }[]>(
+      `SELECT name FROM sys.tables WHERE name = 'HoaDon'`,
+    );
+    if (hoaDonExists.recordset.length === 0) {
+      console.log("  ➕ Tạo bảng HoaDon...");
+      await db.query(`
+        CREATE TABLE HoaDon (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          idDonHang INT NOT NULL,
+          maHoaDon NVARCHAR(100),
+          soHoaDon NVARCHAR(100),
+          ngayLap DATETIME,
+          khachHang NVARCHAR(200),
+          loaiXiMang NVARCHAR(100),
+          gioDo NVARCHAR(100),
+          phuongThucThanhToan NVARCHAR(50),
+          ghiChu NVARCHAR(MAX),
+          tienBeTong DECIMAL(18,2) DEFAULT 0,
+          buuVanChuyen DECIMAL(18,2) DEFAULT 0,
+          phiPhatSinh DECIMAL(18,2) DEFAULT 0,
+          giamTru DECIMAL(18,2) DEFAULT 0,
+          tongCong DECIMAL(18,2) DEFAULT 0,
+          soTienThanhToan DECIMAL(18,2) DEFAULT 0,
+          loaiThanhToan NVARCHAR(20),
+          hanTraCongNo DATETIME,
+          nguoiTaoId INT,
+          ngayTao DATETIME DEFAULT GETDATE()
+        )
+      `);
+    } else {
+      console.log("  ✅ Bảng HoaDon đã tồn tại");
+    }
+
     // Tạo bảng ThanhToan
     const thanhToanExists = await db.query<{ name: string }[]>(
       `SELECT name FROM sys.tables WHERE name = 'ThanhToan'`,
