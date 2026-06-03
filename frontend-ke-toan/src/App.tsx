@@ -30,6 +30,7 @@ const KhoDonHangPage = lazy(() => import("./pages/KhoDonHangPage"));
 const QuanLyMacBeTongPage = lazy(() => import("./pages/QuanLyMacBeTongPage"));
 const AccessHistoryPage = lazy(() => import("./pages/AccessHistoryPage"));
 const AccessHistoryDetailPage = lazy(() => import("./pages/AccessHistoryDetailPage"));
+const TaoNguoiDungPage = lazy(() => import("./pages/TaoNguoiDungPage"));
 
 // Role-specific pages
 const SaleDonHangPage = lazy(() => import("./pages/SaleDonHangPage"));
@@ -173,6 +174,10 @@ function App() {
                     <Route
                       path="/quan-ly/nguoi-dung"
                       element={<QuanLyNguoiDungPage />}
+                    />
+                    <Route
+                      path="/quan-ly/nguoi-dung/tao"
+                      element={<TaoNguoiDungPage />}
                     />
                     <Route path="/quan-ly/xe" element={<QuanLyXePage />} />
                     <Route

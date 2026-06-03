@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { FiEdit2, FiPlus, FiSearch, FiTrash2, FiX } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 import {
   ConfirmModal,
   EmptyState,
@@ -13,7 +14,6 @@ import { usePagination, useToast } from "../hooks";
 import {
   layDanhSachNguoiDung,
   suaNguoiDung,
-  taoNguoiDung,
   xoaNguoiDung,
 } from "../services/api";
 import { ApiResponseWithPagination, NguoiDung } from "../types";
@@ -64,6 +64,7 @@ const VAI_TRO_COLORS: Record<string, string> = {
 };
 
 export default function QuanLyNguoiDungPage() {
+  const navigate = useNavigate();
   const { toasts, showToast } = useToast();
   const { page, resetPage, goToPage } = usePagination(1, 50);
   const userVaiTro = JSON.parse(
@@ -87,7 +88,6 @@ export default function QuanLyNguoiDungPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showCancel, setShowCancel] = useState(false);
   const [form, setForm] = useState({
     tenDangNhap: "",
     matKhau: "",
@@ -98,7 +98,6 @@ export default function QuanLyNguoiDungPage() {
     trangThai: "hoat_dong",
     idTramTron: undefined as number | undefined,
   });
-  const [initialForm, setInitialForm] = useState(form);
 
   const filteredUsers = (data.data?.filter((u) => {
     const matchVaiTro = !vaiTroFilter || u.vaiTro === vaiTroFilter;
@@ -139,23 +138,6 @@ export default function QuanLyNguoiDungPage() {
     loadData();
   }, [loadData]);
 
-  const openCreate = () => {
-    const f = {
-      tenDangNhap: "",
-      matKhau: "",
-      hoTen: "",
-      email: "",
-      soDienThoai: "",
-      vaiTro: "ke_toan",
-      trangThai: "hoat_dong",
-      idTramTron: undefined as number | undefined,
-    };
-    setEditingUser(null);
-    setForm(f);
-    setInitialForm(f);
-    setModalOpen(true);
-  };
-
   const openEdit = (u: NguoiDung) => {
     setEditingUser(u);
     const f = {
@@ -169,42 +151,25 @@ export default function QuanLyNguoiDungPage() {
       idTramTron: u.idTramTron ?? undefined,
     };
     setForm(f);
-    setInitialForm(f);
     setModalOpen(true);
   };
 
   const handleSubmit = async () => {
-    if (!form.hoTen.trim() || (!form.tenDangNhap.trim() && !editingUser)) {
-      showToast("Vui lòng nhập đầy đủ thông tin bắt buộc", "error");
-      return;
-    }
-    if (!editingUser && !form.matKhau.trim()) {
-      showToast("Vui lòng nhập mật khẩu", "error");
+    if (!form.hoTen.trim()) {
+      showToast("Vui lòng nhập họ tên", "error");
       return;
     }
     setFormLoading(true);
     try {
-      if (editingUser) {
-        await suaNguoiDung(editingUser.id, {
-          hoTen: form.hoTen,
-          email: form.email || undefined,
-          soDienThoai: form.soDienThoai || undefined,
-          vaiTro: form.vaiTro,
-          trangThai: form.trangThai,
-          matKhauMoi: form.matKhau || undefined,
-          idTramTron: form.idTramTron,
-        });
-      } else {
-        await taoNguoiDung({
-          tenDangNhap: form.tenDangNhap,
-          matKhau: form.matKhau,
-          hoTen: form.hoTen,
-          email: form.email || undefined,
-          soDienThoai: form.soDienThoai || undefined,
-          vaiTro: form.vaiTro,
-          idTramTron: form.idTramTron,
-        });
-      }
+      await suaNguoiDung(editingUser!.id, {
+        hoTen: form.hoTen,
+        email: form.email || undefined,
+        soDienThoai: form.soDienThoai || undefined,
+        vaiTro: form.vaiTro,
+        trangThai: form.trangThai,
+        matKhauMoi: form.matKhau || undefined,
+        idTramTron: form.idTramTron,
+      });
       setModalOpen(false);
       setShowSuccess(true);
     } catch (err) {
@@ -215,19 +180,22 @@ export default function QuanLyNguoiDungPage() {
   };
 
   const resetForm = () => {
-    const f = { tenDangNhap: "", matKhau: "", hoTen: "", email: "", soDienThoai: "", vaiTro: "ke_toan", trangThai: "hoat_dong", idTramTron: undefined as number | undefined };
-    setForm(f);
-    setInitialForm(f);
+    setForm({
+      tenDangNhap: "",
+      matKhau: "",
+      hoTen: "",
+      email: "",
+      soDienThoai: "",
+      vaiTro: "ke_toan",
+      trangThai: "hoat_dong",
+      idTramTron: undefined as number | undefined,
+    });
     setEditingUser(null);
   };
 
   const closeModal = () => {
-    if (JSON.stringify(form) !== JSON.stringify(initialForm)) {
-      setShowCancel(true);
-    } else {
-      setModalOpen(false);
-      resetForm();
-    }
+    setModalOpen(false);
+    resetForm();
   };
 
   const handleDelete = async () => {
@@ -259,7 +227,7 @@ export default function QuanLyNguoiDungPage() {
             Quản lý tài khoản và phân quyền người dùng hệ thống
           </div>
         </div>
-        <button className="btn btn-add" onClick={openCreate}>
+        <button className="btn btn-add" onClick={() => navigate("/quan-ly/nguoi-dung/tao")}>
           <FiPlus /> Thêm người dùng
         </button>
       </div>
@@ -438,59 +406,32 @@ export default function QuanLyNguoiDungPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal chỉ dùng để sửa */}
       <Modal
         isOpen={modalOpen}
         onClose={closeModal}
-        title={editingUser ? "Sửa người dùng" : "Thêm người dùng mới"}
+        title="Sửa người dùng"
         footer={
           <>
             <button className="btn btn-cancel" onClick={closeModal} disabled={formLoading}>
               Hủy
             </button>
             <button className="btn btn-save" onClick={handleSubmit} disabled={formLoading}>
-              {formLoading ? "Đang lưu..." : (editingUser ? "Cập nhật" : "Tạo người dùng")}
+              {formLoading ? "Đang lưu..." : "Cập nhật"}
             </button>
           </>
         }
       >
-        {!editingUser && (
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Tên đăng nhập *</label>
-            <input
-              className={styles.formInput}
-              value={form.tenDangNhap}
-              onChange={(e) =>
-                setForm({ ...form, tenDangNhap: e.target.value })
-              }
-              placeholder="VD: nhanvien01"
-            />
-          </div>
-        )}
-        {!editingUser && (
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Mật khẩu *</label>
-            <input
-              type="password"
-              className={styles.formInput}
-              value={form.matKhau}
-              onChange={(e) => setForm({ ...form, matKhau: e.target.value })}
-              placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-            />
-          </div>
-        )}
-        {editingUser && (
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Đổi mật khẩu mới</label>
-            <input
-              type="password"
-              className={styles.formInput}
-              value={form.matKhau}
-              onChange={(e) => setForm({ ...form, matKhau: e.target.value })}
-              placeholder="Để trống nếu không đổi"
-            />
-          </div>
-        )}
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Đổi mật khẩu mới</label>
+          <input
+            type="password"
+            className={styles.formInput}
+            value={form.matKhau}
+            onChange={(e) => setForm({ ...form, matKhau: e.target.value })}
+            placeholder="Để trống nếu không đổi"
+          />
+        </div>
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Họ tên *</label>
           <input
@@ -515,9 +456,7 @@ export default function QuanLyNguoiDungPage() {
             <input
               className={styles.formInput}
               value={form.soDienThoai}
-              onChange={(e) =>
-                setForm({ ...form, soDienThoai: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })}
             />
           </div>
         </div>
@@ -545,21 +484,17 @@ export default function QuanLyNguoiDungPage() {
             <TramTronSelect value={form.idTramTron} onChange={(v) => setForm({ ...form, idTramTron: v })} />
           </div>
         )}
-        {editingUser && (
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Trạng thái</label>
-            <select
-              className={styles.formSelect}
-              value={form.trangThai}
-              onChange={(e) =>
-                setForm({ ...form, trangThai: e.target.value })
-              }
-            >
-              <option value="hoat_dong">Hoạt động</option>
-              <option value="khong_hoat_dong">Không hoạt động</option>
-            </select>
-          </div>
-        )}
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Trạng thái</label>
+          <select
+            className={styles.formSelect}
+            value={form.trangThai}
+            onChange={(e) => setForm({ ...form, trangThai: e.target.value })}
+          >
+            <option value="hoat_dong">Hoạt động</option>
+            <option value="khong_hoat_dong">Không hoạt động</option>
+          </select>
+        </div>
       </Modal>
 
       <ConfirmModal
@@ -583,17 +518,6 @@ export default function QuanLyNguoiDungPage() {
         cancelText=""
         title="Thành công"
         type="success"
-      />
-
-      <ConfirmModal
-        isOpen={showCancel}
-        onClose={() => setShowCancel(false)}
-        onConfirm={() => { setShowCancel(false); setModalOpen(false); resetForm(); }}
-        message="Bạn có chắc muốn hủy bỏ? Dữ liệu đã nhập sẽ không được lưu."
-        confirmText="Hủy bỏ"
-        cancelText="Ở lại"
-        title="Xác nhận hủy bỏ"
-        type="warning"
       />
 
       <div className={styles.toastContainer}>

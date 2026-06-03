@@ -286,10 +286,10 @@ export async function capNhatTrangThaiDon(
 export async function xoaDonHang(id: number): Promise<DonHang> {
   const existing = await layDonHangTheoId(id);
 
-  if (existing.trangThaiDon !== 'cho_duyet' && existing.trangThaiDon !== 'tu_choi') {
-    throw new Error('Chỉ có thể xóa đơn hàng chưa duyệt hoặc đã từ chối');
-  }
-
+  // Xóa các bản ghi liên quan trước
+  await query(`DELETE FROM LichSanXuat WHERE idDonHang = @id`, { id });
+  await query(`DELETE FROM NghiemThu WHERE idDonHang = @id`, { id });
+  await query(`DELETE FROM ThanhToan WHERE idDonHang = @id`, { id });
   await query(`DELETE FROM DonHang WHERE id = @id`, { id });
   return existing;
 }

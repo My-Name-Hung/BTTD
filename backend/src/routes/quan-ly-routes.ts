@@ -105,7 +105,7 @@ router.post(
         },
       );
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-      await ghiNhatKy(req.user?.id, 'TAO', 'NguoiDung', result[0]?.id, undefined,
+      await ghiNhatKy(req.user?.id ?? 0, 'TAO', 'NguoiDung', result[0]?.id, undefined,
         JSON.stringify(req.body), ip);
       res
         .status(201)
@@ -161,7 +161,7 @@ router.put(
 
       await query(sql, params);
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-      await ghiNhatKy(req.user?.id, 'SUA', 'NguoiDung', id,
+      await ghiNhatKy(req.user?.id ?? 0, 'SUA', 'NguoiDung', id,
         JSON.stringify(cu),
         JSON.stringify(req.body),
         ip);
@@ -208,8 +208,12 @@ router.delete(
       }
       const cu = (await query<any[]>("SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai FROM NguoiDung WHERE id = @id", { id }))[0];
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-      await ghiNhatKy(req.user?.id, 'XOA', 'NguoiDung', id,
+      await ghiNhatKy(req.user?.id ?? 0, 'XOA', 'NguoiDung', id,
         JSON.stringify(cu), undefined, ip);
+      // Xóa các bảng liên quan trước
+      await query("DELETE FROM LoginSession WHERE idNguoiDung = @id", { id });
+      await query("DELETE FROM NhatKyHeThong WHERE idNguoiDung = @id", { id });
+      // Xóa người dùng
       await query("DELETE FROM NguoiDung WHERE id = @id", { id });
       res.json({ success: true, message: "Xóa người dùng thành công" });
     } catch (error) {
