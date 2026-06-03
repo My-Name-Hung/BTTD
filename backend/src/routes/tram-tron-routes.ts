@@ -51,11 +51,11 @@ router.get(
       }
 
       if (isAdmin) {
-        // Admin xem tất cả
+        // Admin xem tất cả - bao gồm cả đơn đã duyệt (đã lên lịch sx) và đang sản xuất, đang giao, đã giao
         const countResult = await query<{ total: number }>(
           `SELECT COUNT(*) as total FROM LichSanXuat ls
          INNER JOIN DonHang dh ON ls.idDonHang = dh.id
-         WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')`,
+         WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')`,
           {},
         );
         const total = countResult[0]?.total || 0;
@@ -69,7 +69,7 @@ router.get(
          INNER JOIN DonHang dh ON ls.idDonHang = dh.id
          INNER JOIN TramTron tt ON ls.idTramTron = tt.id
          LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
-         WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
+         WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
          ORDER BY ls.ngayCapNhat DESC
          OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
           { offset, limit },
@@ -89,12 +89,12 @@ router.get(
         return;
       }
 
-      // tram_tron chỉ xem đơn của trạm mình
+      // tram_tron chỉ xem đơn của trạm mình - bao gồm đã duyệt (đã lên lịch sx) và đang sản xuất, đang giao, đã giao
       const countResult = await query<{ total: number }>(
         `SELECT COUNT(*) as total FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id
-       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
+       WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
          AND tt.id = @idTram`,
         { idTram },
       );
@@ -109,7 +109,7 @@ router.get(
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id
        LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
-       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
+       WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
          AND tt.id = @idTram
        ORDER BY ls.ngayCapNhat DESC
        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,

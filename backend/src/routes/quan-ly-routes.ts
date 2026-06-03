@@ -34,7 +34,7 @@ router.get(
       const total = countResult[0]?.cnt || 0;
 
       const result = await query<any[]>(
-        `SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai, ngayTao
+        `SELECT id, tenDangNhap, hoTen, email, soDienThoai, vaiTro, trangThai, idTramTron, ngayTao
        FROM NguoiDung ${whereClause}
        ORDER BY id DESC
        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,

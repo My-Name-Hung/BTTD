@@ -67,13 +67,23 @@ async function initDatabase(): Promise<void> {
           email NVARCHAR(200),
           soDienThoai NVARCHAR(20),
           vaiTro NVARCHAR(50) NOT NULL,
+          idTramTron INT NULL,
           trangThai NVARCHAR(20) DEFAULT N'hoat_dong',
+          bannedIp NVARCHAR(500) NULL,
           ngayTao DATETIME DEFAULT GETDATE(),
           ngayCapNhat DATETIME DEFAULT GETDATE()
         )
       `);
     } else {
       console.log("  ✅ Bảng NguoiDung đã tồn tại");
+      // Migration: thêm cột idTramTron nếu chưa có
+      const colTram = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('NguoiDung') AND name = 'idTramTron'`,
+      );
+      if (colTram.recordset.length === 0) {
+        await db.query(`ALTER TABLE NguoiDung ADD idTramTron INT NULL`);
+        console.log("  + Cột idTramTron đã thêm vào NguoiDung");
+      }
       // Migration: thêm cột bannedIp nếu chưa có
       const colBan = await db.query<{ name: string }[]>(
         `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('NguoiDung') AND name = 'bannedIp'`,

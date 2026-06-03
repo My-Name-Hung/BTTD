@@ -1,5 +1,47 @@
 /* QuanLyNguoiDungPage — modern design */
 
+/* ---- Page Wrapper for TaoNguoiDungPage ---- */
+.pageWrapper {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.backBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.04);
+}
+
+.formCard {
+  background: var(--color-white);
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  padding: 28px 32px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+
 .pageHeader {
   display: flex;
   align-items: center;
@@ -577,6 +619,15 @@
 
 /* ---- Responsive ---- */
 @media (max-width: 640px) {
+  .pageWrapper {
+    padding: 0 16px;
+  }
+  .formCard {
+    padding: 20px 16px;
+  }
+  .formRow {
+    grid-template-columns: 1fr;
+  }
   .pageHeader {
     flex-direction: column;
     align-items: flex-start;
@@ -601,5 +652,11 @@
   .paginationControls {
     width: 100%;
     justify-content: center;
+  }
+  .formActions {
+    flex-direction: column;
+  }
+  .formActions button {
+    width: 100%;
   }
 }

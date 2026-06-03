@@ -1,15 +1,27 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiArrowLeft } from "react-icons/fi";
+import { FiArrowLeft, FiUser, FiLock, FiMail, FiPhone, FiShield } from "react-icons/fi";
 import { TramTronSelect } from "../components/TramTronSelect";
 import { taoNguoiDung } from "../services/api";
 import { useToast } from "../hooks";
-import styles from "./QuanLyNguoiDungPage.module.css";
+import styles from "./TaoNguoiDungPage.module.css";
+
+const VAI_TRO_OPTIONS = [
+  { value: "admin", label: "Quản trị", desc: "Toàn quyền hệ thống", color: "#073ceb" },
+  { value: "lanh_dao", label: "Lãnh đạo", desc: "Xem KPI & báo cáo", color: "#7c3aed" },
+  { value: "ke_toan", label: "Kế toán", desc: "Duyệt đơn & thanh toán", color: "#047857" },
+  { value: "dieu_phoi", label: "Điều phối", desc: "Lên lịch & điều xe", color: "#ea6b00" },
+  { value: "tram_tron", label: "Trạm trộn", desc: "Xác nhận sản xuất", color: "#0369a1" },
+  { value: "sale", label: "Sales", desc: "Tạo đơn hàng", color: "#dc2626" },
+  { value: "tai_xe", label: "Tài xế", desc: "Giao hàng", color: "#0d9488" },
+  { value: "ky_thuat", label: "Kỹ thuật", desc: "Nghiệm thu công trình", color: "#9333ea" },
+];
 
 export default function TaoNguoiDungPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     tenDangNhap: "",
     matKhau: "",
@@ -19,6 +31,8 @@ export default function TaoNguoiDungPage() {
     vaiTro: "ke_toan",
     idTramTron: undefined as number | undefined,
   });
+
+  const selectedRole = VAI_TRO_OPTIONS.find(r => r.value === form.vaiTro);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,38 +65,63 @@ export default function TaoNguoiDungPage() {
     <div className={styles.pageWrapper}>
       <div className={styles.pageHeader}>
         <button className={styles.backBtn} onClick={() => navigate("/quan-ly/nguoi-dung")}>
-          <FiArrowLeft size={18} /> Quay lại
+          <FiArrowLeft size={18} />
         </button>
-        <div className={styles.pageHeaderTitle}>Thêm người dùng mới</div>
-        <div className={styles.pageHeaderDesc}>Tạo tài khoản người dùng mới trong hệ thống</div>
+        <div>
+          <h1 className={styles.pageTitle}>Thêm người dùng mới</h1>
+          <p className={styles.pageDesc}>Tạo tài khoản người dùng trong hệ thống</p>
+        </div>
       </div>
 
       <div className={styles.formCard}>
         <form onSubmit={handleSubmit}>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Tên đăng nhập *</label>
-            <input
-              className={styles.formInput}
-              value={form.tenDangNhap}
-              onChange={(e) => setForm({ ...form, tenDangNhap: e.target.value })}
-              placeholder="VD: nhanvien01"
-              autoFocus
-            />
+          {/* Tài khoản */}
+          <div className={styles.sectionTitle}>
+            <FiUser size={16} /> Thông tin tài khoản
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Mật khẩu *</label>
-            <input
-              type="password"
-              className={styles.formInput}
-              value={form.matKhau}
-              onChange={(e) => setForm({ ...form, matKhau: e.target.value })}
-              placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-            />
+            <label className={styles.formLabel}>Tên đăng nhập <span className={styles.required}>*</span></label>
+            <div className={styles.inputWrapper}>
+              <FiUser className={styles.inputIcon} size={16} />
+              <input
+                className={styles.formInput}
+                value={form.tenDangNhap}
+                onChange={(e) => setForm({ ...form, tenDangNhap: e.target.value })}
+                placeholder="VD: nhanvien01"
+                autoFocus
+              />
+            </div>
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Họ tên *</label>
+            <label className={styles.formLabel}>Mật khẩu <span className={styles.required}>*</span></label>
+            <div className={styles.inputWrapper}>
+              <FiLock className={styles.inputIcon} size={16} />
+              <input
+                type={showPassword ? "text" : "password"}
+                className={styles.formInput}
+                value={form.matKhau}
+                onChange={(e) => setForm({ ...form, matKhau: e.target.value })}
+                placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+              />
+              <button
+                type="button"
+                className={styles.togglePassword}
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "Ẩn" : "Hiện"}
+              </button>
+            </div>
+          </div>
+
+          {/* Thông tin cá nhân */}
+          <div className={styles.sectionTitle}>
+            <FiUser size={16} /> Thông tin cá nhân
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Họ tên <span className={styles.required}>*</span></label>
             <input
               className={styles.formInput}
               value={form.hoTen}
@@ -94,44 +133,55 @@ export default function TaoNguoiDungPage() {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Email</label>
-              <input
-                type="email"
-                className={styles.formInput}
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
+              <div className={styles.inputWrapper}>
+                <FiMail className={styles.inputIcon} size={16} />
+                <input
+                  type="email"
+                  className={styles.formInput}
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="email@example.com"
+                />
+              </div>
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>SĐT</label>
-              <input
-                className={styles.formInput}
-                value={form.soDienThoai}
-                onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })}
-              />
+              <label className={styles.formLabel}>Số điện thoại</label>
+              <div className={styles.inputWrapper}>
+                <FiPhone className={styles.inputIcon} size={16} />
+                <input
+                  className={styles.formInput}
+                  value={form.soDienThoai}
+                  onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })}
+                  placeholder="0909 xxx xxx"
+                />
+              </div>
             </div>
           </div>
 
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Vai trò *</label>
-            <select
-              className={styles.formSelect}
-              value={form.vaiTro}
-              onChange={(e) => setForm({ ...form, vaiTro: e.target.value, idTramTron: undefined })}
-            >
-              <option value="admin">Quản trị — Toàn quyền hệ thống</option>
-              <option value="lanh_dao">Lãnh đạo — Xem KPI & báo cáo</option>
-              <option value="ke_toan">Kế toán — Duyệt đơn & thanh toán</option>
-              <option value="dieu_phoi">Điều phối — Lên lịch & điều xe</option>
-              <option value="tram_tron">Trạm trộn — Xác nhận sản xuất</option>
-              <option value="sale">Sales — Tạo đơn hàng</option>
-              <option value="tai_xe">Tài xế — Giao hàng</option>
-              <option value="ky_thuat">Kỹ thuật — Nghiệm thu công trình</option>
-            </select>
+          {/* Vai trò */}
+          <div className={styles.sectionTitle}>
+            <FiShield size={16} /> Phân quyền
+          </div>
+
+          <div className={styles.roleGrid}>
+            {VAI_TRO_OPTIONS.map((role) => (
+              <div
+                key={role.value}
+                className={`${styles.roleCard} ${form.vaiTro === role.value ? styles.roleCardActive : ""}`}
+                style={form.vaiTro === role.value ? { borderColor: role.color, background: `${role.color}08` } : {}}
+                onClick={() => setForm({ ...form, vaiTro: role.value, idTramTron: undefined })}
+              >
+                <div className={styles.roleLabel} style={form.vaiTro === role.value ? { color: role.color } : {}}>
+                  {role.label}
+                </div>
+                <div className={styles.roleDesc}>{role.desc}</div>
+              </div>
+            ))}
           </div>
 
           {form.vaiTro === "tram_tron" && (
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Trạm trộn *</label>
+              <label className={styles.formLabel}>Trạm trộn <span className={styles.required}>*</span></label>
               <TramTronSelect
                 value={form.idTramTron}
                 onChange={(v) => setForm({ ...form, idTramTron: v })}
@@ -141,10 +191,10 @@ export default function TaoNguoiDungPage() {
           )}
 
           <div className={styles.formActions}>
-            <button type="button" className="btn btn-cancel" onClick={() => navigate("/quan-ly/nguoi-dung")}>
-              Hủy
+            <button type="button" className={styles.btnCancel} onClick={() => navigate("/quan-ly/nguoi-dung")}>
+              Hủy bỏ
             </button>
-            <button type="submit" className="btn btn-save" disabled={loading}>
+            <button type="submit" className={styles.btnSubmit} disabled={loading}>
               {loading ? "Đang tạo..." : "Tạo người dùng"}
             </button>
           </div>
