@@ -8,7 +8,7 @@ import { ghiNhatKy } from '../services/access-history-service';
 
 const router = Router();
 
-interface LichSanXuatWithDonHang extends LichSanXuat {
+interface LichSanXuatWithDonHang extends Omit<LichSanXuat, 'bienSoXe'> {
   maDonHang: string;
   tenKhachHang: string;
   diaChiNhan: string;
@@ -17,6 +17,8 @@ interface LichSanXuatWithDonHang extends LichSanXuat {
   trangThaiDon: string;
   ngayTaoDon: Date | null;
   ngayGiao: Date | null;
+  bienSoXe?: string | null;
+  tenTaiXe?: string | null;
 }
 
 // Lấy danh sách lịch sản xuất - chỉ đơn thuộc trạm của user đăng nhập
@@ -32,7 +34,7 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('tram_tron'), async (re
       return;
     }
 
-    const countResult = await query<{ total: number }[]>(
+    const countResult = await query<{ total: number }>(
       `SELECT COUNT(*) as total FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id
@@ -42,11 +44,16 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('tram_tron'), async (re
     );
     const total = countResult[0]?.total || 0;
 
-    const data = await query<LichSanXuatWithDonHang[]>(
-      `SELECT ls.*, dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao
+    const data = await query<any[]>(
+      `SELECT ls.*,
+              xe.bienSoXe,
+              nd.hoTen as tenTaiXe,
+              dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao
        FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id
+       LEFT JOIN Xe xe ON ls.idXe = xe.id
+       LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
        WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
          AND tt.id = @idTram
        ORDER BY ls.ngayCapNhat DESC
@@ -77,9 +84,14 @@ router.get('/don-hang/:id', authMiddleware, requireRole('tram_tron'), async (req
       return;
     }
 
-    const lichSanXuatList = await query<LichSanXuat[]>(
-      `SELECT ls.* FROM LichSanXuat ls
+    const lichSanXuatList = await query<any[]>(
+      `SELECT ls.*,
+              xe.bienSoXe,
+              nd.hoTen as tenTaiXe
+       FROM LichSanXuat ls
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id
+       LEFT JOIN Xe xe ON ls.idXe = xe.id
+       LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
        WHERE ls.idDonHang = @idDonHang AND tt.id = @idTram`,
       { idDonHang, idTram }
     );
@@ -108,7 +120,7 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('tra
       return;
     }
 
-    const donHang = await query<{ trangThaiDon: string }[]>(
+    const donHang = await query<{ trangThaiDon: string }>(
       `SELECT dh.trangThaiDon FROM DonHang dh
        INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id
@@ -175,7 +187,7 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('tram_tron')
       return;
     }
 
-    const donHang = await query<{ trangThaiDon: string }[]>(
+    const donHang = await query<{ trangThaiDon: string }>(
       `SELECT dh.trangThaiDon FROM DonHang dh
        INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id

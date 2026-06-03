@@ -18,6 +18,7 @@ interface LichSanXuatItem {
   khoiLuongDat?: number;
   trangThaiDon?: string;
   bienSoXe?: string;
+  tenTaiXe?: string;
   thoiGianTron?: string;
   thoiGianBatDauDo?: string;
   thoiGianKetThucDo?: string;
@@ -302,6 +303,7 @@ export default function KhoLichSanXuatPage() {
                   <th>Khối lượng</th>
                   <th>Trạng thái</th>
                   <th>Biển số xe</th>
+                  <th>Tài xế</th>
                   <th>Ngày tạo lịch</th>
                   <th>Hành động</th>
                 </tr>
@@ -355,6 +357,11 @@ export default function KhoLichSanXuatPage() {
                       <td>
                         <span className={styles.tableXe}>
                           {item.bienSoXe || "—"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={styles.tableTaiXe}>
+                          {item.tenTaiXe || "—"}
                         </span>
                       </td>
                       <td>

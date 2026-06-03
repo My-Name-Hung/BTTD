@@ -179,7 +179,7 @@ export default function KhoDonHangPage() {
           {(trangThai === "dang_giao") && (
             <span className={styles.completedBadge}>
               <FiTruck size={16} />
-              Tài xế đang giao...
+              {lichSanXuat?.tenTaiXe ? `Tài xế ${lichSanXuat.tenTaiXe} đang giao` : "Đang giao hàng"}
             </span>
           )}
           {trangThai === "da_giao" && (

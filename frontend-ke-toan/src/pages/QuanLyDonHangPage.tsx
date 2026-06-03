@@ -535,10 +535,7 @@ export default function QuanLyDonHangPage() {
                               </button>
                             )}
 
-                          {canDelete &&
-                            ["cho_duyet", "tu_choi"].includes(
-                              dh.trangThaiDon,
-                            ) && (
+                          {canDelete && (
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnDelete}`}
                                 onClick={() => setDeleteTarget(dh)}

@@ -103,6 +103,11 @@
   color: var(--color-text);
 }
 
+.tableTaiXe {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 .tableDate {
   font-size: 12px;
   color: var(--color-text-secondary);
