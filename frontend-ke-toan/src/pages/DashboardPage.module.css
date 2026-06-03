@@ -72,6 +72,56 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* ── Compact Stats Row ── */
+.compactStatsRow {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.compactStatsRow::-webkit-scrollbar {
+  height: 4px;
+}
+
+.compactStatsRow::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.compactStatCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 20px;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  min-width: 110px;
+  text-align: center;
+}
+
+.compactStatCard svg {
+  color: var(--color-primary);
+}
+
+.compactStatValue {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.compactStatLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
 /* ── Tab Navigation ── */
 .tabNav {
   display: flex;
@@ -284,6 +334,34 @@
   opacity: 0.3;
 }
 
+/* ── Stats Grid ── */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.statsGridItem {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  padding: 16px;
+  text-align: center;
+}
+
+.statsGridLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.statsGridValue {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
 /* ── Responsive ── */
 @media (max-width: 1200px) {
   .kpiGrid { grid-template-columns: repeat(3, 1fr); }
@@ -293,16 +371,25 @@
 @media (max-width: 900px) {
   .chartGrid { grid-template-columns: 1fr; }
   .kpiGrid { grid-template-columns: repeat(2, 1fr); }
-  .statsRow { grid-template-columns: repeat(2, 1fr); }
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 600px) {
   .dashHeader { flex-direction: column; align-items: flex-start; }
+  .compactStatsRow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .compactStatCard {
+    min-width: 0;
+    padding: 12px 8px;
+  }
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
   .kpiGrid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
-  .statsRow { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .kpiCard {
     padding: 14px 12px;
     gap: 10px;

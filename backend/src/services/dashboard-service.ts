@@ -60,9 +60,28 @@ export async function layDoanhThuTheoThang(
 }
 
 export async function layDonHangTheoTrangThai(): Promise<DonHangTheoTrangThai[]> {
-  return await query<DonHangTheoTrangThai>(
+  // Return all status types with 0 if no data
+  const ALL_STATUSES = [
+    'cho_duyet', 'da_duyet', 'tu_choi', 'dang_san_xuat',
+    'dang_giao', 'da_giao', 'nghiem_thu', 'da_nghiem_thu',
+    'da_thanh_toan', 'hoan_thanh'
+  ];
+
+  const data = await query<DonHangTheoTrangThai>(
     `SELECT trangThaiDon as trangThai, COUNT(*) as soLuong
      FROM DonHang
      GROUP BY trangThaiDon`
   );
+
+  // Create map from existing data
+  const dataMap: Record<string, number> = {};
+  data.forEach(item => {
+    dataMap[item.trangThai] = item.soLuong;
+  });
+
+  // Return all statuses with their counts (0 if not found)
+  return ALL_STATUSES.map(status => ({
+    trangThai: status,
+    soLuong: dataMap[status] || 0
+  }));
 }
