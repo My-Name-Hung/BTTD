@@ -432,6 +432,18 @@ async function initDatabase(): Promise<void> {
         await db.query(`ALTER TABLE LichSanXuat ADD idTaiXe INT NULL`);
         console.log("  + Cột idTaiXe đã thêm vào LichSanXuat");
       }
+      // Fix dữ liệu cũ: cập nhật idTramTron từ DonHang
+      try {
+        await db.query(`
+          UPDATE ls SET ls.idTramTron = dh.idTramTron
+          FROM LichSanXuat ls
+          INNER JOIN DonHang dh ON ls.idDonHang = dh.id
+          WHERE ls.idTramTron IS NULL AND dh.idTramTron IS NOT NULL
+        `);
+        console.log("  🔧 Đã fix idTramTron cho các lịch sản xuất cũ");
+      } catch {
+        // lỗi thì bỏ qua
+      }
     }
 
     // Tạo bảng NghiemThu

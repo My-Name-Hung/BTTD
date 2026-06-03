@@ -19,6 +19,8 @@ interface LichSanXuatItem {
   trangThaiDon?: string;
   bienSoXe?: string;
   tenTaiXe?: string;
+  tenTram?: string;
+  idTramTron?: number;
   thoiGianTron?: string;
   thoiGianBatDauDo?: string;
   thoiGianKetThucDo?: string;

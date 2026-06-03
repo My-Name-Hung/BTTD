@@ -64,10 +64,10 @@ router.get(
           `SELECT ls.*,
                 nd.hoTen as tenTaiXe,
                 dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
-                tt.tenTram
+                ISNULL(tt.tenTram, N'Không xác định') as tenTram
          FROM LichSanXuat ls
          INNER JOIN DonHang dh ON ls.idDonHang = dh.id
-         INNER JOIN TramTron tt ON ls.idTramTron = tt.id
+         LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
          LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
          WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
          ORDER BY ls.ngayCapNhat DESC
@@ -93,9 +93,8 @@ router.get(
       const countResult = await query<{ total: number }>(
         `SELECT COUNT(*) as total FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
-       INNER JOIN TramTron tt ON ls.idTramTron = tt.id
        WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
-         AND tt.id = @idTram`,
+         AND (ls.idTramTron = @idTram OR dh.idTramTron = @idTram)`,
         { idTram },
       );
       const total = countResult[0]?.total || 0;
@@ -104,13 +103,13 @@ router.get(
         `SELECT ls.*,
               nd.hoTen as tenTaiXe,
               dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
-              tt.tenTram
+              ISNULL(tt.tenTram, N'Không xác định') as tenTram
        FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
-       INNER JOIN TramTron tt ON ls.idTramTron = tt.id
+       LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
        LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
        WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
-         AND tt.id = @idTram
+         AND (ls.idTramTron = @idTram OR dh.idTramTron = @idTram)
        ORDER BY ls.ngayCapNhat DESC
        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
         { offset, limit, idTram },

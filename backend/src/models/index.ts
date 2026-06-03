@@ -122,6 +122,7 @@ export interface LichSanXuat {
   id: number;
   idDonHang: number;
   idXe: number | null;
+  idTramTron: number | null;
   idTaiXe: number | null;
   kyThuatCongTrinh: string | null;
   nguoiOmOng: string | null;

@@ -15,6 +15,9 @@ export async function taoLichSanXuat(
     throw new Error('Không tìm thấy đơn hàng');
   }
 
+  // Lấy idTramTron từ đơn hàng
+  const idTramTron = donHang[0].idTramTron || null;
+
   await query(
     `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
     { id: data.idDonHang }
@@ -34,16 +37,17 @@ export async function taoLichSanXuat(
 
   const result = await query<LichSanXuat>(
     `INSERT INTO LichSanXuat (
-      idDonHang, idXe, idTaiXe, kyThuatCongTrinh, nguoiOmOng, nguoiBatOng,
+      idDonHang, idXe, idTramTron, idTaiXe, kyThuatCongTrinh, nguoiOmOng, nguoiBatOng,
       phuongAnDo, bienSoXe, trangThai, ghiChu, driveLink
     ) VALUES (
-      @idDonHang, @idXe, @idTaiXe, @kyThuatCongTrinh, @nguoiOmOng, @nguoiBatOng,
+      @idDonHang, @idXe, @idTramTron, @idTaiXe, @kyThuatCongTrinh, @nguoiOmOng, @nguoiBatOng,
       @phuongAnDo, @bienSoXe, N'chua_san_xuat', @ghiChu, @driveLink
     );
     SELECT * FROM LichSanXuat WHERE id = SCOPE_IDENTITY();`,
     {
       idDonHang: data.idDonHang,
       idXe: data.idXe || null,
+      idTramTron,
       idTaiXe,
       kyThuatCongTrinh: data.kyThuatCongTrinh || null,
       nguoiOmOng: data.nguoiOmOng || null,
