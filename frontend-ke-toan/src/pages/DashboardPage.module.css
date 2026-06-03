@@ -19,10 +19,11 @@
 .dashHeaderLeft {}
 
 .dashTitle {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--color-text);
   margin: 0 0 4px;
+  letter-spacing: -0.3px;
 }
 
 .dashUserName {
@@ -30,7 +31,7 @@
 }
 
 .dashSubtitle {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   margin: 0;
 }
@@ -181,7 +182,7 @@
 }
 
 .kpiValue {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--color-text);
   line-height: 1.2;

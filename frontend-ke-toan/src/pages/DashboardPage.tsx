@@ -11,9 +11,8 @@ import {
   Title,
   Tooltip,
 } from "chart.js";
-import ChartDataLabels from "chartjs-plugin-datalabels";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bar, Doughnut, Line, Pie } from "react-chartjs-2";
+import { useCallback, useEffect, useState } from "react";
+import { Bar, Doughnut, Line } from "react-chartjs-2";
 import {
   FiAlertTriangle,
   FiBarChart2,
@@ -64,20 +63,56 @@ ChartJS.register(
   PointElement,
   LineElement,
   Filler,
-  ChartDataLabels,
 );
 
 type FilterPeriod = "ngay" | "tuan" | "thang";
 type TabKey = "tongquan" | "doanhthu" | "trangthai" | "thanhtoan" | "nghiemthu" | "tramtron";
 
-const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
-  { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
-  { key: "trangthai", label: "Trạng thái", icon: <FiBarChart2 size={16} /> },
-  { key: "thanhtoan", label: "Thanh toán", icon: <FiDollarSign size={16} /> },
-  { key: "nghiemthu", label: "Nghiệm thu", icon: <FiFileText size={16} /> },
-  { key: "tramtron", label: "Trạm trộn", icon: <FiPieChart size={16} /> },
-];
+// Tabs theo vai trò
+const TABS_BY_ROLE: Record<string, { key: TabKey; label: string; icon: React.ReactNode }[]> = {
+  admin: [
+    { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
+    { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
+    { key: "trangthai", label: "Trạng thái", icon: <FiBarChart2 size={16} /> },
+    { key: "thanhtoan", label: "Thanh toán", icon: <FiDollarSign size={16} /> },
+    { key: "nghiemthu", label: "Nghiệm thu", icon: <FiFileText size={16} /> },
+    { key: "tramtron", label: "Trạm trộn", icon: <FiPieChart size={16} /> },
+  ],
+  ke_toan: [
+    { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
+    { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
+    { key: "thanhtoan", label: "Thanh toán", icon: <FiDollarSign size={16} /> },
+    { key: "nghiemthu", label: "Nghiệm thu", icon: <FiFileText size={16} /> },
+  ],
+  lanh_dao: [
+    { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
+    { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
+    { key: "trangthai", label: "Trạng thái", icon: <FiBarChart2 size={16} /> },
+    { key: "thanhtoan", label: "Thanh toán", icon: <FiDollarSign size={16} /> },
+    { key: "tramtron", label: "Trạm trộn", icon: <FiPieChart size={16} /> },
+  ],
+  dieu_phoi: [
+    { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
+    { key: "trangthai", label: "Trạng thái", icon: <FiBarChart2 size={16} /> },
+    { key: "tramtron", label: "Trạm trộn", icon: <FiPieChart size={16} /> },
+  ],
+  tram_tron: [
+    { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
+    { key: "trangthai", label: "Trạng thái", icon: <FiBarChart2 size={16} /> },
+  ],
+  sale: [
+    { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
+    { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
+    { key: "trangthai", label: "Trạng thái", icon: <FiBarChart2 size={16} /> },
+  ],
+  tai_xe: [
+    { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
+  ],
+  ky_thuat: [
+    { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
+    { key: "nghiemthu", label: "Nghiệm thu", icon: <FiFileText size={16} /> },
+  ],
+};
 
 const FILTER_LABELS: Record<FilterPeriod, string> = {
   ngay: "7 ngày",
@@ -85,19 +120,18 @@ const FILTER_LABELS: Record<FilterPeriod, string> = {
   thang: "Năm nay",
 };
 
-function formatCurrency(value: number): string {
+// Format tiền: rút gọn theo triệu
+function fmt(value: number): string {
   if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)} tỷ`;
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)} tr`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
-  return value.toLocaleString("vi-VN");
+  if (value >= 1_000) return `${(value / 1_000).toFixed(0)} K`;
+  return `${value}`;
 }
 
-function formatCurrencyFull(value: number): string {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(value);
+// Format triệu cho chart (đơn vị: triệu VNĐ)
+function fmtChart(value: number): string {
+  if (value >= 1000) return `${(value / 1000).toFixed(1)} tỷ`;
+  return `${value.toFixed(1)} tr`;
 }
 
 function getDateRange(period: FilterPeriod): { tuNgay: string; denNgay: string } {
@@ -138,7 +172,11 @@ export default function DashboardPage() {
   const [trangThai, setTrangThai] = useState<DonHangTheoTrangThai[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thang");
-  const [activeTab, setActiveTab] = useState<TabKey>("tongquan");
+
+  // Lấy tabs theo vai trò
+  const roleTabs = TABS_BY_ROLE[vaiTro || "admin"] || TABS_BY_ROLE.admin;
+  const defaultTab = roleTabs[0]?.key || "tongquan";
+  const [activeTab, setActiveTab] = useState<TabKey>(defaultTab);
 
   // Additional data
   const [thanhToan, setThanhToan] = useState({ daThanhToan: 0, chuaThanhToan: 0, congNo: 0 });
@@ -157,6 +195,8 @@ export default function DashboardPage() {
           chuaGiaoTaiXe: taiXeStats.chuaGiao,
           daGiaoTaiXe: taiXeStats.daGiao,
         } as ThongKeDashboard);
+        setDoanhThu([]);
+        setTrangThai([]);
       } else {
         const { tuNgay, denNgay } = getDateRange(period);
         const [dashRes, revenueRes, statusRes, xeRes, khachRes, tramRes, txRes, ttRes, ntRes, ttThangRes, cnThangRes] = await Promise.all([
@@ -204,26 +244,153 @@ export default function DashboardPage() {
 
   const totalOrders = trangThai.reduce((sum, d) => sum + d.soLuong, 0);
 
-  // Chart common options
-  const chartFont = { size: 11 };
+  // Chart font config
+  const chartFont = { size: 12, weight: "bold" as const };
+
+  // Common chart options factory
+  const createBarOpts = (unit = "") => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { raw: unknown; dataIndex: number; dataset: { data: unknown[] } }) => {
+            const v = ctx.raw as number;
+            return unit === "đơn" ? `${v} đơn` : `${v.toFixed(1)} tr VNĐ`;
+          },
+        },
+      },
+      datalabels: {
+        anchor: "end" as const,
+        align: "top" as const,
+        font: { size: 11, weight: "bold" as const },
+        color: "#374151",
+        formatter: (v: unknown) => {
+          const n = v as number;
+          return n > 0 ? (unit === "đơn" ? n : `${n.toFixed(1)}`) : "";
+        },
+      },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: {
+        grid: { color: "rgba(226,232,240,0.6)" },
+        ticks: {
+          font: { size: 11 },
+          callback: (v: unknown) => `${v}${unit === "đơn" ? "" : " tr"}`,
+        },
+      },
+    },
+  });
+
+  const createHBarOpts = (unit = "") => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: "y" as const,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { raw: unknown }) => {
+            const v = ctx.raw as number;
+            return unit === "đơn" ? `${v} đơn` : `${v.toFixed(1)} tr VNĐ`;
+          },
+        },
+      },
+      datalabels: {
+        anchor: "end" as const,
+        align: "right" as const,
+        font: { size: 11, weight: "bold" as const },
+        color: "#374151",
+        formatter: (v: unknown) => {
+          const n = v as number;
+          return n > 0 ? (unit === "đơn" ? n : `${n.toFixed(1)}`) : "";
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: "rgba(226,232,240,0.6)" },
+        ticks: {
+          font: { size: 11 },
+          callback: (v: unknown) => `${v}${unit === "đơn" ? "" : " tr"}`,
+        },
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+    },
+  });
+
+  const createDonutOpts = (unit = "đơn") => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: "65%",
+    plugins: {
+      legend: {
+        position: "bottom" as const,
+        labels: { padding: 14, usePointStyle: true, pointStyle: "circle" as const, font: { size: 11 } },
+      },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { label: string; raw: unknown }) => {
+            const v = ctx.raw as number;
+            return ` ${ctx.label}: ${unit === "đơn" ? v : `${v.toFixed(1)} tr VNĐ`}`;
+          },
+        },
+      },
+    },
+  });
 
   // ── DOANH THU CHARTS ──
   const revenueLineData = {
-    labels: doanhThu.map(d => d.thang),
+    labels: doanhThu.map(d => {
+      const [y, m] = d.thang.split("-");
+      return `T${m}/${y.slice(2)}`;
+    }),
     datasets: [{
-      label: "Doanh thu (triệu)",
+      label: "Doanh thu (triệu VNĐ)",
       data: doanhThu.map(d => d.doanhThu / 1_000_000),
       borderColor: "#073ceb",
       backgroundColor: "rgba(7, 60, 235, 0.08)",
       fill: true,
       tension: 0.4,
       pointBackgroundColor: "#073ceb",
-      pointRadius: 4,
+      pointRadius: 5,
+      pointHoverRadius: 7,
     }],
   };
 
+  const revenueLineOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { raw: unknown }) => `${(ctx.raw as number).toFixed(1)} tr VNĐ`,
+        },
+      },
+      datalabels: {
+        display: false,
+      },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: {
+        grid: { color: "rgba(226,232,240,0.6)" },
+        ticks: {
+          font: { size: 11 },
+          callback: (v: unknown) => `${v} tr`,
+        },
+      },
+    },
+  };
+
   const revenueBarData = {
-    labels: doanhThu.map(d => d.thang),
+    labels: doanhThu.map(d => {
+      const [y, m] = d.thang.split("-");
+      return `T${m}/${y.slice(2)}`;
+    }),
     datasets: [{
       label: "Số đơn hàng",
       data: doanhThu.map(d => d.soDonHang),
@@ -236,9 +403,12 @@ export default function DashboardPage() {
   };
 
   const congNoBarData = {
-    labels: congNoThang.map(d => d.thang),
+    labels: congNoThang.map(d => {
+      const [y, m] = d.thang.split("-");
+      return `T${m}/${y.slice(2)}`;
+    }),
     datasets: [{
-      label: "Công nợ (triệu)",
+      label: "Công nợ (triệu VNĐ)",
       data: congNoThang.map(d => d.congNoCu / 1_000_000),
       backgroundColor: "rgba(239, 68, 68, 0.75)",
       borderColor: "#ef4444",
@@ -248,9 +418,35 @@ export default function DashboardPage() {
     }],
   };
 
+  const congNoBarOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { raw: unknown }) => `${(ctx.raw as number).toFixed(1)} tr VNĐ`,
+        },
+      },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: {
+        grid: { color: "rgba(226,232,240,0.6)" },
+        ticks: {
+          font: { size: 11 },
+          callback: (v: unknown) => `${v} tr`,
+        },
+      },
+    },
+  };
+
   // ── TRẠNG THÁI CHARTS ──
   const statusBarData = {
-    labels: trangThai.map(d => TRANG_THAI_DON_LABELS[d.trangThai] || d.trangThai),
+    labels: trangThai.map(d => {
+      const label = TRANG_THAI_DON_LABELS[d.trangThai] || d.trangThai;
+      return label.length > 15 ? label.slice(0, 14) + "..." : label;
+    }),
     datasets: [{
       label: "Số đơn",
       data: trangThai.map(d => d.soLuong),
@@ -273,7 +469,7 @@ export default function DashboardPage() {
     }],
   };
 
-  // ── THANH TOAN CHARTS ──
+  // ── THANH TOÁN CHARTS ──
   const thanhToanBarData = {
     labels: ["Đã thanh toán", "Chưa thanh toán", "Công nợ"],
     datasets: [{
@@ -281,7 +477,7 @@ export default function DashboardPage() {
       backgroundColor: ["#10b981", "#f59e0b", "#ef4444"],
       borderWidth: 0,
       borderRadius: 8,
-      barThickness: 40,
+      barThickness: 44,
     }],
   };
 
@@ -303,7 +499,7 @@ export default function DashboardPage() {
       backgroundColor: ["#10b981", "#3b82f6", "#f59e0b"],
       borderWidth: 0,
       borderRadius: 8,
-      barThickness: 40,
+      barThickness: 44,
     }],
   };
 
@@ -319,9 +515,9 @@ export default function DashboardPage() {
 
   // ── TRẠM TRỘN CHARTS ──
   const tramTronBarData = {
-    labels: tramTron.map(t => t.tramTron),
+    labels: tramTron.map(t => t.tramTron.length > 12 ? t.tramTron.slice(0, 11) + "..." : t.tramTron),
     datasets: [{
-      label: "Doanh thu (triệu)",
+      label: "Doanh thu (triệu VNĐ)",
       data: tramTron.map(t => t.doanhThu / 1_000_000),
       backgroundColor: ["#073ceb", "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef"],
       borderWidth: 0,
@@ -341,21 +537,6 @@ export default function DashboardPage() {
   };
 
   if (loading) return <Loading />;
-
-  // Chart options
-  const lineOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: { raw: unknown }) => formatCurrencyFull((ctx.raw as number) * 1_000_000) } } }, scales: { x: { grid: { display: false }, ticks: { font: chartFont } }, y: { grid: { color: "rgba(226,232,240,0.6)" }, ticks: { font: chartFont, callback: (v: unknown) => `${v}M` } } } };
-  const barOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: { raw: unknown }) => `${ctx.raw} đơn` } }, datalabels: { anchor: "end" as const, align: "top" as const, font: { size: 11, weight: "bold" as const }, color: "#10b981", formatter: (v: unknown) => (v as number) > 0 ? v : "" } }, scales: { x: { grid: { display: false }, ticks: { font: chartFont } }, y: { grid: { color: "rgba(226,232,240,0.6)" }, ticks: { font: chartFont, stepSize: 1 } } } };
-  const hBarOpts = { responsive: true, maintainAspectRatio: false, indexAxis: "y" as const, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: { raw: unknown }) => `${ctx.raw} đơn` } }, datalabels: { anchor: "end" as const, align: "right" as const, font: { size: 11, weight: "bold" as const }, color: "#374151", formatter: (v: unknown) => (v as number) > 0 ? v : "" } }, scales: { x: { grid: { color: "rgba(226,232,240,0.6)" }, ticks: { font: chartFont, stepSize: 1 } }, y: { grid: { display: false }, ticks: { font: chartFont } } } };
-  const donutOpts = { responsive: true, maintainAspectRatio: false, cutout: "60%", plugins: { legend: { position: "bottom" as const, labels: { padding: 12, usePointStyle: true, pointStyle: "circle" as const, font: chartFont } }, tooltip: { callbacks: { label: (ctx: { label: string; raw: unknown }) => ` ${ctx.label}: ${ctx.raw} đơn` } } } };
-  const donutNoUnitOpts = { responsive: true, maintainAspectRatio: false, cutout: "60%", plugins: { legend: { position: "bottom" as const, labels: { padding: 12, usePointStyle: true, pointStyle: "circle" as const, font: chartFont } }, tooltip: { callbacks: { label: (ctx: { label: string; raw: unknown }) => ` ${ctx.label}: ${ctx.raw}M` } } } };
-  const tramHBarOpts = { responsive: true, maintainAspectRatio: false, indexAxis: "y" as const, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: { raw: unknown }) => `${ctx.raw}M` } }, datalabels: { anchor: "end" as const, align: "top" as const, font: { size: 11, weight: "bold" as const }, color: "#374151", formatter: (v: unknown) => (v as number) > 0 ? v : "" } }, scales: { x: { grid: { display: false }, ticks: { font: chartFont } }, y: { grid: { display: false }, ticks: { font: chartFont } } } };
-  const nghiemThuBarOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: { raw: unknown }) => `${ctx.raw} đơn` } } }, scales: { x: { grid: { display: false }, ticks: { font: chartFont } }, y: { grid: { color: "rgba(226,232,240,0.6)" }, ticks: { font: chartFont, stepSize: 1 } } } };
-  const nghiemThuDonutOpts = { responsive: true, maintainAspectRatio: false, cutout: "60%", plugins: { legend: { position: "bottom" as const, labels: { padding: 12, usePointStyle: true, pointStyle: "circle" as const, font: chartFont } }, tooltip: { callbacks: { label: (ctx: { label: string; raw: unknown }) => ` ${ctx.label}: ${ctx.raw} đơn` } } } };
-  const tramTronBarOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: { raw: unknown }) => `${ctx.raw}M` } }, datalabels: { anchor: "end" as const, align: "top" as const, font: { size: 11, weight: "bold" as const }, color: "#374151", formatter: (v: unknown) => (v as number) > 0 ? v : "" } }, scales: { x: { grid: { display: false }, ticks: { font: chartFont } }, y: { grid: { color: "rgba(226,232,240,0.6)" }, ticks: { font: chartFont } } } };
-  const tramTronDonutOpts = { responsive: true, maintainAspectRatio: false, cutout: "60%", plugins: { legend: { position: "bottom" as const, labels: { padding: 10, usePointStyle: true, pointStyle: "circle" as const, font: chartFont } }, tooltip: { callbacks: { label: (ctx: { label: string; raw: unknown }) => ` ${ctx.label}: ${ctx.raw}M` } } } };
-  const thanhToanDonutOpts = { responsive: true, maintainAspectRatio: false, cutout: "60%", plugins: { legend: { position: "bottom" as const, labels: { padding: 12, usePointStyle: true, pointStyle: "circle" as const, font: chartFont } }, tooltip: { callbacks: { label: (ctx: { label: string; raw: unknown }) => ` ${ctx.label}: ${ctx.raw}M` } } } };
-  const congNoBarOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: { raw: unknown }) => `${ctx.raw}M` } } }, scales: { x: { grid: { display: false }, ticks: { font: chartFont } }, y: { grid: { color: "rgba(226,232,240,0.6)" }, ticks: { font: chartFont } } } };
-  const thanhToanBarOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: { raw: unknown }) => `${ctx.raw}M` } } }, scales: { x: { grid: { display: false }, ticks: { font: chartFont } }, y: { grid: { color: "rgba(226,232,240,0.6)" }, ticks: { font: chartFont } } } };
 
   return (
     <div className={styles.dashboard}>
@@ -384,7 +565,7 @@ export default function DashboardPage() {
 
       {/* Tab Navigation */}
       <div className={styles.tabNav}>
-        {TABS.map((tab) => (
+        {roleTabs.map((tab) => (
           <button
             key={tab.key}
             className={`${styles.tabBtn} ${activeTab === tab.key ? styles.tabBtnActive : ""}`}
@@ -401,7 +582,7 @@ export default function DashboardPage() {
         <div className={styles.tabContent}>
           {/* KPI Cards */}
           <div className={styles.kpiGrid}>
-            <div className={styles.kpiCard} onClick={() => setActiveTab("trangthai")}>
+            <div className={styles.kpiCard}>
               <div className={styles.kpiIconWrap} style={{ background: "rgba(7,60,235,0.1)" }}>
                 <FiGrid size={22} color="#073ceb" />
               </div>
@@ -411,7 +592,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className={styles.kpiCard} onClick={() => setActiveTab("trangthai")}>
+            <div className={styles.kpiCard}>
               <div className={styles.kpiIconWrap} style={{ background: "rgba(245,158,11,0.1)" }}>
                 <FiClock size={22} color="#f59e0b" />
               </div>
@@ -421,23 +602,23 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className={styles.kpiCard} onClick={() => setActiveTab("thanhtoan")}>
+            <div className={styles.kpiCard}>
               <div className={styles.kpiIconWrap} style={{ background: "rgba(16,185,129,0.1)" }}>
                 <FiDollarSign size={22} color="#10b981" />
               </div>
               <div className={styles.kpiCardLeft}>
                 <div className={styles.kpiLabel}>Doanh thu</div>
-                <div className={styles.kpiValue} style={{ color: "#10b981" }}>{formatCurrency(dashboard?.tongDoanhThu || 0)}</div>
+                <div className={styles.kpiValue} style={{ color: "#10b981" }}>{fmt(dashboard?.tongDoanhThu || 0)} đ</div>
               </div>
             </div>
 
-            <div className={styles.kpiCard} onClick={() => setActiveTab("thanhtoan")}>
+            <div className={styles.kpiCard}>
               <div className={styles.kpiIconWrap} style={{ background: "rgba(239,68,68,0.1)" }}>
                 <FiAlertTriangle size={22} color="#ef4444" />
               </div>
               <div className={styles.kpiCardLeft}>
                 <div className={styles.kpiLabel}>Công nợ</div>
-                <div className={styles.kpiValue} style={{ color: "#ef4444" }}>{formatCurrency(dashboard?.tongCongNo || 0)}</div>
+                <div className={styles.kpiValue} style={{ color: "#ef4444" }}>{fmt(dashboard?.tongCongNo || 0)} đ</div>
               </div>
             </div>
 
@@ -488,7 +669,7 @@ export default function DashboardPage() {
               <div className={styles.miniChartCard}>
                 <h4 className={styles.miniChartTitle}>Tỷ lệ trạng thái</h4>
                 <div className={styles.miniChartArea}>
-                  <Pie data={statusDonutData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { padding: 10, font: chartFont } } } }} />
+                  <Doughnut data={statusDonutData} options={createDonutOpts("đơn")} />
                 </div>
               </div>
             )}
@@ -496,7 +677,7 @@ export default function DashboardPage() {
               <div className={styles.miniChartCard}>
                 <h4 className={styles.miniChartTitle}>Doanh thu theo trạm</h4>
                 <div className={styles.miniChartArea}>
-                  <Bar data={tramTronBarData} options={tramHBarOpts} />
+                  <Bar data={tramTronBarData} options={createHBarOpts()} />
                 </div>
               </div>
             )}
@@ -511,10 +692,10 @@ export default function DashboardPage() {
             <div className={styles.chartCard}>
               <div className={styles.chartCardHeader}>
                 <h3 className={styles.chartCardTitle}>Doanh thu theo tháng</h3>
-                <p className={styles.chartCardDesc}>{FILTER_LABELS[filterPeriod]} · Đơn vị: triệu đồng</p>
+                <p className={styles.chartCardDesc}>{FILTER_LABELS[filterPeriod]} · Đơn vị: triệu VNĐ</p>
               </div>
               <div className={styles.chartArea}>
-                <Line data={revenueLineData} options={lineOpts} />
+                <Line data={revenueLineData} options={revenueLineOpts} />
               </div>
             </div>
             <div className={styles.chartCard}>
@@ -523,7 +704,7 @@ export default function DashboardPage() {
                 <p className={styles.chartCardDesc}>Số đơn hàng hoàn thành</p>
               </div>
               <div className={styles.chartArea}>
-                <Bar data={revenueBarData} options={barOpts} />
+                <Bar data={revenueBarData} options={createBarOpts("đơn")} />
               </div>
             </div>
           </div>
@@ -531,7 +712,7 @@ export default function DashboardPage() {
             <div className={styles.chartCard}>
               <div className={styles.chartCardHeader}>
                 <h3 className={styles.chartCardTitle}>Công nợ theo tháng</h3>
-                <p className={styles.chartCardDesc}>Đơn vị: triệu đồng</p>
+                <p className={styles.chartCardDesc}>Đơn vị: triệu VNĐ</p>
               </div>
               <div className={styles.chartArea}>
                 <Bar data={congNoBarData} options={congNoBarOpts} />
@@ -551,7 +732,7 @@ export default function DashboardPage() {
                 <p className={styles.chartCardDesc}>Tổng {totalOrders} đơn hàng</p>
               </div>
               <div className={styles.chartArea}>
-                <Bar data={statusBarData} options={hBarOpts} />
+                <Bar data={statusBarData} options={createHBarOpts("đơn")} />
               </div>
             </div>
             <div className={styles.chartCard}>
@@ -560,7 +741,7 @@ export default function DashboardPage() {
                 <p className={styles.chartCardDesc}>Biểu đồ donut</p>
               </div>
               <div className={styles.chartArea}>
-                <Doughnut data={statusDonutData} options={donutOpts} />
+                <Doughnut data={statusDonutData} options={createDonutOpts("đơn")} />
               </div>
             </div>
           </div>
@@ -577,7 +758,7 @@ export default function DashboardPage() {
               </div>
               <div className={styles.kpiCardLeft}>
                 <div className={styles.kpiLabel}>Đã thanh toán</div>
-                <div className={styles.kpiValue} style={{ color: "#10b981" }}>{formatCurrency(thanhToan.daThanhToan)}</div>
+                <div className={styles.kpiValue} style={{ color: "#10b981" }}>{fmt(thanhToan.daThanhToan)} đ</div>
               </div>
             </div>
             <div className={styles.kpiCard}>
@@ -586,7 +767,7 @@ export default function DashboardPage() {
               </div>
               <div className={styles.kpiCardLeft}>
                 <div className={styles.kpiLabel}>Chưa thanh toán</div>
-                <div className={styles.kpiValue} style={{ color: "#f59e0b" }}>{formatCurrency(thanhToan.chuaThanhToan)}</div>
+                <div className={styles.kpiValue} style={{ color: "#f59e0b" }}>{fmt(thanhToan.chuaThanhToan)} đ</div>
               </div>
             </div>
             <div className={styles.kpiCard}>
@@ -595,7 +776,7 @@ export default function DashboardPage() {
               </div>
               <div className={styles.kpiCardLeft}>
                 <div className={styles.kpiLabel}>Công nợ</div>
-                <div className={styles.kpiValue} style={{ color: "#ef4444" }}>{formatCurrency(thanhToan.congNo)}</div>
+                <div className={styles.kpiValue} style={{ color: "#ef4444" }}>{fmt(thanhToan.congNo)} đ</div>
               </div>
             </div>
           </div>
@@ -603,19 +784,19 @@ export default function DashboardPage() {
             <div className={styles.chartCard}>
               <div className={styles.chartCardHeader}>
                 <h3 className={styles.chartCardTitle}>Thanh toán theo trạng thái</h3>
-                <p className={styles.chartCardDesc}>Đơn vị: triệu đồng</p>
+                <p className={styles.chartCardDesc}>Đơn vị: triệu VNĐ</p>
               </div>
               <div className={styles.chartArea}>
-                <Bar data={thanhToanBarData} options={thanhToanBarOpts} />
+                <Bar data={thanhToanBarData} options={createBarOpts()} />
               </div>
             </div>
             <div className={styles.chartCard}>
               <div className={styles.chartCardHeader}>
                 <h3 className={styles.chartCardTitle}>Tỷ lệ thanh toán</h3>
-                <p className={styles.chartCardDesc}>Biểu đồ donut</p>
+                <p className={styles.chartCardDesc}>Đơn vị: triệu VNĐ</p>
               </div>
               <div className={styles.chartArea}>
-                <Doughnut data={thanhToanDonutData} options={thanhToanDonutOpts} />
+                <Doughnut data={thanhToanDonutData} options={createDonutOpts()} />
               </div>
             </div>
           </div>
@@ -661,7 +842,7 @@ export default function DashboardPage() {
                 <p className={styles.chartCardDesc}>Số lượng đơn hàng</p>
               </div>
               <div className={styles.chartArea}>
-                <Bar data={nghiemThuBarData} options={nghiemThuBarOpts} />
+                <Bar data={nghiemThuBarData} options={createBarOpts("đơn")} />
               </div>
             </div>
             <div className={styles.chartCard}>
@@ -670,7 +851,7 @@ export default function DashboardPage() {
                 <p className={styles.chartCardDesc}>Biểu đồ donut</p>
               </div>
               <div className={styles.chartArea}>
-                <Doughnut data={nghiemThuDonutData} options={nghiemThuDonutOpts} />
+                <Doughnut data={nghiemThuDonutData} options={createDonutOpts("đơn")} />
               </div>
             </div>
           </div>
@@ -684,19 +865,19 @@ export default function DashboardPage() {
             <div className={styles.chartCard}>
               <div className={styles.chartCardHeader}>
                 <h3 className={styles.chartCardTitle}>Doanh thu theo trạm trộn</h3>
-                <p className={styles.chartCardDesc}>Đơn vị: triệu đồng</p>
+                <p className={styles.chartCardDesc}>Đơn vị: triệu VNĐ</p>
               </div>
               <div className={styles.chartArea}>
-                <Bar data={tramTronBarData} options={tramTronBarOpts} />
+                <Bar data={tramTronBarData} options={createBarOpts()} />
               </div>
             </div>
             <div className={styles.chartCard}>
               <div className={styles.chartCardHeader}>
                 <h3 className={styles.chartCardTitle}>Tỷ lệ doanh thu trạm</h3>
-                <p className={styles.chartCardDesc}>Biểu đồ donut</p>
+                <p className={styles.chartCardDesc}>Đơn vị: triệu VNĐ</p>
               </div>
               <div className={styles.chartArea}>
-                <Doughnut data={tramTronDonutData} options={tramTronDonutOpts} />
+                <Doughnut data={tramTronDonutData} options={createDonutOpts()} />
               </div>
             </div>
           </div>
