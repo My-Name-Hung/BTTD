@@ -89,12 +89,10 @@ export default function TaiXeGiaoHangPage() {
 
   const statusColor = (s: string) => {
     if (s === "dang_giao") return { bg: "#00968822", color: "#009688" };
-    if (s === "dang_cho_giao") return { bg: "#f9731622", color: "#f97316" };
     return { bg: "#4caf5022", color: "#4caf50" };
   };
 
   const statusLabel = (s: string) => {
-    if (s === "dang_cho_giao") return "Chờ giao";
     if (s === "dang_giao") return "Đang giao";
     if (s === "da_giao") return "Đã giao";
     return s;
@@ -191,7 +189,7 @@ export default function TaiXeGiaoHangPage() {
                   >
                     Xem chi tiết
                   </button>
-                  {dh.trangThaiDon === "dang_cho_giao" && (
+                  {dh.trangThaiDon === "dang_san_xuat" && (
                     <button
                       className={styles.btnDangGiao}
                       onClick={() => handleXacNhanDangGiao(dh)}

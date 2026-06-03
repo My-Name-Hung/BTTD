@@ -27,7 +27,7 @@ router.get(
          INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
          INNER JOIN Xe xe ON ls.idXe = xe.id
          WHERE xe.idTaiKhoan = @idTaiXe
-           AND dh.trangThaiDon IN (N'dang_cho_giao', N'dang_giao')
+           AND dh.trangThaiDon IN (N'dang_giao', N'da_giao')
          ORDER BY dh.ngayGiao DESC`,
         { idTaiXe },
       );
@@ -67,7 +67,7 @@ router.get(
            INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
            INNER JOIN Xe xe ON ls.idXe = xe.id
            WHERE xe.idTaiKhoan = @idTaiXe
-             AND dh.trangThaiDon NOT IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'dang_cho_giao', N'dang_giao')`,
+             AND dh.trangThaiDon NOT IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'dang_giao')`,
           { idTaiXe },
         ),
         query<any>(
@@ -168,9 +168,9 @@ router.put(
         return;
       }
 
-      // Tài xế xác nhận đang giao: dang_cho_giao -> dang_giao
+      // Tài xế xác nhận đang giao: dang_san_xuat -> dang_giao
       if (req.body.trangThai === "dang_giao") {
-        if (donHang[0].trangThaiDon !== "dang_cho_giao") {
+        if (donHang[0].trangThaiDon !== "dang_san_xuat") {
           res.status(400).json({ success: false, message: "Đơn hàng không ở trạng thái chờ giao" });
           return;
         }
@@ -180,7 +180,7 @@ router.put(
         );
         const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
         await ghiNhatKy(req.user.id, 'XAC_NHAN', 'DonHang', idDonHang,
-          JSON.stringify({ trangThaiDon: 'dang_cho_giao' }),
+          JSON.stringify({ trangThaiDon: 'dang_san_xuat' }),
           JSON.stringify({ trangThaiDon: 'dang_giao' }),
           ip);
         const updated = (

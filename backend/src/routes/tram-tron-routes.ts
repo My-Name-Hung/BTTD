@@ -36,7 +36,7 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('tram_tron'), async (re
       `SELECT COUNT(*) as total FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id
-       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_cho_giao', N'dang_giao', N'da_giao')
+       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
          AND tt.id = @idTram`,
       { idTram }
     );
@@ -47,7 +47,7 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('tram_tron'), async (re
        FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id
-       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_cho_giao', N'dang_giao', N'da_giao')
+       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
          AND tt.id = @idTram
        ORDER BY ls.ngayCapNhat DESC
        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
@@ -97,7 +97,7 @@ router.get('/don-hang/:id', authMiddleware, requireRole('tram_tron'), async (req
   }
 });
 
-// Xác nhận sản xuất xong - trạm xác nhận đã sản xuất xong (dang_san_xuat -> dang_cho_giao)
+// Xác nhận sản xuất xong - trạm xác nhận đã sản xuất xong (dang_san_xuat -> dang_giao)
 router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('tram_tron'), async (req: AuthRequest, res: Response) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
@@ -137,7 +137,7 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('tra
     }
 
     await query(
-      `UPDATE DonHang SET trangThaiDon = N'dang_cho_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
+      `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
       { id: idDonHang }
     );
 
@@ -146,14 +146,14 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('tra
     guiThongBao('ORDER_STATUS_CHANGED', {
       id: idDonHang,
       maDonHang: updatedDonHang.maDonHang,
-      trangThai: 'dang_cho_giao',
-      trangThaiLabel: 'Đang chờ giao',
+      trangThai: 'dang_giao',
+      trangThaiLabel: 'Đang giao',
     });
 
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user?.id ?? 0, 'XAC_NHAN', 'DonHang', idDonHang,
       JSON.stringify({ trangThaiDon: 'dang_san_xuat' }),
-      JSON.stringify({ trangThaiDon: 'dang_cho_giao' }),
+      JSON.stringify({ trangThaiDon: 'dang_giao' }),
       ip);
 
     res.json({ success: true, message: 'Xác nhận sản xuất xong thành công', data: updatedDonHang });

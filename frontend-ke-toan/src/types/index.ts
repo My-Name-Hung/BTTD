@@ -98,14 +98,14 @@ export interface DonHang {
   trangThaiDon:
     | "cho_duyet"
     | "da_duyet"
+    | "tu_choi"
     | "dang_san_xuat"
-    | "dang_cho_giao"
     | "dang_giao"
     | "da_giao"
     | "nghiem_thu"
     | "da_nghiem_thu"
     | "da_thanh_toan"
-    | "tu_choi";
+    | "hoan_thanh";
   trangThaiHoanThanh: "chua_hoan_thanh" | "dang_hoan_thanh" | "da_hoan_thanh";
   nguoiTaoId: number | null;
   nguoiDuyetId: number | null;
@@ -279,29 +279,27 @@ export const NOTIFICATION_TYPE_ICONS: Record<string, string> = {
 export const TRANG_THAI_DON_LABELS: Record<string, string> = {
   cho_duyet: "Chờ duyệt",
   da_duyet: "Đã duyệt",
+  tu_choi: "Từ chối",
   dang_san_xuat: "Đang sản xuất",
-  dang_cho_giao: "Đang chờ giao",
   dang_giao: "Đang giao",
   da_giao: "Đã giao",
   nghiem_thu: "Nghiệm thu",
   da_nghiem_thu: "Đã nghiệm thu",
-  da_thanh_toan: "Đã thanh toán",
+  da_thanh_toan: "Chưa thanh toán",
   hoan_thanh: "Hoàn thành",
-  tu_choi: "Từ chối",
 };
 
 export const TRANG_THAI_DON_COLORS: Record<string, string> = {
   cho_duyet: "#f59e0b",
   da_duyet: "#3b82f6",
+  tu_choi: "#ef4444",
   dang_san_xuat: "#8b5cf6",
-  dang_cho_giao: "#f97316",
   dang_giao: "#ea580c",
   da_giao: "#06b6d4",
   nghiem_thu: "#6366f1",
   da_nghiem_thu: "#795548",
-  da_thanh_toan: "#10b981",
+  da_thanh_toan: "#eab308",
   hoan_thanh: "#22c55e",
-  tu_choi: "#ef4444",
 };
 
 export interface AccessSession {

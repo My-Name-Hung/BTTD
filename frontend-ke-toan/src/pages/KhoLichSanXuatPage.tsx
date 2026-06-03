@@ -147,11 +147,10 @@ export default function KhoLichSanXuatPage() {
       (i) => i.trangThaiDon === "dang_san_xuat",
     ).length;
     const dangGiao = filteredData.filter(
-      (i) =>
-        i.trangThaiDon === "dang_giao" || i.trangThaiDon === "dang_cho_giao",
+      (i) => i.trangThaiDon === "dang_giao",
     ).length;
     const daXong = filteredData.filter((i) =>
-      ["da_giao", "nghiem_thu", "da_thanh_toan", "hoan_thanh"].includes(
+      ["da_giao", "nghiem_thu", "da_nghiem_thu", "da_thanh_toan", "hoan_thanh"].includes(
         i.trangThaiDon || "",
       ),
     ).length;
@@ -381,20 +380,17 @@ export default function KhoLichSanXuatPage() {
                               {isLoading ? "Đang xử lý..." : "SX xong"}
                             </button>
                           )}
-                          {/* Đang chờ giao / đang giao — chỉ hiển thị trạng thái */}
-                          {(trangThai === "dang_cho_giao" ||
-                            trangThai === "dang_giao") && (
+                          {/* Đang giao */}
+                          {trangThai === "dang_giao" && (
                             <span
                               className={styles.rowStatusBadge}
                               style={{
-                                color: "#f97316",
-                                background: "rgba(249,115,22,0.1)",
+                                color: "#ea580c",
+                                background: "rgba(234,88,12,0.1)",
                               }}
                             >
                               <FiTruck size={12} />
-                              {trangThai === "dang_cho_giao"
-                                ? "Chờ giao"
-                                : "Đang giao"}
+                              Đang giao
                             </span>
                           )}
                           {/* Đã giao */}

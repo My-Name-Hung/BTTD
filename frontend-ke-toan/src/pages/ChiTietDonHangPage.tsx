@@ -31,7 +31,7 @@ const TRANG_THAI_STEPS = [
   { key: 'dang_giao',      label: 'Đang giao' },
   { key: 'da_giao',        label: 'Đã giao' },
   { key: 'nghiem_thu',     label: 'Nghiệm thu' },
-  { key: 'da_thanh_toan',  label: 'Thanh toán' },
+  { key: 'hoan_thanh',     label: 'Hoàn thành' },
 ];
 
 function formatCurrency(v: number) {

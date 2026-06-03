@@ -19,11 +19,10 @@ import { formatDateVN } from "../utils/dateUtils";
 
 const TRANG_THAI_STEPS = [
   { key: "dang_san_xuat", label: "Đang SX" },
-  { key: "dang_cho_giao", label: "Chờ giao" },
   { key: "dang_giao", label: "Đang giao" },
   { key: "da_giao", label: "Đã giao" },
   { key: "nghiem_thu", label: "Nghiệm thu" },
-  { key: "da_thanh_toan", label: "Thanh toán" },
+  { key: "hoan_thanh", label: "Hoàn thành" },
 ];
 
 function formatCurrency(v: number) {
@@ -177,10 +176,10 @@ export default function KhoDonHangPage() {
               {confirmLoading ? "Đang xử lý..." : "Xác nhận sản xuất xong"}
             </button>
           )}
-          {(trangThai === "dang_cho_giao" || trangThai === "dang_giao") && (
+          {(trangThai === "dang_giao") && (
             <span className={styles.completedBadge}>
               <FiTruck size={16} />
-              {trangThai === "dang_cho_giao" ? "Đang chờ tài xế giao..." : "Tài xế đang giao..."}
+              Tài xế đang giao...
             </span>
           )}
           {trangThai === "da_giao" && (
