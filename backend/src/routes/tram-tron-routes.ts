@@ -8,7 +8,7 @@ import { ghiNhatKy } from '../services/access-history-service';
 
 const router = Router();
 
-interface LichSanXuatWithDonHang extends Omit<LichSanXuat, 'bienSoXe'> {
+interface LichSanXuatWithDonHang extends LichSanXuat {
   maDonHang: string;
   tenKhachHang: string;
   diaChiNhan: string;
@@ -17,7 +17,6 @@ interface LichSanXuatWithDonHang extends Omit<LichSanXuat, 'bienSoXe'> {
   trangThaiDon: string;
   ngayTaoDon: Date | null;
   ngayGiao: Date | null;
-  bienSoXe?: string | null;
   tenTaiXe?: string | null;
 }
 
@@ -46,13 +45,11 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('tram_tron'), async (re
 
     const data = await query<any[]>(
       `SELECT ls.*,
-              xe.bienSoXe,
               nd.hoTen as tenTaiXe,
               dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao
        FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id
-       LEFT JOIN Xe xe ON ls.idXe = xe.id
        LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
        WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
          AND tt.id = @idTram
@@ -86,11 +83,9 @@ router.get('/don-hang/:id', authMiddleware, requireRole('tram_tron'), async (req
 
     const lichSanXuatList = await query<any[]>(
       `SELECT ls.*,
-              xe.bienSoXe,
               nd.hoTen as tenTaiXe
        FROM LichSanXuat ls
        INNER JOIN TramTron tt ON ls.idTramTron = tt.id
-       LEFT JOIN Xe xe ON ls.idXe = xe.id
        LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
        WHERE ls.idDonHang = @idDonHang AND tt.id = @idTram`,
       { idDonHang, idTram }

@@ -77,10 +77,8 @@ export async function taoLichSanXuat(
 export async function layLichSanXuatTheoDonHang(idDonHang: number): Promise<any[]> {
   return await query<any[]>(
     `SELECT ls.*,
-            xe.bienSoXe,
             nd.hoTen as tenTaiXe
      FROM LichSanXuat ls
-     LEFT JOIN Xe xe ON ls.idXe = xe.id
      LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
      WHERE ls.idDonHang = @idDonHang
      ORDER BY ls.ngayTao DESC`,

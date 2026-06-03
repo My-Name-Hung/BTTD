@@ -64,10 +64,8 @@ router.get('/don-hang/:id', authMiddleware, requireRole('kho'), async (req: Auth
     // Kiểm tra đơn hàng có LichSanXuat không (bất kỳ trạng thái nào)
     const lichSanXuatList = await query<any>(
       `SELECT ls.*,
-              xe.bienSoXe,
               nd.hoTen as tenTaiXe
        FROM LichSanXuat ls
-       LEFT JOIN Xe xe ON ls.idXe = xe.id
        LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
        WHERE ls.idDonHang = @idDonHang`,
       { idDonHang }
