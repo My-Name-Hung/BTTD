@@ -2,40 +2,35 @@
  * Google Drive Service — dùng Service Account để upload file biên bản nghiệm thu.
  *
  * Cách setup:
- * 1. Tạo project Google Cloud, bật Google Drive API.
- * 2. Tạo Service Account, download file JSON key.
- * 3. Điền các biến vào .env (xem .env.example).
- * 4. Share folder Google Drive với email service account.
+ * 1. Tạo Service Account trong Google Cloud Console.
+ * 2. Download file JSON key, đặt vào thư mục backend.
+ * 3. Điền GOOGLE_APPLICATION_CREDENTIALS vào .env (đường dẫn đến file JSON).
+ * 4. Share folder Google Drive với email Service Account (quyền Editor).
  */
 
 import { google, drive_v3 } from 'googleapis';
 import { config } from '../config';
 
 let driveClient: drive_v3.Drive | null = null;
-let cachedFolderId: string | null = null;
 
-/** Khởi tạo Drive client từ Service Account */
+// Nếu có GOOGLE_DRIVE_FOLDER_ID trong config, dùng luôn; không thì tự tạo
+let cachedFolderId: string | null = config.google.driveFolderId || null;
+
+/** Khởi tạo Drive client từ Service Account (dùng GOOGLE_APPLICATION_CREDENTIALS) */
 function getDriveClient(): drive_v3.Drive {
   if (driveClient) return driveClient;
 
-  const keyContent = config.google.serviceAccountKey;
+  const credsPath = config.google.credentialsPath;
 
-  if (!keyContent) {
+  if (!credsPath) {
     throw new Error(
-      'Chưa cấu hình GOOGLE_SERVICE_ACCOUNT_KEY trong .env. ' +
-      'Vui lòng thêm nội dung JSON key của Service Account.'
+      'Chưa cấu hình GOOGLE_APPLICATION_CREDENTIALS trong .env. ' +
+      'Đặt đường dẫn đến file JSON key của Service Account (VD: ./gen-lang-client-0456818632-16feae46d4bd.json)'
     );
   }
 
-  let credentials: Record<string, unknown>;
-  try {
-    credentials = JSON.parse(keyContent);
-  } catch {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY không phải JSON hợp lệ');
-  }
-
   const auth = new google.auth.GoogleAuth({
-    credentials,
+    credentials: JSON.parse(require('fs').readFileSync(credsPath, 'utf8')),
     scopes: ['https://www.googleapis.com/auth/drive.file'],
   });
 
