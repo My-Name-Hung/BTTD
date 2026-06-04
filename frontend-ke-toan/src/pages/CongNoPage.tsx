@@ -26,7 +26,7 @@ import {
 } from "../services/api";
 import { CongNo, CongNoGroup, CongNoGroupExport, CongNoKhachHang, CongNoKhachHangGroup } from "../types";
 import { exportToExcel, formatDateForExport } from "../utils/exportData";
-import { generateCongNoBravoTemplate } from "../utils/exportCongNo";
+import { generateCongNoBravoTemplate, exportCongNoReport } from "../utils/exportCongNo";
 import styles from "./CongNoPage.module.css";
 
 const NHOM_CONG_NO_OPTIONS = [
@@ -305,22 +305,10 @@ export default function CongNoPage() {
     try {
       const allData = await exportCongNo();
 
-      const headers: { key: string; label: string; width?: number; alignRight?: boolean }[] = [
-        { key: "nhom", label: "Nhóm", width: 25 },
-        { key: "maKhachHang", label: "Mã KH", width: 14 },
-        { key: "tenKhachHang", label: "Khách hàng", width: 28 },
-        { key: "duDauNo", label: "Dư đầu Nợ", width: 16, alignRight: true },
-        { key: "duDauCo", label: "Dư đầu Có", width: 16, alignRight: true },
-        { key: "phatSinhNo", label: "PS Nợ", width: 14, alignRight: true },
-        { key: "phatSinhCo", label: "PS Có", width: 14, alignRight: true },
-        { key: "duCuoiNo", label: "Dư cuối Nợ", width: 16, alignRight: true },
-        { key: "duCuoiCo", label: "Dư cuối Có", width: 16, alignRight: true },
-      ];
-
       const rows = allData.map((cn: {
         id: number;
-        nhom: string;
-        maKhachHang: string;
+        nhom: string | null;
+        maKhachHang: string | null;
         tenKhachHang: string;
         duDauNo: number;
         duDauCo: number;
@@ -329,8 +317,8 @@ export default function CongNoPage() {
         duCuoiNo: number;
         duCuoiCo: number;
       }) => ({
-        nhom: cn.nhom || "",
-        maKhachHang: cn.maKhachHang || "",
+        nhom: cn.nhom || null,
+        maKhachHang: cn.maKhachHang || null,
         tenKhachHang: cn.tenKhachHang || "",
         duDauNo: cn.duDauNo ?? 0,
         duDauCo: cn.duDauCo ?? 0,
@@ -340,7 +328,13 @@ export default function CongNoPage() {
         duCuoiCo: cn.duCuoiCo ?? 0,
       }));
 
-      await exportToExcel("BÁO CÁO CÔNG NỢ", headers, rows, `BaoCaoCongNo_${new Date().toISOString().slice(0, 10)}.xlsx`, "Công nợ");
+      const blob = await exportCongNoReport(rows);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `BaoCaoCongNo_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
       showToast("Xuất báo cáo thành công!");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi xuất báo cáo", "error");
