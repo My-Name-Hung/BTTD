@@ -9,10 +9,11 @@
 
 /* ── Toolbar ── */
 .toolbar {
-  position: sticky;
+  position: relative;
   top: 0;
   z-index: 100;
   display: flex;
+  padding: 10px 10px;
   align-items: center;
   justify-content: space-between;
 }

@@ -26,6 +26,7 @@ import {
   ApiResponseWithPagination,
   DonHang,
   TRANG_THAI_DON_LABELS,
+  TRANG_THAI_DON_COLORS,
 } from "../types";
 import styles from "./QuanLyDonHangPage.module.css";
 import { formatDateVN } from "../utils/dateUtils";
@@ -34,7 +35,25 @@ function formatCurrency(v: number) {
   return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
 }
 function formatDate(d: string) {
-  return d ? formatDateVN(d) : '';
+  return d ? formatDateVN(d) : "";
+}
+
+function getBadgeStyle(trangThai: string): React.CSSProperties {
+  const color = TRANG_THAI_DON_COLORS[trangThai] || "#64748b";
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "3px 10px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+    background: `rgba(${r}, ${g}, ${b}, 0.12)`,
+    color: color,
+  };
 }
 
 export default function QuanLyDonHangPage() {
@@ -331,9 +350,7 @@ export default function QuanLyDonHangPage() {
                         {dh.khoiLuongDat}
                       </td>
                       <td>
-                        <span
-                          className={`${styles.badge} ${styles["badge" + dh.trangThaiDon.replace(/_([a-z])/g, (_, c) => c.toUpperCase())]}`}
-                        >
+                        <span style={getBadgeStyle(dh.trangThaiDon)}>
                           {dh.trangThaiDon === 'da_thanh_toan'
                             ? 'Hoàn thành'
                             : TRANG_THAI_DON_LABELS[dh.trangThaiDon]}
@@ -470,9 +487,7 @@ export default function QuanLyDonHangPage() {
                         <strong>{formatCurrency(dh.thanhTien || 0)}</strong>
                       </td>
                       <td>
-                        <span
-                          className={`${styles.badge} ${styles["badge" + dh.trangThaiDon.replace(/_([a-z])/g, (_, c) => c.toUpperCase())]}`}
-                        >
+                        <span style={getBadgeStyle(dh.trangThaiDon)}>
                           {dh.trangThaiDon === 'da_thanh_toan'
                             ? 'Hoàn thành'
                             : TRANG_THAI_DON_LABELS[dh.trangThaiDon]}
