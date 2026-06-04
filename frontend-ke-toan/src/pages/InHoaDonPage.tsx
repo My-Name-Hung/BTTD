@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FiArrowLeft, FiPrinter } from "react-icons/fi";
+import { FiArrowLeft, FiPrinter, FiDownload } from "react-icons/fi";
 import { useReactToPrint } from "react-to-print";
 import { Loading } from "../components/Common";
+import { useToast } from "../hooks";
 import {
   layHoaDon,
   layDonHang,
   layNghiemThu,
   layLichSanXuat,
+  taiHoaDonDoc,
 } from "../services/api";
 import styles from "./InHoaDonPage.module.css";
 
@@ -147,6 +149,7 @@ const COMPANY = {
 export default function InHoaDonPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   // Ref đúng element cần in
   const invoiceRef = useRef<HTMLDivElement>(null);
@@ -156,6 +159,7 @@ export default function InHoaDonPage() {
   const [lichSX, setLichSX] = useState<LichSanXuatItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloadLoading, setDownloadLoading] = useState(false);
 
   /* In bằng react-to-print – trỏ trực tiếp vào element */
   const handlePrint = useReactToPrint({
@@ -167,6 +171,18 @@ export default function InHoaDonPage() {
       body { margin: 0; padding: 0; }
     `,
   });
+
+  const handleDownload = async () => {
+    if (!hoaDon) return;
+    setDownloadLoading(true);
+    try {
+      await taiHoaDonDoc(hoaDon.id);
+    } catch {
+      showToast("Lỗi tải hóa đơn", "error");
+    } finally {
+      setDownloadLoading(false);
+    }
+  };
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -244,6 +260,14 @@ export default function InHoaDonPage() {
           <FiArrowLeft size={16} /> Quay lại
         </button>
         <div className={styles.toolbarRight}>
+          <button
+            className={styles.downloadBtn}
+            onClick={handleDownload}
+            disabled={downloadLoading || loading}
+          >
+            <FiDownload size={16} />
+            {downloadLoading ? "Đang tải..." : "Tải về"}
+          </button>
           <button className={styles.printBtn} onClick={handlePrint}>
             <FiPrinter size={16} /> In hóa đơn
           </button>

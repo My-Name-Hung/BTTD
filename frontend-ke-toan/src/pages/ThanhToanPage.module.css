@@ -818,6 +818,26 @@
 .btnPrint:hover {
   background: rgba(7, 60, 235, 0.08);
 }
+.btnDownload {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.btnDownload:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: var(--color-text-secondary);
+}
 .hoaDonDetails {
   padding: 12px 14px;
 }

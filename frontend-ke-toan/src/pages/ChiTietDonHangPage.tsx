@@ -5,7 +5,7 @@ import {
   FiUser, FiMapPin, FiPhone, FiPackage,
   FiDollarSign, FiClock, FiTruck, FiCheckCircle,
   FiAlertTriangle, FiFileText, FiCheckSquare, FiExternalLink,
-  FiAlertCircle, FiPrinter,
+  FiAlertCircle, FiPrinter, FiDownload,
 } from 'react-icons/fi';
 import {
   layDonHang,
@@ -15,6 +15,7 @@ import {
   duyetDonHang,
   tuChoiDonHang,
   xoaDonHang,
+  taiHoaDonDoc,
 } from '../services/api';
 import {
   DonHang, LichSanXuat, NghiemThu, HoaDon,
@@ -564,10 +565,18 @@ export default function ChiTietDonHangPage() {
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button
-                        onClick={() => window.open(`/in-hoa-don/${hd.id}`, '_blank')}
+                        onClick={() => navigate(`/in-hoa-don/${hd.id}`)}
                         style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', border: '1.5px solid var(--color-primary)', borderRadius: 7, background: 'transparent', color: 'var(--color-primary)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
                       >
                         <FiPrinter size={12} /> In
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try { await taiHoaDonDoc(hd.id); } catch { showToast('Lỗi tải hóa đơn', 'error'); }
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', border: '1.5px solid var(--color-border)', borderRadius: 7, background: 'transparent', color: 'var(--color-text-secondary)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                      >
+                        <FiDownload size={12} /> Tải
                       </button>
                     </div>
                   </div>

@@ -191,7 +191,6 @@ export default function XuatHoaDonPage() {
         soTienThanhToan: tongCong,
       });
 
-      window.open(`/in-hoa-don/${hoaDon.id}`, "_blank");
       await taiHoaDonDoc(hoaDon.id);
 
       showToast(
@@ -200,7 +199,7 @@ export default function XuatHoaDonPage() {
           : "Đã ghi công nợ và xuất hóa đơn",
       );
 
-      navigate("/thanh-toan");
+      navigate(`/in-hoa-don/${hoaDon.id}`);
     } catch (err) {
       showToast(
         err instanceof Error ? err.message : "Lỗi tạo hóa đơn",

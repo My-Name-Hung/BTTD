@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  FiFileText, FiSearch, FiX, FiPrinter, FiEye, FiDollarSign,
+  FiFileText, FiSearch, FiX, FiPrinter, FiEye, FiDollarSign, FiDownload,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { EmptyState, Loading, Pagination, Modal } from "../components/Common";
@@ -9,6 +9,7 @@ import {
   layDanhSachDonHang,
   layLichSuThanhToan,
   layHoaDonTheoDonHang,
+  taiHoaDonDoc,
 } from "../services/api";
 import { DonHang, ThanhToan, HoaDon } from "../types";
 import styles from "./ThanhToanPage.module.css";
@@ -118,7 +119,15 @@ export default function ThanhToanPage() {
   };
 
   const handlePrintHD = (hoaDonId: number) => {
-    window.open(`/in-hoa-don/${hoaDonId}`, "_blank");
+    navigate(`/in-hoa-don/${hoaDonId}`);
+  };
+
+  const handleDownloadHD = async (hoaDonId: number) => {
+    try {
+      await taiHoaDonDoc(hoaDonId);
+    } catch {
+      showToast("Lỗi tải hóa đơn", "error");
+    }
   };
 
   return (
@@ -293,6 +302,7 @@ export default function ThanhToanPage() {
           hoaDons={modalHoaDon.hoaDons}
           onClose={() => setModalHoaDon(null)}
           onPrint={handlePrintHD}
+          onDownload={handleDownloadHD}
         />
       )}
 
@@ -313,11 +323,13 @@ function ModalHoaDon({
   hoaDons,
   onClose,
   onPrint,
+  onDownload,
 }: {
   donHang: DonHang;
   hoaDons: HoaDonItem[];
   onClose: () => void;
   onPrint: (id: number) => void;
+  onDownload: (id: number) => void;
 }) {
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -350,6 +362,9 @@ function ModalHoaDon({
                   </div>
                   <button className={styles.btnPrint} onClick={() => onPrint(hd.id)}>
                     <FiPrinter size={14} /> In
+                  </button>
+                  <button className={styles.btnDownload} onClick={() => onDownload(hd.id)}>
+                    <FiDownload size={14} /> Tải
                   </button>
                 </div>
                 <div className={styles.hoaDonDetails}>
