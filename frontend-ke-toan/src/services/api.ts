@@ -992,20 +992,3 @@ export async function layHoaDon(id: number): Promise<any> {
   return request<any>(`/hoa-don/${id}`);
 }
 
-export async function taiHoaDonDoc(id: number): Promise<void> {
-  const token = getToken();
-  const response = await fetch(`${BASE_URL}/hoa-don/tai/${id}/html`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) throw new Error('Lỗi tải hóa đơn');
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `hoa-don-${id}.html`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  window.URL.revokeObjectURL(url);
-}
-

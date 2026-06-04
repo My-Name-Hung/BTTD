@@ -19,7 +19,6 @@ import {
   layDonHang,
   layLichSanXuat,
   taoHoaDon,
-  taiHoaDonDoc,
   layDonHangGiaoTrongNgay,
 } from "../services/api";
 import { DonHang, LichSanXuat } from "../types";
@@ -190,8 +189,6 @@ export default function XuatHoaDonPage() {
         hanTraCongNo: activeTab === "cong_no" ? hanTraCongNo : undefined,
         soTienThanhToan: tongCong,
       });
-
-      await taiHoaDonDoc(hoaDon.id);
 
       showToast(
         activeTab === "tra_het"

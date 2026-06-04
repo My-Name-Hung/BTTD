@@ -15,7 +15,6 @@ import {
   duyetDonHang,
   tuChoiDonHang,
   xoaDonHang,
-  taiHoaDonDoc,
 } from '../services/api';
 import {
   DonHang, LichSanXuat, NghiemThu, HoaDon,
@@ -571,9 +570,7 @@ export default function ChiTietDonHangPage() {
                         <FiPrinter size={12} /> In
                       </button>
                       <button
-                        onClick={async () => {
-                          try { await taiHoaDonDoc(hd.id); } catch { showToast('Lỗi tải hóa đơn', 'error'); }
-                        }}
+                        onClick={() => navigate(`/in-hoa-don/${hd.id}`)}
                         style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', border: '1.5px solid var(--color-border)', borderRadius: 7, background: 'transparent', color: 'var(--color-text-secondary)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
                       >
                         <FiDownload size={12} /> Tải

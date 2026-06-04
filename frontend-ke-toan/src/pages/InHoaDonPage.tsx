@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiPrinter, FiDownload } from "react-icons/fi";
 import { useReactToPrint } from "react-to-print";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { Loading } from "../components/Common";
 import { useToast } from "../hooks";
 import {
@@ -9,7 +11,6 @@ import {
   layDonHang,
   layNghiemThu,
   layLichSanXuat,
-  taiHoaDonDoc,
 } from "../services/api";
 import styles from "./InHoaDonPage.module.css";
 
@@ -173,12 +174,43 @@ export default function InHoaDonPage() {
   });
 
   const handleDownload = async () => {
-    if (!hoaDon) return;
+    if (!invoiceRef.current) return;
     setDownloadLoading(true);
     try {
-      await taiHoaDonDoc(hoaDon.id);
+      const element = invoiceRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = hoaDon ? `hoa-don-${hoaDon.maHoaDon}.pdf` : `hoa-don.pdf`;
+      pdf.save(fileName);
     } catch {
-      showToast("Lỗi tải hóa đơn", "error");
+      showToast("Lỗi tạo file PDF", "error");
     } finally {
       setDownloadLoading(false);
     }

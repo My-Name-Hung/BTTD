@@ -9,7 +9,6 @@ import {
   layDanhSachDonHang,
   layLichSuThanhToan,
   layHoaDonTheoDonHang,
-  taiHoaDonDoc,
 } from "../services/api";
 import { DonHang, ThanhToan, HoaDon } from "../types";
 import styles from "./ThanhToanPage.module.css";
@@ -122,12 +121,8 @@ export default function ThanhToanPage() {
     navigate(`/in-hoa-don/${hoaDonId}`);
   };
 
-  const handleDownloadHD = async (hoaDonId: number) => {
-    try {
-      await taiHoaDonDoc(hoaDonId);
-    } catch {
-      showToast("Lỗi tải hóa đơn", "error");
-    }
+  const handleDownloadHD = (hoaDonId: number) => {
+    navigate(`/in-hoa-don/${hoaDonId}`);
   };
 
   return (
