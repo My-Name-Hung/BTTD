@@ -15,7 +15,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ConfirmModal, EmptyState, Loading } from "../components/Common";
 import { usePageRole, useToast } from "../hooks";
 import {
-  exportCongNo,
   importCongNoKhachHang,
   layCongNoGrouped,
   layCongNoKhachHangGrouped,
@@ -303,9 +302,8 @@ export default function CongNoPage() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const allData = await exportCongNo();
-
-      const rows = allData.map((cn: {
+      // Sử dụng dữ liệu từ state groups thay vì gọi API riêng
+      const allData: Array<{
         id: number;
         nhom: string | null;
         maKhachHang: string | null;
@@ -316,19 +314,35 @@ export default function CongNoPage() {
         phatSinhCo: number;
         duCuoiNo: number;
         duCuoiCo: number;
-      }) => ({
-        nhom: cn.nhom || null,
-        maKhachHang: cn.maKhachHang || null,
-        tenKhachHang: cn.tenKhachHang || "",
-        duDauNo: cn.duDauNo ?? 0,
-        duDauCo: cn.duDauCo ?? 0,
-        phatSinhNo: cn.phatSinhNo ?? 0,
-        phatSinhCo: cn.phatSinhCo ?? 0,
-        duCuoiNo: cn.duCuoiNo ?? 0,
-        duCuoiCo: cn.duCuoiCo ?? 0,
-      }));
+      }> = [];
 
-      const blob = await exportCongNoReport(rows);
+      // Lấy tất cả items từ các nhóm
+      for (const group of groups) {
+        for (const item of group.items) {
+          if (item.tenKhachHang !== "Tổng cộng") {
+            allData.push({
+              id: item.id,
+              nhom: item.nhom || null,
+              maKhachHang: item.maKhachHang || null,
+              tenKhachHang: item.tenKhachHang,
+              duDauNo: item.duDauNo ?? 0,
+              duDauCo: item.duDauCo ?? 0,
+              phatSinhNo: item.phatSinhNo ?? 0,
+              phatSinhCo: item.phatSinhCo ?? 0,
+              duCuoiNo: item.duCuoiNo ?? 0,
+              duCuoiCo: item.duCuoiCo ?? 0,
+            });
+          }
+        }
+      }
+
+      if (allData.length === 0) {
+        showToast("Không có dữ liệu để xuất", "error");
+        setExporting(false);
+        return;
+      }
+
+      const blob = await exportCongNoReport(allData);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
