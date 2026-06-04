@@ -243,11 +243,13 @@
 .statusBadge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+  background: rgba(7, 60, 235, 0.12);
+  color: var(--color-primary);
 }
 
 .emptyState {
