@@ -130,11 +130,11 @@ export default function QuanLyTramTronPage() {
       const allData = res || [];
 
       const headers = [
-        { key: "id" as keyof TramTron, label: "ID", width: 8 },
-        { key: "tenTram" as keyof TramTron, label: "Tên trạm trộn", width: 28 },
-        { key: "diaChi" as keyof TramTron, label: "Địa chỉ", width: 40 },
-        { key: "soDienThoai" as keyof TramTron, label: "SĐT", width: 14 },
-        { key: "trangThai" as keyof TramTron, label: "Trạng thái", width: 14 },
+        { key: "id", label: "ID", width: 8 },
+        { key: "tenTram", label: "Tên trạm trộn", width: 28 },
+        { key: "diaChi", label: "Địa chỉ", width: 40 },
+        { key: "soDienThoai", label: "SĐT", width: 14 },
+        { key: "trangThai", label: "Trạng thái", width: 14 },
       ];
 
       const rows = allData.map((tt: TramTron) => ({

@@ -276,35 +276,6 @@ export default function TaoDonHangPage() {
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ fontSize: 13, padding: '8px 14px' }}
-            onClick={() => navigate('/quan-ly/khach-hang')}
-          >
-            <FiExternalLink size={13} style={{ marginRight: 6 }} />
-            Khách hàng
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ fontSize: 13, padding: '8px 14px' }}
-            onClick={() => form.idKhachHang ? navigate(`/quan-ly/cong-no?khachHang=${encodeURIComponent(form.tenKhachHang)}`) : navigate('/quan-ly/cong-no')}
-          >
-            <FiExternalLink size={13} style={{ marginRight: 6 }} />
-            Công nợ
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ fontSize: 13, padding: '8px 14px' }}
-            onClick={() => navigate('/thanh-toan')}
-          >
-            <FiExternalLink size={13} style={{ marginRight: 6 }} />
-            Thanh toán
-          </button>
-        </div>
       </div>
 
       <div className={styles.card}>

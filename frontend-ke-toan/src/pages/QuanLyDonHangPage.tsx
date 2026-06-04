@@ -196,33 +196,33 @@ export default function QuanLyDonHangPage() {
         return true;
       });
 
-      // Định nghĩa columns
+      // Định nghĩa columns - dùng string thay vì keyof để tránh lỗi type
       const isAdminOrKeToan = isAdmin || isKeToan;
       const headers = [
-        { key: "maDonHang" as keyof DonHang, label: "Mã đơn", width: 16 },
-        { key: "tenKhachHang" as keyof DonHang, label: "Khách hàng", width: 28 },
-        { key: "tenMacBeTong" as keyof DonHang, label: "Mác bê tông", width: 18 },
-        { key: "tenTramTron" as keyof DonHang, label: "Trạm trộn", width: 20 },
-        { key: "khoiLuongDat" as keyof DonHang, label: "Khối lượng đặt", width: 15, alignRight: true },
-        { key: "khoiLuongThucTe" as keyof DonHang, label: "Khối lượng thực tế", width: 15, alignRight: true },
-        { key: "donGia" as keyof DonHang, label: "Đơn giá", width: 14, alignRight: true },
-        { key: "thanhTien" as keyof DonHang, label: "Thành tiền", width: 16, alignRight: true },
-        { key: "daThanhToan" as keyof DonHang, label: "Đã thanh toán", width: 16, alignRight: true },
-        { key: "conLai" as keyof DonHang, label: "Còn lại", width: 14, alignRight: true },
-        { key: "diaChiNhan" as keyof DonHang, label: "Địa chỉ giao", width: 35 },
-        { key: "soDienThoai" as keyof DonHang, label: "SĐT", width: 14 },
-        { key: "thoiGianGiaoDuKien" as keyof DonHang, label: "Ngày giao dự kiến", width: 18 },
-        { key: "ngayTaoDon" as keyof DonHang, label: "Ngày tạo đơn", width: 18 },
-        { key: "trangThaiDon" as keyof DonHang, label: "Trạng thái", width: 18 },
+        { key: "maDonHang", label: "Mã đơn", width: 16 },
+        { key: "tenKhachHang", label: "Khách hàng", width: 28 },
+        { key: "tenMacBeTong", label: "Mác bê tông", width: 18 },
+        { key: "tenTramTron", label: "Trạm trộn", width: 20 },
+        { key: "khoiLuongDat", label: "Khối lượng đặt", width: 15, alignRight: true },
+        { key: "khoiLuongThucTe", label: "Khối lượng thực tế", width: 15, alignRight: true },
+        { key: "donGia", label: "Đơn giá", width: 14, alignRight: true },
+        { key: "thanhTien", label: "Thành tiền", width: 16, alignRight: true },
+        { key: "daThanhToan", label: "Đã thanh toán", width: 16, alignRight: true },
+        { key: "conLai", label: "Còn lại", width: 14, alignRight: true },
+        { key: "diaChiNhan", label: "Địa chỉ giao", width: 35 },
+        { key: "soDienThoai", label: "SĐT", width: 14 },
+        { key: "thoiGianGiaoDuKien", label: "Ngày giao dự kiến", width: 18 },
+        { key: "ngayTaoDon", label: "Ngày tạo đơn", width: 18 },
+        { key: "trangThaiDon", label: "Trạng thái", width: 18 },
       ];
 
       // Thêm cột user nếu là admin hoặc kế toán
       if (isAdminOrKeToan) {
         headers.push(
-          { key: "maNguoiTao" as keyof DonHang, label: "Mã user tạo", width: 16 },
-          { key: "tenNguoiTao" as keyof DonHang, label: "Tên user tạo", width: 22 },
-          { key: "maNguoiDuyet" as keyof DonHang, label: "Mã user duyệt", width: 16 },
-          { key: "tenNguoiDuyet" as keyof DonHang, label: "Tên user duyệt", width: 22 },
+          { key: "maNguoiTao", label: "Mã user tạo", width: 16 },
+          { key: "tenNguoiTao", label: "Tên user tạo", width: 22 },
+          { key: "maNguoiDuyet", label: "Mã user duyệt", width: 16 },
+          { key: "tenNguoiDuyet", label: "Tên user duyệt", width: 22 },
         );
       }
 
@@ -234,11 +234,11 @@ export default function QuanLyDonHangPage() {
           tenMacBeTong: dh.tenMacBeTong || "",
           tenTramTron: dh.tenTramTron || "",
           khoiLuongDat: dh.khoiLuongDat,
-          khoiLuongThucTe: dh.khoiLuongThucTe || "",
+          khoiLuongThucTe: dh.khoiLuongThucTe ?? "",
           donGia: dh.donGia,
-          thanhTien: dh.thanhTien || "",
+          thanhTien: dh.thanhTien ?? 0,
           daThanhToan: dh.daThanhToan || 0,
-          conLai: dh.conLai || "",
+          conLai: dh.conLai ?? 0,
           diaChiNhan: dh.diaChiNhan,
           soDienThoai: dh.soDienThoai,
           thoiGianGiaoDuKien: formatDateForExport(dh.thoiGianGiaoDuKien),

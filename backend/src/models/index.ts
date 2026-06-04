@@ -92,11 +92,11 @@ export interface DonHang {
   buVanChuyen: number;
   thanhTien: number | null;
 
-  thoiGianGiaoDuKien: Date | null;
-  ngayTaoDon: Date;
-  ngayDuyet: Date | null;
-  ngayGiao: Date | null;
-  ngayNghiemThu: Date | null;
+  thoiGianGiaoDuKien: Date | string | null;
+  ngayTaoDon: Date | string;
+  ngayDuyet: Date | string | null;
+  ngayGiao: Date | string | null;
+  ngayNghiemThu: Date | string | null;
 
   trangThaiDon:
     | "cho_duyet"
@@ -116,8 +116,15 @@ export interface DonHang {
   daThanhToan: number;
   conLai: number | null;
 
-  ngayTao: Date;
-  ngayCapNhat: Date;
+  ngayTao: Date | string;
+  ngayCapNhat: Date | string;
+
+  // Fields từ JOIN để export
+  tenTramTron?: string | null;
+  maNguoiTao?: string | null;
+  tenNguoiTao?: string | null;
+  maNguoiDuyet?: string | null;
+  tenNguoiDuyet?: string | null;
 }
 
 export interface LichSanXuat {

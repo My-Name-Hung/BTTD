@@ -109,10 +109,10 @@ export default function QuanLyMacBeTongPage() {
       const allData = res || [];
 
       const headers = [
-        { key: "id" as keyof MacBeTong, label: "ID", width: 8 },
-        { key: "tenMac" as keyof MacBeTong, label: "Tên mác", width: 20 },
-        { key: "donGia" as keyof MacBeTong, label: "Đơn giá", width: 16, alignRight: true },
-        { key: "moTa" as keyof MacBeTong, label: "Mô tả", width: 40 },
+        { key: "id", label: "ID", width: 8 },
+        { key: "tenMac", label: "Tên mác", width: 20 },
+        { key: "donGia", label: "Đơn giá", width: 16, alignRight: true },
+        { key: "moTa", label: "Mô tả", width: 40 },
       ];
 
       const rows = allData.map((mb: MacBeTong) => ({

@@ -232,7 +232,7 @@ export default function QuanLyNguoiDungPage() {
         lanh_dao: "Lãnh đạo",
       };
 
-      const headers: { key: "id" | "tenDangNhap" | "hoTen" | "email" | "soDienThoai" | "vaiTro" | "trangThai" | "ngayTao"; label: string; width: number }[] = [
+      const headers: { key: string; label: string; width: number }[] = [
         { key: "id", label: "ID", width: 8 },
         { key: "tenDangNhap", label: "Tên đăng nhập", width: 20 },
         { key: "hoTen", label: "Họ tên", width: 25 },

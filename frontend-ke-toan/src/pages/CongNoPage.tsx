@@ -305,7 +305,7 @@ export default function CongNoPage() {
       const res = await layCongNoGrouped(search || undefined, nhomFilter || undefined);
       const allData = res || [];
 
-      const headers: { key: keyof CongNoGroupExport; label: string; width?: number; alignRight?: boolean }[] = [
+      const headers: { key: string; label: string; width?: number; alignRight?: boolean }[] = [
         { key: "nhom", label: "Nhóm", width: 25 },
         { key: "maKhachHang", label: "Mã KH", width: 14 },
         { key: "tenKhachHang", label: "Khách hàng", width: 28 },

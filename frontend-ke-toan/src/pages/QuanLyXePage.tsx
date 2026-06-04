@@ -225,11 +225,11 @@ export default function QuanLyXePage() {
       const allData = res || [];
 
       const headers = [
-        { key: "id" as keyof Xe, label: "ID", width: 8 },
-        { key: "bienSo" as keyof Xe, label: "Biển số xe", width: 14 },
-        { key: "tenTaiXe" as keyof Xe, label: "Tài xế", width: 22 },
-        { key: "soDienThoai" as keyof Xe, label: "SĐT tài xế", width: 14 },
-        { key: "trangThai" as keyof Xe, label: "Trạng thái", width: 14 },
+        { key: "id", label: "ID", width: 8 },
+        { key: "bienSo", label: "Biển số xe", width: 14 },
+        { key: "tenTaiXe", label: "Tài xế", width: 22 },
+        { key: "soDienThoai", label: "SĐT tài xế", width: 14 },
+        { key: "trangThai", label: "Trạng thái", width: 14 },
       ];
 
       const rows = allData.map((xe: Xe) => ({

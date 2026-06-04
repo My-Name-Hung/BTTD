@@ -159,13 +159,13 @@ export default function KhachHangPage() {
       const allData = res.data || [];
 
       const headers = [
-        { key: "maKhachHang" as keyof KhachHang, label: "Mã KH", width: 14 },
-        { key: "tenKhachHang" as keyof KhachHang, label: "Tên khách hàng", width: 30 },
-        { key: "nhom" as keyof KhachHang, label: "Nhóm", width: 25 },
-        { key: "diaChi" as keyof KhachHang, label: "Địa chỉ", width: 35 },
-        { key: "soDienThoai" as keyof KhachHang, label: "SĐT", width: 14 },
-        { key: "email" as keyof KhachHang, label: "Email", width: 25 },
-        { key: "ghiChu" as keyof KhachHang, label: "Ghi chú", width: 30 },
+        { key: "maKhachHang", label: "Mã KH", width: 14 },
+        { key: "tenKhachHang", label: "Tên khách hàng", width: 30 },
+        { key: "nhom", label: "Nhóm", width: 25 },
+        { key: "diaChi", label: "Địa chỉ", width: 35 },
+        { key: "soDienThoai", label: "SĐT", width: 14 },
+        { key: "email", label: "Email", width: 25 },
+        { key: "ghiChu", label: "Ghi chú", width: 30 },
       ];
 
       const rows = allData.map((kh: KhachHang) => ({

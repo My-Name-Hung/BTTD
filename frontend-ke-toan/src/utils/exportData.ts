@@ -51,13 +51,20 @@ function applyCellStyle(cell: ExcelJS.Cell, alignRight = false) {
   }
 }
 
+interface ExportHeader {
+  key: string;
+  label: string;
+  width?: number;
+  alignRight?: boolean;
+}
+
 /**
  * Export array of objects to Excel
  */
-export async function exportToExcel<T extends Record<string, unknown>>(
+export async function exportToExcel(
   title: string,
-  headers: { key: keyof T; label: string; width?: number; alignRight?: boolean }[],
-  data: T[],
+  headers: ExportHeader[],
+  data: Record<string, unknown>[],
   filename: string,
   sheetName = "Sheet1"
 ): Promise<void> {
@@ -95,7 +102,14 @@ export async function exportToExcel<T extends Record<string, unknown>>(
     headers.forEach((h, colIndex) => {
       const cell = dataRow.getCell(colIndex + 1);
       let value = row[h.key];
-      if (value === null || value === undefined) value = "";
+      // Handle null, undefined, dates
+      if (value === null || value === undefined) {
+        value = "";
+      } else if (value instanceof Date) {
+        value = value.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+      } else if (typeof value === "object") {
+        value = String(value);
+      }
       cell.value = value;
       applyCellStyle(cell, h.alignRight);
     });
@@ -127,12 +141,13 @@ export function formatCurrencyForExport(v: number | string | null | undefined): 
 /**
  * Format date for export
  */
-export function formatDateForExport(dateStr: string | null | undefined): string {
+export function formatDateForExport(dateStr: string | Date | null | undefined): string {
   if (!dateStr) return "";
   try {
-    const d = new Date(dateStr);
+    const d = dateStr instanceof Date ? dateStr : new Date(dateStr as string);
+    if (isNaN(d.getTime())) return String(dateStr);
     return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
   } catch {
-    return dateStr;
+    return String(dateStr);
   }
 }

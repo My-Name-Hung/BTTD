@@ -202,16 +202,16 @@ export default function KhoLichSanXuatPage() {
       const allData = res.data || [];
 
       const headers = [
-        { key: "maDonHang" as keyof any, label: "Mã đơn", width: 16 },
-        { key: "tenKhachHang" as keyof any, label: "Khách hàng", width: 28 },
-        { key: "tenMacBeTong" as keyof any, label: "Mác BT", width: 16 },
-        { key: "khoiLuongDat" as keyof any, label: "Khối lượng", width: 12, alignRight: true },
-        { key: "bienSoXe" as keyof any, label: "Biển số xe", width: 14 },
-        { key: "tenTaiXe" as keyof any, label: "Tài xế", width: 20 },
-        { key: "trangThai" as keyof any, label: "Trạng thái", width: 16 },
-        { key: "thoiGianTron" as keyof any, label: "Giờ trộn", width: 16 },
-        { key: "thoiGianXuatBen" as keyof any, label: "Giờ xuất bến", width: 16 },
-        { key: "diaChiNhan" as keyof any, label: "Địa chỉ giao", width: 35 },
+        { key: "maDonHang", label: "Mã đơn", width: 16 },
+        { key: "tenKhachHang", label: "Khách hàng", width: 28 },
+        { key: "tenMacBeTong", label: "Mác BT", width: 16 },
+        { key: "khoiLuongDat", label: "Khối lượng", width: 12, alignRight: true },
+        { key: "bienSoXe", label: "Biển số xe", width: 14 },
+        { key: "tenTaiXe", label: "Tài xế", width: 20 },
+        { key: "trangThai", label: "Trạng thái", width: 16 },
+        { key: "thoiGianTron", label: "Giờ trộn", width: 16 },
+        { key: "thoiGianXuatBen", label: "Giờ xuất bến", width: 16 },
+        { key: "diaChiNhan", label: "Địa chỉ giao", width: 35 },
       ];
 
       const trangThaiLabels: Record<string, string> = {

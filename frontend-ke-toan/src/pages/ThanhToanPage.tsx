@@ -148,8 +148,7 @@ export default function ThanhToanPage() {
         ngayTaoDon: formatDateForExport(dh.ngayTaoDon),
       }));
 
-      const rowKeys = ["maDonHang", "tenKhachHang", "tenMacBeTong", "khoiLuongDat", "thanhTien", "daThanhToan", "conLai", "ngayTaoDon"] as const;
-      const headers = [
+      const headers: { key: string; label: string; width?: number; alignRight?: boolean }[] = [
         { key: "maDonHang", label: "Mã đơn", width: 16 },
         { key: "tenKhachHang", label: "Khách hàng", width: 28 },
         { key: "tenMacBeTong", label: "Mác BT", width: 18 },
@@ -158,7 +157,7 @@ export default function ThanhToanPage() {
         { key: "daThanhToan", label: "Đã TT", width: 14, alignRight: true },
         { key: "conLai", label: "Còn lại", width: 14, alignRight: true },
         { key: "ngayTaoDon", label: "Ngày tạo", width: 14 },
-      ] as { key: typeof rowKeys[number]; label: string; width?: number; alignRight?: boolean }[];
+      ];
 
       await exportToExcel("BÁO CÁO THANH TOÁN", headers, rows, `BaoCaoThanhToan_${new Date().toISOString().slice(0, 10)}.xlsx`, "Thanh toán");
       showToast("Xuất báo cáo thành công!");
