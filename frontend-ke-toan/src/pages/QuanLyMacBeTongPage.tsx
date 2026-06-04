@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  FiSearch, FiX, FiPlus, FiEdit2, FiTrash2, FiPackage,
+  FiSearch, FiX, FiPlus, FiEdit2, FiTrash2, FiPackage, FiDownload,
 } from 'react-icons/fi';
 import {
   layDanhSachMacBeTong, taoMacBeTong, suaMacBeTong, xoaMacBeTong,
@@ -8,6 +8,7 @@ import {
 import { MacBeTong } from '../types';
 import { useToast, usePageRole } from '../hooks';
 import { Modal, Loading, EmptyState } from '../components/Common';
+import { exportToExcel } from '../utils/exportData';
 import styles from './QuanLyMacBeTongPage.module.css';
 
 function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' || '0 đ'; }
@@ -24,6 +25,7 @@ export default function QuanLyMacBeTongPage() {
   const [form, setForm] = useState({ tenMac: '', donGia: '', moTa: '' });
   const [formLoading, setFormLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -100,6 +102,35 @@ export default function QuanLyMacBeTongPage() {
     return raw ? Number(raw).toLocaleString('vi-VN') : '';
   };
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await layDanhSachMacBeTong();
+      const allData = res || [];
+
+      const headers = [
+        { key: "id" as keyof MacBeTong, label: "ID", width: 8 },
+        { key: "tenMac" as keyof MacBeTong, label: "Tên mác", width: 20 },
+        { key: "donGia" as keyof MacBeTong, label: "Đơn giá", width: 16, alignRight: true },
+        { key: "moTa" as keyof MacBeTong, label: "Mô tả", width: 40 },
+      ];
+
+      const rows = allData.map((mb: MacBeTong) => ({
+        id: mb.id,
+        tenMac: mb.tenMac,
+        donGia: mb.donGia,
+        moTa: mb.moTa || "",
+      }));
+
+      await exportToExcel("BÁO CÁO MÁC BÊ TÔNG", headers, rows, `BaoCaoMacBeTong_${new Date().toISOString().slice(0, 10)}.xlsx`, "Mác bê tông");
+      showToast("Xuất báo cáo thành công!");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xuất báo cáo", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
       <div className={styles.pageHeader}>
@@ -107,9 +138,14 @@ export default function QuanLyMacBeTongPage() {
           <div className={styles.pageHeaderTitle}>Quản lý mác bê tông</div>
           <div className={styles.pageHeaderDesc}>Thêm, sửa, xóa mác bê tông</div>
         </div>
-        <button className={styles.createBtn} onClick={openCreate}>
-          <FiPlus size={16} /> Thêm mác
-        </button>
+        <div className={styles.pageHeaderActions}>
+          <button className={`${styles.createBtn} ${styles.btnExport}`} onClick={handleExportExcel} disabled={exporting}>
+            <FiDownload size={16} /> {exporting ? 'Đang xuất...' : 'Xuất báo cáo'}
+          </button>
+          <button className={styles.createBtn} onClick={openCreate}>
+            <FiPlus size={16} /> Thêm mác
+          </button>
+        </div>
       </div>
 
       <div className={styles.filterBar}>

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FiCheck, FiClock, FiEye, FiPackage, FiTruck } from "react-icons/fi";
+import { FiCheck, FiClock, FiDownload, FiEye, FiPackage, FiTruck } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../components/Common";
 import { useToast } from "../hooks";
-import { layLichSanXuatTramTron, xacNhanBatDauGiao } from "../services/api";
+import { layTatCaLichSanXuat, layLichSanXuatTramTron, xacNhanBatDauGiao } from "../services/api";
 import { TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./KhoLichSanXuatPage.module.css";
 import { formatDateVN } from "../utils/dateUtils";
+import { exportToExcel, formatDateForExport } from "../utils/exportData";
 
 interface LichSanXuatItem {
   id: number;
@@ -78,6 +79,7 @@ export default function KhoLichSanXuatPage() {
   const [maDonFilter, setMaDonFilter] = useState("");
   const [tenKhachFilter, setTenKhachFilter] = useState("");
   const [maDonDropdownOpen, setMaDonDropdownOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -193,6 +195,53 @@ export default function KhoLichSanXuatPage() {
     setMaDonDropdownOpen(false);
   };
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await layTatCaLichSanXuat();
+      const allData = res.data || [];
+
+      const headers = [
+        { key: "maDonHang" as keyof any, label: "Mã đơn", width: 16 },
+        { key: "tenKhachHang" as keyof any, label: "Khách hàng", width: 28 },
+        { key: "tenMacBeTong" as keyof any, label: "Mác BT", width: 16 },
+        { key: "khoiLuongDat" as keyof any, label: "Khối lượng", width: 12, alignRight: true },
+        { key: "bienSoXe" as keyof any, label: "Biển số xe", width: 14 },
+        { key: "tenTaiXe" as keyof any, label: "Tài xế", width: 20 },
+        { key: "trangThai" as keyof any, label: "Trạng thái", width: 16 },
+        { key: "thoiGianTron" as keyof any, label: "Giờ trộn", width: 16 },
+        { key: "thoiGianXuatBen" as keyof any, label: "Giờ xuất bến", width: 16 },
+        { key: "diaChiNhan" as keyof any, label: "Địa chỉ giao", width: 35 },
+      ];
+
+      const trangThaiLabels: Record<string, string> = {
+        chua_san_xuat: "Chưa sản xuất",
+        dang_san_xuat: "Đang sản xuất",
+        da_xong: "Đã xong",
+      };
+
+      const rows = allData.map((ls: any) => ({
+        maDonHang: ls.maDonHang || "",
+        tenKhachHang: ls.tenKhachHang || "",
+        tenMacBeTong: ls.tenMacBeTong || "",
+        khoiLuongDat: ls.khoiLuongDat || 0,
+        bienSoXe: ls.bienSoXe || "",
+        tenTaiXe: ls.tenTaiXe || "",
+        trangThai: trangThaiLabels[ls.trangThai] || ls.trangThai || "",
+        thoiGianTron: formatDateForExport(ls.thoiGianTron),
+        thoiGianXuatBen: formatDateForExport(ls.thoiGianXuatBen),
+        diaChiNhan: ls.diaChiNhan || "",
+      }));
+
+      await exportToExcel("BÁO CÁO LỊCH SẢN XUẤT", headers, rows, `BaoCaoLichSanXuat_${new Date().toISOString().slice(0, 10)}.xlsx`, "Lịch sản xuất");
+      showToast("Xuất báo cáo thành công!");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xuất báo cáo", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) return <Loading />;
 
   return (
@@ -204,6 +253,20 @@ export default function KhoLichSanXuatPage() {
           <p className={styles.pageDesc}>
             Danh sách đơn hàng đã lên lịch sản xuất
           </p>
+        </div>
+        <div className={styles.pageHeaderActions}>
+          <button
+            className={`btn btn-export ${styles.exportBtn}`}
+            onClick={handleExportExcel}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <FiClock size={15} />
+            ) : (
+              <FiDownload size={15} />
+            )}
+            {exporting ? "Đang xuất..." : "Xuất báo cáo"}
+          </button>
         </div>
       </div>
 

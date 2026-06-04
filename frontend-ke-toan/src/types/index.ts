@@ -190,6 +190,13 @@ export interface CongNo {
   maDonHang?: string;
   tenKhachHang?: string;
   thanhTien?: number;
+  maKhachHang?: string;
+  duDauNo?: number;
+  duDauCo?: number;
+  phatSinhNo?: number;
+  phatSinhCo?: number;
+  duCuoiNo?: number;
+  duCuoiCo?: number;
 }
 
 export interface CongNoGroup {
@@ -198,6 +205,19 @@ export interface CongNoGroup {
   tongCongNo: number;
   tongDaThanhToan: number;
   tongConLai: number;
+}
+
+export interface CongNoGroupExport {
+  nhom: string;
+  maKhachHang: string;
+  tenKhachHang: string;
+  duDauNo: number;
+  duDauCo: number;
+  phatSinhNo: number;
+  phatSinhCo: number;
+  duCuoiNo: number;
+  duCuoiCo: number;
+  [key: string]: string | number;
 }
 
 export interface HoaDon {

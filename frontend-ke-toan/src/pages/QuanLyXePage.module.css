@@ -23,6 +23,13 @@
   margin-top: 3px;
 }
 
+.pageHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* ---- Filter Bar ---- */
 .filterBar {
   display: flex;

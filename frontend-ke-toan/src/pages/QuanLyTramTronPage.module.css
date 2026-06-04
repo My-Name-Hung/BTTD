@@ -10,6 +10,13 @@
   flex-wrap: wrap;
 }
 
+.pageHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .pageHeaderTitle {
   font-size: 22px;
   font-weight: 800;

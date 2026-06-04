@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiX, FiEye } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiX, FiEye, FiDownload } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { layDanhSachTramTron, taoTramTron, suaTramTron, xoaTramTron } from '../services/api';
+import { exportToExcel } from '../utils/exportData';
 import { TramTron } from '../types';
 import { usePagination, useToast } from '../hooks';
 import { Modal, Loading, EmptyState, ConfirmModal, Pagination } from '../components/Common';
@@ -33,6 +34,7 @@ export default function QuanLyTramTronPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Filters
   const [tuKhoa, setTuKhoa] = useState('');
@@ -121,6 +123,37 @@ export default function QuanLyTramTronPage() {
     else { setModalOpen(false); resetForm(); }
   };
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await layDanhSachTramTron(undefined, undefined);
+      const allData = res || [];
+
+      const headers = [
+        { key: "id" as keyof TramTron, label: "ID", width: 8 },
+        { key: "tenTram" as keyof TramTron, label: "Tên trạm trộn", width: 28 },
+        { key: "diaChi" as keyof TramTron, label: "Địa chỉ", width: 40 },
+        { key: "soDienThoai" as keyof TramTron, label: "SĐT", width: 14 },
+        { key: "trangThai" as keyof TramTron, label: "Trạng thái", width: 14 },
+      ];
+
+      const rows = allData.map((tt: TramTron) => ({
+        id: tt.id,
+        tenTram: tt.tenTram,
+        diaChi: tt.diaChi || "",
+        soDienThoai: tt.soDienThoai || "",
+        trangThai: tt.trangThai === "hoat_dong" ? "Hoạt động" : "Khóa",
+      }));
+
+      await exportToExcel("BÁO CÁO TRẠM TRỘN", headers, rows, `BaoCaoTramTron_${new Date().toISOString().slice(0, 10)}.xlsx`, "Trạm trộn");
+      showToast("Xuất báo cáo thành công!");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xuất báo cáo", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleteLoading(true);
@@ -143,7 +176,10 @@ export default function QuanLyTramTronPage() {
           <div className={styles.pageHeaderTitle}>Quản lý trạm trộn</div>
           <div className={styles.pageHeaderDesc}>Thêm, sửa, xóa thông tin trạm trộn bê tông</div>
         </div>
-        <button className="btn btn-add" onClick={openCreate}><FiPlus /> Thêm trạm trộn</button>
+        <div className={styles.pageHeaderActions}>
+          <button className="btn btn-export" onClick={handleExportExcel} disabled={exporting}><FiDownload /> {exporting ? 'Đang xuất...' : 'Xuất báo cáo'}</button>
+          <button className="btn btn-add" onClick={openCreate}><FiPlus /> Thêm trạm trộn</button>
+        </div>
       </div>
 
       {/* Filter Bar */}

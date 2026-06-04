@@ -7,6 +7,7 @@ import {
   FiSearch,
   FiX,
 } from "react-icons/fi";
+import { exportToExcel, formatDateForExport } from "../utils/exportData";
 import { useNavigate } from "react-router-dom";
 import { EmptyState, Loading, Pagination } from "../components/Common";
 import { usePageRole, usePagination, useToast } from "../hooks";
@@ -48,6 +49,7 @@ export default function ThanhToanPage() {
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState("");
   const [activeTab, setActiveTab] = useState<TabFilter>("chua_tat_toan");
+  const [exporting, setExporting] = useState(false);
 
   const canCreate = hasPermission("thanhtoan.create");
 
@@ -129,6 +131,44 @@ export default function ThanhToanPage() {
     navigate(`/in-hoa-don/${hoaDonId}`);
   };
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await layDanhSachDonHang(1, 10000, undefined, undefined);
+      const allData = res.data || [];
+
+      const rows = allData.map((dh: DonHang) => ({
+        maDonHang: dh.maDonHang,
+        tenKhachHang: dh.tenKhachHang,
+        tenMacBeTong: dh.tenMacBeTong || "",
+        khoiLuongDat: dh.khoiLuongDat,
+        thanhTien: dh.thanhTien || 0,
+        daThanhToan: dh.daThanhToan || 0,
+        conLai: Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0)),
+        ngayTaoDon: formatDateForExport(dh.ngayTaoDon),
+      }));
+
+      const rowKeys = ["maDonHang", "tenKhachHang", "tenMacBeTong", "khoiLuongDat", "thanhTien", "daThanhToan", "conLai", "ngayTaoDon"] as const;
+      const headers = [
+        { key: "maDonHang", label: "Mã đơn", width: 16 },
+        { key: "tenKhachHang", label: "Khách hàng", width: 28 },
+        { key: "tenMacBeTong", label: "Mác BT", width: 18 },
+        { key: "khoiLuongDat", label: "Khối lượng", width: 14, alignRight: true },
+        { key: "thanhTien", label: "Thành tiền", width: 16, alignRight: true },
+        { key: "daThanhToan", label: "Đã TT", width: 14, alignRight: true },
+        { key: "conLai", label: "Còn lại", width: 14, alignRight: true },
+        { key: "ngayTaoDon", label: "Ngày tạo", width: 14 },
+      ] as { key: typeof rowKeys[number]; label: string; width?: number; alignRight?: boolean }[];
+
+      await exportToExcel("BÁO CÁO THANH TOÁN", headers, rows, `BaoCaoThanhToan_${new Date().toISOString().slice(0, 10)}.xlsx`, "Thanh toán");
+      showToast("Xuất báo cáo thành công!");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xuất báo cáo", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
       <div className={styles.pageHeader}>
@@ -137,6 +177,16 @@ export default function ThanhToanPage() {
           <div className={styles.pageHeaderDesc}>
             Ghi nhận thanh toán và theo dõi công nợ
           </div>
+        </div>
+        <div className={styles.pageHeaderActions}>
+          <button
+            className={`btn btn-export ${styles.btnExport}`}
+            onClick={handleExportExcel}
+            disabled={exporting}
+          >
+            <FiDownload size={15} />
+            {exporting ? "Đang xuất..." : "Xuất báo cáo"}
+          </button>
         </div>
       </div>
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiExternalLink } from 'react-icons/fi';
+import { FiDownload, FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiExternalLink } from 'react-icons/fi';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { layDanhSachKhachHang, taoKhachHang, suaKhachHang, xoaKhachHang } from '../services/api';
 import { KhachHang, ApiResponseWithPagination } from '../types';
+import { exportToExcel, formatDateForExport } from '../utils/exportData';
 import { useToast, usePagination, usePageRole } from '../hooks';
 import { Modal, Loading, EmptyState, ConfirmModal, Pagination } from '../components/Common';
 import styles from './KhachHangPage.module.css';
@@ -39,6 +40,7 @@ export default function KhachHangPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [nhomDropdownOpen, setNhomDropdownOpen] = useState(false);
   const nhomDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -150,6 +152,41 @@ export default function KhachHangPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await layDanhSachKhachHang(1, 10000, undefined);
+      const allData = res.data || [];
+
+      const headers = [
+        { key: "maKhachHang" as keyof KhachHang, label: "Mã KH", width: 14 },
+        { key: "tenKhachHang" as keyof KhachHang, label: "Tên khách hàng", width: 30 },
+        { key: "nhom" as keyof KhachHang, label: "Nhóm", width: 25 },
+        { key: "diaChi" as keyof KhachHang, label: "Địa chỉ", width: 35 },
+        { key: "soDienThoai" as keyof KhachHang, label: "SĐT", width: 14 },
+        { key: "email" as keyof KhachHang, label: "Email", width: 25 },
+        { key: "ghiChu" as keyof KhachHang, label: "Ghi chú", width: 30 },
+      ];
+
+      const rows = allData.map((kh: KhachHang) => ({
+        maKhachHang: kh.maKhachHang || "",
+        tenKhachHang: kh.tenKhachHang,
+        nhom: kh.nhom || "",
+        diaChi: kh.diaChi || "",
+        soDienThoai: kh.soDienThoai || "",
+        email: kh.email || "",
+        ghiChu: kh.ghiChu || "",
+      }));
+
+      await exportToExcel("BÁO CÁO KHÁCH HÀNG", headers, rows, `BaoCaoKhachHang_${new Date().toISOString().slice(0, 10)}.xlsx`, "Khách hàng");
+      showToast("Xuất báo cáo thành công!");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xuất báo cáo", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const total = data.pagination?.total || 0;
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
   const hasFilters = !!tuKhoa;
@@ -161,11 +198,21 @@ export default function KhachHangPage() {
           <div className={styles.pageHeaderTitle}>Khách hàng</div>
           <div className={styles.pageHeaderDesc}>Quản lý danh sách khách hàng</div>
         </div>
-        {canCreate && (
-          <button className="btn btn-add" onClick={() => { resetPage(); setModalOpen(true); }}>
-            <FiPlus /> Thêm khách hàng
+        <div className={styles.pageHeaderActions}>
+          <button
+            className={`btn btn-export ${exporting ? "btn-loading" : ""}`}
+            onClick={handleExportExcel}
+            disabled={exporting}
+          >
+            <FiDownload />
+            {exporting ? "Đang xuất..." : "Xuất báo cáo"}
           </button>
-        )}
+          {canCreate && (
+            <button className="btn btn-add" onClick={() => { resetPage(); setModalOpen(true); }}>
+              <FiPlus /> Thêm khách hàng
+            </button>
+          )}
+        </div>
       </div>
 
       <div className={styles.filterBar}>

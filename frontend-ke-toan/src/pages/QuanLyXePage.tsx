@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  FiDownload,
   FiEdit2,
   FiEye,
   FiPlus,
@@ -24,6 +25,7 @@ import {
   taoXe,
   xoaXe,
 } from "../services/api";
+import { exportToExcel } from "../utils/exportData";
 import {
   Xe,
 } from "../types";
@@ -62,6 +64,7 @@ export default function QuanLyXePage() {
   const [formLoading, setFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Filters
   const [tuKhoa, setTuKhoa] = useState("");
@@ -215,6 +218,37 @@ export default function QuanLyXePage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await layDanhSachXe(undefined);
+      const allData = res || [];
+
+      const headers = [
+        { key: "id" as keyof Xe, label: "ID", width: 8 },
+        { key: "bienSo" as keyof Xe, label: "Biển số xe", width: 14 },
+        { key: "tenTaiXe" as keyof Xe, label: "Tài xế", width: 22 },
+        { key: "soDienThoai" as keyof Xe, label: "SĐT tài xế", width: 14 },
+        { key: "trangThai" as keyof Xe, label: "Trạng thái", width: 14 },
+      ];
+
+      const rows = allData.map((xe: Xe) => ({
+        id: xe.id,
+        bienSo: xe.bienSo,
+        tenTaiXe: xe.tenTaiXe || "",
+        soDienThoai: xe.soDienThoai || "",
+        trangThai: xe.trangThai === "hoat_dong" ? "Hoạt động" : "Khóa",
+      }));
+
+      await exportToExcel("BÁO CÁO XE", headers, rows, `BaoCaoXe_${new Date().toISOString().slice(0, 10)}.xlsx`, "Xe");
+      showToast("Xuất báo cáo thành công!");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xuất báo cáo", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Unique tai trong options from data
   const taiTrongOptions = Array.from(
     new Set(
@@ -233,9 +267,19 @@ export default function QuanLyXePage() {
             Thêm, sửa, xóa xe vận chuyển bê tông
           </div>
         </div>
-        <button className="btn btn-add" onClick={openCreate}>
-          <FiPlus /> Thêm xe
-        </button>
+        <div className={styles.pageHeaderActions}>
+          <button
+            className="btn btn-export"
+            onClick={handleExportExcel}
+            disabled={exporting}
+          >
+            <FiDownload />
+            {exporting ? "Đang xuất..." : "Xuất Excel"}
+          </button>
+          <button className="btn btn-add" onClick={openCreate}>
+            <FiPlus /> Thêm xe
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}

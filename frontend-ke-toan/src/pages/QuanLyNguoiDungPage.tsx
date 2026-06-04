@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { FiEdit2, FiPlus, FiSearch, FiTrash2, FiX } from "react-icons/fi";
+import { FiDownload, FiEdit2, FiPlus, FiSearch, FiTrash2, FiX } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import {
   ConfirmModal,
@@ -16,6 +16,7 @@ import {
   suaNguoiDung,
   xoaNguoiDung,
 } from "../services/api";
+import { exportToExcel, formatDateForExport } from "../utils/exportData";
 import { ApiResponseWithPagination, NguoiDung } from "../types";
 import styles from "./QuanLyNguoiDungPage.module.css";
 
@@ -88,6 +89,7 @@ export default function QuanLyNguoiDungPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [form, setForm] = useState({
     tenDangNhap: "",
     matKhau: "",
@@ -213,6 +215,54 @@ export default function QuanLyNguoiDungPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await layDanhSachNguoiDung(1, 1000, undefined);
+      const allData = res.data || [];
+
+      const vaiTroLabels: Record<string, string> = {
+        admin: "Quản trị",
+        ke_toan: "Kế toán",
+        dieu_phoi: "Điều phối",
+        sale: "Sales",
+        tai_xe: "Tài xế",
+        ky_thuat: "Kỹ thuật",
+        tram_tron: "Trạm trộn",
+        lanh_dao: "Lãnh đạo",
+      };
+
+      const headers: { key: "id" | "tenDangNhap" | "hoTen" | "email" | "soDienThoai" | "vaiTro" | "trangThai" | "ngayTao"; label: string; width: number }[] = [
+        { key: "id", label: "ID", width: 8 },
+        { key: "tenDangNhap", label: "Tên đăng nhập", width: 20 },
+        { key: "hoTen", label: "Họ tên", width: 25 },
+        { key: "email", label: "Email", width: 28 },
+        { key: "soDienThoai", label: "SĐT", width: 14 },
+        { key: "vaiTro", label: "Vai trò", width: 16 },
+        { key: "trangThai", label: "Trạng thái", width: 14 },
+        { key: "ngayTao", label: "Ngày tạo", width: 16 },
+      ];
+
+      const rows = allData.map((nd: NguoiDung) => ({
+        id: nd.id,
+        tenDangNhap: nd.tenDangNhap,
+        hoTen: nd.hoTen || "",
+        email: nd.email || "",
+        soDienThoai: nd.soDienThoai || "",
+        vaiTro: vaiTroLabels[nd.vaiTro] || nd.vaiTro,
+        trangThai: nd.trangThai === "hoat_dong" ? "Hoạt động" : "Khóa",
+        ngayTao: formatDateForExport(nd.ngayTao as string | undefined),
+      }));
+
+      await exportToExcel("BÁO CÁO NGƯỜI DÙNG", headers, rows, `BaoCaoNguoiDung_${new Date().toISOString().slice(0, 10)}.xlsx`, "Người dùng");
+      showToast("Xuất báo cáo thành công!");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xuất báo cáo", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Pagination helpers
   const totalPages = data.pagination.totalPages;
   const total = data.pagination.total;
@@ -227,9 +277,14 @@ export default function QuanLyNguoiDungPage() {
             Quản lý tài khoản và phân quyền người dùng hệ thống
           </div>
         </div>
-        <button className="btn btn-add" onClick={() => navigate("/quan-ly/nguoi-dung/tao")}>
-          <FiPlus /> Thêm người dùng
-        </button>
+        <div className={styles.pageHeaderActions}>
+          <button className="btn btn-export" onClick={handleExportExcel} disabled={exporting}>
+            <FiDownload /> {exporting ? "Đang xuất..." : "Xuất Excel"}
+          </button>
+          <button className="btn btn-add" onClick={() => navigate("/quan-ly/nguoi-dung/tao")}>
+            <FiPlus /> Thêm người dùng
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}

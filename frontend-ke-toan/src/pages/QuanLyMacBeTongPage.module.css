@@ -21,6 +21,27 @@
   margin-top: 2px;
 }
 
+.pageHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btnExport {
+  background: var(--color-success) !important;
+}
+
+.btnExport:hover {
+  background: #1b6e35 !important;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3) !important;
+}
+
+.btnExport:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .createBtn {
   display: inline-flex;
   align-items: center;

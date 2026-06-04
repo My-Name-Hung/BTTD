@@ -16,13 +16,15 @@ import { ConfirmModal, EmptyState, Loading } from "../components/Common";
 import { usePageRole, useToast } from "../hooks";
 import {
   importCongNoKhachHang,
+  layCongNoGrouped,
   layCongNoKhachHangGrouped,
   layDanhSachNhomCongNoKhachHang,
   suaCongNoKhachHang,
   taoCongNoKhachHang,
   xoaCongNoKhachHang,
 } from "../services/api";
-import { CongNoKhachHang, CongNoKhachHangGroup } from "../types";
+import { CongNo, CongNoGroup, CongNoGroupExport, CongNoKhachHang, CongNoKhachHangGroup } from "../types";
+import { exportToExcel, formatDateForExport } from "../utils/exportData";
 import { generateCongNoBravoTemplate } from "../utils/exportCongNo";
 import styles from "./CongNoPage.module.css";
 
@@ -92,6 +94,7 @@ export default function CongNoPage() {
     null,
   );
 
+  const [exporting, setExporting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -296,6 +299,47 @@ export default function CongNoPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await layCongNoGrouped(search || undefined, nhomFilter || undefined);
+      const allData = res || [];
+
+      const headers: { key: keyof CongNoGroupExport; label: string; width?: number; alignRight?: boolean }[] = [
+        { key: "nhom", label: "Nhóm", width: 25 },
+        { key: "maKhachHang", label: "Mã KH", width: 14 },
+        { key: "tenKhachHang", label: "Khách hàng", width: 28 },
+        { key: "duDauNo", label: "Dư đầu Nợ", width: 16, alignRight: true },
+        { key: "duDauCo", label: "Dư đầu Có", width: 16, alignRight: true },
+        { key: "phatSinhNo", label: "PS Nợ", width: 14, alignRight: true },
+        { key: "phatSinhCo", label: "PS Có", width: 14, alignRight: true },
+        { key: "duCuoiNo", label: "Dư cuối Nợ", width: 16, alignRight: true },
+        { key: "duCuoiCo", label: "Dư cuối Có", width: 16, alignRight: true },
+      ];
+
+      const rows: CongNoGroupExport[] = allData.flatMap((group: CongNoGroup) =>
+        group.items.map((cn: CongNo) => ({
+          nhom: group.nhom || "",
+          maKhachHang: cn.maKhachHang || "",
+          tenKhachHang: cn.tenKhachHang || "",
+          duDauNo: cn.duDauNo ?? 0,
+          duDauCo: cn.duDauCo ?? 0,
+          phatSinhNo: cn.phatSinhNo ?? 0,
+          phatSinhCo: cn.phatSinhCo ?? 0,
+          duCuoiNo: cn.duCuoiNo ?? 0,
+          duCuoiCo: cn.duCuoiCo ?? 0,
+        }))
+      );
+
+      await exportToExcel("BÁO CÁO CÔNG NỢ", headers, rows, `BaoCaoCongNo_${new Date().toISOString().slice(0, 10)}.xlsx`, "Công nợ");
+      showToast("Xuất báo cáo thành công!");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xuất báo cáo", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
       {/* Header */}
@@ -306,16 +350,31 @@ export default function CongNoPage() {
             Theo dõi công nợ theo nhóm từ file Bravo
           </div>
         </div>
-        {canWrite && (
-          <div style={{ display: 'flex', gap: 8 }}>
+        <div className={styles.pageHeaderActions}>
+          <button
+            className="btn btn-export"
+            onClick={handleExportExcel}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <>
+                <Loading />
+              </>
+            ) : (
+              <>
+                <FiDownload /> Xuất báo cáo
+              </>
+            )}
+          </button>
+          {canWrite && (
             <button
               className="btn btn-add"
               onClick={() => setAddKhachHangModal(true)}
             >
               <FiPlus /> Thêm khách hàng
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* KPI */}
