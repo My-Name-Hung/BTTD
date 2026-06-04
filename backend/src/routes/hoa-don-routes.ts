@@ -60,14 +60,14 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response<ApiRes
   }
 });
 
-// Tải hóa đơn dạng DOC
-router.get('/tai/:id/doc', authMiddleware, async (req: AuthRequest, res: Response) => {
+// Tải hóa đơn dạng HTML (định dạng HTML để in trực tiếp)
+router.get('/tai/:id/html', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const docContent = await taiHoaDonDoc(id);
-    res.setHeader('Content-Type', 'application/vnd.ms-word');
-    res.setHeader('Content-Disposition', `attachment; filename=hoa-don-${id}.doc`);
-    res.send(docContent);
+    const htmlContent = await taiHoaDonDoc(id);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=hoa-don-${id}.html`);
+    res.send(htmlContent);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tải hóa đơn';
     res.status(500).json({ success: false, message });

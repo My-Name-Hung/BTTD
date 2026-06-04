@@ -113,6 +113,7 @@ interface HoaDonData {
   nguoiOmOng?: string | null;
   nguoiBatOng?: string | null;
   kyThuatCongTrinh?: string | null;
+  ngayNghiemThu?: string | null;
   [key: string]: any;
 }
 
@@ -135,9 +136,9 @@ interface LichSanXuatItem {
 
 const COMPANY = {
   tenCongTy: "CÔNG TY CỔ PHẦN BÊ TÔNG TÂY ĐÔ",
-  diaChi: "KCN Hòa Phú, Phường Hòa Phú, Quận Thủ Đức, TP. HCM",
-  dienThoai: "028.3724 5678 – 0909 123 456",
-  mst: "0 3 1 4 8 7 6 9 5 9",
+  diaChi: "Km14, QL91, P.Phước Thới, TP.Cần Thơ",
+  dienThoai: "0292 651 8375",
+  mst: "1801286137",
   taiKhoan: "123 456 7890",
   nganHang: "Ngân hàng TMCP Ngoại thương Việt Nam (VCB)",
 };
@@ -233,11 +234,7 @@ export default function InHoaDonPage() {
     hd.phuongThucThanhToan === "chuyen_khoan" ? "Chuyển khoản" : "Tiền mặt";
 
   // Địa chỉ trạm trộn đầy đủ
-  const tramTronLabel = hd.tenTramTron
-    ? hd.diaChiTramTron
-      ? `${hd.tenTramTron} – ${hd.diaChiTramTron}`
-      : hd.tenTramTron
-    : ls?.bienSoXe || "";
+  const tramTronLabel = hd.tenTramTron || "—";
 
   return (
     <div className={styles.wrapper}>
@@ -341,7 +338,7 @@ export default function InHoaDonPage() {
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Trạm trộn:</span>
-                  <span className={styles.infoValue}>{tramTronLabel || "—"}</span>
+                  <span className={styles.infoValue}>{hd.tenTramTron || "—"}</span>
                 </div>
               </div>
             </div>
@@ -404,7 +401,7 @@ export default function InHoaDonPage() {
                   {(hd.donGia || 0).toLocaleString("vi-VN")}
                 </td>
                 <td className={styles.tdRight}>
-                  {(hd.thanhTien || hd.tienBeTong || 0).toLocaleString("vi-VN")}
+                  {((hd.khoiLuongDat || 0) * (hd.donGia || 0)).toLocaleString("vi-VN")}
                 </td>
               </tr>
               {(hd.buuVanChuyen || 0) > 0 && (
@@ -477,6 +474,8 @@ export default function InHoaDonPage() {
                   <span className={styles.infoLabel}>Phương thức TT:</span>
                   <span className={styles.infoValue}>{phuongThucText}</span>
                 </div>
+              </div>
+              <div className={styles.infoCol}>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Loại thanh toán:</span>
                   <span
@@ -488,16 +487,6 @@ export default function InHoaDonPage() {
                   >
                     {isCongNo ? "CÔNG NỢ" : "TRẢ HẾT"}
                   </span>
-                </div>
-              </div>
-              <div className={styles.infoCol}>
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Tài khoản:</span>
-                  <span className={styles.infoValue}>{COMPANY.taiKhoan}</span>
-                </div>
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Ngân hàng:</span>
-                  <span className={styles.infoValue}>{COMPANY.nganHang}</span>
                 </div>
               </div>
             </div>

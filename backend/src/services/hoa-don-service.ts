@@ -190,6 +190,7 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
      LEFT JOIN LichSanXuat ls ON dh.id = ls.idDonHang
      LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
      LEFT JOIN TramTron tt ON dh.idTramTron = tt.id
+     LEFT JOIN NghiemThu nt ON dh.id = nt.idDonHang
      WHERE hd.id = @id`,
     { id }
   );
@@ -232,6 +233,7 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
     nguoiOmOng: r.nguoiOmOng,
     nguoiBatOng: r.nguoiBatOng,
     kyThuatCongTrinh: r.kyThuatCongTrinh,
+    ngayNghiemThu: r.ngayNghiemThu,
   };
 }
 
@@ -241,18 +243,21 @@ export async function taiHoaDonDoc(id: number): Promise<Buffer> {
 
   const ls = hd as any;
   const COMPANY_NAME = 'CÔNG TY CỔ PHẦN BÊ TÔNG TÂY ĐÔ';
-  const COMPANY_ADDR = 'KCN Hòa Phú, Phường Hòa Phú, Quận Thủ Đức, TP. HCM';
-  const COMPANY_PHONE = '028.3724 5678 – 0909 123 456';
-  const COMPANY_MST = '0 3 1 4 8 7 6 9 5 9';
-  const COMPANY_BANK = 'Ngân hàng TMCP Ngoại thương Việt Nam (VCB)';
-  const COMPANY_ACC = '123 456 7890';
+  const COMPANY_ADDR = 'Km14, QL91, P.Phước Thới, TP.Cần Thơ';
+  const COMPANY_PHONE = '0292 651 8375';
+  const COMPANY_MST = '1801286137';
   const pttt = hd.phuongThucThanhToan === 'chuyen_khoan' ? 'Chuyển khoản' : 'Tiền mặt';
   const loaiTT = hd.loaiThanhToan === 'tra_het' ? 'Trả hết' : 'Công nợ';
   const hanTra = hd.loaiThanhToan === 'cong_no' && hd.hanTraCongNo
     ? `<tr><td><strong>Hạn thanh toán:</strong></td><td>${new Date(hd.hanTraCongNo).toLocaleDateString('vi-VN')}</td></tr>` : '';
 
+  // Thành tiền bê tông = khối lượng x đơn giá
+  const khoiLuong = ls.khoiLuongDat || 0;
+  const donGia = ls.donGia || 0;
+  const thanhTienBeTong = khoiLuong * donGia;
+
   const rowsChiTiet: string[] = [
-    `  <tr><td>1</td><td>Bê tông thương phẩm (${ls.tenMacBeTong || ''})</td><td>m³</td><td style="text-align:right">${ls.khoiLuongDat || 0}</td><td style="text-align:right">${(ls.donGia || 0).toLocaleString('vi-VN')}</td><td style="text-align:right">${(ls.thanhTien || hd.tienBeTong || 0).toLocaleString('vi-VN')}</td></tr>`,
+    `  <tr><td>1</td><td>Bê tông thương phẩm (${ls.tenMacBeTong || ''})</td><td>m³</td><td style="text-align:right">${khoiLuong}</td><td style="text-align:right">${donGia.toLocaleString('vi-VN')}</td><td style="text-align:right">${thanhTienBeTong.toLocaleString('vi-VN')}</td></tr>`,
   ];
   if ((hd.buuVanChuyen || 0) > 0) rowsChiTiet.push(`  <tr><td>${rowsChiTiet.length + 1}</td><td>Phí bù vận chuyển</td><td></td><td></td><td></td><td style="text-align:right">${hd.buuVanChuyen.toLocaleString('vi-VN')}</td></tr>`);
   if ((hd.phiPhatSinh || 0) > 0) rowsChiTiet.push(`  <tr><td>${rowsChiTiet.length + 1}</td><td>Chi phí phát sinh</td><td></td><td></td><td></td><td style="text-align:right">${hd.phiPhatSinh.toLocaleString('vi-VN')}</td></tr>`);
@@ -264,6 +269,7 @@ export async function taiHoaDonDoc(id: number): Promise<Buffer> {
   if (ls.nguoiOmOng) nhanSuRows.push(`  <tr><td><strong>Vận hành bơm:</strong></td><td>${ls.nguoiOmOng}</td></tr>`);
   if (ls.nguoiBatOng) nhanSuRows.push(`  <tr><td><strong>Lắp ống:</strong></td><td>${ls.nguoiBatOng}</td></tr>`);
   if (ls.kyThuatCongTrinh) nhanSuRows.push(`  <tr><td><strong>Kỹ sư công trình:</strong></td><td>${ls.kyThuatCongTrinh}</td></tr>`);
+  if (ls.ngayNghiemThu) nhanSuRows.push(`  <tr><td><strong>Ngày nghiệm thu:</strong></td><td>${new Date(ls.ngayNghiemThu).toLocaleDateString('vi-VN')}</td></tr>`);
 
   const html = `<!DOCTYPE html>
 <html>
@@ -359,7 +365,7 @@ export async function taiHoaDonDoc(id: number): Promise<Buffer> {
       </div>
       <div>
         <div class="info-row"><span class="info-label">Ngày giao hàng:</span><span class="info-val">${ls.ngayGiao ? new Date(ls.ngayGiao).toLocaleDateString('vi-VN') : ''}</span></div>
-        <div class="info-row"><span class="info-label">Trạm trộn:</span><span class="info-val">${ls.tenTramTron || ''} ${ls.diaChiTramTron ? '– ' + ls.diaChiTramTron : ''}</span></div>
+        <div class="info-row"><span class="info-label">Trạm trộn:</span><span class="info-val">${ls.tenTramTron || ''}</span></div>
       </div>
     </div>
   </div>
@@ -402,11 +408,9 @@ export async function taiHoaDonDoc(id: number): Promise<Buffer> {
     <div class="two-col">
       <div>
         <div class="info-row"><span class="info-label">Phương thức TT:</span><span class="info-val">${pttt}</span></div>
-        <div class="info-row"><span class="info-label">Loại thanh toán:</span><span class="info-val">${loaiTT}</span></div>
       </div>
       <div>
-        <div class="info-row"><span class="info-label">Tài khoản:</span><span class="info-val">${COMPANY_ACC}</span></div>
-        <div class="info-row"><span class="info-label">Ngân hàng:</span><span class="info-val">${COMPANY_BANK}</span></div>
+        <div class="info-row"><span class="info-label">Loại thanh toán:</span><span class="info-val">${loaiTT}</span></div>
       </div>
     </div>
   </div>
