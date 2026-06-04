@@ -101,7 +101,7 @@ export async function exportToExcel(
     dataRow.height = 20;
     headers.forEach((h, colIndex) => {
       const cell = dataRow.getCell(colIndex + 1);
-      let value = row[h.key];
+      let value: string | number | Date | null | undefined = row[h.key];
       // Handle null, undefined, dates
       if (value === null || value === undefined) {
         value = "";
@@ -110,7 +110,7 @@ export async function exportToExcel(
       } else if (typeof value === "object") {
         value = String(value);
       }
-      cell.value = value;
+      cell.value = value as string | number | null;
       applyCellStyle(cell, h.alignRight);
     });
   });

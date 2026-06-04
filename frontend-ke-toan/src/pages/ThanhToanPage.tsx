@@ -13,11 +13,12 @@ import { EmptyState, Loading, Pagination } from "../components/Common";
 import { usePageRole, usePagination, useToast } from "../hooks";
 import {
   exportThanhToan,
+  ExportThanhToan,
   layDanhSachDonHang,
   layHoaDonTheoDonHang,
   layLichSuThanhToan,
 } from "../services/api";
-import { DonHang, ExportThanhToan, ThanhToan } from "../types";
+import { DonHang, ThanhToan } from "../types";
 import styles from "./ThanhToanPage.module.css";
 
 function formatCurrency(v: number) {

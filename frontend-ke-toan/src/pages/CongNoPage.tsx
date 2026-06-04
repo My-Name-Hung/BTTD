@@ -1080,18 +1080,6 @@ export default function CongNoPage() {
           </div>
         </div>
       )}
-
-      {/* Nút link đến trang khách hàng */}
-      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
-        <button
-          className="btn btn-secondary"
-          style={{ fontSize: 13, padding: '8px 16px' }}
-          onClick={() => navigate('/quan-ly/khach-hang')}
-        >
-          <FiExternalLink size={14} style={{ marginRight: 6 }} />
-          Quản lý khách hàng
-        </button>
-      </div>
     </div>
   );
 }

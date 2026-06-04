@@ -7,8 +7,9 @@ import { layDonHangTheoTram, layDanhSachTramTron } from "../services/api";
 import { DonHang, TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./DonHangTheoTramPage.module.css";
 
-function formatCurrency(v: number) {
-  return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
+function formatCurrency(v: number | null | undefined) {
+  if (v == null) return "—";
+  return v.toLocaleString("vi-VN") + " đ";
 }
 
 function getBadgeStyle(trangThai: string): React.CSSProperties {
@@ -49,7 +50,7 @@ export default function DonHangTheoTramPage() {
     try {
       const tramId = selectedTram ? parseInt(selectedTram, 10) : undefined;
       const res = await layDonHangTheoTram(page, 20, trangThaiFilter || undefined, tramId);
-      setData(res);
+      setData({ data: res.data || [], pagination: res.pagination });
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {
