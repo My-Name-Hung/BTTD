@@ -12,6 +12,7 @@ import { SearchableDropdown } from "../components/SearchableDropdown";
 import { TramTronSelect } from "../components/TramTronSelect";
 import { usePagination, useToast } from "../hooks";
 import {
+  exportNguoiDung,
   layDanhSachNguoiDung,
   suaNguoiDung,
   xoaNguoiDung,
@@ -218,8 +219,7 @@ export default function QuanLyNguoiDungPage() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const res = await layDanhSachNguoiDung(1, 1000, undefined);
-      const allData = res.data || [];
+      const allData = await exportNguoiDung();
 
       const vaiTroLabels: Record<string, string> = {
         admin: "Quản trị",
@@ -243,7 +243,7 @@ export default function QuanLyNguoiDungPage() {
         { key: "ngayTao", label: "Ngày tạo", width: 16 },
       ];
 
-      const rows = allData.map((nd: NguoiDung) => ({
+      const rows = allData.map((nd) => ({
         id: nd.id,
         tenDangNhap: nd.tenDangNhap,
         hoTen: nd.hoTen || "",
@@ -251,7 +251,7 @@ export default function QuanLyNguoiDungPage() {
         soDienThoai: nd.soDienThoai || "",
         vaiTro: vaiTroLabels[nd.vaiTro] || nd.vaiTro,
         trangThai: nd.trangThai === "hoat_dong" ? "Hoạt động" : "Khóa",
-        ngayTao: formatDateForExport(nd.ngayTao as string | undefined),
+        ngayTao: formatDateForExport(nd.ngayTao),
       }));
 
       await exportToExcel("BÁO CÁO NGƯỜI DÙNG", headers, rows, `BaoCaoNguoiDung_${new Date().toISOString().slice(0, 10)}.xlsx`, "Người dùng");

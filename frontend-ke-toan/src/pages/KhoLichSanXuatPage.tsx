@@ -3,7 +3,7 @@ import { FiCheck, FiClock, FiDownload, FiEye, FiPackage, FiTruck } from "react-i
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../components/Common";
 import { useToast } from "../hooks";
-import { layTatCaLichSanXuat, layLichSanXuatTramTron, xacNhanBatDauGiao } from "../services/api";
+import { exportLichSanXuat, layLichSanXuatTramTron, xacNhanBatDauGiao } from "../services/api";
 import { TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./KhoLichSanXuatPage.module.css";
 import { formatDateVN } from "../utils/dateUtils";
@@ -198,8 +198,7 @@ export default function KhoLichSanXuatPage() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const res = await layTatCaLichSanXuat();
-      const allData = res.data || [];
+      const allData = await exportLichSanXuat();
 
       const headers = [
         { key: "maDonHang", label: "Mã đơn", width: 16 },
@@ -214,12 +213,6 @@ export default function KhoLichSanXuatPage() {
         { key: "diaChiNhan", label: "Địa chỉ giao", width: 35 },
       ];
 
-      const trangThaiLabels: Record<string, string> = {
-        chua_san_xuat: "Chưa sản xuất",
-        dang_san_xuat: "Đang sản xuất",
-        da_xong: "Đã xong",
-      };
-
       const rows = allData.map((ls: any) => ({
         maDonHang: ls.maDonHang || "",
         tenKhachHang: ls.tenKhachHang || "",
@@ -227,7 +220,7 @@ export default function KhoLichSanXuatPage() {
         khoiLuongDat: ls.khoiLuongDat || 0,
         bienSoXe: ls.bienSoXe || "",
         tenTaiXe: ls.tenTaiXe || "",
-        trangThai: trangThaiLabels[ls.trangThai] || ls.trangThai || "",
+        trangThai: ls.trangThai || "",
         thoiGianTron: formatDateForExport(ls.thoiGianTron),
         thoiGianXuatBen: formatDateForExport(ls.thoiGianXuatBen),
         diaChiNhan: ls.diaChiNhan || "",

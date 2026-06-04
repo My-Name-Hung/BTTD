@@ -19,6 +19,7 @@ import {
 import { usePagination, useToast } from "../hooks";
 import {
   duyetDonHang,
+  exportDonHang,
   layDanhSachDonHang,
   tuChoiDonHang,
   xoaDonHang,
@@ -185,18 +186,8 @@ export default function QuanLyDonHangPage() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      // Lấy tất cả dữ liệu (không phân trang) để export
-      const res = await layDanhSachDonHang(1, 10000, trangThai || undefined, tuKhoa || undefined);
-      const allData = res.data || [];
+      const exportData = await exportDonHang(trangThai || undefined, tuKhoa || undefined);
 
-      // Filter dữ liệu theo vai trò
-      const exportData = allData.filter((dh: DonHang) => {
-        if (isAdmin) return true;
-        if (isSale || isDieuPhoi) return dh.nguoiTaoId === userId;
-        return true;
-      });
-
-      // Định nghĩa columns - dùng string thay vì keyof để tránh lỗi type
       const isAdminOrKeToan = isAdmin || isKeToan;
       const headers = [
         { key: "maDonHang", label: "Mã đơn", width: 16 },
@@ -216,7 +207,6 @@ export default function QuanLyDonHangPage() {
         { key: "trangThaiDon", label: "Trạng thái", width: 18 },
       ];
 
-      // Thêm cột user nếu là admin hoặc kế toán
       if (isAdminOrKeToan) {
         headers.push(
           { key: "maNguoiTao", label: "Mã user tạo", width: 16 },
@@ -226,8 +216,7 @@ export default function QuanLyDonHangPage() {
         );
       }
 
-      // Map dữ liệu
-      const rows = exportData.map((dh: DonHang) => {
+      const rows = exportData.map((dh) => {
         const row: Record<string, unknown> = {
           maDonHang: dh.maDonHang,
           tenKhachHang: dh.tenKhachHang,

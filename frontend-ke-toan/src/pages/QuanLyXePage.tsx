@@ -19,6 +19,7 @@ import {
 import { SearchableDropdown } from "../components/SearchableDropdown";
 import { usePagination, useToast } from "../hooks";
 import {
+  exportXe,
   layDanhSachTaiXe,
   layDanhSachXe,
   suaXe,
@@ -221,8 +222,7 @@ export default function QuanLyXePage() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const res = await layDanhSachXe(undefined);
-      const allData = res || [];
+      const allData = await exportXe();
 
       const headers = [
         { key: "id", label: "ID", width: 8 },
@@ -232,7 +232,7 @@ export default function QuanLyXePage() {
         { key: "trangThai", label: "Trạng thái", width: 14 },
       ];
 
-      const rows = allData.map((xe: Xe) => ({
+      const rows = allData.map((xe) => ({
         id: xe.id,
         bienSo: xe.bienSo,
         tenTaiXe: xe.tenTaiXe || "",

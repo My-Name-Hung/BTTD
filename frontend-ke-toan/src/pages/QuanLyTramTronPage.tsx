@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiX, FiEye, FiDownload } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { layDanhSachTramTron, taoTramTron, suaTramTron, xoaTramTron } from '../services/api';
+import { layDanhSachTramTron, taoTramTron, suaTramTron, xoaTramTron, exportTramTron } from '../services/api';
 import { exportToExcel } from '../utils/exportData';
 import { TramTron } from '../types';
 import { usePagination, useToast } from '../hooks';
@@ -126,8 +126,7 @@ export default function QuanLyTramTronPage() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const res = await layDanhSachTramTron(undefined, undefined);
-      const allData = res || [];
+      const allData = await exportTramTron();
 
       const headers = [
         { key: "id", label: "ID", width: 8 },
@@ -137,7 +136,7 @@ export default function QuanLyTramTronPage() {
         { key: "trangThai", label: "Trạng thái", width: 14 },
       ];
 
-      const rows = allData.map((tt: TramTron) => ({
+      const rows = allData.map((tt) => ({
         id: tt.id,
         tenTram: tt.tenTram,
         diaChi: tt.diaChi || "",

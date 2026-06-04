@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import {
   layDanhSachMacBeTong, taoMacBeTong, suaMacBeTong, xoaMacBeTong,
+  exportMacBeTong,
 } from '../services/api';
 import { MacBeTong } from '../types';
 import { useToast, usePageRole } from '../hooks';
@@ -105,8 +106,7 @@ export default function QuanLyMacBeTongPage() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const res = await layDanhSachMacBeTong();
-      const allData = res || [];
+      const allData = await exportMacBeTong();
 
       const headers = [
         { key: "id", label: "ID", width: 8 },

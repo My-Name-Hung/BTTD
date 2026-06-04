@@ -978,6 +978,200 @@ export async function logout(): Promise<void> {
   await request('/auth/logout', { method: 'POST' });
 }
 
+// ===== EXPORT APIs =====
+export interface ExportDonHang {
+  id: number;
+  maDonHang: string;
+  tenKhachHang: string;
+  diaChiNhan: string;
+  soDienThoai: string;
+  tenMacBeTong: string | null;
+  tenTramTron: string | null;
+  khoiLuongDat: number;
+  khoiLuongThucTe: number | null;
+  donGia: number;
+  thanhTien: number | null;
+  daThanhToan: number;
+  conLai: number | null;
+  thoiGianGiaoDuKien: string | null;
+  ngayTaoDon: string;
+  trangThaiDon: string;
+  maNguoiTao: string | null;
+  tenNguoiTao: string | null;
+  maNguoiDuyet: string | null;
+  tenNguoiDuyet: string | null;
+}
+
+export interface ExportKhachHang {
+  id: number;
+  maKhachHang: string | null;
+  tenKhachHang: string;
+  nhom: string | null;
+  diaChi: string | null;
+  soDienThoai: string | null;
+  email: string | null;
+  ghiChu: string | null;
+}
+
+export interface ExportMacBeTong {
+  id: number;
+  tenMac: string;
+  donGia: number;
+  moTa: string | null;
+}
+
+export interface ExportTramTron {
+  id: number;
+  tenTram: string;
+  diaChi: string | null;
+  soDienThoai: string | null;
+  trangThai: string;
+}
+
+export interface ExportXe {
+  id: number;
+  bienSo: string;
+  tenTaiXe: string | null;
+  soDienThoai: string | null;
+  trangThai: string;
+}
+
+export interface ExportNguoiDung {
+  id: number;
+  tenDangNhap: string;
+  hoTen: string | null;
+  email: string | null;
+  soDienThoai: string | null;
+  vaiTro: string;
+  trangThai: string;
+  ngayTao: string;
+}
+
+export interface ExportLichSanXuat {
+  id: number;
+  maDonHang: string | null;
+  tenKhachHang: string | null;
+  tenMacBeTong: string | null;
+  khoiLuongDat: number | null;
+  bienSoXe: string | null;
+  tenTaiXe: string | null;
+  trangThai: string;
+  thoiGianTron: string | null;
+  thoiGianXuatBen: string | null;
+  diaChiNhan: string | null;
+}
+
+export interface ExportThanhToan {
+  id: number;
+  maDonHang: string;
+  tenKhachHang: string;
+  tenMacBeTong: string | null;
+  khoiLuongDat: number;
+  thanhTien: number | null;
+  daThanhToan: number;
+  conLai: number | null;
+  ngayTaoDon: string;
+}
+
+export interface ExportCongNo {
+  id: number;
+  nhom: string | null;
+  maKhachHang: string | null;
+  tenKhachHang: string;
+  duDauNo: number;
+  duDauCo: number;
+  phatSinhNo: number;
+  phatSinhCo: number;
+  duCuoiNo: number;
+  duCuoiCo: number;
+}
+
+export async function exportDonHang(trangThai?: string, tuKhoa?: string): Promise<ExportDonHang[]> {
+  const params = new URLSearchParams();
+  if (trangThai) params.set('trangThai', trangThai);
+  if (tuKhoa) params.set('tuKhoa', tuKhoa);
+  const res = await fetch(`${BASE_URL}/export/don-hang?${params}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
+export async function exportKhachHang(): Promise<ExportKhachHang[]> {
+  const res = await fetch(`${BASE_URL}/export/khach-hang`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
+export async function exportMacBeTong(): Promise<ExportMacBeTong[]> {
+  const res = await fetch(`${BASE_URL}/export/mac-be-tong`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
+export async function exportTramTron(): Promise<ExportTramTron[]> {
+  const res = await fetch(`${BASE_URL}/export/tram-tron`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
+export async function exportXe(): Promise<ExportXe[]> {
+  const res = await fetch(`${BASE_URL}/export/xe`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
+export async function exportNguoiDung(): Promise<ExportNguoiDung[]> {
+  const res = await fetch(`${BASE_URL}/export/nguoi-dung`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
+export async function exportLichSanXuat(trangThai?: string): Promise<ExportLichSanXuat[]> {
+  const params = new URLSearchParams();
+  if (trangThai) params.set('trangThai', trangThai);
+  const res = await fetch(`${BASE_URL}/export/lich-san-xuat?${params}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
+export async function exportThanhToan(): Promise<ExportThanhToan[]> {
+  const res = await fetch(`${BASE_URL}/export/thanh-toan`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
+export async function exportCongNo(): Promise<ExportCongNo[]> {
+  const res = await fetch(`${BASE_URL}/export/cong-no`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
 // ===== HÓA ĐƠN =====
 export async function taoHoaDon(data: {
   idDonHang: number;

@@ -12,11 +12,12 @@ import { useNavigate } from "react-router-dom";
 import { EmptyState, Loading, Pagination } from "../components/Common";
 import { usePageRole, usePagination, useToast } from "../hooks";
 import {
+  exportThanhToan,
   layDanhSachDonHang,
   layHoaDonTheoDonHang,
   layLichSuThanhToan,
 } from "../services/api";
-import { DonHang, ThanhToan } from "../types";
+import { DonHang, ExportThanhToan, ThanhToan } from "../types";
 import styles from "./ThanhToanPage.module.css";
 
 function formatCurrency(v: number) {
@@ -134,17 +135,16 @@ export default function ThanhToanPage() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const res = await layDanhSachDonHang(1, 10000, undefined, undefined);
-      const allData = res.data || [];
+      const allData = await exportThanhToan();
 
-      const rows = allData.map((dh: DonHang) => ({
+      const rows = allData.map((dh: ExportThanhToan) => ({
         maDonHang: dh.maDonHang,
         tenKhachHang: dh.tenKhachHang,
         tenMacBeTong: dh.tenMacBeTong || "",
         khoiLuongDat: dh.khoiLuongDat,
         thanhTien: dh.thanhTien || 0,
-        daThanhToan: dh.daThanhToan || 0,
-        conLai: Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0)),
+        daThanhToan: dh.daThanhToan,
+        conLai: dh.conLai || 0,
         ngayTaoDon: formatDateForExport(dh.ngayTaoDon),
       }));
 

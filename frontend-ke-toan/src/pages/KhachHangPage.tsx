@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiDownload, FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiExternalLink } from 'react-icons/fi';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { layDanhSachKhachHang, taoKhachHang, suaKhachHang, xoaKhachHang } from '../services/api';
+import { layDanhSachKhachHang, taoKhachHang, suaKhachHang, xoaKhachHang, exportKhachHang } from '../services/api';
 import { KhachHang, ApiResponseWithPagination } from '../types';
 import { exportToExcel, formatDateForExport } from '../utils/exportData';
 import { useToast, usePagination, usePageRole } from '../hooks';
@@ -155,8 +155,7 @@ export default function KhachHangPage() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const res = await layDanhSachKhachHang(1, 10000, undefined);
-      const allData = res.data || [];
+      const allData = await exportKhachHang();
 
       const headers = [
         { key: "maKhachHang", label: "Mã KH", width: 14 },
@@ -168,7 +167,7 @@ export default function KhachHangPage() {
         { key: "ghiChu", label: "Ghi chú", width: 30 },
       ];
 
-      const rows = allData.map((kh: KhachHang) => ({
+      const rows = allData.map((kh) => ({
         maKhachHang: kh.maKhachHang || "",
         tenKhachHang: kh.tenKhachHang,
         nhom: kh.nhom || "",

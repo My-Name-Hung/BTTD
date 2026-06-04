@@ -15,6 +15,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ConfirmModal, EmptyState, Loading } from "../components/Common";
 import { usePageRole, useToast } from "../hooks";
 import {
+  exportCongNo,
   importCongNoKhachHang,
   layCongNoGrouped,
   layCongNoKhachHangGrouped,
@@ -302,8 +303,7 @@ export default function CongNoPage() {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const res = await layCongNoGrouped(search || undefined, nhomFilter || undefined);
-      const allData = res || [];
+      const allData = await exportCongNo();
 
       const headers: { key: string; label: string; width?: number; alignRight?: boolean }[] = [
         { key: "nhom", label: "Nhóm", width: 25 },
@@ -317,19 +317,28 @@ export default function CongNoPage() {
         { key: "duCuoiCo", label: "Dư cuối Có", width: 16, alignRight: true },
       ];
 
-      const rows: CongNoGroupExport[] = allData.flatMap((group: CongNoGroup) =>
-        group.items.map((cn: CongNo) => ({
-          nhom: group.nhom || "",
-          maKhachHang: cn.maKhachHang || "",
-          tenKhachHang: cn.tenKhachHang || "",
-          duDauNo: cn.duDauNo ?? 0,
-          duDauCo: cn.duDauCo ?? 0,
-          phatSinhNo: cn.phatSinhNo ?? 0,
-          phatSinhCo: cn.phatSinhCo ?? 0,
-          duCuoiNo: cn.duCuoiNo ?? 0,
-          duCuoiCo: cn.duCuoiCo ?? 0,
-        }))
-      );
+      const rows = allData.map((cn: {
+        id: number;
+        nhom: string;
+        maKhachHang: string;
+        tenKhachHang: string;
+        duDauNo: number;
+        duDauCo: number;
+        phatSinhNo: number;
+        phatSinhCo: number;
+        duCuoiNo: number;
+        duCuoiCo: number;
+      }) => ({
+        nhom: cn.nhom || "",
+        maKhachHang: cn.maKhachHang || "",
+        tenKhachHang: cn.tenKhachHang || "",
+        duDauNo: cn.duDauNo ?? 0,
+        duDauCo: cn.duDauCo ?? 0,
+        phatSinhNo: cn.phatSinhNo ?? 0,
+        phatSinhCo: cn.phatSinhCo ?? 0,
+        duCuoiNo: cn.duCuoiNo ?? 0,
+        duCuoiCo: cn.duCuoiCo ?? 0,
+      }));
 
       await exportToExcel("BÁO CÁO CÔNG NỢ", headers, rows, `BaoCaoCongNo_${new Date().toISOString().slice(0, 10)}.xlsx`, "Công nợ");
       showToast("Xuất báo cáo thành công!");

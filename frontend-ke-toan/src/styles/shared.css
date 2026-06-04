@@ -261,15 +261,19 @@
   box-shadow: 0 4px 12px rgba(234, 0, 0, 0.3);
 }
 
-/* Confirm modal buttons */
+/* Nút xuất báo cáo - màu xanh lá */
 .btn-export {
-  background: #0599d6;
+  background: #2e7d32;
   color: white;
   border: none;
 }
 .btn-export:hover {
-  background: #047aab;
-  box-shadow: 0 4px 12px rgba(5, 153, 214, 0.3);
+  background: #1b6e35;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+.btn-export:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 /* Styles defined above in .confirm-btn-cancel and .confirm-btn-danger */
 

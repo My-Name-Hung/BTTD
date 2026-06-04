@@ -29,7 +29,7 @@
 }
 
 .btnExport {
-  background: var(--color-success) !important;
+  background: #2e7d32 !important;
 }
 
 .btnExport:hover {
