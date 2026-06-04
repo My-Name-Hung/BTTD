@@ -122,9 +122,13 @@ interface HoaDonData {
 
 interface NghiemThuData {
   id: number;
-  ngayNghiemThu: string;
-  kyThuatCongTrinh: string;
-  bienBanFile: string;
+  ngayLapBienBan: string | null;
+  nguoiLap: string | null;
+  nguoiKy: string | null;
+  chucVu: string | null;
+  bienBanFile: string | string[] | null;
+  bienBanFiles?: string[];
+  ghiChu: string | null;
 }
 
 interface LichSanXuatItem {
@@ -167,9 +171,11 @@ export default function InHoaDonPage() {
     contentRef: invoiceRef,
     documentTitle: hoaDon ? `HoaDon-${hoaDon.maHoaDon}` : "HoaDon",
     pageStyle: `
-      @page { size: A4; margin: 10mm 10mm; }
-      * { box-sizing: border-box; }
-      body { margin: 0; padding: 0; }
+      @page { size: A4; margin: 0; }
+      @media print {
+        .toolbar { display: none !important; }
+        .wrapper { background: #e8ecf0 !important; padding-bottom: 40px !important; }
+      }
     `,
   });
 
@@ -591,8 +597,7 @@ export default function InHoaDonPage() {
                 </div>
                 <div className={styles.infoCol}>
                   {(hd.kyThuatCongTrinh ||
-                    ls?.kyThuatCongTrinh ||
-                    nghiemThu?.kyThuatCongTrinh) && (
+                    ls?.kyThuatCongTrinh) && (
                     <div className={styles.infoRow}>
                       <span className={styles.infoLabel}>
                         Kỹ sư công trình:
@@ -600,7 +605,6 @@ export default function InHoaDonPage() {
                       <span className={styles.infoValue}>
                         {hd.kyThuatCongTrinh ||
                           ls?.kyThuatCongTrinh ||
-                          nghiemThu?.kyThuatCongTrinh ||
                           ""}
                       </span>
                     </div>
@@ -609,7 +613,7 @@ export default function InHoaDonPage() {
                     <div className={styles.infoRow}>
                       <span className={styles.infoLabel}>Ngày nghiệm thu:</span>
                       <span className={styles.infoValue}>
-                        {formatDate(nghiemThu.ngayNghiemThu)}
+                        {formatDate(nghiemThu.ngayLapBienBan)}
                       </span>
                     </div>
                   )}
@@ -650,9 +654,7 @@ export default function InHoaDonPage() {
               Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ của{" "}
               <strong>BÊ TÔNG TÂY ĐÔ</strong>!
             </p>
-            <p className={styles.footerContact}>
-              {COMPANY.tenCongTy} • {COMPANY.diaChi}
-            </p>
+            <p className={styles.footerContact} />
           </div>
         </div>
       </div>

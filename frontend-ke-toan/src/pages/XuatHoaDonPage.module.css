@@ -624,3 +624,121 @@
   font-weight: 800;
   color: var(--color-warning);
 }
+
+.submittingText {
+  font-size: 14px;
+}
+
+/* ── Danh sách hóa đơn công nợ đã xuất ── */
+.existingHoaDonList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.existingHoaDonItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  gap: 12px;
+}
+
+.existingHoaDonLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.existingHoaDonBadge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.existingHoaDonMa {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.existingHoaDonMeta {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.existingHoaDonRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.existingHoaDonAmount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.btnXemHd {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-primary);
+  background: white;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btnXemHd:hover {
+  background: rgba(7, 60, 235, 0.06);
+}
+
+.congNoSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: rgba(7, 60, 235, 0.04);
+  border: 1px solid rgba(7, 60, 235, 0.12);
+  border-radius: 10px;
+}
+
+.congNoSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.congNoSummaryRow span:first-child {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.congNoSummaryDaTra {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.congNoSummaryConLai {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-warning);
+}

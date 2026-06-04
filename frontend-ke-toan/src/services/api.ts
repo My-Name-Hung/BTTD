@@ -849,9 +849,11 @@ export async function layDonHangTheoTram(
   page = 1,
   limit = 20,
   trangThai?: string,
+  idTram?: number | null,
 ): Promise<ApiResponseWithPagination<DonHang[]>> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (trangThai) params.append("trangThai", trangThai);
+  if (idTram) params.append("idTram", String(idTram));
   const res = await fetch(`${BASE_URL}/don-hang/theo-tram?${params}`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });

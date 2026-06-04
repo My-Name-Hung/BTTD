@@ -2,8 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   FiDollarSign,
   FiDownload,
-  FiEye,
-  FiFileText,
   FiPrinter,
   FiSearch,
   FiX,
@@ -49,10 +47,6 @@ export default function ThanhToanPage() {
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState("");
   const [activeTab, setActiveTab] = useState<TabFilter>("chua_tat_toan");
-  const [modalHoaDon, setModalHoaDon] = useState<{
-    donHang: DonHang;
-    hoaDons: HoaDonItem[];
-  } | null>(null);
 
   const canCreate = hasPermission("thanhtoan.create");
 
@@ -125,11 +119,6 @@ export default function ThanhToanPage() {
     0,
   );
   const tongDaTT = donHangs.reduce((sum, dh) => sum + (dh.daThanhToan || 0), 0);
-
-  const handleOpenModal = (dh: DonHang) => {
-    const hds = hoaDons[dh.id] || [];
-    setModalHoaDon({ donHang: dh, hoaDons: hds });
-  };
 
   const handlePrintHD = (hoaDonId: number) => {
     navigate(`/in-hoa-don/${hoaDonId}`);
@@ -292,44 +281,40 @@ export default function ThanhToanPage() {
                       </td>
                       <td>
                         <div className={styles.actionBtns}>
-                          {/* Đã tất toán: chỉ hiện icon mắt xem HĐ */}
-                          {daTatToanOrder && hds.length > 0 && canCreate && (
+                          {/* Chưa tất toán: nút thanh toán luôn hiện */}
+                          {!daTatToanOrder && canCreate && (
                             <button
-                              className={styles.btnViewIcon}
-                              onClick={() => handleOpenModal(dh)}
-                              title="Xem hóa đơn"
+                              className={styles.btnPay}
+                              onClick={() =>
+                                navigate(`/thanh-toan/xuat/${dh.id}`)
+                              }
+                              title="Thanh toán"
                             >
-                              <FiEye size={16} />
+                              <FiDollarSign size={13} />{" "}
+                              {conLai > 0 ? formatCurrency(conLai) : "Thanh toán"}
                             </button>
                           )}
 
-                          {/* Chưa tất toán: hiện nút thanh toán + xuất HĐ (nếu đã thanh toán > 0) */}
-                          {!daTatToanOrder && canCreate && (
-                            <>
-                              <button
-                                className={styles.btnPay}
-                                onClick={() =>
-                                  navigate(`/thanh-toan/xuat/${dh.id}`)
-                                }
-                                title="Thanh toán"
-                              >
-                                <FiDollarSign size={13} />{" "}
-                                {daThanhToan > 0 && conLai > 0
-                                  ? formatCurrency(conLai)
-                                  : "Thanh toán"}
-                              </button>
-                              {daThanhToan > 0 && (
-                                <button
-                                  className={styles.btnHoaDon}
-                                  onClick={() =>
-                                    navigate(`/thanh-toan/xuat/${dh.id}`)
-                                  }
-                                  title="Xuất hóa đơn"
-                                >
-                                  <FiFileText size={13} /> Xuất HĐ
-                                </button>
-                              )}
-                            </>
+                          {/* Nếu đã có hóa đơn (công nợ đã xuất HĐ trước đó): hiện nút xem HĐ */}
+                          {!daTatToanOrder && hds.length > 0 && (
+                            <button
+                              className={styles.btnHoaDon}
+                              onClick={() => handlePrintHD(hds[0].id)}
+                              title="Xem hóa đơn đã xuất"
+                            >
+                              <FiPrinter size={13} /> Xem HĐ
+                            </button>
+                          )}
+
+                          {/* Đã tất toán: nút xem hóa đơn */}
+                          {daTatToanOrder && hds.length > 0 && (
+                            <button
+                              className={styles.btnHoaDon}
+                              onClick={() => handlePrintHD(hds[0].id)}
+                              title="Xem hóa đơn"
+                            >
+                              <FiPrinter size={13} /> Xem HĐ
+                            </button>
                           )}
                         </div>
                       </td>
@@ -352,17 +337,6 @@ export default function ThanhToanPage() {
         )}
       </div>
 
-      {/* Modal xem hóa đơn */}
-      {modalHoaDon && (
-        <ModalHoaDon
-          donHang={modalHoaDon.donHang}
-          hoaDons={modalHoaDon.hoaDons}
-          onClose={() => setModalHoaDon(null)}
-          onPrint={handlePrintHD}
-          onDownload={handleDownloadHD}
-        />
-      )}
-
       <div className={styles.toastContainer}>
         {toasts.map((t) => (
           <div
@@ -376,115 +350,3 @@ export default function ThanhToanPage() {
     </div>
   );
 }
-
-// ─── Modal xem hóa đơn ───────────────────────────────────────────────────────
-function ModalHoaDon({
-  donHang,
-  hoaDons,
-  onClose,
-  onPrint,
-  onDownload,
-}: {
-  donHang: DonHang;
-  hoaDons: HoaDonItem[];
-  onClose: () => void;
-  onPrint: (id: number) => void;
-  onDownload: (id: number) => void;
-}) {
-  return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>
-            <FiFileText size={18} />
-            Hóa đơn - {donHang.maDonHang}
-          </h3>
-          <button className={styles.modalClose} onClick={onClose}>
-            ×
-          </button>
-        </div>
-        <div className={styles.modalBody}>
-          {hoaDons.length === 0 ? (
-            <div className={styles.emptyHoaDon}>Chưa có hóa đơn nào</div>
-          ) : (
-            hoaDons.map((hd, idx) => (
-              <div key={hd.id} className={styles.hoaDonItem}>
-                <div className={styles.hoaDonItemHeader}>
-                  <div>
-                    <strong>Hóa đơn #{idx + 1}</strong>
-                    <span className={styles.hoaDonSo}>Số: {hd.maHoaDon}</span>
-                    {hd.ngayLap && (
-                      <span className={styles.hoaDonNgay}>
-                        Ngày: {new Date(hd.ngayLap).toLocaleDateString("vi-VN")}
-                      </span>
-                    )}
-                    <span
-                      className={`${styles.hoaDonBadge} ${hd.loaiThanhToan === "tra_het" ? styles.badgeTraHet : styles.badgeCongNo}`}
-                    >
-                      {hd.loaiThanhToan === "tra_het" ? "Trả hết" : "Công nợ"}
-                    </span>
-                  </div>
-                  <button
-                    className={styles.btnPrint}
-                    onClick={() => onPrint(hd.id)}
-                  >
-                    <FiPrinter size={14} /> In
-                  </button>
-                  <button
-                    className={styles.btnDownload}
-                    onClick={() => onDownload(hd.id)}
-                  >
-                    <FiDownload size={14} /> Tải
-                  </button>
-                </div>
-                <div className={styles.hoaDonDetails}>
-                  <div className={styles.hdRow}>
-                    <span>Tiền bê tông:</span>
-                    <span>{formatCurrency(hd.tienBeTong)}</span>
-                  </div>
-                  {hd.buuVanChuyen > 0 && (
-                    <div className={styles.hdRow}>
-                      <span>Bù vận chuyển:</span>
-                      <span>{formatCurrency(hd.buuVanChuyen)}</span>
-                    </div>
-                  )}
-                  {hd.phiPhatSinh > 0 && (
-                    <div className={styles.hdRow}>
-                      <span>Chi phí phát sinh:</span>
-                      <span>{formatCurrency(hd.phiPhatSinh)}</span>
-                    </div>
-                  )}
-                  {hd.giamTru > 0 && (
-                    <div className={styles.hdRow}>
-                      <span>Giảm trừ:</span>
-                      <span style={{ color: "var(--color-success)" }}>
-                        - {formatCurrency(hd.giamTru)}
-                      </span>
-                    </div>
-                  )}
-                  <div className={`${styles.hdRow} ${styles.hdTotal}`}>
-                    <span>Tổng cộng:</span>
-                    <span>{formatCurrency(hd.tongCong)}</span>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Label map
-const TRANG_THAI_DON_LABELS: Record<string, string> = {
-  cho_duyet: "Chờ duyệt",
-  da_duyet: "Đã duyệt",
-  dang_san_xuat: "Đang sản xuất",
-  dang_giao: "Đang giao",
-  da_giao: "Đã giao",
-  nghiem_thu: "Nghiệm thu",
-  da_thanh_toan: "Thanh toán",
-  da_hoan_thanh: "Hoàn thành",
-  tu_choi: "Từ chối",
-};

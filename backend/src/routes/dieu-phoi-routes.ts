@@ -47,7 +47,7 @@ router.post('/', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: 
   }
 });
 
-router.get('/don-hang/:idDonHang', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.get('/don-hang/:idDonHang', authMiddleware, requireRole('admin', 'dieu_phoi', 'ke_toan', 'tram_tron', 'lanh_dao'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const data = await layLichSanXuatTheoDonHang(idDonHang);

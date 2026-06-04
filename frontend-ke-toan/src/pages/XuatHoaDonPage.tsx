@@ -20,8 +20,9 @@ import {
   layLichSanXuat,
   taoHoaDon,
   layDonHangGiaoTrongNgay,
+  layHoaDonTheoDonHang,
 } from "../services/api";
-import { DonHang, LichSanXuat } from "../types";
+import { DonHang, LichSanXuat, HoaDon } from "../types";
 import styles from "./XuatHoaDonPage.module.css";
 
 type TabType = "tra_het" | "cong_no";
@@ -62,6 +63,7 @@ export default function XuatHoaDonPage() {
   const [activeTab, setActiveTab] = useState<TabType>("tra_het");
   const [donHang, setDonHang] = useState<DonHang | null>(null);
   const [lichSX, setLichSX] = useState<LichSanXuat | null>(null);
+  const [existingHoaDon, setExistingHoaDon] = useState<HoaDon | null>(null);
   const [khoiLuongNgay, setKhoiLuongNgay] = useState(0);
   const [soDonNgay, setSoDonNgay] = useState(0);
 
@@ -93,13 +95,23 @@ export default function XuatHoaDonPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const [dh, ls] = await Promise.all([
+      const [dh, ls, existingHDs] = await Promise.all([
         layDonHang(parseInt(id, 10)),
         layLichSanXuat(parseInt(id, 10)).catch(() => null),
+        layHoaDonTheoDonHang(parseInt(id, 10)).catch(() => []),
       ]);
       setDonHang(dh);
-      setLichSX(ls);
+      setLichSX(Array.isArray(ls) ? ls[0] : ls);
       setKhachHang(dh.tenKhachHang || "");
+
+      // Lấy hóa đơn công nợ đã xuất trước đó (lọc theo loaiThanhToan = cong_no)
+      const hoaDonCongNo = (Array.isArray(existingHDs) ? existingHDs : [])
+        .filter((h: any) => h.loaiThanhToan === "cong_no")
+        .sort((a: any, b: any) => new Date(b.ngayLap || 0).getTime() - new Date(a.ngayLap || 0).getTime());
+      if (hoaDonCongNo.length > 0) {
+        setExistingHoaDon(hoaDonCongNo[0]);
+        setActiveTab("cong_no");
+      }
 
       if (dh.ngayGiao) {
         try {
@@ -136,8 +148,26 @@ export default function XuatHoaDonPage() {
   const tienBeTong = khoiLuongDisplay * donGiaDisplay;
   const khoiBuVC = Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay);
   const tienBuVCAuto = khoiBuVC * MUC_GIA_BU_VC;
-  const tongCong = tienBeTong + buVanChuyenSo + phiPhatSinhSo - giamTruSo;
-  const soTienConLai = Math.max(0, tongCong - soTTTS);
+
+  // Nếu đã có hóa đơn công nợ trước đó → tổng tiền = số còn lại thực tế của đơn hàng
+  // Đây là lần thanh toán phần còn lại, không tính lại từ đầu
+  const isTraPhanConLai = !!existingHoaDon;
+  const tongCong = isTraPhanConLai
+    ? Math.max(0, (donHang?.conLai || 0) - soTTTS)
+    : tienBeTong + buVanChuyenSo + phiPhatSinhSo - giamTruSo;
+  const soTienConLai = isTraPhanConLai
+    ? Math.max(0, (donHang?.conLai || 0) - soTTTS)
+    : Math.max(0, tongCong - soTTTS);
+
+  // Auto-fill tiền thanh toán trước từ hóa đơn công nợ đã xuất
+  useEffect(() => {
+    if (!loading && existingHoaDon) {
+      const daTT = existingHoaDon.soTienThanhToan || existingHoaDon.tongCong || 0;
+      if (daTT > 0) {
+        setSoTienThanhToanTruoc(formatNumberInput(daTT));
+      }
+    }
+  }, [loading, existingHoaDon]);
 
   // Auto-fill tiền bù vận chuyển khi load xong dữ liệu và chưa từng chỉnh sửa
   useEffect(() => {
@@ -260,7 +290,7 @@ export default function XuatHoaDonPage() {
             </div>
             <div className={styles.summaryItem}>
               <span className={styles.summaryLabel}>Thành tiền</span>
-              <span className={styles.summaryValue}>{formatCurrency(donHang.thanhTien)}</span>
+              <span className={styles.summaryValue}>{formatCurrency(donHang.thanhTien || 0)}</span>
             </div>
             <div className={styles.summaryItem}>
               <span className={styles.summaryLabel}>Còn lại</span>
@@ -268,6 +298,14 @@ export default function XuatHoaDonPage() {
                 {formatCurrency(donHang.conLai || 0)}
               </span>
             </div>
+            {existingHoaDon && (
+              <div className={styles.summaryItem}>
+                <span className={styles.summaryLabel}>Đã thanh toán (HĐ cũ)</span>
+                <span className={styles.summaryValue} style={{ color: "var(--color-success)" }}>
+                  {formatCurrency(existingHoaDon.soTienThanhToan || 0)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -504,24 +542,35 @@ export default function XuatHoaDonPage() {
             <h3>Tổng hợp</h3>
           </div>
           <div className={styles.totalRows}>
-            <div className={styles.totalRow}>
-              <span>Tiền bê tông</span>
-              <span>{formatCurrency(tienBeTong)}</span>
-            </div>
-            <div className={styles.totalRow}>
-              <span>Bù vận chuyển</span>
-              <span>{formatCurrency(buVanChuyenSo)}</span>
-            </div>
-            {phiPhatSinhSo > 0 && (
-              <div className={styles.totalRow}>
-                <span>Chi phí phát sinh</span>
-                <span>+ {formatCurrency(phiPhatSinhSo)}</span>
-              </div>
+            {/* Khi thanh toán phần 2 công nợ: chỉ hiện số còn lại, không hiện chi tiết (đã nằm trong HĐ trước) */}
+            {!isTraPhanConLai && (
+              <>
+                <div className={styles.totalRow}>
+                  <span>Tiền bê tông</span>
+                  <span>{formatCurrency(tienBeTong)}</span>
+                </div>
+                <div className={styles.totalRow}>
+                  <span>Bù vận chuyển</span>
+                  <span>{formatCurrency(buVanChuyenSo)}</span>
+                </div>
+                {phiPhatSinhSo > 0 && (
+                  <div className={styles.totalRow}>
+                    <span>Chi phí phát sinh</span>
+                    <span>+ {formatCurrency(phiPhatSinhSo)}</span>
+                  </div>
+                )}
+                {giamTruSo > 0 && (
+                  <div className={styles.totalRow}>
+                    <span>Giảm trừ / Khuyến mãi</span>
+                    <span style={{ color: "var(--color-success)" }}>- {formatCurrency(giamTruSo)}</span>
+                  </div>
+                )}
+              </>
             )}
-            {giamTruSo > 0 && (
+            {isTraPhanConLai && (
               <div className={styles.totalRow}>
-                <span>Giảm trừ / Khuyến mãi</span>
-                <span style={{ color: "var(--color-success)" }}>- {formatCurrency(giamTruSo)}</span>
+                <span>Còn lại (đơn hàng)</span>
+                <span>{formatCurrency(donHang?.conLai || 0)}</span>
               </div>
             )}
             {soTTTS > 0 && (
@@ -531,8 +580,8 @@ export default function XuatHoaDonPage() {
               </div>
             )}
             <div className={`${styles.totalRow} ${styles.totalRowBold}`}>
-              <span>{activeTab === "cong_no" && soTTTS > 0 ? "CÒN LẠI CẦN THANH TOÁN" : "TỔNG CỘNG"}</span>
-              <span>{formatCurrency(activeTab === "cong_no" ? soTienConLai : Math.max(0, tongCong))}</span>
+              <span>{isTraPhanConLai ? "CẦN THANH TOÁN PHẦN CÒN LẠI" : (activeTab === "cong_no" && soTTTS > 0 ? "CÒN LẠI CẦN THANH TOÁN" : "TỔNG CỘNG")}</span>
+              <span>{formatCurrency(tongCong)}</span>
             </div>
           </div>
         </div>
@@ -545,7 +594,7 @@ export default function XuatHoaDonPage() {
             </button>
             <button className={styles.btnSubmit} onClick={handleSubmit} disabled={submitting}>
               {submitting ? (
-                <Loading small />
+                <Loading text="Đang xử lý..." />
               ) : (
                 <>
                   <FiCheck size={16} />

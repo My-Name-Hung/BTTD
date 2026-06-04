@@ -1,35 +1,50 @@
 import { useCallback, useEffect, useState } from "react";
 import { FiArrowLeft, FiSearch, FiX } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Loading } from "../components/Common";
 import { usePagination, useToast } from "../hooks";
-import { layDonHangTheoTram } from "../services/api";
+import { layDonHangTheoTram, layDanhSachTramTron } from "../services/api";
 import { DonHang, TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./DonHangTheoTramPage.module.css";
 
 export default function DonHangTheoTramPage() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { toasts, showToast } = useToast();
   const { page, resetPage, goToPage } = usePagination(1, 20);
 
+  const [trams, setTrams] = useState<{ id: number; tenTram: string }[]>([]);
+  const [selectedTram, setSelectedTram] = useState<string>(() => id || searchParams.get("tram") || "");
   const [data, setData] = useState<{ data: DonHang[]; pagination: { total: number; totalPages: number } }>({ data: [], pagination: { total: 0, totalPages: 1 } });
   const [loading, setLoading] = useState(true);
 
-  // Filters - the backend already filters by user's tram
   const [maDonFilter, setMaDonFilter] = useState("");
   const [trangThaiFilter, setTrangThaiFilter] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await layDonHangTheoTram(page, 20, trangThaiFilter || undefined);
+      const tramId = selectedTram ? parseInt(selectedTram, 10) : undefined;
+      const res = await layDonHangTheoTram(page, 20, trangThaiFilter || undefined, tramId);
       setData(res);
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {
       setLoading(false);
     }
-  }, [page, trangThaiFilter, showToast]);
+  }, [page, trangThaiFilter, selectedTram, showToast]);
+
+  const loadTrams = useCallback(async () => {
+    try {
+      const res = await layDanhSachTramTron();
+      setTrams(Array.isArray(res) ? res : []);
+    } catch { /* silently fail */ }
+  }, []);
+
+  useEffect(() => {
+    loadTrams();
+  }, [loadTrams]);
 
   useEffect(() => {
     loadData();
@@ -41,11 +56,13 @@ export default function DonHangTheoTramPage() {
   ) || [];
 
   const totalPages = data.pagination.totalPages;
-  const hasFilters = !!maDonFilter || !!trangThaiFilter;
+  const hasFilters = !!maDonFilter || !!trangThaiFilter || !!selectedTram;
 
   const clearFilters = () => {
     setMaDonFilter("");
     setTrangThaiFilter("");
+    setSelectedTram("");
+    setSearchParams({});
     resetPage();
   };
 
@@ -64,13 +81,33 @@ export default function DonHangTheoTramPage() {
           </button>
           <div>
             <div className={styles.pageHeaderTitle}>Đơn hàng theo trạm trộn</div>
-            <div className={styles.pageHeaderDesc}>Danh sách đơn hàng thuộc trạm của bạn</div>
+            <div className={styles.pageHeaderDesc}>
+              {selectedTram
+                ? `Trạm: ${trams.find(t => String(t.id) === selectedTram)?.tenTram || "—"}${id ? " (Admin đang xem)" : ""}`
+                : "Tất cả trạm trộn"}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Filter Bar */}
       <div className={styles.filterBar}>
+        <div className={styles.selectWrap} style={{ minWidth: 200 }}>
+          <select
+            className={styles.selectInput}
+            value={selectedTram}
+            onChange={(e) => {
+              setSelectedTram(e.target.value);
+              setSearchParams(e.target.value ? { tram: e.target.value } : {});
+              resetPage();
+            }}
+          >
+            <option value="">Tất cả trạm trộn</option>
+            {trams.map((t) => (
+              <option key={t.id} value={String(t.id)}>{t.tenTram}</option>
+            ))}
+          </select>
+        </div>
         <div className={styles.filterSearchWrap}>
           <FiSearch className={styles.filterSearchIcon} />
           <input
@@ -184,48 +221,6 @@ export default function DonHangTheoTramPage() {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-// Inline Pagination component
-function Pagination({ page, totalPages, onPageChange }: {
-  page: number; totalPages: number; onPageChange: (p: number) => void;
-}) {
-  const pages = [];
-  for (let i = 1; i <= totalPages; i++) pages.push(i);
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", padding: 16 }}>
-      <button
-        onClick={() => onPageChange(Math.max(1, page - 1))}
-        disabled={page === 1}
-        style={{ padding: "6px 12px", border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.5 : 1 }}
-      >
-        ‹
-      </button>
-      {pages.map((p) => (
-        <button
-          key={p}
-          onClick={() => onPageChange(p)}
-          style={{
-            padding: "6px 12px",
-            border: "1px solid #e5e7eb",
-            borderRadius: 6,
-            background: p === page ? "#073ceb" : "#fff",
-            color: p === page ? "#fff" : "#374151",
-            cursor: "pointer",
-          }}
-        >
-          {p}
-        </button>
-      ))}
-      <button
-        onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-        disabled={page === totalPages}
-        style={{ padding: "6px 12px", border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.5 : 1 }}
-      >
-        ›
-      </button>
     </div>
   );
 }

@@ -31,6 +31,15 @@ function getBaseUrl() {
   return import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3433';
 }
 
+function isDriveLink(url: string): boolean {
+  return url.includes('drive.google.com') || url.includes('docs.google.com');
+}
+
+function buildFileUrl(fileUrl: string): string {
+  if (isDriveLink(fileUrl)) return fileUrl;
+  return `${getBaseUrl()}${fileUrl}`;
+}
+
 export default function NghiemThuPage() {
   const { hasPermission } = usePageRole();
   const { toasts, showToast } = useToast();
@@ -190,7 +199,6 @@ export default function NghiemThuPage() {
             const thanhToans = lichSuTT[dh.id] || [];
             const daTT = thanhToans.reduce((sum, t) => sum + t.soTien, 0);
             const isDaNT = tab === 'da_nghiem_thu';
-            const baseUrl = getBaseUrl();
 
             return (
               <div
@@ -239,7 +247,7 @@ export default function NghiemThuPage() {
                             <div className={styles.infoBoxLabel}>Biên bản ({parseBienBanFiles(nt?.bienBanFile).length} file)</div>
                             <div className={styles.bienBanFileList}>
                               {parseBienBanFiles(nt?.bienBanFile).map((fileUrl, idx) => (
-                                <a key={idx} href={`${baseUrl}${fileUrl}`} target="_blank" rel="noopener noreferrer" className={styles.bienBanLink}>
+                                <a key={idx} href={buildFileUrl(fileUrl)} target="_blank" rel="noopener noreferrer" className={styles.bienBanLink}>
                                   <FiExternalLink size={12} /> File {idx + 1}
                                 </a>
                               ))}
@@ -262,7 +270,7 @@ export default function NghiemThuPage() {
                       {parseBienBanFiles(nt?.bienBanFile).map((fileUrl, idx) => (
                         <a
                           key={idx}
-                          href={`${baseUrl}${fileUrl}`}
+                          href={buildFileUrl(fileUrl)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={styles.bienBanLink}

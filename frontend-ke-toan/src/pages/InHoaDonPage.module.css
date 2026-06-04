@@ -506,7 +506,7 @@
 .invoiceFooter p {
   font-size: 13px;
   color: #555;
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   font-style: italic;
 }
 
@@ -517,32 +517,44 @@
 
 /* ── Print Styles ── */
 @media print {
-  .toolbar {
+  /* Ẩn toolbar (nút quay lại/in/tải về) khi in */
+  .toolbar,
+  .toolbar * {
     display: none !important;
   }
 
   .wrapper {
-    background: white !important;
-    padding: 0 !important;
-  }
-
-  .invoiceWrap {
-    padding: 0 !important;
-    max-width: 100% !important;
+    /* Giữ nền xám như màn hình – phần ngoài invoice */
+    background: #e8ecf0 !important;
+    padding: 0 16px 40px !important;
+    min-height: 100vh !important;
   }
 
   .invoice {
+    /* Bỏ shadow/border-radius để sát mép */
     box-shadow: none !important;
-    border-radius: 0 !important;
+    border-radius: 4px !important;
     margin: 0 !important;
+    /* Đảm bảo nền trắng cho mọi trường hợp */
+    background: white !important;
   }
 
-  .table thead th {
-    background: #073ceb !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  /* GIỮ ĐÚNG 2 CỘT như màn hình web — override breakpoint 768px */
+  .invoiceMeta {
+    flex-direction: row !important;
   }
 
+  .infoGrid {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 32px !important;
+  }
+
+  .infoCol {
+    flex: 1 !important;
+  }
+
+  /* Giữ nguyên các màu nền của từng section */
   .invoiceHeader {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -554,8 +566,19 @@
     print-color-adjust: exact;
   }
 
+  .table thead th {
+    background: #073ceb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   .totalRow td {
     background: #f0f4ff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .ghiChuBox {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -564,9 +587,24 @@
     border-bottom: 1px solid #888 !important;
   }
 
-  .ghiChuBox {
+  /* Status badge */
+  .statusBadgeCongNo,
+  .statusBadgeTraHet {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Không page-break trong bảng */
+  table { page-break-inside: avoid; }
+
+  /* Signatures giữ ngang hàng */
+  .signatures {
+    flex-direction: row !important;
+  }
+  .sigCol:not(:last-child) {
+    border-right: 1px dashed #e0e0e0 !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
   }
 }
 
