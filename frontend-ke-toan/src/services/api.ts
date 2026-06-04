@@ -304,6 +304,11 @@ export async function layTatCaLichSanXuat(): Promise<LichSanXuat[]> {
   return request<LichSanXuat[]>("/dieu-phoi");
 }
 
+export async function layDonHangTheoXe(idXe: number): Promise<any[]> {
+  const res = await request<any[]>(`/dieu-phoi/theo-xe/${idXe}`);
+  return res ?? [];
+}
+
 export async function capNhatLichSanXuat(
   id: number,
   data: Partial<LichSanXuat>,

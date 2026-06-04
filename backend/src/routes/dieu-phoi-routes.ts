@@ -5,6 +5,7 @@ import {
   taoLichSanXuat,
   layLichSanXuatTheoDonHang,
   layTatCaLichSanXuat,
+  layDonHangTheoXe,
   capNhatLichSanXuat,
   xacNhanDaGiao,
 } from '../services/dieu-phoi-service';
@@ -54,6 +55,18 @@ router.get('/don-hang/:idDonHang', authMiddleware, requireRole('admin', 'dieu_ph
     res.json({ success: true, message: 'Lấy lịch sản xuất thành công', data });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi lấy lịch sản xuất';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+/** Lấy đơn hàng theo xe */
+router.get('/theo-xe/:idXe', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const idXe = parseInt(req.params.idXe, 10);
+    const data = await layDonHangTheoXe(idXe);
+    res.json({ success: true, message: 'Lấy đơn hàng theo xe thành công', data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy đơn hàng theo xe';
     res.status(500).json({ success: false, message });
   }
 });

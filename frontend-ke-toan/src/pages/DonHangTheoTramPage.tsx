@@ -7,6 +7,28 @@ import { layDonHangTheoTram, layDanhSachTramTron } from "../services/api";
 import { DonHang, TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./DonHangTheoTramPage.module.css";
 
+function formatCurrency(v: number) {
+  return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
+}
+
+function getBadgeStyle(trangThai: string): React.CSSProperties {
+  const color = TRANG_THAI_DON_COLORS[trangThai] || "#64748b";
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "3px 10px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+    background: `rgba(${r}, ${g}, ${b}, 0.12)`,
+    color: color,
+  };
+}
+
 export default function DonHangTheoTramPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -39,7 +61,7 @@ export default function DonHangTheoTramPage() {
     try {
       const res = await layDanhSachTramTron();
       setTrams(Array.isArray(res) ? res : []);
-    } catch { /* silently fail */ }
+    } catch { /* silently */ }
   }, []);
 
   useEffect(() => {
@@ -50,7 +72,6 @@ export default function DonHangTheoTramPage() {
     loadData();
   }, [loadData]);
 
-  // Client-side filter by mã đơn
   const filteredOrders = data.data?.filter(o =>
     !maDonFilter || (o.maDonHang || "").toLowerCase().includes(maDonFilter.toLowerCase())
   ) || [];
@@ -62,13 +83,8 @@ export default function DonHangTheoTramPage() {
     setMaDonFilter("");
     setTrangThaiFilter("");
     setSelectedTram("");
-    setSearchParams({});
     resetPage();
   };
-
-  const formatCurrency = (v: number) => v?.toLocaleString("vi-VN") + " đ" || "0 đ";
-
-  const statusColor = (s: string) => TRANG_THAI_DON_COLORS[s] || "#64748b";
 
   if (loading) return <Loading />;
 
@@ -98,7 +114,6 @@ export default function DonHangTheoTramPage() {
             value={selectedTram}
             onChange={(e) => {
               setSelectedTram(e.target.value);
-              setSearchParams(e.target.value ? { tram: e.target.value } : {});
               resetPage();
             }}
           >
@@ -116,6 +131,11 @@ export default function DonHangTheoTramPage() {
             value={maDonFilter}
             onChange={(e) => { setMaDonFilter(e.target.value); }}
           />
+          {maDonFilter && (
+            <button className={styles.filterSearchClear} onClick={() => setMaDonFilter("")}>
+              <FiX size={13} />
+            </button>
+          )}
         </div>
         <div className={styles.selectWrap}>
           <select
@@ -185,13 +205,7 @@ export default function DonHangTheoTramPage() {
                       {formatCurrency(o.thanhTien)}
                     </td>
                     <td>
-                      <span
-                        className={styles.statusBadge}
-                        style={{
-                          background: `${statusColor(o.trangThaiDon)}18`,
-                          color: statusColor(o.trangThaiDon),
-                        }}
-                      >
+                      <span style={getBadgeStyle(o.trangThaiDon)}>
                         {TRANG_THAI_DON_LABELS[o.trangThaiDon] || o.trangThaiDon}
                       </span>
                     </td>
@@ -221,6 +235,48 @@ export default function DonHangTheoTramPage() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Inline Pagination component
+function Pagination({ page, totalPages, onPageChange }: {
+  page: number; totalPages: number; onPageChange: (p: number) => void;
+}) {
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) pages.push(i);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", padding: 16 }}>
+      <button
+        onClick={() => onPageChange(Math.max(1, page - 1))}
+        disabled={page === 1}
+        style={{ padding: "6px 12px", border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.5 : 1 }}
+      >
+        ‹
+      </button>
+      {pages.map((p) => (
+        <button
+          key={p}
+          onClick={() => onPageChange(p)}
+          style={{
+            padding: "6px 12px",
+            border: "1px solid #e5e7eb",
+            borderRadius: 6,
+            background: p === page ? "#073ceb" : "#fff",
+            color: p === page ? "#fff" : "#374151",
+            cursor: "pointer",
+          }}
+        >
+          {p}
+        </button>
+      ))}
+      <button
+        onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+        disabled={page === totalPages}
+        style={{ padding: "6px 12px", border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.5 : 1 }}
+      >
+        ›
+      </button>
     </div>
   );
 }

@@ -1,11 +1,33 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FiArrowLeft, FiSearch, FiX } from "react-icons/fi";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Loading } from "../components/Common";
 import { usePagination, useToast } from "../hooks";
-import { layDanhSachDonHang, layDanhSachXe, layDanhSachTaiXe, layTatCaLichSanXuat } from "../services/api";
+import { layDonHangTheoXe, layDanhSachXe } from "../services/api";
 import { DonHang, Xe, TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../types";
 import styles from "./DonHangTheoXePage.module.css";
+
+function formatCurrency(v: number) {
+  return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
+}
+
+function getBadgeStyle(trangThai: string): React.CSSProperties {
+  const color = TRANG_THAI_DON_COLORS[trangThai] || "#64748b";
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "3px 10px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+    background: `rgba(${r}, ${g}, ${b}, 0.12)`,
+    color: color,
+  };
+}
 
 export default function DonHangTheoXePage() {
   const navigate = useNavigate();
@@ -15,105 +37,49 @@ export default function DonHangTheoXePage() {
   const { page, resetPage, goToPage } = usePagination(1, 20);
 
   const [xes, setXes] = useState<Xe[]>([]);
-  const [taiXes, setTaiXes] = useState<{ id: number; hoTen: string }[]>([]);
-  const [allOrders, setAllOrders] = useState<DonHang[]>([]);
-  const [lichSans, setLichSans] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
-  const [xeFilter, setXeFilter] = useState<string>(() => {
-    // Auto-select xe from URL param
-    return id || searchParams.get("xe") || "";
-  });
+  const [xeFilter, setXeFilter] = useState<string>(() => id || searchParams.get("xe") || "");
   const [taiXeFilter, setTaiXeFilter] = useState(searchParams.get("taiXe") || "");
   const [maDonFilter, setMaDonFilter] = useState(searchParams.get("maDon") || "");
 
-  const loadData = useCallback(async () => {
+  const loadXes = useCallback(async () => {
+    try {
+      const data = await layDanhSachXe();
+      setXes(Array.isArray(data) ? data : []);
+    } catch { /* silently */ }
+  }, []);
+
+  const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const [xeData, txData, lsData, dhData] = await Promise.all([
-        layDanhSachXe(),
-        layDanhSachTaiXe(),
-        layTatCaLichSanXuat(),
-        layDanhSachDonHang(1, 100),
-      ]);
-      setXes(xeData || []);
-      setTaiXes(txData || []);
-      setLichSans(Array.isArray(lsData) ? lsData : []);
-      setAllOrders(Array.isArray(dhData) ? dhData : []);
+      if (!xeFilter) {
+        setOrders([]);
+        return;
+      }
+      const data = await layDonHangTheoXe(parseInt(xeFilter, 10));
+      setOrders(Array.isArray(data) ? data : []);
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [xeFilter, showToast]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadXes();
+  }, [loadXes]);
 
-  // Map xe -> don hang ids
-  const xeToDonHangIds = useMemo(() => {
-    const map: Record<string, Set<number>> = {};
-    lichSans.forEach((ls) => {
-      const bs = ls.bienSoXe;
-      if (bs) {
-        if (!map[bs]) map[bs] = new Set();
-        map[bs].add(ls.idDonHang);
-      }
-    });
-    return map;
-  }, [lichSans]);
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
-  // Map don hang -> tai xe
-  const donHangToTaiXe = useMemo(() => {
-    const map: Record<number, string> = {};
-    lichSans.forEach((ls) => {
-      if (ls.idDonHang && ls.tenTaiXe) {
-        map[ls.idDonHang] = ls.tenTaiXe;
-      }
-    });
-    return map;
-  }, [lichSans]);
-
-  // Map xe -> tai xe name
-  const xeToTaiXe = useMemo(() => {
-    const map: Record<string, string> = {};
-    xes.forEach((x) => {
-      if (x.tenTaiXe) map[x.bienSo] = x.tenTaiXe;
-    });
-    return map;
-  }, [xes]);
-
-  const filteredOrders = useMemo(() => {
-    let orders = allOrders;
-
-    // Lọc theo xe
-    if (xeFilter) {
-      const selectedXe = xes.find(x => String(x.id) === xeFilter);
-      if (selectedXe) {
-        const ids = xeToDonHangIds[selectedXe.bienSo] || new Set();
-        orders = orders.filter(o => ids.has(o.id));
-      }
-    }
-
-    // Lọc theo tài xế
-    if (taiXeFilter) {
-      orders = orders.filter(o => {
-        const tenTx = donHangToTaiXe[o.id] || "";
-        return tenTx.toLowerCase().includes(taiXeFilter.toLowerCase());
-      });
-    }
-
-    // Lọc theo mã đơn
-    if (maDonFilter) {
-      orders = orders.filter(o =>
-        (o.maDonHang || "").toLowerCase().includes(maDonFilter.toLowerCase())
-      );
-    }
-
-    return orders;
-  }, [allOrders, xeFilter, taiXeFilter, maDonFilter, xes, xeToDonHangIds, donHangToTaiXe]);
+  const filteredOrders = orders.filter((o) => {
+    const matchMa = !maDonFilter || (o.maDonHang || "").toLowerCase().includes(maDonFilter.toLowerCase());
+    const matchTx = !taiXeFilter || (o.tenTaiXe || "").toLowerCase().includes(taiXeFilter.toLowerCase());
+    return matchMa && matchTx;
+  });
 
   const LIMIT = 20;
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / LIMIT));
@@ -129,8 +95,6 @@ export default function DonHangTheoXePage() {
     resetPage();
   };
 
-  const formatCurrency = (v: number) => v?.toLocaleString("vi-VN") + " đ" || "0 đ";
-
   if (loading) return <Loading />;
 
   return (
@@ -143,7 +107,9 @@ export default function DonHangTheoXePage() {
           <div>
             <div className={styles.pageHeaderTitle}>Đơn hàng theo xe</div>
             <div className={styles.pageHeaderDesc}>
-              {xeFilter ? `Đơn hàng của xe ${xes.find(x => String(x.id) === xeFilter)?.bienSo}` : "Tất cả đơn hàng đã giao"}
+              {xeFilter
+                ? `Đơn hàng của xe ${xes.find((x) => String(x.id) === xeFilter)?.bienSo || ""}`
+                : "Chọn xe để xem đơn hàng"}
             </div>
           </div>
         </div>
@@ -151,36 +117,37 @@ export default function DonHangTheoXePage() {
 
       {/* Filter Bar */}
       <div className={styles.filterBar}>
+        <div className={styles.selectWrap}>
+          <select
+            className={styles.selectInput}
+            value={xeFilter}
+            onChange={(e) => {
+              setXeFilter(e.target.value);
+              setSearchParams(e.target.value ? { xe: e.target.value } : {});
+              resetPage();
+            }}
+          >
+            <option value="">— Chọn xe —</option>
+            {xes.map((x) => (
+              <option key={x.id} value={String(x.id)}>
+                {x.bienSo} {x.tenTaiXe ? `- ${x.tenTaiXe}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className={styles.filterSearchWrap}>
           <FiSearch className={styles.filterSearchIcon} />
           <input
             className={styles.filterSearchInput}
             placeholder="Tìm mã đơn hàng..."
             value={maDonFilter}
-            onChange={(e) => { setMaDonFilter(e.target.value); resetPage(); }}
+            onChange={(e) => { setMaDonFilter(e.target.value); }}
           />
-        </div>
-        <div className={styles.selectWrap}>
-          <span className={styles.selectLabel}>Xe</span>
-          <div className={styles.selectControl}>
-            <select
-              className={styles.selectInput}
-              value={xeFilter}
-              onChange={(e) => {
-                setXeFilter(e.target.value);
-                setSearchParams(e.target.value ? { xe: e.target.value } : {});
-                resetPage();
-              }}
-            >
-              <option value="">Tất cả xe</option>
-              {xes.map((x) => (
-                <option key={x.id} value={String(x.id)}>
-                  {x.bienSo} {x.tenTaiXe ? ` - ${x.tenTaiXe}` : ""}
-                </option>
-              ))}
-            </select>
-            <span className={styles.selectArrow}>▼</span>
-          </div>
+          {maDonFilter && (
+            <button className={styles.filterSearchClear} onClick={() => setMaDonFilter("")}>
+              <FiX size={13} />
+            </button>
+          )}
         </div>
         <div className={styles.filterSearchWrap}>
           <FiSearch className={styles.filterSearchIcon} />
@@ -188,8 +155,13 @@ export default function DonHangTheoXePage() {
             className={styles.filterSearchInput}
             placeholder="Tìm tên tài xế..."
             value={taiXeFilter}
-            onChange={(e) => { setTaiXeFilter(e.target.value); resetPage(); }}
+            onChange={(e) => { setTaiXeFilter(e.target.value); }}
           />
+          {taiXeFilter && (
+            <button className={styles.filterSearchClear} onClick={() => setTaiXeFilter("")}>
+              <FiX size={13} />
+            </button>
+          )}
         </div>
         {hasFilters && (
           <button className={styles.filterClearBtn} onClick={clearFilters}>
@@ -202,14 +174,19 @@ export default function DonHangTheoXePage() {
       <div className={styles.statsRow}>
         <div className={styles.statItem}>
           <span className={styles.statNum}>{filteredOrders.length}</span> đơn hàng
-          {hasFilters && <> / {allOrders.length} tổng</>}
+          {hasFilters && <> / {orders.length} tổng</>}
         </div>
       </div>
 
       {/* Table */}
       <div className={styles.card}>
         <div className={styles.tableWrap}>
-          {paginatedOrders.length === 0 ? (
+          {!xeFilter ? (
+            <div className={styles.emptyState}>
+              <span>🚛</span>
+              <p>Vui lòng chọn xe để xem đơn hàng</p>
+            </div>
+          ) : paginatedOrders.length === 0 ? (
             <div className={styles.emptyState}>
               <span>📦</span>
               <p>Không có đơn hàng nào</p>
@@ -248,19 +225,11 @@ export default function DonHangTheoXePage() {
                       {formatCurrency(o.thanhTien)}
                     </td>
                     <td>
-                      <span
-                        className={styles.statusBadge}
-                        style={{
-                          background: `${TRANG_THAI_DON_COLORS[o.trangThaiDon] || "#6b7280"}18`,
-                          color: TRANG_THAI_DON_COLORS[o.trangThaiDon] || "#6b7280",
-                        }}
-                      >
+                      <span style={getBadgeStyle(o.trangThaiDon)}>
                         {TRANG_THAI_DON_LABELS[o.trangThaiDon] || o.trangThaiDon}
                       </span>
                     </td>
-                    <td className={styles.hideOnMobile}>
-                      {donHangToTaiXe[o.id] || "—"}
-                    </td>
+                    <td className={styles.hideOnMobile}>{o.tenTaiXe || "—"}</td>
                   </tr>
                 ))}
               </tbody>

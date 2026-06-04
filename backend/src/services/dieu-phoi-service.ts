@@ -229,3 +229,17 @@ export async function xacNhanDaGiao(idDonHang: number): Promise<DonHang> {
 
   return donHang[0];
 }
+
+export async function layDonHangTheoXe(idXe: number): Promise<any[]> {
+  return await query<any[]>(
+    `SELECT dh.*,
+            ls.bienSoXe, ls.ngayTao as ngayTaoLichSX,
+            nd.hoTen as tenTaiXe
+     FROM LichSanXuat ls
+     INNER JOIN DonHang dh ON ls.idDonHang = dh.id
+     LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
+     WHERE ls.idXe = @idXe
+     ORDER BY ls.ngayTao DESC`,
+    { idXe }
+  );
+}
