@@ -101,16 +101,18 @@ export async function exportToExcel(
     dataRow.height = 20;
     headers.forEach((h, colIndex) => {
       const cell = dataRow.getCell(colIndex + 1);
-      let value: string | number | Date | null | undefined = row[h.key];
-      // Handle null, undefined, dates
-      if (value === null || value === undefined) {
-        value = "";
-      } else if (value instanceof Date) {
-        value = value.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
-      } else if (typeof value === "object") {
-        value = String(value);
+      const rawValue = (row as Record<string, unknown>)[h.key];
+      let value: string | number | null = "";
+      if (rawValue !== null && rawValue !== undefined) {
+        if (rawValue instanceof Date) {
+          value = rawValue.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+        } else if (typeof rawValue === "object") {
+          value = String(rawValue);
+        } else {
+          value = rawValue as string | number;
+        }
       }
-      cell.value = value as string | number | null;
+      cell.value = value;
       applyCellStyle(cell, h.alignRight);
     });
   });
