@@ -982,8 +982,14 @@ export async function taoHoaDon(data: {
   });
 }
 
+// Lấy hóa đơn theo đơn hàng
 export async function layHoaDonTheoDonHang(idDonHang: number): Promise<any[]> {
   return request<any[]>(`/hoa-don/don-hang/${idDonHang}`);
+}
+
+// Lấy hóa đơn theo ID hóa đơn (dùng cho trang in)
+export async function layHoaDon(id: number): Promise<any> {
+  return request<any>(`/hoa-don/${id}`);
 }
 
 export async function taiHoaDonDoc(id: number): Promise<void> {

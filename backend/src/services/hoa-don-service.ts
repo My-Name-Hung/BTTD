@@ -175,102 +175,314 @@ export async function layHoaDonTheoDonHang(idDonHang: number): Promise<HoaDon[]>
   );
 }
 
-export async function taiHoaDonDoc(id: number): Promise<Buffer> {
-  const hoaDonArr = await query<HoaDon[]>(
-    `SELECT hd.*, dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong,
-            dh.khoiLuongDat, dh.donGia, dh.thanhTien
+export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
+  const rows = await query<any[]>(
+    `SELECT hd.*,
+            dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong,
+            dh.khoiLuongDat, dh.donGia, dh.thanhTien, dh.ngayGiao,
+            ISNULL(tt.tenTram, '') as tenTramTron,
+            ISNULL(tt.diaChi, '') as diaChiTramTron,
+            ls.bienSoXe, ls.tenTaiXe, ls.nguoiOmOng, ls.nguoiBatOng, ls.kyThuatCongTrinh
      FROM HoaDon hd
      INNER JOIN DonHang dh ON hd.idDonHang = dh.id
+     LEFT JOIN LichSanXuat ls ON dh.id = ls.idDonHang
+     LEFT JOIN TramTron tt ON dh.idTramTron = tt.id
      WHERE hd.id = @id`,
     { id }
   );
+  if (!rows[0]) return null;
+  const r = rows[0];
+  return {
+    id: r.id,
+    idDonHang: r.idDonHang,
+    maHoaDon: r.maHoaDon,
+    soHoaDon: r.soHoaDon,
+    ngayLap: r.ngayLap,
+    khachHang: r.khachHang,
+    loaiXiMang: r.loaiXiMang,
+    gioDo: r.gioDo,
+    phuongThucThanhToan: r.phuongThucThanhToan,
+    ghiChu: r.ghiChu,
+    tienBeTong: r.tienBeTong,
+    buuVanChuyen: r.buuVanChuyen,
+    phiPhatSinh: r.phiPhatSinh,
+    giamTru: r.giamTru,
+    tongCong: r.tongCong,
+    soTienThanhToan: r.soTienThanhToan,
+    loaiThanhToan: r.loaiThanhToan,
+    hanTraCongNo: r.hanTraCongNo,
+    nguoiTaoId: r.nguoiTaoId,
+    createdAt: r.createdAt,
+    // Join fields
+    maDonHang: r.maDonHang,
+    tenKhachHang: r.tenKhachHang,
+    diaChiNhan: r.diaChiNhan,
+    tenMacBeTong: r.tenMacBeTong,
+    khoiLuongDat: r.khoiLuongDat,
+    donGia: r.donGia,
+    thanhTien: r.thanhTien,
+    ngayGiao: r.ngayGiao,
+    tenTramTron: r.tenTramTron,
+    diaChiTramTron: r.diaChiTramTron,
+    bienSoXe: r.bienSoXe,
+    tenTaiXe: r.tenTaiXe,
+    nguoiOmOng: r.nguoiOmOng,
+    nguoiBatOng: r.nguoiBatOng,
+    kyThuatCongTrinh: r.kyThuatCongTrinh,
+  };
+}
 
-  if (hoaDonArr.length === 0) {
-    throw new Error('Không tìm thấy hóa đơn');
-  }
+export async function taiHoaDonDoc(id: number): Promise<Buffer> {
+  const hd = await layHoaDonTheoId(id);
+  if (!hd) throw new Error('Không tìm thấy hóa đơn');
 
-  const hd = hoaDonArr[0];
-  const dh = hoaDonArr[0] as any;
+  const ls = hd as any;
+  const COMPANY_NAME = 'CÔNG TY CỔ PHẦN BÊ TÔNG TÂY ĐÔ';
+  const COMPANY_ADDR = 'KCN Hòa Phú, Phường Hòa Phú, Quận Thủ Đức, TP. HCM';
+  const COMPANY_PHONE = '028.3724 5678 – 0909 123 456';
+  const COMPANY_MST = '0 3 1 4 8 7 6 9 5 9';
+  const COMPANY_BANK = 'Ngân hàng TMCP Ngoại thương Việt Nam (VCB)';
+  const COMPANY_ACC = '123 456 7890';
+  const pttt = hd.phuongThucThanhToan === 'chuyen_khoan' ? 'Chuyển khoản' : 'Tiền mặt';
+  const loaiTT = hd.loaiThanhToan === 'tra_het' ? 'Trả hết' : 'Công nợ';
+  const hanTra = hd.loaiThanhToan === 'cong_no' && hd.hanTraCongNo
+    ? `<tr><td><strong>Hạn thanh toán:</strong></td><td>${new Date(hd.hanTraCongNo).toLocaleDateString('vi-VN')}</td></tr>` : '';
 
-  // Tạo nội dung DOC đơn giản (HTML có thể mở bằng Word)
-  const html = `
-<!DOCTYPE html>
+  const rowsChiTiet: string[] = [
+    `  <tr><td>1</td><td>Bê tông thương phẩm (${ls.tenMacBeTong || ''})</td><td>m³</td><td style="text-align:right">${ls.khoiLuongDat || 0}</td><td style="text-align:right">${(ls.donGia || 0).toLocaleString('vi-VN')}</td><td style="text-align:right">${(ls.thanhTien || hd.tienBeTong || 0).toLocaleString('vi-VN')}</td></tr>`,
+  ];
+  if ((hd.buuVanChuyen || 0) > 0) rowsChiTiet.push(`  <tr><td>${rowsChiTiet.length + 1}</td><td>Phí bù vận chuyển</td><td></td><td></td><td></td><td style="text-align:right">${hd.buuVanChuyen.toLocaleString('vi-VN')}</td></tr>`);
+  if ((hd.phiPhatSinh || 0) > 0) rowsChiTiet.push(`  <tr><td>${rowsChiTiet.length + 1}</td><td>Chi phí phát sinh</td><td></td><td></td><td></td><td style="text-align:right">${hd.phiPhatSinh.toLocaleString('vi-VN')}</td></tr>`);
+  if ((hd.giamTru || 0) > 0) rowsChiTiet.push(`  <tr><td>${rowsChiTiet.length + 1}</td><td>Giảm trừ / Khuyến mãi</td><td></td><td></td><td></td><td style="text-align:right;color:#e53935">-${hd.giamTru.toLocaleString('vi-VN')}</td></tr>`);
+
+  const nhanSuRows: string[] = [];
+  if (ls.bienSoXe) nhanSuRows.push(`  <tr><td><strong>Xe (Biển số):</strong></td><td>${ls.bienSoXe}</td></tr>`);
+  if (ls.tenTaiXe) nhanSuRows.push(`  <tr><td><strong>Tài xế:</strong></td><td>${ls.tenTaiXe}</td></tr>`);
+  if (ls.nguoiOmOng) nhanSuRows.push(`  <tr><td><strong>Vận hành bơm:</strong></td><td>${ls.nguoiOmOng}</td></tr>`);
+  if (ls.nguoiBatOng) nhanSuRows.push(`  <tr><td><strong>Lắp ống:</strong></td><td>${ls.nguoiBatOng}</td></tr>`);
+  if (ls.kyThuatCongTrinh) nhanSuRows.push(`  <tr><td><strong>Kỹ sư công trình:</strong></td><td>${ls.kyThuatCongTrinh}</td></tr>`);
+
+  const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
+<title>Hóa đơn ${hd.maHoaDon}</title>
 <style>
-  body { font-family: Arial, sans-serif; font-size: 12pt; margin: 40px; }
-  h1 { text-align: center; color: #073ceb; }
-  h2 { text-align: center; }
-  table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-  td, th { border: 1px solid #ddd; padding: 8px; }
-  th { background: #f5f5f5; }
-  .header { text-align: center; margin-bottom: 30px; }
-  .info-table td:first-child { font-weight: bold; width: 30%; }
-  .total-row { font-weight: bold; background: #f9f9f9; }
-  .center { text-align: center; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 12pt; margin: 0; padding: 0; color: #222; }
+  .page { max-width: 800px; margin: 0 auto; padding: 20px; }
+  .header { background: #073ceb; color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; border-radius: 6px 6px 0 0; }
+  .header img { width: 56px; height: 56px; border-radius: 6px; background: white; padding: 3px; object-fit: contain; }
+  .header-info h1 { font-size: 15px; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .header-info p { font-size: 11px; margin: 0; opacity: 0.9; }
+  .title-bar { background: #f0f4ff; text-align: center; padding: 12px; border-bottom: 2px solid #073ceb; }
+  .title-bar h2 { color: #073ceb; font-size: 20px; margin: 0; letter-spacing: 2px; text-transform: uppercase; }
+  .title-bar p { color: #888; font-size: 11px; margin: 4px 0 0; letter-spacing: 3px; text-transform: uppercase; }
+  .meta { display: flex; justify-content: space-between; padding: 12px 24px; border-bottom: 1px solid #eee; }
+  .meta-block { display: flex; flex-direction: column; gap: 4px; }
+  .meta-row { display: flex; gap: 8px; font-size: 12px; }
+  .meta-label { font-weight: 600; color: #666; min-width: 120px; }
+  .meta-val { font-weight: 700; color: #222; }
+  .section { padding: 10px 24px; border-bottom: 1px solid #eee; }
+  .section-title { font-size: 10px; font-weight: 700; color: #073ceb; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(7,60,235,0.1); }
+  .two-col { display: flex; gap: 32px; }
+  .info-row { display: flex; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+  .info-label { font-weight: 600; color: #666; min-width: 130px; }
+  .info-val { color: #222; font-weight: 500; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 0; }
+  thead tr { background: #073ceb; }
+  thead th { color: white; padding: 8px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; text-align: left; }
+  thead th.num { text-align: right; }
+  tbody td { padding: 7px 8px; border-bottom: 1px solid #eee; color: #222; }
+  tbody td.num { text-align: right; }
+  tbody td.center { text-align: center; }
+  tfoot td { padding: 8px; border-top: 2px solid #073ceb; }
+  tfoot td.num { text-align: right; font-weight: 700; font-size: 13px; }
+  .total-row td { background: #f0f4ff; }
+  .so-tien-chu { font-size: 11px; font-style: italic; color: #073ceb; font-weight: 600; text-align: right; padding: 4px 8px 0; }
+  .ghi-chu { margin: 8px 24px; padding: 8px 12px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 4px; font-size: 12px; color: #92400e; }
+  .signatures { display: flex; gap: 0; padding: 20px 24px 0; border-top: 1px solid #eee; }
+  .sig-col { flex: 1; text-align: center; }
+  .sig-col:not(:last-child) { border-right: 1px dashed #ddd; }
+  .sig-title { font-size: 11px; font-weight: 700; color: #222; margin: 0 0 4px; }
+  .sig-note { font-size: 9px; color: #aaa; font-style: italic; margin: 0 0 36px; }
+  .sig-line { border-bottom: 1px solid #aaa; width: 80%; margin: 0 auto; }
+  .footer { text-align: center; padding: 16px 24px 8px; border-top: 1px solid #eee; }
+  .footer p { font-size: 12px; color: #555; font-style: italic; margin: 0 0 2px; }
+  .footer-small { font-size: 10px !important; color: #aaa !important; }
+  @media print {
+    body { margin: 0; }
+    .page { max-width: 100%; padding: 0; }
+  }
 </style>
 </head>
 <body>
-<div class="header">
-  <h1>CÔNG TY BÊ TÔNG TÂY ĐÔ</h1>
-  <p>Địa chỉ: ... | Điện thoại: ...</p>
-  <h2>HÓA ĐƠN BÁN HÀNG</h2>
-  <p><strong>Số: ${hd.maHoaDon}</strong></p>
-  <p>Ngày: ${hd.ngayLap ? new Date(hd.ngayLap).toLocaleDateString('vi-VN') : ''}</p>
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <img src="https://betongtaydo.com/wp-content/uploads/2024/06/Logo-Be-Tong-Tay-Do-xanh-duong-1024x1024.png" alt="Logo">
+    <div class="header-info">
+      <h1>${COMPANY_NAME}</h1>
+      <p>${COMPANY_ADDR}</p>
+      <p>ĐT: ${COMPANY_PHONE} – MST: ${COMPANY_MST}</p>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <div class="title-bar">
+    <h2>Hóa đơn bán hàng</h2>
+    <p>VAT Invoice</p>
+  </div>
+
+  <!-- Meta -->
+  <div class="meta">
+    <div class="meta-block">
+      <div class="meta-row"><span class="meta-label">Số hóa đơn:</span><span class="meta-val">${hd.maHoaDon}</span></div>
+      <div class="meta-row"><span class="meta-label">Mã đơn hàng:</span><span class="meta-val">${ls.maDonHang || ''}</span></div>
+    </div>
+    <div class="meta-block">
+      <div class="meta-row"><span class="meta-label">Ngày lập:</span><span class="meta-val">${hd.ngayLap ? new Date(hd.ngayLap).toLocaleDateString('vi-VN') : ''}</span></div>
+      ${hanTra}
+    </div>
+  </div>
+
+  <!-- Khách hàng -->
+  <div class="section">
+    <div class="section-title">Thông tin khách hàng</div>
+    <div class="two-col">
+      <div>
+        <div class="info-row"><span class="info-label">Tên khách hàng:</span><span class="info-val">${hd.khachHang || ls.tenKhachHang || ''}</span></div>
+        <div class="info-row"><span class="info-label">Địa chỉ giao hàng:</span><span class="info-val">${ls.diaChiNhan || ''}</span></div>
+      </div>
+      <div>
+        <div class="info-row"><span class="info-label">Ngày giao hàng:</span><span class="info-val">${ls.ngayGiao ? new Date(ls.ngayGiao).toLocaleDateString('vi-VN') : ''}</span></div>
+        <div class="info-row"><span class="info-label">Trạm trộn:</span><span class="info-val">${ls.tenTramTron || ''} ${ls.diaChiTramTron ? '– ' + ls.diaChiTramTron : ''}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sản phẩm -->
+  <div class="section">
+    <div class="section-title">Thông tin sản phẩm / dịch vụ</div>
+    <div class="two-col">
+      <div>
+        <div class="info-row"><span class="info-label">Mác bê tông:</span><span class="info-val">${ls.tenMacBeTong || ''}</span></div>
+        <div class="info-row"><span class="info-label">Loại xi măng:</span><span class="info-val">${hd.loaiXiMang || 'PCB40'}</span></div>
+      </div>
+      <div>
+        <div class="info-row"><span class="info-label">Khối lượng đặt:</span><span class="info-val">${ls.khoiLuongDat || 0} m³</span></div>
+        <div class="info-row"><span class="info-label">Giờ đổ:</span><span class="info-val">${hd.gioDo || ''}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bảng chi tiết -->
+  <table>
+    <thead>
+      <tr><th style="width:36px">STT</th><th>Nội dung</th><th style="width:50px;text-align:center">ĐVT</th><th class="num" style="width:70px">Số lượng</th><th class="num" style="width:110px">Đơn giá (đ)</th><th class="num" style="width:130px">Thành tiền (đ)</th></tr>
+    </thead>
+    <tbody>
+      ${rowsChiTiet.join('\n')}
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="5" class="num">TỔNG CỘNG</td>
+        <td class="num">${hd.tongCong.toLocaleString('vi-VN')}</td>
+      </tr>
+    </tfoot>
+  </table>
+  <div class="so-tien-chu">Số tiền bằng chữ: ${numberToVietnameseDoc(hd.tongCong)}</div>
+
+  <!-- Thanh toán -->
+  <div class="section">
+    <div class="section-title">Thông tin thanh toán</div>
+    <div class="two-col">
+      <div>
+        <div class="info-row"><span class="info-label">Phương thức TT:</span><span class="info-val">${pttt}</span></div>
+        <div class="info-row"><span class="info-label">Loại thanh toán:</span><span class="info-val">${loaiTT}</span></div>
+      </div>
+      <div>
+        <div class="info-row"><span class="info-label">Tài khoản:</span><span class="info-val">${COMPANY_ACC}</span></div>
+        <div class="info-row"><span class="info-label">Ngân hàng:</span><span class="info-val">${COMPANY_BANK}</span></div>
+      </div>
+    </div>
+  </div>
+
+  ${nhanSuRows.length > 0 ? `
+  <!-- Nhân sự & xe -->
+  <div class="section">
+    <div class="section-title">Thông tin nhân sự &amp; xe</div>
+    <table style="width:auto">
+      <tbody>
+        ${nhanSuRows.join('\n')}
+      </tbody>
+    </table>
+  </div>` : ''}
+
+  ${hd.ghiChu ? `<div class="ghi-chu"><strong>Ghi chú:</strong> ${hd.ghiChu}</div>` : ''}
+
+  <!-- Chữ ký -->
+  <div class="signatures">
+    <div class="sig-col">
+      <p class="sig-title">NGƯỜI LẬP HÓA ĐƠN</p>
+      <p class="sig-note">(Ký và ghi rõ họ tên)</p>
+      <div class="sig-line"></div>
+    </div>
+    <div class="sig-col">
+      <p class="sig-title">KẾ TOÁN TRƯỞNG</p>
+      <p class="sig-note">(Ký và ghi rõ họ tên)</p>
+      <div class="sig-line"></div>
+    </div>
+    <div class="sig-col">
+      <p class="sig-title">KHÁCH HÀNG</p>
+      <p class="sig-note">(Ký và ghi rõ họ tên)</p>
+      <div class="sig-line"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ của <strong>BÊ TÔNG TÂY ĐÔ</strong>!</p>
+    <p class="footer-small">${COMPANY_NAME} • ${COMPANY_ADDR}</p>
+  </div>
 </div>
-
-<table class="info-table">
-  <tr><td>Mã đơn hàng:</td><td>${dh.maDonHang || ''}</td></tr>
-  <tr><td>Khách hàng:</td><td>${hd.khachHang || dh.tenKhachHang || ''}</td></tr>
-  <tr><td>Địa chỉ giao hàng:</td><td>${dh.diaChiNhan || ''}</td></tr>
-  <tr><td>Mác bê tông:</td><td>${dh.tenMacBeTong || ''}</td></tr>
-  <tr><td>Khối lượng:</td><td>${dh.khoiLuongDat || 0} m³</td></tr>
-  <tr><td>Đơn giá:</td><td>${(dh.donGia || 0).toLocaleString('vi-VN')} đ/m³</td></tr>
-  <tr><td>Loại xi măng:</td><td>${hd.loaiXiMang || ''}</td></tr>
-  <tr><td>Giờ đổ:</td><td>${hd.gioDo || ''}</td></tr>
-  <tr><td>Phương thức thanh toán:</td><td>${hd.phuongThucThanhToan === 'chuyen_khoan' ? 'Chuyển khoản' : 'Tiền mặt'}</td></tr>
-  <tr><td>Loại thanh toán:</td><td>${hd.loaiThanhToan === 'tra_het' ? 'Trả hết' : 'Công nợ'}</td></tr>
-  ${hd.loaiThanhToan === 'cong_no' && hd.hanTraCongNo ? `<tr><td>Hạn trả công nợ:</td><td>${new Date(hd.hanTraCongNo).toLocaleDateString('vi-VN')}</td></tr>` : ''}
-  ${hd.ghiChu ? `<tr><td>Ghi chú:</td><td>${hd.ghiChu}</td></tr>` : ''}
-</table>
-
-<table>
-  <thead>
-    <tr><th>Nội dung</th><th class="center">Số lượng</th><th class="center">Đơn giá</th><th class="center">Thành tiền</th></tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Bê tông thương phẩm (${dh.tenMacBeTong || ''})</td>
-      <td class="center">${dh.khoiLuongDat || 0} m³</td>
-      <td class="center">${(dh.donGia || 0).toLocaleString('vi-VN')} đ</td>
-      <td class="center">${(dh.thanhTien || 0).toLocaleString('vi-VN')} đ</td>
-    </tr>
-    ${hd.buuVanChuyen > 0 ? `<tr><td>Bù vận chuyển</td><td></td><td></td><td class="center">${hd.buuVanChuyen.toLocaleString('vi-VN')} đ</td></tr>` : ''}
-    ${hd.phiPhatSinh > 0 ? `<tr><td>Chi phí phát sinh</td><td></td><td></td><td class="center">${hd.phiPhatSinh.toLocaleString('vi-VN')} đ</td></tr>` : ''}
-    ${hd.giamTru > 0 ? `<tr><td>Giảm trừ / Khuyến mãi</td><td></td><td></td><td class="center">-${hd.giamTru.toLocaleString('vi-VN')} đ</td></tr>` : ''}
-    <tr class="total-row">
-      <td colspan="3"><strong>TỔNG CỘNG</strong></td>
-      <td class="center"><strong>${hd.tongCong.toLocaleString('vi-VN')} đ</strong></td>
-    </tr>
-  </tbody>
-</table>
-
-<p style="margin-top: 40px; text-align: center;">
-  <em>Cảm ơn quý khách đã sử dụng dịch vụ của Bê Tông Tây Đô!</em>
-</p>
-
-<p style="margin-top: 20px;">
-  <strong>Người lập hóa đơn</strong><br/><br/><br/>
-  <em>(Ký và ghi rõ họ tên)</em>
-</p>
-
-<p style="text-align: right;">
-  <strong>Khách hàng</strong><br/><br/><br/>
-  <em>(Ký và ghi rõ họ tên)</em>
-</p>
 </body>
 </html>`;
 
   return Buffer.from(html, 'utf-8');
+}
+
+/** Đọc số thành chữ cho DOC (hỗ trợ đến hàng tỷ) */
+function numberToVietnameseDoc(n: number): string {
+  if (n === 0) return 'Không đồng';
+  if (n < 0) return 'Âm ' + numberToVietnameseDoc(-n);
+  const units = ['', 'nghìn', 'triệu', 'tỷ'];
+  const digits = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+  function readThree(num: number): string {
+    if (num === 0) return '';
+    const h = Math.floor(num / 100);
+    const r = num % 100;
+    const t = Math.floor(r / 10);
+    const u = r % 10;
+    let s = '';
+    if (h > 0) s += (h === 1 ? 'một' : digits[h]) + ' trăm';
+    if (r > 0) {
+      if (h > 0) s += ' ';
+      if (r < 10) s += digits[u];
+      else if (r < 20) s += 'mười' + (u > 0 ? ' ' + digits[u] : '');
+      else s += (t === 1 ? 'mười' : digits[t] + ' mươi') + (u > 0 ? ' ' + (u === 1 ? 'mốt' : digits[u]) : '');
+    }
+    return s;
+  }
+  const str = Math.round(n).toString();
+  const len = str.length;
+  const parts: string[] = [];
+  for (let i = len; i > 0; i -= 3) {
+    const start = Math.max(0, i - 3);
+    const part = parseInt(str.slice(start, i), 10);
+    const unitIdx = Math.floor((len - i) / 3);
+    const text = readThree(part);
+    if (text) parts.unshift(text + (units[unitIdx] ? ' ' + units[unitIdx] : ''));
+  }
+  return parts.join(' ') + ' đồng';
 }
