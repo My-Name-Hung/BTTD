@@ -1,11 +1,17 @@
 /**
  * Google Drive Service — dùng Service Account để upload file biên bản nghiệm thu.
  *
+ * LƯU Ý QUAN TRỌNG: Service Account KHÔNG có storage quota trên My Drive cá nhân.
+ * PHẢI dùng SHARED DRIVE (Ổ đĩa dùng chung).
+ *
  * Cách setup:
  * 1. Tạo Service Account trong Google Cloud Console.
  * 2. Download file JSON key, đặt vào thư mục backend.
- * 3. Điền GOOGLE_APPLICATION_CREDENTIALS vào .env (đường dẫn đến file JSON).
- * 4. Share folder Google Drive với email Service Account (quyền Editor).
+ * 3. Điền GOOGLE_APPLICATION_CREDENTIALS vào .env.
+ * 4. Tạo một SHARED DRIVE trên Google Drive (không phải My Drive thường).
+ * 5. Thêm email Service Account vào Shared Drive với quyền Content Manager / Editor.
+ * 6. Copy Folder ID của Shared Drive vào GOOGLE_DRIVE_FOLDER_ID trong .env.
+ *    (Lấy từ URL: drive.google.com/drive/folders/[FOLDER_ID])
  */
 
 import { google, drive_v3 } from 'googleapis';
@@ -13,10 +19,11 @@ import { config } from '../config';
 
 let driveClient: drive_v3.Drive | null = null;
 
-// Nếu có GOOGLE_DRIVE_FOLDER_ID trong config, dùng luôn; không thì tự tạo
-let cachedFolderId: string | null = config.google.driveFolderId || null;
+// Dùng Shared Drive ID từ config (bắt buộc vì Service Account cần Shared Drive)
+const SHARED_DRIVE_ID = config.google.driveFolderId || '';
+let cachedRootFolderId: string | null = null;
 
-/** Khởi tạo Drive client từ Service Account (dùng GOOGLE_APPLICATION_CREDENTIALS) */
+/** Khởi tạo Drive client từ Service Account */
 function getDriveClient(): drive_v3.Drive {
   if (driveClient) return driveClient;
 
@@ -25,7 +32,7 @@ function getDriveClient(): drive_v3.Drive {
   if (!credsPath) {
     throw new Error(
       'Chưa cấu hình GOOGLE_APPLICATION_CREDENTIALS trong .env. ' +
-      'Đặt đường dẫn đến file JSON key của Service Account (VD: ./gen-lang-client-0456818632-16feae46d4bd.json)'
+      'Đặt đường dẫn đến file JSON key của Service Account.'
     );
   }
 
@@ -39,50 +46,78 @@ function getDriveClient(): drive_v3.Drive {
 }
 
 /**
- * Lấy hoặc tạo thư mục "BTTD_BienBan" trên Google Drive.
- * Cache folderId để tránh gọi API nhiều lần.
+ * Các API call luôn cần supportsAllDrives/includeItemsFromAllDrives
+ * để hoạt động với Shared Drive.
+ */
+function listOpts(pageToken?: string) {
+  return {
+    pageToken,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    fields: 'nextPageToken, files(id, name)',
+  } as const;
+}
+
+function createOpts<T>(fields: string) {
+  return {
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    fields,
+  } as const;
+}
+
+/**
+ * Lấy hoặc tạo thư mục "BTTD_BienBan" bên trong Shared Drive.
+ * Nếu dùng Shared Drive và đã set GOOGLE_DRIVE_FOLDER_ID, dùng nó luôn.
+ * Nếu không có folderId trong config thì tự tìm/tạo.
  */
 async function getOrCreateBTTDFolder(drive: drive_v3.Drive): Promise<string> {
-  if (cachedFolderId) return cachedFolderId;
+  // Nếu đã set folder cố định trong config (Shared Drive ID hoặc folder con)
+  if (cachedRootFolderId) return cachedRootFolderId;
 
   const folderName = 'BTTD_BienBan';
 
-  // Tìm thư mục đã có
+  // Tìm trong Shared Drive (nếu có SHARED_DRIVE_ID)
+  const searchQuery = SHARED_DRIVE_ID
+    ? `name='${folderName}' and '${SHARED_DRIVE_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
+    : `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false and 'me' in owners`;
+
   const res = await drive.files.list({
-    q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    fields: 'files(id, name)',
+    q: searchQuery,
+    ...listOpts(),
     pageSize: 1,
-  });
+  } as drive_v3.Params$Resource$Files$List);
 
   if (res.data.files && res.data.files.length > 0) {
-    cachedFolderId = res.data.files[0].id!;
-    return cachedFolderId;
+    cachedRootFolderId = res.data.files[0].id!;
+    return cachedRootFolderId;
   }
 
-  // Tạo thư mục mới
+  // Tạo thư mục mới trong Shared Drive
+  const requestBody: drive_v3.Schema$File = {
+    name: folderName,
+    mimeType: 'application/vnd.google-apps.folder',
+    ...(SHARED_DRIVE_ID ? { parents: [SHARED_DRIVE_ID] } : {}),
+  };
+
   const folder = await drive.files.create({
-    requestBody: {
-      name: folderName,
-      mimeType: 'application/vnd.google-apps.folder',
-    },
-    fields: 'id',
+    requestBody,
+    ...createOpts<drive_v3.Params$Resource$Files$Create>('id'),
   });
 
   if (!folder.data.id) {
     throw new Error('Không tạo được thư mục BTTD_BienBan trên Google Drive');
   }
 
-  // Set quyền công khai cho folder (anyone with link can view)
+  // Share công khai để ai có link cũng xem được
   await drive.permissions.create({
     fileId: folder.data.id,
-    requestBody: {
-      role: 'reader',
-      type: 'anyone',
-    },
-  });
+    requestBody: { role: 'reader', type: 'anyone' },
+    supportsAllDrives: true,
+  } as drive_v3.Params$Resource$Permissions$Create);
 
-  cachedFolderId = folder.data.id;
-  return cachedFolderId;
+  cachedRootFolderId = folder.data.id;
+  return cachedRootFolderId;
 }
 
 /**
@@ -98,9 +133,9 @@ async function getOrCreateOrderFolder(
 
   const res = await drive.files.list({
     q: `name='${safeName}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    fields: 'files(id, name)',
+    ...listOpts(),
     pageSize: 1,
-  });
+  } as drive_v3.Params$Resource$Files$List);
 
   if (res.data.files && res.data.files.length > 0) {
     return res.data.files[0].id!;
@@ -112,130 +147,20 @@ async function getOrCreateOrderFolder(
       mimeType: 'application/vnd.google-apps.folder',
       parents: [parentFolderId],
     },
-    fields: 'id',
+    ...createOpts<drive_v3.Params$Resource$Files$Create>('id'),
   });
 
   if (!folder.data.id) {
     throw new Error(`Không tạo được thư mục ${safeName} trên Google Drive`);
   }
 
-  // Set quyền công khai cho thư mục con
   await drive.permissions.create({
     fileId: folder.data.id,
-    requestBody: {
-      role: 'reader',
-      type: 'anyone',
-    },
-  });
+    requestBody: { role: 'reader', type: 'anyone' },
+    supportsAllDrives: true,
+  } as drive_v3.Params$Resource$Permissions$Create);
 
   return folder.data.id;
-}
-
-/**
- * Upload file lên Google Drive.
- *
- * @param buffer      Nội dung file (từ multer memoryStorage)
- * @param filename    Tên file gốc
- * @param folderPath  Đường dẫn thư mục, ví dụ: "bttd/bien-ban/DH001"
- * @param mimeType    MIME type của file (tự detect nếu không truyền)
- * @returns URL công khai để xem file
- */
-export async function uploadFileToDrive(
-  buffer: Buffer,
-  filename: string,
-  mimeType?: string,
-): Promise<string> {
-  const drive = getDriveClient();
-  const rootFolder = await getOrCreateBTTDFolder(drive);
-
-  // folderPath dạng "bttd/bien-ban/DH001"
-  const parts = filename.split('/');
-  let parentId = rootFolder;
-
-  // Tạo thư mục con theo path (nếu có)
-  for (const part of parts.slice(0, -1)) {
-    parentId = await getOrCreateOrderFolder(drive, parentId, part);
-  }
-
-  // Tên file cuối cùng
-  const baseName = parts[parts.length - 1];
-
-  // Sinh tên file với timestamp để tránh trùng
-  const ext = baseName.includes('.') ? '.' + baseName.split('.').pop() : '';
-  const nameWithoutExt = baseName.slice(0, baseName.lastIndexOf('.'));
-  const safeFilename = `${nameWithoutExt}_${Date.now()}${ext}`;
-
-  // Detect MIME type từ extension nếu không truyền vào
-  const finalMimeType =
-    mimeType ||
-    getMimeType(baseName) ||
-    'application/octet-stream';
-
-  // Upload file
-  const file = await drive.files.create({
-    requestBody: {
-      name: safeFilename,
-      parents: [parentId],
-    },
-    media: {
-      mimeType: finalMimeType,
-      body: require('stream').Readable.from(buffer),
-    },
-    fields: 'id, webViewLink, webContentLink',
-  });
-
-  if (!file.data.id) {
-    throw new Error('Upload Google Drive thất bại: không nhận được file ID');
-  }
-
-  // Ưu tiên webViewLink (link xem trong Drive), fallback webContentLink
-  return file.data.webViewLink || file.data.webContentLink || '';
-}
-
-/**
- * Upload nhiều file lên Google Drive trong thư mục của một đơn hàng.
- *
- * @param buffers     Mảng buffer của các file
- * @param filenames   Mảng tên file tương ứng
- * @param maDonHang  Mã đơn hàng (dùng tạo thư mục con)
- * @returns Mảng URL công khai của các file đã upload
- */
-export async function uploadFilesToDrive(
-  buffers: Buffer[],
-  filenames: string[],
-  maDonHang: string,
-): Promise<string[]> {
-  const drive = getDriveClient();
-  const rootFolder = await getOrCreateBTTDFolder(drive);
-  const orderFolder = await getOrCreateOrderFolder(drive, rootFolder, maDonHang);
-
-  const urls: string[] = [];
-
-  for (let i = 0; i < buffers.length; i++) {
-    const buffer = buffers[i];
-    const originalName = filenames[i] || `file_${i}`;
-
-    const ext = originalName.includes('.') ? '.' + originalName.split('.').pop() : '';
-    const nameWithoutExt = originalName.slice(0, originalName.lastIndexOf('.'));
-    const safeFilename = `${nameWithoutExt}_${Date.now()}_${i}${ext}`;
-    const mimeType = getMimeType(originalName) || 'application/octet-stream';
-
-    const file = await drive.files.create({
-      requestBody: {
-        name: safeFilename,
-        parents: [orderFolder],
-      },
-      media: {
-        mimeType,
-        body: require('stream').Readable.from(buffer),
-      },
-      fields: 'id, webViewLink, webContentLink',
-    });
-
-    urls.push(file.data.webViewLink || file.data.webContentLink || '');
-  }
-
-  return urls;
 }
 
 /** Map extension → MIME type */
@@ -254,4 +179,76 @@ function getMimeType(filename: string): string | null {
     xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   };
   return map[ext] || null;
+}
+
+/**
+ * Upload một file lên Google Drive.
+ * @returns URL xem file công khai trên Drive
+ */
+export async function uploadFileToDrive(
+  buffer: Buffer,
+  filename: string,
+  mimeType?: string,
+): Promise<string> {
+  const drive = getDriveClient();
+  const rootFolder = await getOrCreateBTTDFolder(drive);
+
+  const parts = filename.split('/');
+  let parentId = rootFolder;
+
+  for (const part of parts.slice(0, -1)) {
+    parentId = await getOrCreateOrderFolder(drive, parentId, part);
+  }
+
+  const baseName = parts[parts.length - 1];
+  const dotIdx = baseName.lastIndexOf('.');
+  const ext = dotIdx >= 0 ? baseName.slice(dotIdx) : '';
+  const safeFilename = `${baseName.slice(0, dotIdx || baseName.length)}_${Date.now()}${ext}`;
+  const finalMimeType = mimeType || getMimeType(baseName) || 'application/octet-stream';
+
+  const file = await drive.files.create({
+    requestBody: { name: safeFilename, parents: [parentId] },
+    media: { mimeType: finalMimeType, body: require('stream').Readable.from(buffer) },
+    ...createOpts<drive_v3.Params$Resource$Files$Create>('id, webViewLink, webContentLink'),
+  });
+
+  if (!file.data.id) {
+    throw new Error('Upload Google Drive thất bại: không nhận được file ID');
+  }
+
+  return file.data.webViewLink || file.data.webContentLink || '';
+}
+
+/**
+ * Upload nhiều file lên Google Drive trong thư mục của một đơn hàng.
+ * @returns Mảng URL công khai của các file đã upload
+ */
+export async function uploadFilesToDrive(
+  buffers: Buffer[],
+  filenames: string[],
+  maDonHang: string,
+): Promise<string[]> {
+  const drive = getDriveClient();
+  const rootFolder = await getOrCreateBTTDFolder(drive);
+  const orderFolder = await getOrCreateOrderFolder(drive, rootFolder, maDonHang);
+
+  const urls: string[] = [];
+
+  for (let i = 0; i < buffers.length; i++) {
+    const originalName = filenames[i] || `file_${i}`;
+    const dotIdx = originalName.lastIndexOf('.');
+    const ext = dotIdx >= 0 ? originalName.slice(dotIdx) : '';
+    const safeFilename = `${originalName.slice(0, dotIdx || originalName.length)}_${Date.now()}_${i}${ext}`;
+    const mimeType = getMimeType(originalName) || 'application/octet-stream';
+
+    const file = await drive.files.create({
+      requestBody: { name: safeFilename, parents: [orderFolder] },
+      media: { mimeType, body: require('stream').Readable.from(buffers[i]) },
+      ...createOpts<drive_v3.Params$Resource$Files$Create>('id, webViewLink, webContentLink'),
+    });
+
+    urls.push(file.data.webViewLink || file.data.webContentLink || '');
+  }
+
+  return urls;
 }

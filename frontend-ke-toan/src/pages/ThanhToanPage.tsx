@@ -1,16 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  FiFileText, FiSearch, FiX, FiPrinter, FiEye, FiDollarSign, FiDownload,
+  FiDollarSign,
+  FiDownload,
+  FiEye,
+  FiFileText,
+  FiPrinter,
+  FiSearch,
+  FiX,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { EmptyState, Loading, Pagination, Modal } from "../components/Common";
+import { EmptyState, Loading, Pagination } from "../components/Common";
 import { usePageRole, usePagination, useToast } from "../hooks";
 import {
   layDanhSachDonHang,
-  layLichSuThanhToan,
   layHoaDonTheoDonHang,
+  layLichSuThanhToan,
 } from "../services/api";
-import { DonHang, ThanhToan, HoaDon } from "../types";
+import { DonHang, ThanhToan } from "../types";
 import styles from "./ThanhToanPage.module.css";
 
 function formatCurrency(v: number) {
@@ -43,14 +49,22 @@ export default function ThanhToanPage() {
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState("");
   const [activeTab, setActiveTab] = useState<TabFilter>("chua_tat_toan");
-  const [modalHoaDon, setModalHoaDon] = useState<{ donHang: DonHang; hoaDons: HoaDonItem[] } | null>(null);
+  const [modalHoaDon, setModalHoaDon] = useState<{
+    donHang: DonHang;
+    hoaDons: HoaDonItem[];
+  } | null>(null);
 
   const canCreate = hasPermission("thanhtoan.create");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const dhRes = await layDanhSachDonHang(page, 50, undefined, tuKhoa || undefined);
+      const dhRes = await layDanhSachDonHang(
+        page,
+        50,
+        undefined,
+        tuKhoa || undefined,
+      );
       setDonHangs(dhRes.data || []);
 
       const dhs = dhRes.data || [];
@@ -139,13 +153,19 @@ export default function ThanhToanPage() {
       <div className={styles.kpiGrid} style={{ marginBottom: 20 }}>
         <div className={styles.kpiCard}>
           <div className={styles.kpiLabel}>Tổng công nợ</div>
-          <div className={styles.kpiValue} style={{ color: "var(--color-warning)" }}>
+          <div
+            className={styles.kpiValue}
+            style={{ color: "var(--color-warning)" }}
+          >
             {formatCurrency(tongCongNo)}
           </div>
         </div>
         <div className={styles.kpiCard}>
           <div className={styles.kpiLabel}>Đã thanh toán</div>
-          <div className={styles.kpiValue} style={{ color: "var(--color-success)" }}>
+          <div
+            className={styles.kpiValue}
+            style={{ color: "var(--color-success)" }}
+          >
             {formatCurrency(tongDaTT)}
           </div>
         </div>
@@ -155,13 +175,19 @@ export default function ThanhToanPage() {
       <div className={styles.tabBar}>
         <button
           className={`${styles.tabBtn} ${activeTab === "chua_tat_toan" ? styles.tabBtnActive : ""}`}
-          onClick={() => { setActiveTab("chua_tat_toan"); resetPage(); }}
+          onClick={() => {
+            setActiveTab("chua_tat_toan");
+            resetPage();
+          }}
         >
           Chưa tất toán ({chuaTatToan.length})
         </button>
         <button
           className={`${styles.tabBtn} ${activeTab === "da_tat_toan" ? styles.tabBtnActive : ""}`}
-          onClick={() => { setActiveTab("da_tat_toan"); resetPage(); }}
+          onClick={() => {
+            setActiveTab("da_tat_toan");
+            resetPage();
+          }}
         >
           Đã tất toán ({daTatToan.length})
         </button>
@@ -175,11 +201,20 @@ export default function ThanhToanPage() {
               className={styles.filterSearchInput}
               placeholder="Tìm đơn hàng..."
               value={tuKhoa}
-              onChange={(e) => { setTuKhoa(e.target.value); resetPage(); }}
+              onChange={(e) => {
+                setTuKhoa(e.target.value);
+                resetPage();
+              }}
             />
           </div>
           {tuKhoa && (
-            <button className={styles.filterClearBtn} onClick={() => { setTuKhoa(""); resetPage(); }}>
+            <button
+              className={styles.filterClearBtn}
+              onClick={() => {
+                setTuKhoa("");
+                resetPage();
+              }}
+            >
               <FiX size={13} /> Xóa lọc
             </button>
           )}
@@ -198,10 +233,16 @@ export default function ThanhToanPage() {
                 <tr>
                   <th style={{ minWidth: 90 }}>Mã đơn</th>
                   <th style={{ minWidth: 110 }}>Khách hàng</th>
-                  <th className={styles.hideOnMobile} style={{ minWidth: 100, textAlign: "right" }}>
+                  <th
+                    className={styles.hideOnMobile}
+                    style={{ minWidth: 100, textAlign: "right" }}
+                  >
                     Tổng tiền
                   </th>
-                  <th className={styles.hideOnMobile} style={{ minWidth: 90, textAlign: "right" }}>
+                  <th
+                    className={styles.hideOnMobile}
+                    style={{ minWidth: 90, textAlign: "right" }}
+                  >
                     Đã Thanh Toán
                   </th>
                   <th style={{ minWidth: 80 }}>Còn lại</th>
@@ -221,16 +262,31 @@ export default function ThanhToanPage() {
                         <span className={styles.tableCode}>{dh.maDonHang}</span>
                       </td>
                       <td>
-                        <div className={styles.tableName}>{dh.tenKhachHang}</div>
+                        <div className={styles.tableName}>
+                          {dh.tenKhachHang}
+                        </div>
                       </td>
-                      <td className={`${styles.tableRight} ${styles.hideOnMobile}`}>
+                      <td
+                        className={`${styles.tableRight} ${styles.hideOnMobile}`}
+                      >
                         <strong>{formatCurrency(dh.thanhTien || 0)}</strong>
                       </td>
-                      <td className={`${styles.tableRight} ${styles.hideOnMobile}`} style={{ color: "var(--color-success)" }}>
+                      <td
+                        className={`${styles.tableRight} ${styles.hideOnMobile}`}
+                        style={{ color: "var(--color-success)" }}
+                      >
                         {formatCurrency(daThanhToan)}
                       </td>
                       <td>
-                        <span style={{ color: conLai > 0 ? "var(--color-warning)" : "var(--color-success)", fontWeight: 700 }}>
+                        <span
+                          style={{
+                            color:
+                              conLai > 0
+                                ? "var(--color-warning)"
+                                : "var(--color-success)",
+                            fontWeight: 700,
+                          }}
+                        >
                           {formatCurrency(conLai)}
                         </span>
                       </td>
@@ -252,16 +308,22 @@ export default function ThanhToanPage() {
                             <>
                               <button
                                 className={styles.btnPay}
-                                onClick={() => navigate(`/thanh-toan/xuat/${dh.id}`)}
+                                onClick={() =>
+                                  navigate(`/thanh-toan/xuat/${dh.id}`)
+                                }
                                 title="Thanh toán"
                               >
                                 <FiDollarSign size={13} />{" "}
-                                {daThanhToan > 0 && conLai > 0 ? formatCurrency(conLai) : "Thanh toán"}
+                                {daThanhToan > 0 && conLai > 0
+                                  ? formatCurrency(conLai)
+                                  : "Thanh toán"}
                               </button>
                               {daThanhToan > 0 && (
                                 <button
                                   className={styles.btnHoaDon}
-                                  onClick={() => navigate(`/thanh-toan/xuat/${dh.id}`)}
+                                  onClick={() =>
+                                    navigate(`/thanh-toan/xuat/${dh.id}`)
+                                  }
                                   title="Xuất hóa đơn"
                                 >
                                   <FiFileText size={13} /> Xuất HĐ
@@ -303,7 +365,10 @@ export default function ThanhToanPage() {
 
       <div className={styles.toastContainer}>
         {toasts.map((t) => (
-          <div key={t.id} className={`${styles.toast} ${t.type === "error" ? styles.toastError : styles.toastSuccess}`}>
+          <div
+            key={t.id}
+            className={`${styles.toast} ${t.type === "error" ? styles.toastError : styles.toastSuccess}`}
+          >
             {t.message}
           </div>
         ))}
@@ -334,7 +399,9 @@ function ModalHoaDon({
             <FiFileText size={18} />
             Hóa đơn - {donHang.maDonHang}
           </h3>
-          <button className={styles.modalClose} onClick={onClose}>×</button>
+          <button className={styles.modalClose} onClick={onClose}>
+            ×
+          </button>
         </div>
         <div className={styles.modalBody}>
           {hoaDons.length === 0 ? (
@@ -351,23 +418,54 @@ function ModalHoaDon({
                         Ngày: {new Date(hd.ngayLap).toLocaleDateString("vi-VN")}
                       </span>
                     )}
-                    <span className={`${styles.hoaDonBadge} ${hd.loaiThanhToan === "tra_het" ? styles.badgeTraHet : styles.badgeCongNo}`}>
+                    <span
+                      className={`${styles.hoaDonBadge} ${hd.loaiThanhToan === "tra_het" ? styles.badgeTraHet : styles.badgeCongNo}`}
+                    >
                       {hd.loaiThanhToan === "tra_het" ? "Trả hết" : "Công nợ"}
                     </span>
                   </div>
-                  <button className={styles.btnPrint} onClick={() => onPrint(hd.id)}>
+                  <button
+                    className={styles.btnPrint}
+                    onClick={() => onPrint(hd.id)}
+                  >
                     <FiPrinter size={14} /> In
                   </button>
-                  <button className={styles.btnDownload} onClick={() => onDownload(hd.id)}>
+                  <button
+                    className={styles.btnDownload}
+                    onClick={() => onDownload(hd.id)}
+                  >
                     <FiDownload size={14} /> Tải
                   </button>
                 </div>
                 <div className={styles.hoaDonDetails}>
-                  <div className={styles.hdRow}><span>Tiền bê tông:</span><span>{formatCurrency(hd.tienBeTong)}</span></div>
-                  {hd.buuVanChuyen > 0 && <div className={styles.hdRow}><span>Bù vận chuyển:</span><span>{formatCurrency(hd.buuVanChuyen)}</span></div>}
-                  {hd.phiPhatSinh > 0 && <div className={styles.hdRow}><span>Chi phí phát sinh:</span><span>{formatCurrency(hd.phiPhatSinh)}</span></div>}
-                  {hd.giamTru > 0 && <div className={styles.hdRow}><span>Giảm trừ:</span><span style={{ color: "var(--color-success)" }}>- {formatCurrency(hd.giamTru)}</span></div>}
-                  <div className={`${styles.hdRow} ${styles.hdTotal}`}><span>Tổng cộng:</span><span>{formatCurrency(hd.tongCong)}</span></div>
+                  <div className={styles.hdRow}>
+                    <span>Tiền bê tông:</span>
+                    <span>{formatCurrency(hd.tienBeTong)}</span>
+                  </div>
+                  {hd.buuVanChuyen > 0 && (
+                    <div className={styles.hdRow}>
+                      <span>Bù vận chuyển:</span>
+                      <span>{formatCurrency(hd.buuVanChuyen)}</span>
+                    </div>
+                  )}
+                  {hd.phiPhatSinh > 0 && (
+                    <div className={styles.hdRow}>
+                      <span>Chi phí phát sinh:</span>
+                      <span>{formatCurrency(hd.phiPhatSinh)}</span>
+                    </div>
+                  )}
+                  {hd.giamTru > 0 && (
+                    <div className={styles.hdRow}>
+                      <span>Giảm trừ:</span>
+                      <span style={{ color: "var(--color-success)" }}>
+                        - {formatCurrency(hd.giamTru)}
+                      </span>
+                    </div>
+                  )}
+                  <div className={`${styles.hdRow} ${styles.hdTotal}`}>
+                    <span>Tổng cộng:</span>
+                    <span>{formatCurrency(hd.tongCong)}</span>
+                  </div>
                 </div>
               </div>
             ))

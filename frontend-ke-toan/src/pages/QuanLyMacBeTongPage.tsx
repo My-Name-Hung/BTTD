@@ -21,12 +21,9 @@ export default function QuanLyMacBeTongPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MacBeTong | null>(null);
-  const [form, setForm] = useState({ tenMac: '', donGia: '', chiPhiPhatSinh: '', buVanChuyen: '', moTa: '' });
+  const [form, setForm] = useState({ tenMac: '', donGia: '', moTa: '' });
   const [formLoading, setFormLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Ẩn 2 cột Chi phí phát sinh & Bù vận chuyển với vai trò admin, dieu_phoi, sale
-  const hideChiPhiBuVC = hasAnyRole(['admin', 'dieu_phoi', 'sale']);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -45,7 +42,7 @@ export default function QuanLyMacBeTongPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({ tenMac: '', donGia: '', chiPhiPhatSinh: '', buVanChuyen: '', moTa: '' });
+    setForm({ tenMac: '', donGia: '', moTa: '' });
     setModalOpen(true);
   };
 
@@ -54,8 +51,6 @@ export default function QuanLyMacBeTongPage() {
     setForm({
       tenMac: m.tenMac,
       donGia: Number(m.donGia || 0).toLocaleString('vi-VN'),
-      chiPhiPhatSinh: Number(m.chiPhiPhatSinh || 0).toLocaleString('vi-VN'),
-      buVanChuyen: Number(m.buVanChuyen || 0).toLocaleString('vi-VN'),
       moTa: m.moTa || '',
     });
     setModalOpen(true);
@@ -67,16 +62,12 @@ export default function QuanLyMacBeTongPage() {
       return;
     }
     const donGia = parseFloat(form.donGia.replace(/[^\d]/g, '') || '0');
-    const chiPhi = parseFloat(form.chiPhiPhatSinh.replace(/[^\d]/g, '') || '0');
-    const buVanChuyen = parseFloat(form.buVanChuyen.replace(/[^\d]/g, '') || '0');
 
     setFormLoading(true);
     try {
       const payload = {
         tenMac: form.tenMac.trim(),
         donGia,
-        chiPhiPhatSinh: chiPhi,
-        buVanChuyen,
         moTa: form.moTa.trim() || null,
       };
       if (editingId) {
@@ -148,12 +139,6 @@ export default function QuanLyMacBeTongPage() {
                 <tr>
                   <th style={{ minWidth: 80 }}>Tên mác</th>
                   <th style={{ minWidth: 100, textAlign: 'right' }}>Đơn giá</th>
-                  {!hideChiPhiBuVC && (
-                    <>
-                      <th style={{ minWidth: 120, textAlign: 'right' }}>Chi phí phát sinh</th>
-                      <th style={{ minWidth: 110, textAlign: 'right' }}>Bù vận chuyển</th>
-                    </>
-                  )}
                   <th style={{ minWidth: 80 }}>Ghi chú</th>
                   <th style={{ minWidth: 80 }}>Thao tác</th>
                 </tr>
@@ -171,20 +156,6 @@ export default function QuanLyMacBeTongPage() {
                         <span className={styles.buEmpty}>-</span>
                       )}
                     </td>
-                    {!hideChiPhiBuVC && (
-                      <>
-                        <td style={{ textAlign: 'right' }}>
-                          <strong>{formatCurrency(m.chiPhiPhatSinh)}</strong>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          {m.buVanChuyen > 0 ? (
-                            <span className={styles.buHighlight}>{formatCurrency(m.buVanChuyen)}</span>
-                          ) : (
-                            <span className={styles.buEmpty}>-</span>
-                          )}
-                        </td>
-                      </>
-                    )}
                     <td>
                       <span className={styles.moTa}>{m.moTa || '-'}</span>
                     </td>
@@ -244,24 +215,6 @@ export default function QuanLyMacBeTongPage() {
             value={form.donGia}
             onChange={(e) => setForm({ ...form, donGia: formatInput(e.target.value) })}
             placeholder="VD: 1.500.000"
-          />
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Chi phí phát sinh (VNĐ)</label>
-          <input
-            className={styles.formInput}
-            value={form.chiPhiPhatSinh}
-            onChange={(e) => setForm({ ...form, chiPhiPhatSinh: formatInput(e.target.value) })}
-            placeholder="0"
-          />
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Bù vận chuyển (VNĐ)</label>
-          <input
-            className={styles.formInput}
-            value={form.buVanChuyen}
-            onChange={(e) => setForm({ ...form, buVanChuyen: formatInput(e.target.value) })}
-            placeholder="0"
           />
         </div>
         <div className={styles.formGroup}>
