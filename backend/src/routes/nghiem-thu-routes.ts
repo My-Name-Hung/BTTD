@@ -1,7 +1,5 @@
 import { Router, Response } from 'express';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import { query, vnNow } from '../config/database';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { ApiResponse } from '../models';
@@ -12,34 +10,19 @@ import {
   xacNhanNghiemThu,
   xoaNghiemThu,
 } from '../services/nghiem-thu-service';
-import { query } from '../config/database';
+import { uploadFilesToDrive } from '../services/google-drive-service';
 import { NghiemThu } from '../models';
 import { ghiNhatKy } from '../services/access-history-service';
 
 const router = Router();
 
-// Thư mục lưu file — đảm bảo tồn tại
-const BIEN_BAN_DIR = path.join(process.cwd(), 'uploads', 'bien-ban');
-if (!fs.existsSync(BIEN_BAN_DIR)) {
-  fs.mkdirSync(BIEN_BAN_DIR, { recursive: true });
-}
-
-// Cấu hình multer để lưu file biên bản nghiệm thu (nhiều file)
+// Cấu hình multer lưu file tạm vào memory (sẽ upload lên Cloudinary)
 const uploadBienBan = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, cb) => {
-      cb(null, BIEN_BAN_DIR);
-    },
-    filename: (_req, file, cb) => {
-      const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const ext = path.extname(file.originalname);
-      cb(null, `bien-ban-${unique}${ext}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024, files: 10 }, // 50MB mỗi file, tối đa 10 file
   fileFilter: (_req, file, cb) => {
     const allowed = ['.doc', '.docx', '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
-    const ext = path.extname(file.originalname).toLowerCase();
+    const ext = file.originalname.slice(file.originalname.lastIndexOf('.')).toLowerCase();
     if (allowed.includes(ext)) {
       cb(null, true);
     } else {
@@ -107,7 +90,7 @@ router.put('/xac-nhan/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan
   }
 });
 
-// Upload file biên bản nghiệm thu (nhiều file)
+// Upload file biên bản nghiệm thu lên Google Drive
 router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), uploadBienBan.array('files', 10), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const files = req.files as Express.Multer.File[];
@@ -117,7 +100,15 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
     }
 
     const idDonHang = parseInt(req.params.idDonHang, 10);
-    const fileUrls = files.map(f => `/uploads/bien-ban/${f.filename}`);
+
+    // Lấy mã đơn hàng để tạo thư mục
+    const donHangRow = (await query<any[]>(`SELECT maDonHang FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
+    const maDonHang = donHangRow?.maDonHang || `DH${idDonHang}`;
+
+    // Upload từng file lên Google Drive
+    const buffers = files.map(f => f.buffer);
+    const filenames = files.map(f => f.originalname);
+    const fileUrls = await uploadFilesToDrive(buffers, filenames, maDonHang);
 
     const existing = await query<NghiemThu>(
       `SELECT * FROM NghiemThu WHERE idDonHang = @idDonHang`,
@@ -131,8 +122,9 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
         { idDonHang, bienBanFile: JSON.stringify(fileUrls) }
       );
     } else {
-      // Merge file cũ và mới
-      const existingFiles = existing[0].bienBanFile ? JSON.parse(existing[0].bienBanFile as unknown as string) : [];
+      const existingFiles: string[] = existing[0].bienBanFile
+        ? JSON.parse(existing[0].bienBanFile as unknown as string)
+        : [];
       const allFiles = [...existingFiles, ...fileUrls];
       await query(
         `UPDATE NghiemThu SET bienBanFile = @bienBanFile, ngayCapNhat = ${vnNow()} WHERE idDonHang = @idDonHang`,
@@ -151,12 +143,23 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
   }
 });
 
-// Xác nhận nghiệm thu kèm upload file trong 1 request (nhiều file)
+// Xác nhận nghiệm thu kèm upload file lên Google Drive
 router.post('/xac-nhan-upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), uploadBienBan.array('files', 10), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const files = req.files as Express.Multer.File[];
     const idDonHang = parseInt(req.params.idDonHang, 10);
-    const fileUrls = files?.map(f => `/uploads/bien-ban/${f.filename}`) || [];
+
+    // Lấy mã đơn hàng
+    const donHangRow = (await query<any[]>(`SELECT maDonHang FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
+    const maDonHang = donHangRow?.maDonHang || `DH${idDonHang}`;
+
+    const fileUrls: string[] = [];
+    if (files && files.length > 0) {
+      const buffers = files.map(f => f.buffer);
+      const filenames = files.map(f => f.originalname);
+      const urls = await uploadFilesToDrive(buffers, filenames, maDonHang);
+      fileUrls.push(...urls);
+    }
 
     const dhCu = (await query<any[]>(`SELECT * FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
     const dh = await xacNhanNghiemThu(idDonHang, 'da', fileUrls.length > 0 ? JSON.stringify(fileUrls) : undefined);

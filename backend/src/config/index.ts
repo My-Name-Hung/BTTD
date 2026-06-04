@@ -25,4 +25,18 @@ export const config = {
     pass: process.env.EMAIL_PASS || 'iispotnkmslnobal',
     adminEmail: process.env.ADMIN_EMAIL || 'thanhhung11112002@gmail.com',
   },
+
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
+    apiKey: process.env.CLOUDINARY_API_KEY || '',
+    apiSecret: process.env.CLOUDINARY_API_SECRET || '',
+  },
+
+  google: {
+    serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '',
+    serviceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY || '',
+    credentialsPath: process.env.GOOGLE_APPLICATION_CREDENTIALS || '',
+    // Folder ID trên Google Drive để lưu biên bản (share folder này với service account email)
+    driveFolderId: process.env.GOOGLE_DRIVE_FOLDER_ID || '',
+  },
 };
