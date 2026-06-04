@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { ApiResponse } from '../models';
-import { taoHoaDon, layHoaDonTheoDonHang, taiHoaDonDoc } from '../services/hoa-don-service';
+import { taoHoaDon, layHoaDonTheoDonHang, taiHoaDonDoc, layHoaDonTheoId } from '../services/hoa-don-service';
 import { ghiNhatKy } from '../services/access-history-service';
 
 const router = Router();
@@ -35,6 +35,18 @@ router.post(
     }
   }
 );
+
+// Lấy hóa đơn theo ID
+router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const data = await layHoaDonTheoId(id);
+    res.json({ success: true, message: 'Lấy hóa đơn thành công', data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy hóa đơn';
+    res.status(500).json({ success: false, message });
+  }
+});
 
 // Lấy hóa đơn theo đơn hàng
 router.get('/don-hang/:idDonHang', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {

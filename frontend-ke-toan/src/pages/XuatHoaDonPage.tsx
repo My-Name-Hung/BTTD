@@ -21,6 +21,7 @@ import {
   taoHoaDon,
   taiHoaDonDoc,
   layDonHangGiaoTrongNgay,
+  layHoaDonTheoId,
 } from "../services/api";
 import { DonHang, LichSanXuat } from "../types";
 import styles from "./XuatHoaDonPage.module.css";
@@ -67,6 +68,7 @@ export default function XuatHoaDonPage() {
   const [soDonNgay, setSoDonNgay] = useState(0);
 
   const [buVanChuyen, setBuVanChuyen] = useState("");
+  const [buVanChuyenDaSet, setBuVanChuyenDaSet] = useState(false);
   const [phiPhatSinh, setPhiPhatSinh] = useState("");
   const [giamTru, setGiamTru] = useState("");
   const [soTienThanhToanTruoc, setSoTienThanhToanTruoc] = useState("");
@@ -128,8 +130,17 @@ export default function XuatHoaDonPage() {
   const khoiLuongDisplay = donHang?.khoiLuongDat || 0;
   const donGiaDisplay = donHang?.donGia || 0;
   const tienBeTong = khoiLuongDisplay * donGiaDisplay;
+  const khoiBuVC = Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay);
+  const tienBuVCAuto = khoiBuVC * MUC_GIA_BU_VC;
   const tongCong = tienBeTong + buVanChuyenSo + phiPhatSinhSo - giamTruSo;
   const soTienConLai = Math.max(0, tongCong - soTTTS);
+
+  // Auto-fill tiền bù vận chuyển khi load xong dữ liệu và chưa từng chỉnh sửa
+  useEffect(() => {
+    if (!loading && khoiLuongNgay > 0 && !buVanChuyenDaSet) {
+      setBuVanChuyen(tienBuVCAuto > 0 ? formatNumberInput(tienBuVCAuto) : "0");
+    }
+  }, [loading, khoiLuongNgay, tienBuVCAuto, buVanChuyenDaSet]);
 
   const handleSubmit = async () => {
     if (!donHang) return;
@@ -188,9 +199,6 @@ export default function XuatHoaDonPage() {
       </div>
     );
   }
-
-  const khoiBuVC = Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay);
-  const tienBuVCAuto = khoiBuVC * MUC_GIA_BU_VC;
 
   return (
     <div className={styles.pageWrapper}>
@@ -315,7 +323,10 @@ export default function XuatHoaDonPage() {
                 className={styles.formInput}
                 type="text"
                 value={buVanChuyen}
-                onChange={(e) => setBuVanChuyen(formatNumberInput(e.target.value))}
+                onChange={(e) => {
+                  setBuVanChuyenDaSet(true); // Đánh dấu đã chỉnh sửa thủ công
+                  setBuVanChuyen(formatNumberInput(e.target.value));
+                }}
                 placeholder="0"
               />
               <span className={styles.formHint}>

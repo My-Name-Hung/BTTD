@@ -1,8 +1,11 @@
-/* InHoaDonPage - Print-optimized invoice layout */
+/* ═══════════════════════════════════════════════════════════
+   InHoaDonPage - Professional VAT-style invoice
+   ═══════════════════════════════════════════════════════════ */
 
 .wrapper {
   min-height: 100vh;
-  background: #f0f2f5;
+  background: #eef1f6;
+  font-family: 'Times New Roman', 'Segoe UI', Arial, sans-serif;
 }
 
 /* ── Toolbar ── */
@@ -13,369 +16,735 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 10px 24px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(7,60,235,0.1);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  gap: 12px;
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .backBtn,
-.printBtn {
-  display: flex;
+.printBtn,
+.downloadBtn {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s;
+  border: none;
 }
 
 .backBtn {
-  border: 1.5px solid var(--color-border);
   background: white;
-  color: var(--color-text-secondary);
+  color: #475569;
+  border: 1.5px solid #e2e8f0;
 }
 
 .backBtn:hover {
-  border-color: var(--color-text);
-  color: var(--color-text);
+  border-color: #94a3b8;
+  color: #1e293b;
 }
 
 .printBtn {
-  border: none;
-  background: var(--color-primary);
+  background: #073ceb;
   color: white;
+  box-shadow: 0 2px 8px rgba(7,60,235,0.3);
 }
 
 .printBtn:hover {
-  background: #062fa8;
+  background: #052db3;
+  box-shadow: 0 4px 16px rgba(7,60,235,0.4);
+  transform: translateY(-1px);
+}
+
+.downloadBtn {
+  background: white;
+  color: #073ceb;
+  border: 1.5px solid #073ceb;
+}
+
+.downloadBtn:hover {
+  background: #f0f4ff;
+}
+
+/* ── Print Area ── */
+.printArea {
+  display: flex;
+  justify-content: center;
+  padding: 28px 16px 48px;
 }
 
 /* ── Invoice ── */
 .invoice {
-  max-width: 800px;
-  margin: 24px auto;
+  width: 210mm;
+  min-height: 297mm;
   background: white;
-  padding: 40px 48px;
-  border-radius: 4px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 16mm 20mm;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  box-sizing: border-box;
+  font-size: 12pt;
+  color: #1a1a1a;
 }
 
 /* ── Invoice Header ── */
-.invoiceHeader {
+.invHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #073ceb;
-}
-
-.companyInfo {
-  flex: 1;
-}
-
-.companyName {
-  font-size: 22px;
-  font-weight: 800;
-  color: #073ceb;
-  margin: 0 0 8px;
-  letter-spacing: 1px;
-}
-
-.companyInfo p {
-  font-size: 13px;
-  color: #555;
-  margin: 3px 0;
-}
-
-.invoiceTitle {
-  text-align: right;
-}
-
-.invoiceTitle h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: #073ceb;
-  margin: 0 0 8px;
-  text-transform: uppercase;
-}
-
-.soHoaDon {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 4px;
-}
-
-.ngayLap {
-  font-size: 13px;
-  color: #555;
-  margin: 0;
-}
-
-/* ── Info Grid ── */
-.infoGrid {
-  display: flex;
-  gap: 32px;
-  margin-bottom: 20px;
-}
-
-.infoCol {
-  flex: 1;
-}
-
-.infoRow {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 6px;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.infoLabel {
-  font-weight: 600;
-  color: #555;
-  min-width: 130px;
-  flex-shrink: 0;
-}
-
-.infoValue {
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-/* ── Table ── */
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 16px 0;
-  font-size: 13px;
-}
-
-.table thead th {
-  background: #073ceb;
-  color: white;
-  padding: 10px 8px;
-  text-align: left;
-  font-weight: 700;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.table thead th:nth-child(n+3) {
-  text-align: right;
-}
-
-.table thead th:first-child {
-  text-align: center;
-  width: 40px;
-}
-
-.table tbody td {
-  padding: 10px 8px;
-  border-bottom: 1px solid #e5e7eb;
-  color: var(--color-text);
-  vertical-align: top;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.table tfoot td {
-  padding: 10px 8px;
-  border-top: 2px solid #073ceb;
-}
-
-.center {
-  text-align: center !important;
-}
-
-.right {
-  text-align: right !important;
-}
-
-.red {
-  color: #dc2626;
-}
-
-.totalRow {
-  font-size: 15px;
-}
-
-.totalRow td {
-  padding: 12px 8px;
-  background: #f8fafc;
-}
-
-/* ── Payment Badge ── */
-.paymentInfo {
-  margin: 16px 0;
-  display: flex;
-  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid #073ceb;
+  margin-bottom: 12px;
   gap: 16px;
 }
 
-.paymentBadge {
-  display: inline-block;
-  padding: 6px 20px;
+.invHeaderLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.invLogo {
+  flex-shrink: 0;
+}
+
+.invLogoImg {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.invCompanyInfo {
+  flex: 1;
+}
+
+.invCompanyName {
+  font-size: 16pt;
+  font-weight: 900;
+  color: #073ceb;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.invCompanyDetail {
+  font-size: 9pt;
+  color: #073ceb;
+  font-style: italic;
+  margin-bottom: 4px;
+}
+
+.invCompanyContact {
+  font-size: 8.5pt;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.invHeaderRight {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.invFormTitle {
+  font-size: 13pt;
+  font-weight: 900;
+  color: #073ceb;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.invFormSub {
+  font-size: 8pt;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* ── Invoice Title ── */
+.invTitle {
+  text-align: center;
+  margin: 12px 0 16px;
+  padding: 8px 0;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.invTitleText {
+  font-size: 18pt;
+  font-weight: 900;
+  color: #1a1a1a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.invTitleSub {
+  font-size: 10pt;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* ── Invoice Info Row ── */
+.invInfoRow {
+  margin-bottom: 12px;
+}
+
+.invInfoBlock {
+  width: 100%;
+}
+
+.invInfoTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.invInfoTable tr {
+  vertical-align: top;
+}
+
+.invInfoLabel {
+  font-size: 10pt;
+  color: #475569;
+  padding: 3px 8px 3px 0;
+  white-space: nowrap;
+  width: 120px;
+}
+
+.invInfoValue {
+  font-size: 11pt;
+  font-weight: 600;
+  color: #1a1a1a;
+  padding: 3px 0;
+}
+
+.invWarning {
+  color: #b91c1c;
+}
+
+/* ── Parties ── */
+.invParties {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.invPartyBlock {
+  flex: 1;
+}
+
+.invPartyTitle {
+  font-size: 8pt;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  border-bottom: 1px dashed #cbd5e1;
+  padding-bottom: 3px;
+}
+
+.invPartyName {
+  font-size: 11pt;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin-bottom: 3px;
+}
+
+.invPartyDetail {
+  font-size: 9pt;
+  color: #475569;
+  line-height: 1.5;
+}
+
+/* ── Sections ── */
+.invSection {
+  margin-bottom: 12px;
+}
+
+.invSectionTitle {
+  font-size: 9pt;
+  font-weight: 700;
+  color: #073ceb;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  border-left: 3px solid #073ceb;
+  padding-left: 6px;
+}
+
+.invDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px 16px;
+}
+
+.invDetailItem {
+  display: flex;
+  gap: 6px;
+  font-size: 10pt;
+  line-height: 1.4;
+}
+
+.invDetailLabel {
+  color: #64748b;
+  white-space: nowrap;
+  font-size: 9.5pt;
+}
+
+.invDetailValue {
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 10pt;
+}
+
+/* ── Items Table ── */
+.invTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10pt;
+  border: 1.5px solid #073ceb;
+}
+
+.invTable thead tr {
   background: #073ceb;
   color: white;
-  font-weight: 800;
-  font-size: 16px;
+}
+
+.invTable th {
+  padding: 7px 8px;
+  font-weight: 700;
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: 1px solid rgba(255,255,255,0.2);
+  text-align: left;
+}
+
+.invTHNum {
+  text-align: center !important;
+  width: 32px;
+}
+
+.invTHContent {
+  min-width: 200px;
+}
+
+.invTHUnit,
+.invTHQty,
+.invTHPrice,
+.invTHTotal {
+  text-align: right !important;
+  width: 80px;
+}
+
+.invTable td {
+  padding: 7px 8px;
+  border: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+
+.invTDNum {
+  text-align: center !important;
+  font-weight: 600;
+}
+
+.invTDContent {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.invTDUnit,
+.invTDQty,
+.invTDPrice,
+.invTDTotal {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.invTDMinus {
+  color: #dc2626 !important;
+}
+
+/* ── Total Rows ── */
+.invTotalRow {
+  background: #f0f4ff !important;
+}
+
+.invTotalLabel {
+  font-size: 10pt;
+  font-weight: 800 !important;
+  color: #1a1a1a;
+  text-align: right !important;
+  padding-right: 12px !important;
+  border-color: #c7d2fe !important;
+}
+
+.invTotalValue {
+  font-size: 12pt;
+  font-weight: 900 !important;
+  color: #073ceb;
+  text-align: right !important;
+  border-color: #c7d2fe !important;
+}
+
+.invAmountWordRow {
+  background: #fafafa !important;
+}
+
+.invAmountWordLabel {
+  font-size: 9pt;
+  font-style: italic;
+  color: #64748b;
+  text-align: right !important;
+  padding-right: 12px !important;
+}
+
+.invAmountWordValue {
+  font-size: 10pt;
+  font-weight: 700;
+  font-style: italic;
+  color: #1a1a1a;
+  border-color: #e2e8f0 !important;
+}
+
+/* ── Payment Banner ── */
+.invPaymentBanner {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.invPayBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 28px;
+  font-size: 13pt;
+  font-weight: 900;
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
-.hanTra {
-  font-size: 13px;
-  color: #555;
-  margin: 0;
-  font-weight: 600;
+.invPayBadgePaid {
+  background: #dcfce7;
+  color: #15803d;
+  border: 2px solid #22c55e;
 }
 
-/* ── Ghi chú ── */
-.ghiChu {
-  padding: 10px 14px;
+.invPayBadgeDebt {
+  background: #fef9c3;
+  color: #b45309;
+  border: 2px solid #f59e0b;
+}
+
+/* ── Notes ── */
+.invNoteSection {
+  padding: 8px 12px;
   background: #fffbeb;
-  border: 1px solid #f59e0b;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #92400e;
-  margin: 12px 0;
+  border: 1px solid #fde68a;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.invNoteTitle {
+  font-size: 9pt;
+  font-weight: 700;
+  color: #b45309;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.invNoteText {
+  font-size: 10pt;
+  color: #78350f;
+  line-height: 1.5;
 }
 
 /* ── Signatures ── */
-.signatures {
+.invSignatures {
   display: flex;
-  gap: 60px;
-  margin-top: 48px;
+  gap: 24px;
+  margin-top: 20px;
 }
 
-.sigCol {
+.invSigCol {
   flex: 1;
   text-align: center;
 }
 
-.sigTitle {
-  font-size: 13px;
-  margin: 0 0 4px;
-  color: var(--color-text);
+.invSigTitle {
+  font-size: 9pt;
+  font-weight: 800;
+  color: #1a1a1a;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 3px;
 }
 
-.sigNote {
-  font-size: 11px;
-  color: #888;
-  margin: 0 0 48px;
+.invSigNote {
+  font-size: 8pt;
+  color: #94a3b8;
   font-style: italic;
+  margin-bottom: 40px;
 }
 
-.sigArea {
+.invSigBlank {
   height: 48px;
+  border-bottom: 1px solid #cbd5e1;
+  margin-bottom: 4px;
+}
+
+.invSigName {
+  font-size: 9pt;
+  color: #475569;
 }
 
 /* ── Footer ── */
-.invoiceFooter {
+.invFooter {
+  margin-top: 20px;
   text-align: center;
-  margin-top: 32px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
 }
 
-.invoiceFooter p {
-  font-size: 13px;
-  color: #888;
+.invFooterLine {
+  border-top: 1px dashed #cbd5e1;
+  margin-bottom: 10px;
+}
+
+.invFooterText {
+  font-size: 10pt;
+  font-weight: 700;
+  color: #073ceb;
+  margin: 0 0 2px;
+}
+
+.invFooterSub {
+  font-size: 9pt;
+  color: #94a3b8;
   font-style: italic;
   margin: 0;
 }
 
 /* ── Not Found ── */
-.notFound {
+.notFoundWrap {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 60px;
-  text-align: center;
-  color: var(--color-text-secondary);
+  min-height: 80vh;
+  padding: 24px;
 }
 
-.notFound button {
-  padding: 10px 24px;
-  border: 1.5px solid var(--color-primary);
+.notFoundCard {
+  background: white;
+  border-radius: 16px;
+  padding: 48px 40px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+
+.notFoundIcon {
+  width: 80px;
+  height: 80px;
+  background: #fef2f2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  color: #ef4444;
+}
+
+.notFoundCard h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 8px;
+}
+
+.notFoundCard p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.notFoundActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btnPrimary,
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
   border-radius: 8px;
-  background: transparent;
-  color: var(--color-primary);
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
+  border: none;
+  transition: all 0.2s;
 }
 
-/* ── Print Styles ── */
+.btnPrimary {
+  background: #073ceb;
+  color: white;
+}
+
+.btnPrimary:hover {
+  background: #052db3;
+}
+
+.btnSecondary {
+  background: white;
+  color: #475569;
+  border: 1.5px solid #e2e8f0;
+}
+
+.btnSecondary:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRINT STYLES
+   ═══════════════════════════════════════════════════════════ */
+
 @media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html, body {
+    width: 210mm;
+    height: 297mm;
+  }
+
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .wrapper {
+    background: white !important;
+    padding: 0 !important;
+  }
+
   .toolbar {
     display: none !important;
   }
 
-  .wrapper {
-    background: white;
-    padding: 0;
+  .printArea {
+    padding: 0 !important;
   }
 
   .invoice {
-    box-shadow: none;
-    margin: 0;
-    padding: 24px;
-    border-radius: 0;
-    max-width: 100%;
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 16mm 20mm !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
   }
 
-  .table thead th {
+  .invTable thead th {
     background: #073ceb !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 
-  .paymentBadge {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  .invTotalRow {
+    background: #f0f4ff !important;
+  }
+
+  .invPayBadgePaid {
+    background: #dcfce7 !important;
+  }
+
+  .invPayBadgeDebt {
+    background: #fef9c3 !important;
   }
 }
 
-/* ── Responsive ── */
-@media (max-width: 600px) {
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .toolbar {
+    padding: 8px 16px;
+  }
+
+  .toolbarActions {
+    gap: 6px;
+  }
+
+  .printBtn span,
+  .backBtn span {
+    display: none;
+  }
+
+  .printArea {
+    padding: 12px 8px 32px;
+  }
+
   .invoice {
-    padding: 24px 20px;
-    margin: 12px;
+    width: 100%;
+    min-width: unset;
+    padding: 16px;
   }
 
-  .invoiceHeader {
+  .invHeader {
     flex-direction: column;
-    gap: 16px;
   }
 
-  .invoiceTitle {
+  .invHeaderRight {
     text-align: left;
   }
 
-  .infoGrid {
+  .invParties {
     flex-direction: column;
+  }
+
+  .invDetailGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .invSignatures {
     gap: 16px;
   }
 
-  .signatures {
-    flex-direction: column;
-    gap: 32px;
-  }
-
-  .toolbar {
-    padding: 10px 16px;
+  .invSigNote {
+    margin-bottom: 32px;
   }
 }

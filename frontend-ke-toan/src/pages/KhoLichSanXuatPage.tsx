@@ -75,6 +75,9 @@ export default function KhoLichSanXuatPage() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   });
+  const [maDonFilter, setMaDonFilter] = useState("");
+  const [tenKhachFilter, setTenKhachFilter] = useState("");
+  const [maDonDropdownOpen, setMaDonDropdownOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -130,6 +133,24 @@ export default function KhoLichSanXuatPage() {
       );
     }
 
+    // Lọc theo mã đơn
+    if (maDonFilter) {
+      const q = maDonFilter.toLowerCase();
+      items = items.filter(
+        (item) =>
+          (item.maDonHang || "").toLowerCase().includes(q) ||
+          String(item.idDonHang).includes(q),
+      );
+    }
+
+    // Lọc theo tên khách hàng
+    if (tenKhachFilter) {
+      const q = tenKhachFilter.toLowerCase();
+      items = items.filter(
+        (item) => (item.tenKhachHang || "").toLowerCase().includes(q),
+      );
+    }
+
     // Sắp xếp: chưa xác nhận (dang_san_xuat) lên đầu, sau đó theo ngày mới nhất
     items.sort((a, b) => {
       const isA = a.trangThaiDon === "dang_san_xuat";
@@ -142,7 +163,7 @@ export default function KhoLichSanXuatPage() {
     });
 
     return items;
-  }, [data, filterMode, filterValue]);
+  }, [data, filterMode, filterValue, maDonFilter, tenKhachFilter]);
 
   // Stats
   const stats = useMemo(() => {
@@ -167,6 +188,9 @@ export default function KhoLichSanXuatPage() {
     setFilterValue(
       `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
     );
+    setMaDonFilter("");
+    setTenKhachFilter("");
+    setMaDonDropdownOpen(false);
   };
 
   if (loading) return <Loading />;
@@ -250,6 +274,91 @@ export default function KhoLichSanXuatPage() {
                 ›
               </button>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filter row 2: mã đơn + tên khách hàng */}
+      <div className={styles.filterRow2}>
+        {/* Dropdown mã đơn */}
+        <div className={styles.filterDropdownWrap}>
+          <div
+            className={`${styles.filterDropdownTrigger} ${maDonFilter ? styles.filterDropdownTriggerActive : ""}`}
+            onClick={() => setMaDonDropdownOpen(!maDonDropdownOpen)}
+          >
+            <span className={styles.filterDropdownLabel}>
+              {maDonFilter || "Chọn mã đơn"}
+            </span>
+            <svg className={`${styles.filterDropdownChevron} ${maDonDropdownOpen ? styles.filterDropdownChevronOpen : ""}`} width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          {maDonDropdownOpen && (
+            <div className={styles.filterDropdown}>
+              <input
+                className={styles.filterDropdownSearch}
+                placeholder="Tìm mã đơn..."
+                value={maDonFilter}
+                onChange={(e) => setMaDonFilter(e.target.value)}
+                autoFocus
+              />
+              <div className={styles.filterDropdownList}>
+                {data
+                  .filter((item) =>
+                    (item.maDonHang || "")
+                      .toLowerCase()
+                      .includes(maDonFilter.toLowerCase())
+                  )
+                  .slice(0, 20)
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className={`${styles.filterDropdownItem} ${maDonFilter === item.maDonHang ? styles.filterDropdownItemSelected : ""}`}
+                      onClick={() => {
+                        setMaDonFilter(item.maDonHang || "");
+                        setMaDonDropdownOpen(false);
+                      }}
+                    >
+                      <span className={styles.filterDropdownItemCode}>
+                        {item.maDonHang}
+                      </span>
+                      <span className={styles.filterDropdownItemName}>
+                        {item.tenKhachHang || ""}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Input tên khách hàng */}
+        <div className={styles.filterSearchWrap}>
+          <svg className={styles.filterSearchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input
+            className={`${styles.filterSearchInput} ${tenKhachFilter ? styles.filterSearchInputActive : ""}`}
+            type="text"
+            placeholder="Tìm tên khách hàng..."
+            value={tenKhachFilter}
+            onChange={(e) => setTenKhachFilter(e.target.value)}
+          />
+          {(maDonFilter || tenKhachFilter) && (
+            <button
+              className={styles.filterClearBtn}
+              onClick={() => {
+                setMaDonFilter("");
+                setTenKhachFilter("");
+                setMaDonDropdownOpen(false);
+              }}
+              title="Xóa filter"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
           )}
         </div>
       </div>

@@ -986,6 +986,10 @@ export async function layHoaDonTheoDonHang(idDonHang: number): Promise<any[]> {
   return request<any[]>(`/hoa-don/don-hang/${idDonHang}`);
 }
 
+export async function layHoaDonTheoId(id: number): Promise<any> {
+  return request<any>(`/hoa-don/${id}`);
+}
+
 export async function taiHoaDonDoc(id: number): Promise<void> {
   const token = getToken();
   const response = await fetch(`${BASE_URL}/hoa-don/tai/${id}/doc`, {
