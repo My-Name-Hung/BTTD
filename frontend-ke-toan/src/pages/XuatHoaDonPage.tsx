@@ -21,7 +21,6 @@ import {
   taoHoaDon,
   taiHoaDonDoc,
   layDonHangGiaoTrongNgay,
-  layHoaDonTheoId,
 } from "../services/api";
 import { DonHang, LichSanXuat } from "../types";
 import styles from "./XuatHoaDonPage.module.css";

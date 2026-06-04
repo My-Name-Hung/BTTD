@@ -1,13 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiPrinter, FiDownload } from "react-icons/fi";
+import { useReactToPrint } from "react-to-print";
 import { Loading } from "../components/Common";
-import { layHoaDonTheoDonHang, layHoaDonTheoId } from "../services/api";
+import {
+  layHoaDonTheoDonHang,
+  layDonHang,
+  layNghiemThu,
+  layLichSanXuat,
+} from "../services/api";
 import styles from "./InHoaDonPage.module.css";
 
+/* ── Helpers ─────────────────────────────────────────── */
 function formatCurrency(v: number): string {
-  if (!v && v !== 0) return "0";
-  return v.toLocaleString("vi-VN");
+  if (!v && v !== 0) return "0 đ";
+  return v.toLocaleString("vi-VN") + " đ";
 }
 
 function formatDate(d: string | Date | null | undefined): string {
@@ -22,65 +29,69 @@ function formatDate(d: string | Date | null | undefined): string {
 function formatDateTime(d: string | Date | null | undefined): string {
   if (!d) return "";
   const dt = new Date(d);
-  return `${dt.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })} ${dt.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
+  return `${formatDate(dt)} lúc ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
 }
 
+/** Đọc số tiền thành chữ tiếng Việt (hỗ trợ đến hàng tỷ) */
 function numberToVietnamese(n: number): string {
-  if (!n || n === 0) return "Không đồng";
-  const units = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ"];
+  if (n === 0) return "Không đồng";
+  if (n < 0) return "Âm " + numberToVietnamese(-n);
+
+  const units = ["", "nghìn", "triệu", "tỷ"];
   const digits = [
-    "không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín",
+    "không", "một", "hai", "ba", "bốn",
+    "năm", "sáu", "bảy", "tám", "chín",
   ];
 
-  const numStr = Math.round(n).toString();
+  function readThree(num: number): string {
+    if (num === 0) return "";
+    const hundred = Math.floor(num / 100);
+    const rest = num % 100;
+    const ten = Math.floor(rest / 10);
+    const unit = rest % 10;
+
+    let result = "";
+    if (hundred > 0) {
+      result += (hundred === 1 ? "một" : digits[hundred]) + " trăm";
+    }
+    if (rest > 0) {
+      if (hundred > 0) result += " ";
+      if (rest < 10) {
+        result += digits[unit];
+      } else if (rest < 20) {
+        result += "mười" + (unit > 0 ? " " + digits[unit] : "");
+      } else {
+        result +=
+          (ten === 1 ? "mười" : digits[ten] + " mươi") +
+          (unit > 0 ? " " + (unit === 1 ? "mốt" : digits[unit]) : "");
+      }
+    }
+    return result;
+  }
+
+  const str = Math.round(n).toString();
+  const len = str.length;
   const parts: string[] = [];
-  let currentPart = "";
 
-  for (let i = numStr.length - 1; i >= 0; i--) {
-    currentPart = numStr[i] + currentPart;
-    if (currentPart.length === 3 || i === 0) {
-      parts.unshift(currentPart);
-      currentPart = "";
+  for (let i = len; i > 0; i -= 3) {
+    const start = Math.max(0, i - 3);
+    const part = parseInt(str.slice(start, i), 10);
+    const unitIdx = Math.floor((len - i) / 3);
+    const partText = readThree(part);
+    if (partText) {
+      parts.unshift(partText + (units[unitIdx] ? " " + units[unitIdx] : ""));
     }
   }
 
-  const result: string[] = [];
-  for (let i = 0; i < parts.length; i++) {
-    const num = parseInt(parts[i]);
-    if (num > 0) {
-      const subResult: string[] = [];
-      const hundred = Math.floor(num / 100);
-      const tens = Math.floor((num % 100) / 10);
-      const ones = num % 10;
-
-      if (hundred > 0) {
-        subResult.push(hundred === 1 ? "một trăm" : `${digits[hundred]} trăm`);
-      }
-      if (tens > 0) {
-        if (tens === 1) {
-          subResult.push("mười");
-        } else {
-          subResult.push(`${digits[tens]} mươi`);
-        }
-      }
-      if (ones > 0) {
-        if (tens === 1) {
-          subResult.push(digits[ones]);
-        } else if (ones === 1 && tens > 1) {
-          subResult.push("mốt");
-        } else if (ones === 5 && tens > 0) {
-          subResult.push("lăm");
-        } else {
-          subResult.push(digits[ones]);
-        }
-      }
-      result.push(subResult.join(" ") + " " + units[parts.length - 1 - i]);
-    }
-  }
-
-  return result.join(" ").trim().replace(/\s+/g, " ") + " đồng";
+  return parts.join(" ") + " đồng";
 }
 
+function formatPhone(s: string | null | undefined): string {
+  if (!s) return "...";
+  return s;
+}
+
+/* ── Types ───────────────────────────────────────────── */
 interface HoaDonData {
   id: number;
   idDonHang: number;
@@ -100,430 +111,507 @@ interface HoaDonData {
   soTienThanhToan: number;
   loaiThanhToan: string;
   hanTraCongNo: string | null;
-  tenKhachHang?: string;
-  diaChiNhan?: string;
-  tenMacBeTong?: string;
-  khoiLuongDat?: number;
-  donGia?: number;
-  thanhTien?: number;
-  maDonHang?: string;
-  kyThuatCongTrinh?: string;
-  nguoiOmOng?: string;
-  nguoiBatOng?: string;
-  bienSoXe?: string;
-  tenTaiXe?: string;
-  tenTram?: string;
+  nguoiTaoId: number | null;
+  createdAt: string;
 }
 
+interface DonHangData {
+  id: number;
+  maDonHang: string;
+  tenKhachHang: string;
+  diaChiNhan: string;
+  tenMacBeTong: string;
+  khoiLuongDat: number;
+  donGia: number;
+  thanhTien: number;
+  ngayGiao: string;
+  tenTramTron: string;
+  [key: string]: any;
+}
+
+interface NghiemThuData {
+  id: number;
+  ngayNghiemThu: string;
+  kyThuatCongTrinh: string;
+  bienBanFile: string;
+}
+
+interface LichSanXuatData {
+  id: number;
+  bienSoXe: string;
+  tenTaiXe: string;
+  nguoiOmOng: string;
+  nguoiBatOng: string;
+  kyThuatCongTrinh: string;
+}
+
+interface CompanyInfo {
+  tenCongTy: string;
+  diaChi: string;
+  dienThoai: string;
+  mst: string;
+  taiKhoan: string;
+  nganHang: string;
+}
+
+/* ── Component ─────────────────────────────────────────── */
 export default function InHoaDonPage() {
-  const location = useLocation();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
+
   const [hoaDon, setHoaDon] = useState<HoaDonData | null>(null);
+  const [donHang, setDonHang] = useState<DonHangData | null>(null);
+  const [nghiemThu, setNghiemThu] = useState<NghiemThuData | null>(null);
+  const [lichSX, setLichSX] = useState<LichSanXuatData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /* In bằng react-to-print */
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: hoaDon ? `HoaDon-${hoaDon.maHoaDon}` : "HoaDon",
+    pageStyle: `
+      @page {
+        size: A4;
+        margin: 12mm 10mm;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 0; }
+    `,
+  });
 
   useEffect(() => {
     async function load() {
-      // Ưu tiên đọc data từ location state (truyền qua navigate từ XuatHoaDonPage)
-      const stateData = location.state as HoaDonData | null;
-      if (stateData && stateData.id) {
-        setHoaDon(stateData);
-        setLoading(false);
-        return;
-      }
-
-      // Đọc data từ query param (base64 encoded JSON)
-      const params = new URLSearchParams(location.search);
-      const dataParam = params.get("data");
-      if (dataParam) {
-        try {
-          const decoded = JSON.parse(atob(dataParam)) as HoaDonData;
-          setHoaDon(decoded);
-          setLoading(false);
-          return;
-        } catch {
-          // fall through to fetch
-        }
-      }
-
-      // Đọc từ URL param (id hóa đơn)
-      const pathParts = location.pathname.split("/");
-      const idPart = pathParts[pathParts.length - 1];
-      const hoaDonId = parseInt(idPart, 10);
-
-      if (!hoaDonId || isNaN(hoaDonId)) {
-        setLoading(false);
-        return;
-      }
+      if (!id) return;
+      setLoading(true);
+      setError(null);
 
       try {
-        // Thử fetch trực tiếp theo ID hóa đơn
-        const hd = await layHoaDonTheoId(hoaDonId);
+        const numId = parseInt(id.replace(/[^0-9]/g, ""), 10);
+        if (!numId) throw new Error("ID không hợp lệ");
+
+        // Lấy hóa đơn theo idDonHang trước (để lấy idDonHang)
+        const hdList: HoaDonData[] = await layHoaDonTheoDonHang(numId);
+
+        // Nếu id truyền vào là id của hóa đơn -> dùng trực tiếp
+        // Nếu id truyền vào là id của đơn hàng -> tìm hóa đơn đầu tiên
+        let hd: HoaDonData | undefined;
+        let idDonHang = numId;
+
+        // Thử tìm hóa đơn có id = numId
+        hd = hdList.find((h) => h.id === numId);
         if (hd) {
-          setHoaDon(hd as HoaDonData);
+          idDonHang = hd.idDonHang;
         } else {
-          // Fallback: lấy theo idDonHang từ query param
-          const idDonHangParam = params.get("idDonHang");
-          if (idDonHangParam) {
-            const idDonHang = parseInt(idDonHangParam, 10);
-            const list = await layHoaDonTheoDonHang(idDonHang);
-            const found = list.find((h: any) => h.id === hoaDonId) || list[0];
-            setHoaDon(found as HoaDonData || null);
-          } else {
-            setHoaDon(null);
+          // Lấy hóa đơn mới nhất
+          hd = hdList[0];
+          if (!hd) {
+            setError("Không tìm thấy hóa đơn cho đơn hàng này");
+            setLoading(false);
+            return;
           }
+          idDonHang = hd.idDonHang;
         }
-      } catch {
-        setHoaDon(null);
+
+        // Load song song đơn hàng + nghiệm thu + lịch sản xuất
+        const [dh, nt, lsArr] = await Promise.all([
+          layDonHang(idDonHang).catch(() => null),
+          layNghiemThu(idDonHang).catch(() => null),
+          layLichSanXuat(idDonHang).catch(() => null),
+        ]);
+
+        setHoaDon(hd);
+        setDonHang(dh);
+        setNghiemThu(nt || null);
+        setLichSX(Array.isArray(lsArr) ? lsArr : []);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Không tải được thông tin hóa đơn",
+        );
       } finally {
         setLoading(false);
       }
     }
-
     load();
-  }, [location]);
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownload = async () => {
-    if (!hoaDon) return;
-    try {
-      // Lấy data đầy đủ từ backend
-      const fullData = await layHoaDonTheoId(hoaDon.id);
-      const merged = { ...hoaDon, ...fullData };
-      const dataStr = btoa(JSON.stringify(merged));
-      window.open(`/in-hoa-don/${hoaDon.id}?data=${dataStr}`, "_blank");
-    } catch {
-      // Fallback: mở với data hiện có
-      const dataStr = btoa(JSON.stringify(hoaDon));
-      window.open(`/in-hoa-don/${hoaDon.id}?data=${dataStr}`, "_blank");
-    }
-  };
+  }, [id]);
 
   if (loading) return <Loading />;
 
-  if (!hoaDon) {
+  if (error || !hoaDon) {
     return (
       <div className={styles.wrapper}>
-        <div className={styles.notFoundWrap}>
-          <div className={styles.notFoundCard}>
-            <div className={styles.notFoundIcon}>
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M9 12h.01M15 12h.01M10 16l.01-.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <h2>Không tìm thấy hóa đơn</h2>
-            <p>Hóa đơn có thể chưa được tạo hoặc liên kết đã hết hạn.</p>
-            <div className={styles.notFoundActions}>
-              <button className={styles.btnSecondary} onClick={() => navigate(-1)}>
-                <FiArrowLeft size={16} /> Quay lại
-              </button>
-              <button className={styles.btnPrimary} onClick={() => navigate("/thanh-toan")}>
-                Danh sách hóa đơn
-              </button>
-            </div>
-          </div>
+        <div className={styles.toolbar}>
+          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+            <FiArrowLeft size={16} /> Quay lại
+          </button>
+        </div>
+        <div className={styles.errorBox}>
+          <p>{error || "Không tìm thấy hóa đơn"}</p>
+          <button className={styles.retryBtn} onClick={() => navigate(-1)}>
+            Quay lại
+          </button>
         </div>
       </div>
     );
   }
 
   const hd = hoaDon;
+  const dh = donHang || {};
+  const ls = Array.isArray(lichSX) && lichSX.length > 0 ? lichSX[0] : null;
   const isCongNo = hd.loaiThanhToan === "cong_no";
-  const tenKH = hd.khachHang || hd.tenKhachHang || "";
-  const diaChi = hd.diaChiNhan || "";
-  const macBeTong = hd.tenMacBeTong || "";
-  const khoiLuong = hd.khoiLuongDat || hd.soTienThanhToan ? 0 : 0;
-  const donGia = hd.donGia || 0;
-  const thanhTien = hd.thanhTien || hd.tienBeTong || 0;
-  const ptTT = hd.phuongThucThanhToan === "chuyen_khoan" ? "Chuyển khoản" : "Tiền mặt";
 
-  // Tính tổng bê tông để hiển thị
-  const tienBeTongHienThi = hd.tienBeTong > 0 ? hd.tienBeTong : thanhTien;
-  const tongHienThi = hd.tongCong;
+  const phuongThucText =
+    hd.phuongThucThanhToan === "chuyen_khoan"
+      ? "Chuyển khoản"
+      : "Tiền mặt";
+
+  const COMPANY: CompanyInfo = {
+    tenCongTy: "CÔNG TY CỔ PHẦN BÊ TÔNG TÂY ĐÔ",
+    diaChi: "KCN Hòa Phú, Phường Hòa Phú, Quận Thủ Đức, TP. HCM",
+    dienThoai: "028.3724 5678 – 0909 123 456",
+    mst: "0 3 1 4 8 7 6 9 5 9",
+    taiKhoan: "123 456 7890",
+    nganHang: "Ngân hàng TMCP Ngoại thương Việt Nam (VCB)",
+  };
 
   return (
     <div className={styles.wrapper}>
-      {/* Toolbar */}
+      {/* ── Toolbar ── */}
       <div className={styles.toolbar}>
         <button className={styles.backBtn} onClick={() => navigate(-1)}>
           <FiArrowLeft size={16} /> Quay lại
         </button>
-        <div className={styles.toolbarActions}>
-          <button className={styles.downloadBtn} onClick={handleDownload} title="Mở trang hóa đơn">
-            <FiDownload size={16} /> Mở trang
-          </button>
+        <div className={styles.toolbarRight}>
           <button className={styles.printBtn} onClick={handlePrint}>
             <FiPrinter size={16} /> In hóa đơn
           </button>
         </div>
       </div>
 
-      {/* Invoice Print Area */}
-      <div className={styles.printArea}>
-        <div className={styles.invoice} ref={printRef} id="invoice-content">
-
-          {/* ─── HEADER ─── */}
-          <div className={styles.invHeader}>
-            <div className={styles.invHeaderLeft}>
-              <div className={styles.invLogo}>
+      {/* ── Invoice (invisible on screen, used for printing) ── */}
+      <div
+        ref={printRef}
+        className={styles.invoiceWrap}
+        style={{ maxWidth: 780, margin: "0 auto", padding: "0 16px 40px" }}
+      >
+        {/* Invoice A4 */}
+        <div className={styles.invoice}>
+          {/* ── Header ── */}
+          <div className={styles.invoiceHeader}>
+            <div className={styles.headerLeft}>
+              <div className={styles.companyLogo}>
                 <img
                   src="https://betongtaydo.com/wp-content/uploads/2024/06/Logo-Be-Tong-Tay-Do-xanh-duong-1024x1024.png"
-                  alt="Bê Tông Tây Đô"
-                  className={styles.invLogoImg}
+                  alt="Logo BTTD"
+                  className={styles.logoImg}
                 />
               </div>
-              <div className={styles.invCompanyInfo}>
-                <div className={styles.invCompanyName}>CÔNG TY BÊ TÔNG TÂY ĐÔ</div>
-                <div className={styles.invCompanyDetail}>Bê Tông Thương Phẩm & Xây Dựng</div>
-                <div className={styles.invCompanyContact}>
-                  ĐC: Ấp 7, Xã Nhơn Thạnh, TP. Cần Thơ | ĐT: 0292 3 789 789
-                </div>
-                <div className={styles.invCompanyContact}>
-                  MST: 1801 567 890 | Email: betongtaydo@gmail.com
+              <div className={styles.companyDetails}>
+                <div className={styles.companyName}>{COMPANY.tenCongTy}</div>
+                <div className={styles.companyInfo}>
+                  <span>Địa chỉ: {COMPANY.diaChi}</span>
+                  <span>Điện thoại: {COMPANY.dienThoai}</span>
+                  <span>MST: {COMPANY.mst}</span>
                 </div>
               </div>
             </div>
-            <div className={styles.invHeaderRight}>
-              <div className={styles.invFormTitle}>HÓA ĐƠN GIÁ TRỊ GIA TĂNG</div>
-              <div className={styles.invFormSub}>Mẫu số: 01GTKT3/001</div>
-              <div className={styles.invFormSub}>Ký hiệu: BTTD/26P</div>
+          </div>
+
+          <div className={styles.invoiceTitle}>
+            <h2>HÓA ĐƠN BÁN HÀNG</h2>
+            <p className={styles.titleSub}>VAT INVOICE</p>
+          </div>
+
+          {/* ── Số hóa đơn + Ngày ── */}
+          <div className={styles.invoiceMeta}>
+            <div className={styles.metaLeft}>
+              <div className={styles.metaRow}>
+                <span className={styles.metaLabel}>Số hóa đơn:</span>
+                <span className={styles.metaValue}>{hd.maHoaDon}</span>
+              </div>
+              <div className={styles.metaRow}>
+                <span className={styles.metaLabel}>Mã đơn hàng:</span>
+                <span className={styles.metaValue}>
+                  {dh.maDonHang || hd.maHoaDon?.split("-").slice(1, -1).join("-") || ""}
+                </span>
+              </div>
+            </div>
+            <div className={styles.metaRight}>
+              <div className={styles.metaRow}>
+                <span className={styles.metaLabel}>Ngày lập:</span>
+                <span className={styles.metaValue}>{formatDate(hd.ngayLap)}</span>
+              </div>
+              {isCongNo && hd.hanTraCongNo && (
+                <div className={styles.metaRow}>
+                  <span className={styles.metaLabel}>Hạn thanh toán:</span>
+                  <span className={styles.metaValueDanger}>
+                    {formatDate(hd.hanTraCongNo)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* ─── TITLE ─── */}
-          <div className={styles.invTitle}>
-            <div className={styles.invTitleText}>HÓA ĐƠN BÁN HÀNG</div>
-            <div className={styles.invTitleSub}>Invoice</div>
+          {/* ── Thông tin khách hàng ── */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>THÔNG TIN KHÁCH HÀNG</div>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoCol}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Tên khách hàng:</span>
+                  <span className={styles.infoValue}>
+                    {hd.khachHang || dh.tenKhachHang || ""}
+                  </span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Địa chỉ giao hàng:</span>
+                  <span className={styles.infoValue}>
+                    {dh.diaChiNhan || ""}
+                  </span>
+                </div>
+              </div>
+              <div className={styles.infoCol}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Ngày giao hàng:</span>
+                  <span className={styles.infoValue}>
+                    {formatDate(dh.ngayGiao)}
+                  </span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Trạm trộn:</span>
+                  <span className={styles.infoValue}>
+                    {dh.tenTramTron || ls?.bienSoXe ? ls?.bienSoXe || dh.tenTramTron || "" : ""}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* ─── INVOICE INFO ─── */}
-          <div className={styles.invInfoRow}>
-            <div className={styles.invInfoBlock}>
-              <table className={styles.invInfoTable}>
-                <tbody>
-                  <tr>
-                    <td className={styles.invInfoLabel}>Số hóa đơn</td>
-                    <td className={styles.invInfoValue}><strong>{hd.maHoaDon}</strong></td>
-                  </tr>
-                  <tr>
-                    <td className={styles.invInfoLabel}>Ngày lập</td>
-                    <td className={styles.invInfoValue}>{formatDate(hd.ngayLap)}</td>
-                  </tr>
-                  <tr>
-                    <td className={styles.invInfoLabel}>Mã đơn hàng</td>
-                    <td className={styles.invInfoValue}>{hd.maDonHang || hd.idDonHang}</td>
-                  </tr>
-                  <tr>
-                    <td className={styles.invInfoLabel}>Hình thức TT</td>
-                    <td className={styles.invInfoValue}>{ptTT}</td>
-                  </tr>
-                  {isCongNo && hd.hanTraCongNo && (
-                    <tr>
-                      <td className={styles.invInfoLabel}>Hạn thanh toán</td>
-                      <td className={`${styles.invInfoValue} ${styles.invWarning}`}>{formatDate(hd.hanTraCongNo)}</td>
-                    </tr>
+          {/* ── Thông tin sản phẩm ── */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>THÔNG TIN SẢN PHẨM / DỊCH VỤ</div>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoCol}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Mác bê tông:</span>
+                  <span className={styles.infoValue}>
+                    {dh.tenMacBeTong || hd.tenMacBeTong || ""}
+                  </span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Loại xi măng:</span>
+                  <span className={styles.infoValue}>
+                    {hd.loaiXiMang || "PCB40"}
+                  </span>
+                </div>
+              </div>
+              <div className={styles.infoCol}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Khối lượng đặt:</span>
+                  <span className={styles.infoValue}>
+                    {dh.khoiLuongDat || 0} m³
+                  </span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Giờ đổ:</span>
+                  <span className={styles.infoValue}>
+                    {hd.gioDo ? formatDateTime(hd.gioDo) : ""}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Bảng chi tiết ── */}
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th className={styles.thSTT}>STT</th>
+                <th className={styles.thNoiDung}>Nội dung</th>
+                <th className={styles.thDonVi}>ĐVT</th>
+                <th className={styles.thSoLuong}>Số lượng</th>
+                <th className={styles.thDonGia}>Đơn giá (đ)</th>
+                <th className={styles.thThanhTien}>Thành tiền (đ)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className={styles.tdCenter}>1</td>
+                <td>Bê tông thương phẩm ({dh.tenMacBeTong || hd.tenMacBeTong || ""})</td>
+                <td className={styles.tdCenter}>m³</td>
+                <td className={styles.tdRight}>{dh.khoiLuongDat || 0}</td>
+                <td className={styles.tdRight}>{(dh.donGia || 0).toLocaleString("vi-VN")}</td>
+                <td className={styles.tdRight}>{(dh.thanhTien || hd.tienBeTong || 0).toLocaleString("vi-VN")}</td>
+              </tr>
+              {hd.buuVanChuyen > 0 && (
+                <tr>
+                  <td className={styles.tdCenter}>2</td>
+                  <td>Phí bù vận chuyển</td>
+                  <td className={styles.tdCenter}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}>{hd.buuVanChuyen.toLocaleString("vi-VN")}</td>
+                </tr>
+              )}
+              {hd.phiPhatSinh > 0 && (
+                <tr>
+                  <td className={styles.tdCenter}>{hd.buuVanChuyen > 0 ? "3" : "2"}</td>
+                  <td>Chi phí phát sinh</td>
+                  <td className={styles.tdCenter}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}>{hd.phiPhatSinh.toLocaleString("vi-VN")}</td>
+                </tr>
+              )}
+              {hd.giamTru > 0 && (
+                <tr>
+                  <td className={styles.tdCenter}>
+                    {hd.buuVanChuyen > 0 || hd.phiPhatSinh > 0 ? "4" : "2"}
+                  </td>
+                  <td>Giảm trừ / Khuyến mãi</td>
+                  <td className={styles.tdCenter}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={`${styles.tdRight} ${styles.red}`}>
+                    -{hd.giamTru.toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr className={styles.totalRow}>
+                <td colSpan={5} className={styles.tdRightBold}>TỔNG CỘNG</td>
+                <td className={styles.tdRightBold}>{hd.tongCong.toLocaleString("vi-VN")}</td>
+              </tr>
+              <tr>
+                <td colSpan={5} className={styles.tdRight} style={{ fontStyle: "italic", fontSize: 12 }}>
+                  Số tiền bằng chữ:
+                </td>
+                <td className={styles.soTienChu}>{numberToVietnamese(hd.tongCong)}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* ── Thông tin thanh toán ── */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>THÔNG TIN THANH TOÁN</div>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoCol}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Phương thức TT:</span>
+                  <span className={styles.infoValue}>{phuongThucText}</span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Loại thanh toán:</span>
+                  <span className={`${styles.infoValue} ${isCongNo ? styles.statusBadgeCongNo : styles.statusBadgeTraHet}`}>
+                    {isCongNo ? "CÔNG NỢ" : "TRẢ HẾT"}
+                  </span>
+                </div>
+              </div>
+              <div className={styles.infoCol}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Tài khoản:</span>
+                  <span className={styles.infoValue}>{COMPANY.taiKhoan}</span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Ngân hàng:</span>
+                  <span className={styles.infoValue}>{COMPANY.nganHang}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Thông tin nhân sự & xe ── */}
+          {(ls || nghiemThu) && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>THÔNG TIN NHÂN SỰ &amp; XE</div>
+              <div className={styles.infoGrid}>
+                <div className={styles.infoCol}>
+                  {ls?.bienSoXe && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Xe (Biển số):</span>
+                      <span className={styles.infoValue}>{ls.bienSoXe}</span>
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* ─── PARTIES ─── */}
-          <div className={styles.invParties}>
-            <div className={styles.invPartyBlock}>
-              <div className={styles.invPartyTitle}>ĐƠN VỊ BÁN HÀNG</div>
-              <div className={styles.invPartyName}>CÔNG TY BÊ TÔNG TÂY ĐÔ</div>
-              <div className={styles.invPartyDetail}>Địa chỉ: Ấp 7, Xã Nhơn Thạnh, TP. Cần Thơ</div>
-              <div className={styles.invPartyDetail}>Điện thoại: 0292 3 789 789</div>
-              <div className={styles.invPartyDetail}>MST: 1801 567 890</div>
-            </div>
-            <div className={styles.invPartyBlock}>
-              <div className={styles.invPartyTitle}>ĐƠN VỊ MUA HÀNG</div>
-              <div className={styles.invPartyName}>{tenKH || "—"}</div>
-              <div className={styles.invPartyDetail}>Địa chỉ: {diaChi || "—"}</div>
-              {hd.loaiXiMang && <div className={styles.invPartyDetail}>Loại xi măng: {hd.loaiXiMang}</div>}
-            </div>
-          </div>
-
-          {/* ─── ORDER DETAILS ─── */}
-          <div className={styles.invSection}>
-            <div className={styles.invSectionTitle}>THÔNG TIN ĐƠN HÀNG</div>
-            <div className={styles.invDetailGrid}>
-              <div className={styles.invDetailItem}>
-                <span className={styles.invDetailLabel}>Công trình</span>
-                <span className={styles.invDetailValue}>{diaChi || "—"}</span>
-              </div>
-              <div className={styles.invDetailItem}>
-                <span className={styles.invDetailLabel}>Mác bê tông</span>
-                <span className={styles.invDetailValue}>{macBeTong || "—"}</span>
-              </div>
-              <div className={styles.invDetailItem}>
-                <span className={styles.invDetailLabel}>Khối lượng</span>
-                <span className={styles.invDetailValue}>{khoiLuong || 0} m³</span>
-              </div>
-              <div className={styles.invDetailItem}>
-                <span className={styles.invDetailLabel}>Đơn giá</span>
-                <span className={styles.invDetailValue}>{formatCurrency(donGia)} đ/m³</span>
-              </div>
-              <div className={styles.invDetailItem}>
-                <span className={styles.invDetailLabel}>Giờ đổ</span>
-                <span className={styles.invDetailValue}>{hd.gioDo ? formatDateTime(hd.gioDo) : "—"}</span>
-              </div>
-              {hd.kyThuatCongTrinh && (
-                <div className={styles.invDetailItem}>
-                  <span className={styles.invDetailLabel}>Kỹ thuật</span>
-                  <span className={styles.invDetailValue}>{hd.kyThuatCongTrinh}</span>
+                  {ls?.tenTaiXe && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Tài xế:</span>
+                      <span className={styles.infoValue}>{ls.tenTaiXe}</span>
+                    </div>
+                  )}
+                  {ls?.nguoiOmOng && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Vận hành bơm:</span>
+                      <span className={styles.infoValue}>{ls.nguoiOmOng}</span>
+                    </div>
+                  )}
+                  {ls?.nguoiBatOng && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Lắp ống:</span>
+                      <span className={styles.infoValue}>{ls.nguoiBatOng}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {hd.bienSoXe && (
-                <div className={styles.invDetailItem}>
-                  <span className={styles.invDetailLabel}>Xe giao</span>
-                  <span className={styles.invDetailValue}>{hd.bienSoXe} {hd.tenTaiXe ? `- ${hd.tenTaiXe}` : ""}</span>
+                <div className={styles.infoCol}>
+                  {(ls?.kyThuatCongTrinh || nghiemThu?.kyThuatCongTrinh) && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Kỹ sư công trình:</span>
+                      <span className={styles.infoValue}>
+                        {ls?.kyThuatCongTrinh || nghiemThu?.kyThuatCongTrinh || ""}
+                      </span>
+                    </div>
+                  )}
+                  {nghiemThu && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Ngày nghiệm thu:</span>
+                      <span className={styles.infoValue}>
+                        {formatDate(nghiemThu.ngayNghiemThu)}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {hd.tenTram && (
-                <div className={styles.invDetailItem}>
-                  <span className={styles.invDetailLabel}>Trạm trộn</span>
-                  <span className={styles.invDetailValue}>{hd.tenTram}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ─── ITEMS TABLE ─── */}
-          <div className={styles.invSection}>
-            <table className={styles.invTable}>
-              <thead>
-                <tr>
-                  <th className={styles.invTHNum}>STT</th>
-                  <th className={styles.invTHContent}>Tên hàng hóa, dịch vụ</th>
-                  <th className={styles.invTHUnit}>ĐVT</th>
-                  <th className={styles.invTHQty}>Số lượng</th>
-                  <th className={styles.invTHPrice}>Đơn giá</th>
-                  <th className={styles.invTHTotal}>Thành tiền</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className={styles.invTDNum}>1</td>
-                  <td className={styles.invTDContent}>
-                    Bê tông thương phẩm mác {macBeTong || "—"}
-                    {hd.loaiXiMang ? ` | Xi măng ${hd.loaiXiMang}` : ""}
-                  </td>
-                  <td className={styles.invTDUnit}>m³</td>
-                  <td className={styles.invTDQty}>{khoiLuong || 0}</td>
-                  <td className={styles.invTDPrice}>{formatCurrency(donGia)}</td>
-                  <td className={styles.invTDTotal}>{formatCurrency(thanhTien)}</td>
-                </tr>
-                {hd.buuVanChuyen > 0 && (
-                  <tr>
-                    <td className={styles.invTDNum}>2</td>
-                    <td className={styles.invTDContent}>Phí bù vận chuyển</td>
-                    <td className={styles.invTDUnit}>—</td>
-                    <td className={styles.invTDQty}>—</td>
-                    <td className={styles.invTDPrice}>—</td>
-                    <td className={styles.invTDTotal}>{formatCurrency(hd.buuVanChuyen)}</td>
-                  </tr>
-                )}
-                {hd.phiPhatSinh > 0 && (
-                  <tr>
-                    <td className={styles.invTDNum}>{hd.buuVanChuyen > 0 ? "3" : "2"}</td>
-                    <td className={styles.invTDContent}>Chi phí phát sinh</td>
-                    <td className={styles.invTDUnit}>—</td>
-                    <td className={styles.invTDQty}>—</td>
-                    <td className={styles.invTDPrice}>—</td>
-                    <td className={styles.invTDTotal}>{formatCurrency(hd.phiPhatSinh)}</td>
-                  </tr>
-                )}
-                {hd.giamTru > 0 && (
-                  <tr>
-                    <td className={styles.invTDNum}>{hd.buuVanChuyen > 0 || hd.phiPhatSinh > 0 ? "4" : "2"}</td>
-                    <td className={styles.invTDContent}>Giảm trừ / Khuyến mãi</td>
-                    <td className={styles.invTDUnit}>—</td>
-                    <td className={styles.invTDQty}>—</td>
-                    <td className={styles.invTDPrice}>—</td>
-                    <td className={`${styles.invTDTotal} ${styles.invTDMinus}`}>-{formatCurrency(hd.giamTru)}</td>
-                  </tr>
-                )}
-              </tbody>
-              <tfoot>
-                <tr className={styles.invTotalRow}>
-                  <td colSpan={5} className={styles.invTotalLabel}>
-                    TỔNG CỘNG (Tiền bê tông + Bù VC + Phát sinh - Giảm trừ)
-                  </td>
-                  <td className={styles.invTotalValue}>{formatCurrency(tongHienThi)}</td>
-                </tr>
-                <tr className={styles.invAmountWordRow}>
-                  <td colSpan={5} className={styles.invAmountWordLabel}>
-                    Số tiền bằng chữ
-                  </td>
-                  <td className={styles.invAmountWordValue}>
-                    {numberToVietnamese(tongHienThi)}
-                  </td>
-                </tr>
-                {hd.loaiThanhToan === "cong_no" && hd.soTienThanhToan > 0 && (
-                  <>
-                    <tr>
-                      <td colSpan={5} className={styles.invTotalLabel}>Đã thanh toán trước</td>
-                      <td className={`${styles.invTotalValue} ${styles.invTDMinus}`}>-{formatCurrency(hd.soTienThanhToan)}</td>
-                    </tr>
-                    <tr className={styles.invTotalRow}>
-                      <td colSpan={5} className={styles.invTotalLabel}>CÒN LẠI PHẢI THANH TOÁN</td>
-                      <td className={styles.invTotalValue}>{formatCurrency(Math.max(0, tongHienThi - hd.soTienThanhToan))}</td>
-                    </tr>
-                  </>
-                )}
-              </tfoot>
-            </table>
-          </div>
-
-          {/* ─── PAYMENT STATUS ─── */}
-          <div className={styles.invPaymentBanner}>
-            <div className={`${styles.invPayBadge} ${isCongNo ? styles.invPayBadgeDebt : styles.invPayBadgePaid}`}>
-              {isCongNo ? "⚠ CÔNG NỢ" : "✓ ĐÃ THANH TOÁN ĐỦ"}
-            </div>
-          </div>
-
-          {/* ─── NOTES ─── */}
-          {hd.ghiChu && (
-            <div className={styles.invNoteSection}>
-              <div className={styles.invNoteTitle}>GHI CHÚ</div>
-              <div className={styles.invNoteText}>{hd.ghiChu}</div>
+              </div>
             </div>
           )}
 
-          {/* ─── SIGNATURES ─── */}
-          <div className={styles.invSignatures}>
-            <div className={styles.invSigCol}>
-              <div className={styles.invSigTitle}>NGƯỜI LẬP HÓA ĐƠN</div>
-              <div className={styles.invSigNote}>(Ký, ghi rõ họ tên)</div>
-              <div className={styles.invSigBlank}></div>
-              <div className={styles.invSigName}></div>
+          {/* ── Ghi chú ── */}
+          {hd.ghiChu && (
+            <div className={styles.ghiChuBox}>
+              <strong>Ghi chú:</strong> {hd.ghiChu}
             </div>
-            <div className={styles.invSigCol}>
-              <div className={styles.invSigTitle}>NGƯỜI NHẬN HÀNG</div>
-              <div className={styles.invSigNote}>(Ký, ghi rõ họ tên)</div>
-              <div className={styles.invSigBlank}></div>
-              <div className={styles.invSigName}></div>
+          )}
+
+          {/* ── Chữ ký ── */}
+          <div className={styles.signatures}>
+            <div className={styles.sigCol}>
+              <p className={styles.sigTitle}>NGƯỜI LẬP HÓA ĐƠN</p>
+              <p className={styles.sigNote}>(Ký và ghi rõ họ tên)</p>
+              <div className={styles.sigLine}></div>
             </div>
-            <div className={styles.invSigCol}>
-              <div className={styles.invSigTitle}>THỦ TRƯỞNG ĐƠN VỊ</div>
-              <div className={styles.invSigNote}>(Ký, ghi rõ họ tên, đóng dấu)</div>
-              <div className={styles.invSigBlank}></div>
-              <div className={styles.invSigName}></div>
+            <div className={styles.sigCol}>
+              <p className={styles.sigTitle}>KẾ TOÁN TRƯỞNG</p>
+              <p className={styles.sigNote}>(Ký và ghi rõ họ tên)</p>
+              <div className={styles.sigLine}></div>
+            </div>
+            <div className={styles.sigCol}>
+              <p className={styles.sigTitle}>KHÁCH HÀNG</p>
+              <p className={styles.sigNote}>(Ký và ghi rõ họ tên)</p>
+              <div className={styles.sigLine}></div>
             </div>
           </div>
 
-          {/* ─── FOOTER ─── */}
-          <div className={styles.invFooter}>
-            <div className={styles.invFooterLine}></div>
-            <p className={styles.invFooterText}>
-              <strong>BÊ TÔNG TÂY ĐÔ</strong> — Chất lượng tạo niềm tin | Hotline: 0292 3 789 789
+          {/* ── Footer ── */}
+          <div className={styles.invoiceFooter}>
+            <p>
+              Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ của{" "}
+              <strong>BÊ TÔNG TÂY ĐÔ</strong>!
             </p>
-            <p className={styles.invFooterSub}>Cảm ơn quý khách đã tin tưởng sử dụng sản phẩm và dịch vụ của chúng tôi!</p>
+            <p className={styles.footerContact}>
+              {COMPANY.tenCongTy} • {COMPANY.diaChi}
+            </p>
           </div>
         </div>
       </div>

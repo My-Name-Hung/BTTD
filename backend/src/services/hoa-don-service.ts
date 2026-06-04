@@ -168,26 +168,6 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
   return hoaDon;
 }
 
-export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
-  const result = await query<HoaDon[]>(
-    `SELECT hd.*, dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong,
-            dh.khoiLuongDat, dh.donGia, dh.thanhTien,
-            lx.kyThuatCongTrinh, lx.nguoiOmOng, lx.nguoiBatOng,
-            lx.bienSoXe,
-            tx.hoTen as tenTaiXe,
-            tt.tenTram
-     FROM HoaDon hd
-     INNER JOIN DonHang dh ON hd.idDonHang = dh.id
-     LEFT JOIN LichSanXuat lx ON dh.id = lx.idDonHang
-     LEFT JOIN Xe xe ON lx.idXe = xe.id
-     LEFT JOIN TaiKhoan tx ON xe.idTaiKhoan = tx.id
-     LEFT JOIN TramTron tt ON lx.idTramTron = tt.id
-     WHERE hd.id = @id`,
-    { id }
-  );
-  return result.length > 0 ? result[0] : null;
-}
-
 export async function layHoaDonTheoDonHang(idDonHang: number): Promise<HoaDon[]> {
   return await query<HoaDon[]>(
     `SELECT * FROM HoaDon WHERE idDonHang = @idDonHang ORDER BY id DESC`,
