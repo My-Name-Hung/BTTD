@@ -7,7 +7,7 @@ const router = Router();
 
 // ==================== ĐƠN HÀNG ====================
 router.get(
-  '/export/don-hang',
+  '/don-hang',
   authMiddleware,
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
@@ -35,7 +35,7 @@ router.get(
 
 // ==================== KHÁCH HÀNG ====================
 router.get(
-  '/export/khach-hang',
+  '/khach-hang',
   authMiddleware,
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
@@ -58,7 +58,7 @@ router.get(
 
 // ==================== MÁC BÊ TÔNG ====================
 router.get(
-  '/export/mac-be-tong',
+  '/mac-be-tong',
   authMiddleware,
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
@@ -81,7 +81,7 @@ router.get(
 
 // ==================== TRẠM TRỘN ====================
 router.get(
-  '/export/tram-tron',
+  '/tram-tron',
   authMiddleware,
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
@@ -104,7 +104,7 @@ router.get(
 
 // ==================== XE ====================
 router.get(
-  '/export/xe',
+  '/xe',
   authMiddleware,
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
@@ -127,7 +127,7 @@ router.get(
 
 // ==================== NGƯỜI DÙNG ====================
 router.get(
-  '/export/nguoi-dung',
+  '/nguoi-dung',
   authMiddleware,
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
@@ -150,7 +150,7 @@ router.get(
 
 // ==================== LỊCH SẢN XUẤT ====================
 router.get(
-  '/export/lich-san-xuat',
+  '/lich-san-xuat',
   authMiddleware,
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
@@ -174,7 +174,7 @@ router.get(
 
 // ==================== THANH TOÁN ====================
 router.get(
-  '/export/thanh-toan',
+  '/thanh-toan',
   authMiddleware,
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
@@ -197,7 +197,7 @@ router.get(
 
 // ==================== CÔNG NỢ ====================
 router.get(
-  '/export/cong-no',
+  '/cong-no',
   authMiddleware,
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
