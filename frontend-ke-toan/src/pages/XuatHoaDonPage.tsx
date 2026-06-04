@@ -79,6 +79,12 @@ export default function XuatHoaDonPage() {
   const [ghiChu, setGhiChu] = useState("");
   const [hanTraCongNo, setHanTraCongNo] = useState("");
 
+  // Thông tin nhân sự & xe – auto-fill từ lịch sản xuất
+  const [kySu, setKySu] = useState("");
+  const [vanHanhBom, setVanHanhBom] = useState("");
+  const [lapOng, setLapOng] = useState("");
+  const [xeTaiXe, setXeTaiXe] = useState("");
+
   const [soHoaDon] = useState(() => {
     const random = Math.floor(1000 + Math.random() * 9000);
     return `BBTD-${random}`;
@@ -140,6 +146,26 @@ export default function XuatHoaDonPage() {
       setBuVanChuyen(tienBuVCAuto > 0 ? formatNumberInput(tienBuVCAuto) : "0");
     }
   }, [loading, khoiLuongNgay, tienBuVCAuto, buVanChuyenDaSet]);
+
+  // Auto-fill thông tin nhân sự & xe từ lịch sản xuất
+  useEffect(() => {
+    if (!loading && lichSX) {
+      const ls = Array.isArray(lichSX) ? lichSX[0] : lichSX;
+      if (ls) {
+        if (ls.kyThuatCongTrinh) setKySu(ls.kyThuatCongTrinh);
+        if (ls.nguoiOmOng) setVanHanhBom(ls.nguoiOmOng);
+        if (ls.nguoiBatOng) setLapOng(ls.nguoiBatOng);
+        // Xe (biển số - tài xế)
+        const bienSo = ls.bienSoXe || "";
+        const taiXe = ls.tenTaiXe || "";
+        if (bienSo) {
+          setXeTaiXe(taiXe ? `${bienSo} – ${taiXe}` : bienSo);
+        } else if (taiXe) {
+          setXeTaiXe(taiXe);
+        }
+      }
+    }
+  }, [loading, lichSX]);
 
   const handleSubmit = async () => {
     if (!donHang) return;
@@ -375,30 +401,21 @@ export default function XuatHoaDonPage() {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Kỹ sư</label>
-              <input className={styles.formInput} type="text" defaultValue={lichSX?.kyThuatCongTrinh || ""} placeholder="Tên kỹ sư" />
+              <input className={styles.formInput} type="text" value={kySu} onChange={(e) => setKySu(e.target.value)} placeholder="Tên kỹ sư công trình" />
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Vận hành bơm</label>
-              <input className={styles.formInput} type="text" defaultValue={lichSX?.nguoiOmOng || ""} placeholder="Tên vận hành bơm" />
+              <input className={styles.formInput} type="text" value={vanHanhBom} onChange={(e) => setVanHanhBom(e.target.value)} placeholder="Tên vận hành bơm" />
             </div>
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Lắp ống</label>
-              <input className={styles.formInput} type="text" defaultValue={lichSX?.nguoiBatOng || ""} placeholder="Tên người lắp ống" />
+              <input className={styles.formInput} type="text" value={lapOng} onChange={(e) => setLapOng(e.target.value)} placeholder="Tên người lắp ống" />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Xe (Biển số - Tài xế)</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                defaultValue={
-                  lichSX?.bienSoXe
-                    ? `${lichSX.bienSoXe} ${(lichSX as any).tenTaiXe ? "- " + (lichSX as any).tenTaiXe : ""}`
-                    : ""
-                }
-                placeholder="VD: 59C1-12345 - Nguyễn Văn A"
-              />
+              <label className={styles.formLabel}>Xe (Biển số – Tài xế)</label>
+              <input className={styles.formInput} type="text" value={xeTaiXe} onChange={(e) => setXeTaiXe(e.target.value)} placeholder="VD: 59C1-12345 – Nguyễn Văn A" />
             </div>
           </div>
         </div>
