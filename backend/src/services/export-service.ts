@@ -260,35 +260,65 @@ export interface ExportCongNo {
 }
 
 export async function layCongNoExport(): Promise<ExportCongNo[]> {
-  const data = await query<any>(
-    `SELECT kh.id, kh.maKhachHang, kh.tenKhachHang, kh.nhom,
-            ISNULL(dn.duDauNo, 0) as duDauNo,
-            ISNULL(dn.duDauCo, 0) as duDauCo,
-            ISNULL(ps.phatSinhNo, 0) as phatSinhNo,
-            ISNULL(ps.phatSinhCo, 0) as phatSinhCo,
-            ISNULL(dn.duDauNo, 0) + ISNULL(ps.phatSinhNo, 0) as duCuoiNo,
-            ISNULL(dn.duDauCo, 0) + ISNULL(ps.phatSinhCo, 0) as duCuoiCo
-     FROM KhachHang kh
-     LEFT JOIN (
-       SELECT idKhachHang,
-              SUM(CASE WHEN (thanhTien - daThanhToan) > 0 THEN (thanhTien - daThanhToan) ELSE 0 END) as duDauNo,
-              SUM(CASE WHEN (thanhTien - daThanhToan) <= 0 THEN -(thanhTien - daThanhToan) ELSE 0 END) as duDauCo
-       FROM DonHang
-       WHERE trangThaiDon NOT IN ('tu_choi')
-       GROUP BY idKhachHang
-     ) dn ON kh.id = dn.idKhachHang
-     LEFT JOIN (
-       SELECT idKhachHang,
-              SUM(CASE WHEN loai = 'no' THEN soTien ELSE 0 END) as phatSinhNo,
-              SUM(CASE WHEN loai = 'co' THEN soTien ELSE 0 END) as phatSinhCo
-       FROM (
-         SELECT idDonHang, idKhachHang, thanhTien as soTien, 'no' as loai FROM DonHang WHERE trangThaiDon NOT IN ('tu_choi')
-         UNION ALL
-         SELECT idDonHang, idKhachHang, soTien, 'co' as loai FROM ThanhToan
-       ) pstemp
-       GROUP BY idKhachHang
-     ) ps ON kh.id = ps.idKhachHang
-     ORDER BY kh.tenKhachHang ASC`
+  // Lấy danh sách khách hàng
+  const khachHangs = await query<any>(
+    `SELECT id, maKhachHang, tenKhachHang, nhom
+     FROM KhachHang
+     ORDER BY tenKhachHang ASC`
   );
-  return data;
+
+  // Lấy tất cả đơn hàng đã duyệt (không từ chối)
+  const donHangs = await query<any>(
+    `SELECT id, tenKhachHang, thanhTien, daThanhToan
+     FROM DonHang
+     WHERE trangThaiDon NOT IN ('tu_choi')`
+  );
+
+  // Lấy tất cả thanh toán
+  const thanhToans = await query<any>(
+    `SELECT tt.id, dh.tenKhachHang, tt.soTien
+     FROM ThanhToan tt
+     LEFT JOIN DonHang dh ON tt.idDonHang = dh.id`
+  );
+
+  // Tính công nợ theo từng khách hàng
+  const result: ExportCongNo[] = [];
+
+  for (const kh of khachHangs) {
+    // Lọc đơn hàng của khách hàng này (theo tên)
+    const dhCuaKH = donHangs.filter((dh: any) => dh.tenKhachHang === kh.tenKhachHang);
+    const ttCuaKH = thanhToans.filter((tt: any) => tt.tenKhachHang === kh.tenKhachHang);
+
+    // Tính dư đầu (giả định = 0)
+    const duDauNo = 0;
+    const duDauCo = 0;
+
+    // Phát sinh nợ = tổng (thành tiền - đã thanh toán) của đơn hàng
+    let phatSinhNo = 0;
+    for (const dh of dhCuaKH) {
+      const conLai = (dh.thanhTien || 0) - (dh.daThanhToan || 0);
+      if (conLai > 0) phatSinhNo += conLai;
+    }
+
+    // Phát sinh có = tổng số tiền thanh toán
+    let phatSinhCo = 0;
+    for (const tt of ttCuaKH) {
+      phatSinhCo += tt.soTien || 0;
+    }
+
+    result.push({
+      id: kh.id,
+      nhom: kh.nhom || null,
+      maKhachHang: kh.maKhachHang || null,
+      tenKhachHang: kh.tenKhachHang,
+      duDauNo,
+      duDauCo,
+      phatSinhNo: Math.round(phatSinhNo * 100) / 100,
+      phatSinhCo: Math.round(phatSinhCo * 100) / 100,
+      duCuoiNo: Math.round((duDauNo + phatSinhNo) * 100) / 100,
+      duCuoiCo: Math.round((duDauCo + phatSinhCo) * 100) / 100,
+    });
+  }
+
+  return result;
 }
