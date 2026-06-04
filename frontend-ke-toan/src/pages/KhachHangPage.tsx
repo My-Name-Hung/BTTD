@@ -1,14 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX } from 'react-icons/fi';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiExternalLink } from 'react-icons/fi';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { layDanhSachKhachHang, taoKhachHang, suaKhachHang, xoaKhachHang } from '../services/api';
 import { KhachHang, ApiResponseWithPagination } from '../types';
 import { useToast, usePagination, usePageRole } from '../hooks';
 import { Modal, Loading, EmptyState, ConfirmModal, Pagination } from '../components/Common';
 import styles from './KhachHangPage.module.css';
 
+// Danh sách nhóm kinh doanh cho khách hàng
+const NHOM_KINH_DOANH_OPTIONS = [
+  'Bê tông Tây Đô',
+  'Các công ty thuộc Tây Đô Group',
+  'Đơn vị, cá nhân, tổ chức có MST',
+  'Đơn vị trong nước có MST',
+  'Cá nhân có MST',
+  'Đơn vị, cá nhân, tổ chức không có MST',
+  'Nội bộ từng công ty',
+  'Nội bộ công ty Bê Tông Tây Đô',
+];
+
 const LIMIT = 10;
 
 export default function KhachHangPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { hasPermission } = usePageRole();
   const { toasts, showToast } = useToast();
   const { page, resetPage, goToPage } = usePagination(1, LIMIT);
@@ -16,7 +31,7 @@ export default function KhachHangPage() {
     success: true, message: '', data: [], pagination: { page: 1, limit: LIMIT, total: 0, totalPages: 1 },
   });
   const [loading, setLoading] = useState(true);
-  const [tuKhoa, setTuKhoa] = useState('');
+  const [tuKhoa, setTuKhoa] = useState(() => searchParams.get('search') || '');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<KhachHang | null>(null);
@@ -24,14 +39,18 @@ export default function KhachHangPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
-  const [form, setForm] = useState({
-    tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '',
-  });
-  const [initialForm, setInitialForm] = useState({ tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '' });
+  const [nhomDropdownOpen, setNhomDropdownOpen] = useState(false);
+  const nhomDropdownRef = useRef<HTMLDivElement>(null);
+
+  const formInit = { maKhachHang: '', tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '', nhom: '' };
+  const [form, setForm] = useState(formInit);
+  const [initialForm, setInitialForm] = useState(formInit);
 
   const canCreate = hasPermission('khachhang.create');
   const canEdit = hasPermission('khachhang.edit');
   const canDelete = hasPermission('khachhang.delete');
+  const { hasAnyRole } = usePageRole();
+  const canWriteKhachHang = hasAnyRole(['admin', 'sale']);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -47,14 +66,38 @@ export default function KhachHangPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (nhomDropdownRef.current && !nhomDropdownRef.current.contains(e.target as Node)) {
+        setNhomDropdownOpen(false);
+      }
+    };
+    if (nhomDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => { document.removeEventListener('mousedown', handleClickOutside); };
+  }, [nhomDropdownOpen]);
+
   const handleSubmit = async () => {
     if (!form.tenKhachHang.trim()) { showToast('Tên khách hàng là bắt buộc', 'error'); return; }
     setFormLoading(true);
     try {
+      const payload: Partial<KhachHang> = {
+        tenKhachHang: form.tenKhachHang,
+        diaChi: form.diaChi || null,
+        soDienThoai: form.soDienThoai || null,
+        email: form.email || null,
+        ghiChu: form.ghiChu || null,
+        nhom: form.nhom || null,
+      };
+      // Chỉ gửi mã khách hàng nếu người dùng nhập tay
+      if (editingId && form.maKhachHang) {
+        payload.maKhachHang = form.maKhachHang;
+      }
       if (editingId) {
-        await suaKhachHang(editingId, form);
+        await suaKhachHang(editingId, payload);
       } else {
-        await taoKhachHang(form);
+        await taoKhachHang(payload);
       }
       setModalOpen(false);
       setShowSuccess(true);
@@ -71,18 +114,21 @@ export default function KhachHangPage() {
     } else {
       setModalOpen(false);
       setEditingId(null);
-      setForm({ tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '' });
+      setForm(formInit);
+      setNhomDropdownOpen(false);
     }
   };
 
   const openEdit = (kh: KhachHang) => {
     setEditingId(kh.id);
     const f = {
+      maKhachHang: kh.maKhachHang || '',
       tenKhachHang: kh.tenKhachHang,
       diaChi: kh.diaChi || '',
       soDienThoai: kh.soDienThoai || '',
       email: kh.email || '',
       ghiChu: kh.ghiChu || '',
+      nhom: kh.nhom || '',
     };
     setForm(f);
     setInitialForm(f);
@@ -155,7 +201,9 @@ export default function KhachHangPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
+                  <th>Mã KH</th>
                   <th>Tên khách hàng</th>
+                  <th>Nhóm</th>
                   <th>Địa chỉ</th>
                   <th>Số điện thoại</th>
                   <th>Email</th>
@@ -166,13 +214,24 @@ export default function KhachHangPage() {
               <tbody>
                 {data.data?.map((kh) => (
                   <tr key={kh.id}>
+                    <td><span className={styles.tableCode}>{kh.maKhachHang || '—'}</span></td>
                     <td><strong className={styles.tableName}>{kh.tenKhachHang}</strong></td>
+                    <td>{kh.nhom ? <span className={styles.tableNhom}>{kh.nhom}</span> : <span className={styles.placeholder}>—</span>}</td>
                     <td>{kh.diaChi || <span className={styles.placeholder}>—</span>}</td>
                     <td className={styles.tablePhone}>{kh.soDienThoai || <span className={styles.placeholder}>—</span>}</td>
                     <td>{kh.email || <span className={styles.placeholder}>—</span>}</td>
                     <td className={styles.tableNote}>{kh.ghiChu || <span className={styles.placeholder}>—</span>}</td>
                     <td>
                       <div className={styles.rowActions}>
+                        {canWriteKhachHang && (
+                          <button
+                            className={`${styles.actionBtn} ${styles.actionBtnView}`}
+                            onClick={() => navigate(`/quan-ly/cong-no?khachHang=${kh.maKhachHang || kh.tenKhachHang}`)}
+                            title="Xem công nợ"
+                          >
+                            <FiExternalLink size={14} />
+                          </button>
+                        )}
                         {canEdit && (
                           <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`} onClick={() => openEdit(kh)} title="Sửa">
                             <FiEdit2 size={14} />
@@ -217,10 +276,80 @@ export default function KhachHangPage() {
           </>
         }
       >
+        {canWriteKhachHang && (
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Mã khách hàng</label>
+            <input
+              className={styles.formInput}
+              value={form.maKhachHang}
+              onChange={(e) => setForm({ ...form, maKhachHang: e.target.value })}
+              placeholder="Tự sinh nếu để trống (VD: KH0001)"
+            />
+          </div>
+        )}
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Tên khách hàng *</label>
           <input className={styles.formInput} value={form.tenKhachHang} onChange={(e) => setForm({ ...form, tenKhachHang: e.target.value })} required />
         </div>
+        {canWriteKhachHang && (
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Thuộc nhóm</label>
+            <div className={styles.searchDropdownWrap} ref={nhomDropdownRef}>
+              <div
+                className={`${styles.searchDropdownDisplay} ${nhomDropdownOpen ? styles.searchDropdownDisplayFocused : ''}`}
+                onClick={() => setNhomDropdownOpen(!nhomDropdownOpen)}
+              >
+                <span className={form.nhom ? '' : styles.searchDropdownPlaceholder}>
+                  {form.nhom || '— Chọn nhóm —'}
+                </span>
+                <svg
+                  className={`${styles.searchDropdownArrow} ${nhomDropdownOpen ? styles.searchDropdownArrowOpen : ''}`}
+                  width="16" height="16" viewBox="0 0 16 16" fill="none"
+                >
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              {nhomDropdownOpen && (
+                <div className={styles.searchDropdownPanel} style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: 'white', border: '1.5px solid var(--color-border)', borderRadius: 10, marginTop: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', maxHeight: 240, overflowY: 'auto' }}>
+                  <input
+                    id="nhom-kh-input"
+                    className={styles.searchDropdownInput}
+                    placeholder="Tìm hoặc nhập nhóm..."
+                    value={form.nhom}
+                    onChange={(e) => setForm({ ...form, nhom: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const matches = NHOM_KINH_DOANH_OPTIONS.filter(n => n.toLowerCase().includes(form.nhom.toLowerCase()));
+                        if (matches.length > 0) {
+                          setForm({ ...form, nhom: matches[0] });
+                          setNhomDropdownOpen(false);
+                        } else if (form.nhom.trim()) {
+                          setNhomDropdownOpen(false);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setNhomDropdownOpen(false);
+                      }
+                    }}
+                    autoFocus
+                  />
+                  {NHOM_KINH_DOANH_OPTIONS.filter(n => n.toLowerCase().includes(form.nhom.toLowerCase())).map(n => (
+                    <div key={n} className={styles.searchDropdownItem}
+                      onClick={() => { setForm({ ...form, nhom: n }); setNhomDropdownOpen(false); }}>
+                      {n}
+                    </div>
+                  ))}
+                  {form.nhom && !NHOM_KINH_DOANH_OPTIONS.includes(form.nhom) && (
+                    <div className={styles.searchDropdownItem} style={{ color: 'var(--color-primary)', fontWeight: 600 }}
+                      onClick={() => setNhomDropdownOpen(false)}>
+                      Nhấn Enter để dùng: "{form.nhom}"
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Địa chỉ</label>
           <input className={styles.formInput} value={form.diaChi} onChange={(e) => setForm({ ...form, diaChi: e.target.value })} />
@@ -253,8 +382,8 @@ export default function KhachHangPage() {
 
       <ConfirmModal
         isOpen={showSuccess}
-        onClose={() => { setShowSuccess(false); loadData(); setEditingId(null); setForm({ tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '' }); setInitialForm({ tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '' }); }}
-        onConfirm={() => { setShowSuccess(false); loadData(); setEditingId(null); setForm({ tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '' }); setInitialForm({ tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '' }); }}
+        onClose={() => { setShowSuccess(false); loadData(); setEditingId(null); setForm(formInit); setInitialForm(formInit); }}
+        onConfirm={() => { setShowSuccess(false); loadData(); setEditingId(null); setForm(formInit); setInitialForm(formInit); }}
         message={editingId ? 'Cập nhật khách hàng thành công!' : 'Thêm khách hàng thành công!'}
         confirmText="Đồng ý"
         cancelText=""
@@ -265,7 +394,7 @@ export default function KhachHangPage() {
       <ConfirmModal
         isOpen={showCancel}
         onClose={() => setShowCancel(false)}
-        onConfirm={() => { setShowCancel(false); setModalOpen(false); setEditingId(null); setForm({ tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '' }); setInitialForm({ tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '' }); }}
+        onConfirm={() => { setShowCancel(false); setModalOpen(false); setEditingId(null); setForm(formInit); setInitialForm(formInit); setNhomDropdownOpen(false); }}
         message="Bạn có chắc muốn hủy bỏ? Dữ liệu đã nhập sẽ không được lưu."
         confirmText="Hủy bỏ"
         cancelText="Ở lại"

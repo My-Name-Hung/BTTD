@@ -31,11 +31,13 @@ export interface NguoiDung {
 
 export interface KhachHang {
   id: number;
+  maKhachHang: string | null;
   tenKhachHang: string;
   diaChi: string | null;
   soDienThoai: string | null;
   email: string | null;
   ghiChu: string | null;
+  nhom: string | null;
 }
 
 export interface MacBeTong {

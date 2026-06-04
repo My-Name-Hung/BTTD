@@ -222,7 +222,7 @@ export const SIDEBAR_GROUPS: MenuGroup[] = [
   {
     title: "Trạm trộn",
     items: SIDEBAR_ITEMS.filter((m) =>
-      ["/tram-tron/lich-san-xuat", "/dieu-phoi/mac-be-tong"].includes(m.path),
+      ["/tram-tron/lich-san-xuat"].includes(m.path),
     ),
   },
   // === ĐIỀU PHỐI ===

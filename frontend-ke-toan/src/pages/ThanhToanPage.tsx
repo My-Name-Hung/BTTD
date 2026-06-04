@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   FiDollarSign,
   FiDownload,
+  FiExternalLink,
   FiPrinter,
   FiSearch,
   FiX,

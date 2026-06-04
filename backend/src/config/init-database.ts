@@ -151,17 +151,35 @@ async function initDatabase(): Promise<void> {
       await db.query(`
         CREATE TABLE KhachHang (
           id INT IDENTITY(1,1) PRIMARY KEY,
+          maKhachHang NVARCHAR(50),
           tenKhachHang NVARCHAR(200) NOT NULL,
           diaChi NVARCHAR(500),
           soDienThoai NVARCHAR(20),
           email NVARCHAR(200),
           ghiChu NVARCHAR(MAX),
+          nhom NVARCHAR(200),
           ngayTao DATETIME DEFAULT GETDATE(),
           ngayCapNhat DATETIME DEFAULT GETDATE()
         )
       `);
     } else {
       console.log("  ✅ Bảng KhachHang đã tồn tại");
+      // Migration: thêm cột maKhachHang nếu chưa có
+      const colMaKH = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('KhachHang') AND name = 'maKhachHang'`,
+      );
+      if (colMaKH.recordset.length === 0) {
+        await db.query(`ALTER TABLE KhachHang ADD maKhachHang NVARCHAR(50)`);
+        console.log("  + Cột maKhachHang đã thêm vào KhachHang");
+      }
+      // Migration: thêm cột nhom nếu chưa có
+      const colNhom = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('KhachHang') AND name = 'nhom'`,
+      );
+      if (colNhom.recordset.length === 0) {
+        await db.query(`ALTER TABLE KhachHang ADD nhom NVARCHAR(200)`);
+        console.log("  + Cột nhom đã thêm vào KhachHang");
+      }
     }
 
     // Tạo bảng CauHinh (key/value store cho cấu hình hệ thống)

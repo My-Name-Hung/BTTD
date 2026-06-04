@@ -6,11 +6,31 @@ import {
   layDanhSachNhomCongNoKhachHang,
   suaCongNoKhachHang,
   xoaCongNoKhachHang,
+  taoCongNoKhachHang,
 } from '../services/cong-no-khach-hang-service';
 import { ghiNhatKy } from '../services/access-history-service';
 import { query } from '../config/database';
 
 const router = Router();
+
+/** Tạo công nợ khách hàng */
+router.post('/cong-no-khach-hang', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const { maKhachHang, tenKhachHang, nhom } = req.body;
+    if (!tenKhachHang) {
+      res.status(400).json({ success: false, message: 'Tên khách hàng là bắt buộc' });
+      return;
+    }
+    const data = await taoCongNoKhachHang({ maKhachHang, tenKhachHang, nhom });
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user!.id, 'TAO', 'CongNoKhachHang', data.id, undefined,
+      JSON.stringify(req.body), ip);
+    res.status(201).json({ success: true, message: 'Tạo công nợ thành công', data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi tạo công nợ';
+    res.status(500).json({ success: false, message });
+  }
+});
 
 /** Lấy công nợ theo nhóm (Bravo) */
 router.get('/cong-no-khach-hang/grouped', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {

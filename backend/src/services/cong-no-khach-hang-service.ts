@@ -1,6 +1,34 @@
 import { query, vnNow } from '../config/database';
 import { CongNoKhachHang, CongNoKhachHangGroup } from '../models';
 
+export async function taoCongNoKhachHang(data: {
+  maKhachHang?: string | null;
+  tenKhachHang: string;
+  nhom?: string | null;
+}): Promise<CongNoKhachHang> {
+  // Tự sinh mã nếu chưa có
+  let maKH = data.maKhachHang?.trim() || null;
+  if (!maKH) {
+    const countResult = await query<{ cnt: number }>(
+      `SELECT COUNT(*) as cnt FROM CongNoKhachHang`,
+      {}
+    );
+    const nextNum = (countResult[0]?.cnt || 0) + 1;
+    maKH = 'KH' + String(nextNum).padStart(4, '0');
+  }
+  const result = await query<CongNoKhachHang>(
+    `INSERT INTO CongNoKhachHang (maKhachHang, tenKhachHang, nhom)
+     OUTPUT INSERTED.*
+     VALUES (@maKhachHang, @tenKhachHang, @nhom)`,
+    {
+      maKhachHang: maKH,
+      tenKhachHang: data.tenKhachHang,
+      nhom: data.nhom || null,
+    }
+  );
+  return result[0];
+}
+
 export async function layCongNoKhachHangGrouped(
   opts?: { nhom?: string; search?: string }
 ): Promise<CongNoKhachHangGroup[]> {

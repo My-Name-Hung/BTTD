@@ -187,6 +187,26 @@
   color: var(--color-text);
 }
 
+.tableCode {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.06);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.tableNhom {
+  font-size: 12px;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
 .tablePhone {
   font-size: 13px;
   color: var(--color-text-secondary);
@@ -232,6 +252,19 @@
 .actionBtn:hover {
   transform: translateY(-1px);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Liên kết công nợ – tím */
+.actionBtnView {
+  border-color: #7c3aed;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.04);
+}
+
+.actionBtnView:hover {
+  border-color: #6d28d9;
+  color: white;
+  background: #6d28d9;
 }
 
 /* Edit – xanh lá */
@@ -433,6 +466,106 @@
 }
 
 /* ---- Responsive ---- */
+/* Searchable dropdown in modal */
+.searchDropdownWrap {
+  position: relative;
+}
+
+.searchDropdownDisplay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 13px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.searchDropdownDisplay:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.08);
+}
+
+.searchDropdownDisplayFocused {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.08);
+}
+
+.searchDropdownPlaceholder {
+  color: var(--color-text-secondary);
+}
+
+.searchDropdownArrow {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.searchDropdownArrowOpen {
+  transform: rotate(180deg);
+}
+
+.searchDropdownPanel {
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  margin-top: 4px;
+  background: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.searchDropdownInput {
+  width: 100%;
+  padding: 10px 13px;
+  border: none;
+  border-bottom: 1.5px solid var(--color-border);
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  box-sizing: border-box;
+  outline: none;
+}
+
+.searchDropdownList {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.searchDropdownItem {
+  padding: 9px 13px;
+  font-size: 13.5px;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.searchDropdownItem:hover {
+  background: rgba(7, 60, 235, 0.05);
+  color: var(--color-primary);
+}
+
+.searchDropdownItemActive {
+  background: rgba(7, 60, 235, 0.08);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.searchDropdownEmpty {
+  padding: 12px 13px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
 @media (max-width: 640px) {
   .pageHeader { flex-direction: column; align-items: flex-start; }
   .filterBar { flex-direction: column; align-items: stretch; }

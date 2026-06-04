@@ -3,12 +3,15 @@ import {
   FiCheckCircle,
   FiDownload,
   FiEdit2,
+  FiExternalLink,
   FiFileText,
+  FiPlus,
   FiTrash2,
   FiUpload,
   FiX,
   FiXCircle,
 } from "react-icons/fi";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ConfirmModal, EmptyState, Loading } from "../components/Common";
 import { usePageRole, useToast } from "../hooks";
 import {
@@ -16,11 +19,21 @@ import {
   layCongNoKhachHangGrouped,
   layDanhSachNhomCongNoKhachHang,
   suaCongNoKhachHang,
+  taoCongNoKhachHang,
   xoaCongNoKhachHang,
 } from "../services/api";
 import { CongNoKhachHang, CongNoKhachHangGroup } from "../types";
 import { generateCongNoBravoTemplate } from "../utils/exportCongNo";
 import styles from "./CongNoPage.module.css";
+
+const NHOM_CONG_NO_OPTIONS = [
+  'Dư đầu Nợ',
+  'Dư đầu Có',
+  'Phát sinh Nợ',
+  'Phát sinh Có',
+  'Dư cuối Nợ',
+  'Dư cuối Có',
+];
 
 function formatCurrency(v: number) {
   return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
@@ -42,14 +55,22 @@ async function downloadTemplate() {
 type TabKey = "danh_sach" | "tai_len";
 
 export default function CongNoPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { toasts, showToast } = useToast();
   const { hasAnyRole } = usePageRole();
   const [activeTab, setActiveTab] = useState<TabKey>("danh_sach");
 
   const [groups, setGroups] = useState<CongNoKhachHangGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('khachHang') || '';
+  });
+  const [searchInput, setSearchInput] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('khachHang') || '';
+  });
   const [nhomFilter, setNhomFilter] = useState("");
   const [nhomList, setNhomList] = useState<{ nhom: string; soLuong: number }[]>(
     [],
@@ -59,6 +80,10 @@ export default function CongNoPage() {
     typeof setTimeout
   > | null>(null);
 
+  const [addKhachHangModal, setAddKhachHangModal] = useState(false);
+  const [addForm, setAddForm] = useState({ maKhachHang: '', tenKhachHang: '', nhom: '' });
+  const [nhomSearchQuery, setNhomSearchQuery] = useState('');
+  const [addLoading, setAddLoading] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [editForm, setEditForm] = useState<CongNoKhachHang | null>(null);
   const [saving, setSaving] = useState(false);
@@ -107,6 +132,14 @@ export default function CongNoPage() {
     loadGroups();
     loadNhomList();
   }, [loadGroups, loadNhomList]);
+
+  // Sync search from URL query param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get('khachHang') || '';
+    setSearch(q);
+    setSearchInput(q);
+  }, [location.search]);
 
   const handleSearchChange = (val: string) => {
     setSearchInput(val);
@@ -188,6 +221,31 @@ export default function CongNoPage() {
     }
   };
 
+  const handleAddKhachHang = async () => {
+    if (!addForm.tenKhachHang.trim()) {
+      showToast("Tên khách hàng là bắt buộc", "error");
+      return;
+    }
+    setAddLoading(true);
+    try {
+      await taoCongNoKhachHang({
+        maKhachHang: addForm.maKhachHang || undefined,
+        tenKhachHang: addForm.tenKhachHang,
+        nhom: addForm.nhom || undefined,
+      });
+      showToast("Thêm khách hàng vào công nợ thành công!");
+      setAddKhachHangModal(false);
+      setAddForm({ maKhachHang: '', tenKhachHang: '', nhom: '' });
+      setNhomSearchQuery('');
+      loadGroups();
+      loadNhomList();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi thêm", "error");
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
   const handleFile = (f: File) => {
     const ext = f.name.toLowerCase();
     if (
@@ -248,6 +306,16 @@ export default function CongNoPage() {
             Theo dõi công nợ theo nhóm từ file Bravo
           </div>
         </div>
+        {canWrite && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn btn-add"
+              onClick={() => setAddKhachHangModal(true)}
+            >
+              <FiPlus /> Thêm khách hàng
+            </button>
+          </div>
+        )}
       </div>
 
       {/* KPI */}
@@ -441,7 +509,9 @@ export default function CongNoPage() {
                             group.items.map((cn) => (
                               <tr key={cn.id} className={styles.dataRow}>
                                 <td className={styles.dataCell}>
-                                  <strong>{cn.maKhachHang || "—"}</strong>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <strong>{cn.maKhachHang || "—"}</strong>
+                                  </div>
                                 </td>
                                 <td className={styles.dataCell}>
                                   {cn.tenKhachHang}
@@ -865,6 +935,101 @@ export default function CongNoPage() {
         onClose={() => setConfirmDelete(null)}
         loading={deletingId !== null}
       />
+
+      {/* Modal thêm nhanh khách hàng vào công nợ */}
+      {addKhachHangModal && (
+        <div className={styles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) setAddKhachHangModal(false); }}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <span>Thêm khách hàng vào công nợ</span>
+              <button className={styles.modalClose} onClick={() => setAddKhachHangModal(false)}>
+                <FiX size={18} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Mã khách hàng</label>
+                <input
+                  className={styles.formInput}
+                  value={addForm.maKhachHang}
+                  onChange={(e) => setAddForm({ ...addForm, maKhachHang: e.target.value })}
+                  placeholder="Tự sinh nếu để trống"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Tên khách hàng *</label>
+                <input
+                  className={styles.formInput}
+                  value={addForm.tenKhachHang}
+                  onChange={(e) => setAddForm({ ...addForm, tenKhachHang: e.target.value })}
+                  placeholder="VD: Công ty TNHH ABC"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Thuộc nhóm</label>
+                <div className={styles.searchDropdownWrap}>
+                  <div
+                    className={styles.searchDropdownDisplay}
+                    onClick={() => {
+                      const el = document.getElementById('add-nhom-input');
+                      if (el) (el as HTMLInputElement).focus();
+                    }}
+                  >
+                    <span className={addForm.nhom ? '' : styles.searchDropdownPlaceholder}>
+                      {addForm.nhom || '— Chọn nhóm —'}
+                    </span>
+                    <svg className={styles.searchDropdownArrow} width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div className={styles.searchDropdownPanel} style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: 'white', border: '1.5px solid var(--color-border)', borderRadius: 10, marginTop: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', maxHeight: 240, overflowY: 'auto' }}>
+                    <input
+                      id="add-nhom-input"
+                      className={styles.searchDropdownInput}
+                      placeholder="Tìm hoặc nhập nhóm..."
+                      value={nhomSearchQuery}
+                      onChange={(e) => { setNhomSearchQuery(e.target.value); setAddForm({ ...addForm, nhom: e.target.value }); }}
+                      autoFocus
+                    />
+                    {NHOM_CONG_NO_OPTIONS.filter(n => n.toLowerCase().includes(nhomSearchQuery.toLowerCase())).map(n => (
+                      <div key={n} className={styles.searchDropdownItem}
+                        onClick={() => { setAddForm({ ...addForm, nhom: n }); setNhomSearchQuery(n); }}>
+                        {n}
+                      </div>
+                    ))}
+                    {nhomList.filter(n => n.nhom.toLowerCase().includes(nhomSearchQuery.toLowerCase()) && !NHOM_CONG_NO_OPTIONS.includes(n.nhom)).map(n => (
+                      <div key={n.nhom} className={styles.searchDropdownItem}
+                        onClick={() => { setAddForm({ ...addForm, nhom: n.nhom }); setNhomSearchQuery(n.nhom); }}>
+                        {n.nhom}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className="btn btn-secondary" onClick={() => setAddKhachHangModal(false)}>
+                Hủy
+              </button>
+              <button className="btn btn-primary" onClick={handleAddKhachHang} disabled={addLoading}>
+                {addLoading ? <><Loading /></> : "Thêm mới"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nút link đến trang khách hàng */}
+      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          className="btn btn-secondary"
+          style={{ fontSize: 13, padding: '8px 16px' }}
+          onClick={() => navigate('/quan-ly/khach-hang')}
+        >
+          <FiExternalLink size={14} style={{ marginRight: 6 }} />
+          Quản lý khách hàng
+        </button>
+      </div>
     </div>
   );
 }

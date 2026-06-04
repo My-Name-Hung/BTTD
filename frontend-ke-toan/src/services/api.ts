@@ -471,6 +471,17 @@ export async function suaCongNoKhachHang(id: number, data: {
   });
 }
 
+export async function taoCongNoKhachHang(data: {
+  maKhachHang?: string;
+  tenKhachHang: string;
+  nhom?: string;
+}): Promise<CongNoKhachHang> {
+  return request<CongNoKhachHang>("/cong-no-khach-hang", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 export async function xoaCongNoKhachHang(id: number): Promise<void> {
   return request<void>(`/cong-no-khach-hang/${id}`, { method: "DELETE" });
 }

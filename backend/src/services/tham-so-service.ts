@@ -37,27 +37,62 @@ export async function layTatCaKhachHang(
 }
 
 export async function taoKhachHang(data: Partial<KhachHang>): Promise<KhachHang> {
+  const tenKH = data.tenKhachHang || '';
+
+  // Tự sinh mã khách hàng nếu chưa có
+  let maKH = data.maKhachHang?.trim() || null;
+  if (!maKH) {
+    const countResult = await query<{ cnt: number }>(
+      `SELECT COUNT(*) as cnt FROM KhachHang`,
+      {}
+    );
+    const nextNum = (countResult[0]?.cnt || 0) + 1;
+    maKH = 'KH' + String(nextNum).padStart(4, '0');
+  }
+
   const result = await query<KhachHang>(
-    `INSERT INTO KhachHang (tenKhachHang, diaChi, soDienThoai, email, ghiChu)
-     VALUES (@tenKhachHang, @diaChi, @soDienThoai, @email, @ghiChu);
+    `INSERT INTO KhachHang (maKhachHang, tenKhachHang, diaChi, soDienThoai, email, ghiChu, nhom)
+     VALUES (@maKhachHang, @tenKhachHang, @diaChi, @soDienThoai, @email, @ghiChu, @nhom);
      SELECT * FROM KhachHang WHERE id = SCOPE_IDENTITY();`,
     {
-      tenKhachHang: data.tenKhachHang || '',
+      maKhachHang: maKH,
+      tenKhachHang: tenKH,
       diaChi: data.diaChi || null,
       soDienThoai: data.soDienThoai || null,
       email: data.email || null,
       ghiChu: data.ghiChu || null,
+      nhom: data.nhom || null,
     }
   );
-  return result[0];
+  const kh = result[0];
+
+  // Đồng thời tạo dòng công nợ cho khách hàng mới (tất cả giá trị = 0)
+  await query(
+    `INSERT INTO CongNoKhachHang (maKhachHang, tenKhachHang, nhom)
+     VALUES (@maKhachHang, @tenKhachHang, @nhom)`,
+    {
+      maKhachHang: maKH,
+      tenKhachHang: tenKH,
+      nhom: data.nhom || null,
+    }
+  );
+
+  return kh;
 }
 
 export async function suaKhachHang(id: number, data: Partial<KhachHang>): Promise<KhachHang> {
+  const sets: string[] = [
+    'tenKhachHang = @tenKhachHang',
+    'diaChi = @diaChi',
+    'soDienThoai = @soDienThoai',
+    'email = @email',
+    'ghiChu = @ghiChu',
+    'maKhachHang = @maKhachHang',
+    'nhom = @nhom',
+    `ngayCapNhat = ${vnNow()}`,
+  ];
   await query(
-    `UPDATE KhachHang SET
-      tenKhachHang = @tenKhachHang, diaChi = @diaChi, soDienThoai = @soDienThoai,
-      email = @email, ghiChu = @ghiChu, ngayCapNhat = ${vnNow()}
-     WHERE id = @id`,
+    `UPDATE KhachHang SET ${sets.join(', ')} WHERE id = @id`,
     {
       id,
       tenKhachHang: data.tenKhachHang,
@@ -65,8 +100,30 @@ export async function suaKhachHang(id: number, data: Partial<KhachHang>): Promis
       soDienThoai: data.soDienThoai ?? null,
       email: data.email ?? null,
       ghiChu: data.ghiChu ?? null,
+      maKhachHang: data.maKhachHang ?? null,
+      nhom: data.nhom ?? null,
     }
   );
+
+  // Cập nhật lại maKhachHang và nhom trong bảng CongNoKhachHang nếu có thay đổi
+  if (data.maKhachHang !== undefined || data.nhom !== undefined) {
+    await query(
+      `UPDATE CongNoKhachHang SET
+         maKhachHang = ISNULL(@maKhachHang, maKhachHang),
+         tenKhachHang = ISNULL(@tenKhachHang, tenKhachHang),
+         nhom = ISNULL(@nhom, nhom),
+         ngayCapNhat = ${vnNow()}
+       WHERE maKhachHang = (SELECT maKhachHang FROM KhachHang WHERE id = @id)
+          OR tenKhachHang = @tenKhachHang`,
+      {
+        maKhachHang: data.maKhachHang ?? null,
+        tenKhachHang: data.tenKhachHang,
+        nhom: data.nhom ?? null,
+        id,
+      }
+    );
+  }
+
   return (await query<KhachHang>(`SELECT * FROM KhachHang WHERE id = @id`, { id }))[0];
 }
 
