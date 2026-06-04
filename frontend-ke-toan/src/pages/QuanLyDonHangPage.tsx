@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   FiCheck,
+  FiDownload,
   FiEdit2,
   FiEye,
   FiPlus,
@@ -30,6 +31,7 @@ import {
 } from "../types";
 import styles from "./QuanLyDonHangPage.module.css";
 import { formatDateVN } from "../utils/dateUtils";
+import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "../utils/exportData";
 
 function formatCurrency(v: number) {
   return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
@@ -76,10 +78,13 @@ export default function QuanLyDonHangPage() {
   const [lyDoTuChoi, setLyDoTuChoi] = useState("");
   const [approvingId, setApprovingId] = useState<number | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const userVaiTro = JSON.parse(
     localStorage.getItem("bttd_user") || "{}",
   )?.vaiTro;
+  const userId = JSON.parse(localStorage.getItem("bttd_user") || "{}")?.id;
+  const isAdmin = userVaiTro === "admin";
   const isSale = userVaiTro === "sale";
   const isKeToan = userVaiTro === "ke_toan";
   const isDieuPhoi = userVaiTro === "dieu_phoi";
@@ -177,6 +182,90 @@ export default function QuanLyDonHangPage() {
     resetPage();
   };
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      // Lấy tất cả dữ liệu (không phân trang) để export
+      const res = await layDanhSachDonHang(1, 10000, trangThai || undefined, tuKhoa || undefined);
+      const allData = res.data || [];
+
+      // Filter dữ liệu theo vai trò
+      const exportData = allData.filter((dh: DonHang) => {
+        if (isAdmin) return true;
+        if (isSale || isDieuPhoi) return dh.nguoiTaoId === userId;
+        return true;
+      });
+
+      // Định nghĩa columns
+      const isAdminOrKeToan = isAdmin || isKeToan;
+      const headers = [
+        { key: "maDonHang" as keyof DonHang, label: "Mã đơn", width: 16 },
+        { key: "tenKhachHang" as keyof DonHang, label: "Khách hàng", width: 28 },
+        { key: "tenMacBeTong" as keyof DonHang, label: "Mác bê tông", width: 18 },
+        { key: "tenTramTron" as keyof DonHang, label: "Trạm trộn", width: 20 },
+        { key: "khoiLuongDat" as keyof DonHang, label: "Khối lượng đặt", width: 15, alignRight: true },
+        { key: "khoiLuongThucTe" as keyof DonHang, label: "Khối lượng thực tế", width: 15, alignRight: true },
+        { key: "donGia" as keyof DonHang, label: "Đơn giá", width: 14, alignRight: true },
+        { key: "thanhTien" as keyof DonHang, label: "Thành tiền", width: 16, alignRight: true },
+        { key: "daThanhToan" as keyof DonHang, label: "Đã thanh toán", width: 16, alignRight: true },
+        { key: "conLai" as keyof DonHang, label: "Còn lại", width: 14, alignRight: true },
+        { key: "diaChiNhan" as keyof DonHang, label: "Địa chỉ giao", width: 35 },
+        { key: "soDienThoai" as keyof DonHang, label: "SĐT", width: 14 },
+        { key: "thoiGianGiaoDuKien" as keyof DonHang, label: "Ngày giao dự kiến", width: 18 },
+        { key: "ngayTaoDon" as keyof DonHang, label: "Ngày tạo đơn", width: 18 },
+        { key: "trangThaiDon" as keyof DonHang, label: "Trạng thái", width: 18 },
+      ];
+
+      // Thêm cột user nếu là admin hoặc kế toán
+      if (isAdminOrKeToan) {
+        headers.push(
+          { key: "maNguoiTao" as keyof DonHang, label: "Mã user tạo", width: 16 },
+          { key: "tenNguoiTao" as keyof DonHang, label: "Tên user tạo", width: 22 },
+          { key: "maNguoiDuyet" as keyof DonHang, label: "Mã user duyệt", width: 16 },
+          { key: "tenNguoiDuyet" as keyof DonHang, label: "Tên user duyệt", width: 22 },
+        );
+      }
+
+      // Map dữ liệu
+      const rows = exportData.map((dh: DonHang) => {
+        const row: Record<string, unknown> = {
+          maDonHang: dh.maDonHang,
+          tenKhachHang: dh.tenKhachHang,
+          tenMacBeTong: dh.tenMacBeTong || "",
+          tenTramTron: dh.tenTramTron || "",
+          khoiLuongDat: dh.khoiLuongDat,
+          khoiLuongThucTe: dh.khoiLuongThucTe || "",
+          donGia: dh.donGia,
+          thanhTien: dh.thanhTien || "",
+          daThanhToan: dh.daThanhToan || 0,
+          conLai: dh.conLai || "",
+          diaChiNhan: dh.diaChiNhan,
+          soDienThoai: dh.soDienThoai,
+          thoiGianGiaoDuKien: formatDateForExport(dh.thoiGianGiaoDuKien),
+          ngayTaoDon: formatDateForExport(dh.ngayTaoDon),
+          trangThaiDon: TRANG_THAI_DON_LABELS[dh.trangThaiDon] || dh.trangThaiDon,
+        };
+        if (isAdminOrKeToan) {
+          row.maNguoiTao = dh.maNguoiTao || "";
+          row.tenNguoiTao = dh.tenNguoiTao || "";
+          row.maNguoiDuyet = dh.maNguoiDuyet || "";
+          row.tenNguoiDuyet = dh.tenNguoiDuyet || "";
+        }
+        return row;
+      });
+
+      const title = isAdminOrKeToan ? "BÁO CÁO ĐƠN HÀNG - TOÀN BỘ" : "BÁO CÁO ĐƠN HÀNG CỦA BẠN";
+      const filename = `BaoCaoDonHang_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+      await exportToExcel(title, headers, rows, filename, "Đơn hàng");
+      showToast("Xuất báo cáo thành công!");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xuất báo cáo", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
       {/* Page header */}
@@ -187,14 +276,24 @@ export default function QuanLyDonHangPage() {
             Toàn quyền quản lý đơn hàng bê tông
           </div>
         </div>
-        {canCreateOrder && (
+        <div className={styles.pageHeaderActions}>
           <button
-            className="btn btn-add"
-            onClick={() => navigate("/quan-ly/don-hang/tao")}
+            className={`btn btn-export ${exporting ? "btn-loading" : ""}`}
+            onClick={handleExportExcel}
+            disabled={exporting}
           >
-            <FiPlus /> Tạo đơn hàng
+            <FiDownload />
+            {exporting ? "Đang xuất..." : "Xuất báo cáo"}
           </button>
-        )}
+          {canCreateOrder && (
+            <button
+              className="btn btn-add"
+              onClick={() => navigate("/quan-ly/don-hang/tao")}
+            >
+              <FiPlus /> Tạo đơn hàng
+            </button>
+          )}
+        </div>
       </div>
 
       {/* KPI Row - Sale/Kế toán/Điều phối role uses simplified 2-column grid */}

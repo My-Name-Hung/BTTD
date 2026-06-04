@@ -115,6 +115,11 @@ export interface DonHang {
   lyDoTuChoi: string | null;
   daThanhToan: number;
   conLai: number | null;
+  // Thông tin user (để export Excel)
+  maNguoiTao?: string | null;
+  tenNguoiTao?: string | null;
+  maNguoiDuyet?: string | null;
+  tenNguoiDuyet?: string | null;
 }
 
 export interface LichSanXuat {

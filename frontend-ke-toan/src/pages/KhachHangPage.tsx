@@ -276,95 +276,99 @@ export default function KhachHangPage() {
           </>
         }
       >
-        {canWriteKhachHang && (
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Mã khách hàng</label>
-            <input
-              className={styles.formInput}
-              value={form.maKhachHang}
-              onChange={(e) => setForm({ ...form, maKhachHang: e.target.value })}
-              placeholder="Tự sinh nếu để trống (VD: KH0001)"
-            />
+        <div className={styles.formGrid}>
+          {canWriteKhachHang && (
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Mã khách hàng</label>
+              <input
+                className={styles.formInput}
+                value={form.maKhachHang}
+                onChange={(e) => setForm({ ...form, maKhachHang: e.target.value })}
+                placeholder="Tự sinh nếu để trống"
+              />
+            </div>
+          )}
+          <div className={`${styles.formGroup} ${!canWriteKhachHang ? styles.formGridFull : ''}`}>
+            <label className={styles.formLabel}>Tên khách hàng *</label>
+            <input className={styles.formInput} value={form.tenKhachHang} onChange={(e) => setForm({ ...form, tenKhachHang: e.target.value })} required />
           </div>
-        )}
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Tên khách hàng *</label>
-          <input className={styles.formInput} value={form.tenKhachHang} onChange={(e) => setForm({ ...form, tenKhachHang: e.target.value })} required />
-        </div>
-        {canWriteKhachHang && (
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Thuộc nhóm</label>
-            <div className={styles.searchDropdownWrap} ref={nhomDropdownRef}>
-              <div
-                className={`${styles.searchDropdownDisplay} ${nhomDropdownOpen ? styles.searchDropdownDisplayFocused : ''}`}
-                onClick={() => setNhomDropdownOpen(!nhomDropdownOpen)}
-              >
-                <span className={form.nhom ? '' : styles.searchDropdownPlaceholder}>
-                  {form.nhom || '— Chọn nhóm —'}
-                </span>
-                <svg
-                  className={`${styles.searchDropdownArrow} ${nhomDropdownOpen ? styles.searchDropdownArrowOpen : ''}`}
-                  width="16" height="16" viewBox="0 0 16 16" fill="none"
+
+          {canWriteKhachHang && (
+            <div className={`${styles.formGroup} ${styles.formGridFull}`}>
+              <label className={styles.formLabel}>Thuộc nhóm</label>
+              <div className={styles.searchDropdownWrap} ref={nhomDropdownRef}>
+                <div
+                  className={`${styles.searchDropdownDisplay} ${nhomDropdownOpen ? styles.searchDropdownDisplayFocused : ''}`}
+                  onClick={() => setNhomDropdownOpen(!nhomDropdownOpen)}
                 >
-                  <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              {nhomDropdownOpen && (
-                <div className={styles.searchDropdownPanel} style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: 'white', border: '1.5px solid var(--color-border)', borderRadius: 10, marginTop: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', maxHeight: 240, overflowY: 'auto' }}>
-                  <input
-                    id="nhom-kh-input"
-                    className={styles.searchDropdownInput}
-                    placeholder="Tìm hoặc nhập nhóm..."
-                    value={form.nhom}
-                    onChange={(e) => setForm({ ...form, nhom: e.target.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const matches = NHOM_KINH_DOANH_OPTIONS.filter(n => n.toLowerCase().includes(form.nhom.toLowerCase()));
-                        if (matches.length > 0) {
-                          setForm({ ...form, nhom: matches[0] });
-                          setNhomDropdownOpen(false);
-                        } else if (form.nhom.trim()) {
+                  <span className={form.nhom ? '' : styles.searchDropdownPlaceholder}>
+                    {form.nhom || '— Chọn nhóm —'}
+                  </span>
+                  <svg
+                    className={`${styles.searchDropdownArrow} ${nhomDropdownOpen ? styles.searchDropdownArrowOpen : ''}`}
+                    width="16" height="16" viewBox="0 0 16 16" fill="none"
+                  >
+                    <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                {nhomDropdownOpen && (
+                  <div className={styles.searchDropdownPanel} style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: 'white', border: '1.5px solid var(--color-border)', borderRadius: 10, marginTop: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', maxHeight: 240, overflowY: 'auto' }}>
+                    <input
+                      id="nhom-kh-input"
+                      className={styles.searchDropdownInput}
+                      placeholder="Tìm hoặc nhập nhóm..."
+                      value={form.nhom}
+                      onChange={(e) => setForm({ ...form, nhom: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const matches = NHOM_KINH_DOANH_OPTIONS.filter(n => n.toLowerCase().includes(form.nhom.toLowerCase()));
+                          if (matches.length > 0) {
+                            setForm({ ...form, nhom: matches[0] });
+                            setNhomDropdownOpen(false);
+                          } else if (form.nhom.trim()) {
+                            setNhomDropdownOpen(false);
+                          }
+                        } else if (e.key === 'Escape') {
                           setNhomDropdownOpen(false);
                         }
-                      } else if (e.key === 'Escape') {
-                        setNhomDropdownOpen(false);
-                      }
-                    }}
-                    autoFocus
-                  />
-                  {NHOM_KINH_DOANH_OPTIONS.filter(n => n.toLowerCase().includes(form.nhom.toLowerCase())).map(n => (
-                    <div key={n} className={styles.searchDropdownItem}
-                      onClick={() => { setForm({ ...form, nhom: n }); setNhomDropdownOpen(false); }}>
-                      {n}
-                    </div>
-                  ))}
-                  {form.nhom && !NHOM_KINH_DOANH_OPTIONS.includes(form.nhom) && (
-                    <div className={styles.searchDropdownItem} style={{ color: 'var(--color-primary)', fontWeight: 600 }}
-                      onClick={() => setNhomDropdownOpen(false)}>
-                      Nhấn Enter để dùng: "{form.nhom}"
-                    </div>
-                  )}
-                </div>
-              )}
+                      }}
+                      autoFocus
+                    />
+                    {NHOM_KINH_DOANH_OPTIONS.filter(n => n.toLowerCase().includes(form.nhom.toLowerCase())).map(n => (
+                      <div key={n} className={styles.searchDropdownItem}
+                        onClick={() => { setForm({ ...form, nhom: n }); setNhomDropdownOpen(false); }}>
+                        {n}
+                      </div>
+                    ))}
+                    {form.nhom && !NHOM_KINH_DOANH_OPTIONS.includes(form.nhom) && (
+                      <div className={styles.searchDropdownItem} style={{ color: 'var(--color-primary)', fontWeight: 600 }}
+                        onClick={() => setNhomDropdownOpen(false)}>
+                        Nhấn Enter để dùng: "{form.nhom}"
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
+          )}
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Địa chỉ</label>
+            <input className={styles.formInput} value={form.diaChi} onChange={(e) => setForm({ ...form, diaChi: e.target.value })} />
           </div>
-        )}
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Địa chỉ</label>
-          <input className={styles.formInput} value={form.diaChi} onChange={(e) => setForm({ ...form, diaChi: e.target.value })} />
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Số điện thoại</label>
-          <input className={styles.formInput} value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} />
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Email</label>
-          <input className={styles.formInput} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Ghi chú</label>
-          <textarea className={styles.formTextarea} value={form.ghiChu} onChange={(e) => setForm({ ...form, ghiChu: e.target.value })} />
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Số điện thoại</label>
+            <input className={styles.formInput} value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} />
+          </div>
+          <div className={`${styles.formGroup} ${styles.formGridFull}`}>
+            <label className={styles.formLabel}>Email</label>
+            <input className={styles.formInput} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          </div>
+          <div className={`${styles.formGroup} ${styles.formGridFull}`}>
+            <label className={styles.formLabel}>Ghi chú</label>
+            <textarea className={styles.formTextarea} value={form.ghiChu} onChange={(e) => setForm({ ...form, ghiChu: e.target.value })} />
+          </div>
         </div>
       </Modal>
 

@@ -27,25 +27,32 @@ export async function layTatCaDonHang(
   const params: Record<string, unknown> = {};
 
   if (trangThai) {
-    whereClause += ' AND trangThaiDon = @trangThai';
+    whereClause += ' AND d.trangThaiDon = @trangThai';
     params.trangThai = trangThai;
   }
 
   if (tuKhoa) {
-    whereClause += ' AND (maDonHang LIKE @tuKhoa OR tenKhachHang LIKE @tuKhoa OR diaChiNhan LIKE @tuKhoa)';
+    whereClause += ' AND (d.maDonHang LIKE @tuKhoa OR d.tenKhachHang LIKE @tuKhoa OR d.diaChiNhan LIKE @tuKhoa)';
     params.tuKhoa = `%${tuKhoa}%`;
   }
 
   const countResult = await query<{ total: number }>(
-    `SELECT COUNT(*) as total FROM DonHang ${whereClause}`,
+    `SELECT COUNT(*) as total FROM DonHang d ${whereClause}`,
     params
   );
   const total = countResult[0]?.total || 0;
 
   const donHangs = await query<DonHang>(
-    `SELECT d.*, t.tenTram as tenTramTron
+    `SELECT d.*,
+            t.tenTram as tenTramTron,
+            nt.tenDangNhap as maNguoiTao,
+            nt.hoTen as tenNguoiTao,
+            nd.tenDangNhap as maNguoiDuyet,
+            nd.hoTen as tenNguoiDuyet
      FROM DonHang d
      LEFT JOIN TramTron t ON d.idTramTron = t.id
+     LEFT JOIN NguoiDung nt ON d.nguoiTaoId = nt.id
+     LEFT JOIN NguoiDung nd ON d.nguoiDuyetId = nd.id
      ${whereClause}
      ORDER BY d.ngayTao DESC
      OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,

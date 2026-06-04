@@ -262,6 +262,15 @@
 }
 
 /* Confirm modal buttons */
+.btn-export {
+  background: #0599d6;
+  color: white;
+  border: none;
+}
+.btn-export:hover {
+  background: #047aab;
+  box-shadow: 0 4px 12px rgba(5, 153, 214, 0.3);
+}
 /* Styles defined above in .confirm-btn-cancel and .confirm-btn-danger */
 
 .btn-sm {
