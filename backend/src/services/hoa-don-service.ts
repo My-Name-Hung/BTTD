@@ -182,10 +182,13 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
             dh.khoiLuongDat, dh.donGia, dh.thanhTien, dh.ngayGiao,
             ISNULL(tt.tenTram, '') as tenTramTron,
             ISNULL(tt.diaChi, '') as diaChiTramTron,
-            ls.bienSoXe, ls.tenTaiXe, ls.nguoiOmOng, ls.nguoiBatOng, ls.kyThuatCongTrinh
+            ls.bienSoXe,
+            nd.hoTen as tenTaiXe,
+            ls.nguoiOmOng, ls.nguoiBatOng, ls.kyThuatCongTrinh
      FROM HoaDon hd
      INNER JOIN DonHang dh ON hd.idDonHang = dh.id
      LEFT JOIN LichSanXuat ls ON dh.id = ls.idDonHang
+     LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
      LEFT JOIN TramTron tt ON dh.idTramTron = tt.id
      WHERE hd.id = @id`,
     { id }

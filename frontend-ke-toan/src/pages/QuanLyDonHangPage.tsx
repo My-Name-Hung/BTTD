@@ -106,7 +106,7 @@ export default function QuanLyDonHangPage() {
       ].includes(d.trangThaiDon),
     ).length || 0;
   const kpiHoanThanh =
-    data.data?.filter((d) => d.trangThaiDon === "da_thanh_toan").length || 0;
+    data.data?.filter((d) => d.trangThaiDon === "hoan_thanh").length || 0;
 
   const handleDuyet = async (id: number) => {
     setApprovingId(id);
@@ -334,7 +334,9 @@ export default function QuanLyDonHangPage() {
                         <span
                           className={`${styles.badge} ${styles["badge" + dh.trangThaiDon.replace(/_([a-z])/g, (_, c) => c.toUpperCase())]}`}
                         >
-                          {TRANG_THAI_DON_LABELS[dh.trangThaiDon]}
+                          {dh.trangThaiDon === 'da_thanh_toan'
+                            ? 'Hoàn thành'
+                            : TRANG_THAI_DON_LABELS[dh.trangThaiDon]}
                         </span>
                       </td>
                       <td>
@@ -471,7 +473,9 @@ export default function QuanLyDonHangPage() {
                         <span
                           className={`${styles.badge} ${styles["badge" + dh.trangThaiDon.replace(/_([a-z])/g, (_, c) => c.toUpperCase())]}`}
                         >
-                          {TRANG_THAI_DON_LABELS[dh.trangThaiDon]}
+                          {dh.trangThaiDon === 'da_thanh_toan'
+                            ? 'Hoàn thành'
+                            : TRANG_THAI_DON_LABELS[dh.trangThaiDon]}
                         </span>
                       </td>
                       <td

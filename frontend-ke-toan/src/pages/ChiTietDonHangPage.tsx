@@ -30,9 +30,8 @@ const TRANG_THAI_STEPS = [
   { key: 'da_duyet',       label: 'Đã duyệt' },
   { key: 'dang_san_xuat',  label: 'Đang SX' },
   { key: 'dang_giao',      label: 'Đang giao' },
-  { key: 'da_giao',        label: 'Đã giao' },
-  { key: 'nghiem_thu',     label: 'Nghiệm thu' },
-  { key: 'da_thanh_toan',  label: 'Thanh toán' },
+  { key: 'da_giao',       label: 'Đã giao' },
+  { key: 'nghiem_thu',    label: 'Nghiệm thu' },
   { key: 'hoan_thanh',     label: 'Hoàn thành' },
 ];
 
@@ -170,6 +169,11 @@ export default function ChiTietDonHangPage() {
   }
 
   const currentStepIdx = TRANG_THAI_STEPS.findIndex(s => s.key === donHang.trangThaiDon);
+  // Đơn đã thanh toán hoặc hoàn thành → hiển thị bước cuối "Hoàn thành"
+  const displayTrangThai = donHang.trangThaiDon === 'da_thanh_toan' || donHang.trangThaiDon === 'hoan_thanh'
+    ? 'hoan_thanh'
+    : donHang.trangThaiDon;
+  const currentDisplayIdx = TRANG_THAI_STEPS.findIndex(s => s.key === displayTrangThai);
   const connLai = (donHang.thanhTien || 0) - (donHang.daThanhToan || 0);
 
   return (
@@ -185,7 +189,9 @@ export default function ChiTietDonHangPage() {
             <div className={styles.pageSubtitle}>
               Ngày tạo: {formatDate(donHang.ngayTaoDon)} ·{' '}
               <span style={{ color: statusColor(donHang.trangThaiDon), fontWeight: 600 }}>
-                {TRANG_THAI_DON_LABELS[donHang.trangThaiDon]}
+                {donHang.trangThaiDon === 'da_thanh_toan'
+                  ? 'Hoàn thành'
+                  : TRANG_THAI_DON_LABELS[donHang.trangThaiDon]}
               </span>
             </div>
           </div>
@@ -240,18 +246,18 @@ export default function ChiTietDonHangPage() {
             <div
               className={styles.stepConnectorFill}
               style={{
-                width: currentStepIdx >= 0
-                  ? `${(currentStepIdx / (TRANG_THAI_STEPS.length - 1)) * 100}%`
+                width: currentDisplayIdx >= 0
+                  ? `${(currentDisplayIdx / (TRANG_THAI_STEPS.length - 1)) * 100}%`
                   : '0%',
               }}
             />
           </div>
           {TRANG_THAI_STEPS.map((step, idx) => {
             const lastStepIdx = TRANG_THAI_STEPS.length - 1;
-            const isLastDone = idx === lastStepIdx && currentStepIdx === lastStepIdx;
-            const done = idx < currentStepIdx || isLastDone;
-            const active = idx === currentStepIdx;
-            const pending = idx > currentStepIdx;
+            const isLastDone = idx === lastStepIdx && (donHang.trangThaiDon === 'hoan_thanh' || donHang.trangThaiDon === 'da_thanh_toan');
+            const done = idx < currentDisplayIdx || isLastDone;
+            const active = idx === currentDisplayIdx;
+            const pending = idx > currentDisplayIdx;
             let circleClass = styles.stepCirclePending;
             if (done) circleClass = styles.stepCircleDone;
             else if (active) circleClass = styles.stepCircleActive;
@@ -409,7 +415,9 @@ export default function ChiTietDonHangPage() {
                   color: statusColor(donHang.trangThaiDon),
                 }}
               >
-                {TRANG_THAI_DON_LABELS[donHang.trangThaiDon]}
+                {donHang.trangThaiDon === 'da_thanh_toan'
+                  ? 'Hoàn thành'
+                  : TRANG_THAI_DON_LABELS[donHang.trangThaiDon]}
               </span>
             </span>
           </div>
@@ -436,25 +444,6 @@ export default function ChiTietDonHangPage() {
             <FiTruck size={16} style={{ color: 'var(--color-primary)' }} />
             Lịch sản xuất
           </div>
-          {lichSX && (
-            <span
-              className={styles.sectionChip}
-              style={{
-                background: lichSX.trangThai === 'da_xong'
-                  ? 'rgba(16,185,129,0.1)'
-                  : lichSX.trangThai === 'dang_san_xuat'
-                  ? 'rgba(139,92,246,0.1)'
-                  : 'rgba(7,60,235,0.08)',
-                color: lichSX.trangThai === 'da_xong'
-                  ? '#047857'
-                  : lichSX.trangThai === 'dang_san_xuat'
-                  ? '#6d28d9'
-                  : 'var(--color-primary)',
-              }}
-            >
-              {lichSX.trangThai === 'da_xong' ? 'Hoàn thành' : lichSX.trangThai === 'dang_san_xuat' ? 'Đang sản xuất' : 'Chưa sản xuất'}
-            </span>
-          )}
         </div>
 
         {lichSX ? (
@@ -550,6 +539,7 @@ export default function ChiTietDonHangPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {hoaDons.map((hd, idx) => (
                 <div key={hd.id} style={{ border: '1px solid var(--color-border)', borderRadius: 10, overflow: 'hidden' }}>
+                  {/* Header hóa đơn */}
                   <div style={{ padding: '10px 14px', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                       <strong style={{ fontSize: 13 }}>HĐ #{idx + 1}</strong>
@@ -566,6 +556,11 @@ export default function ChiTietDonHangPage() {
                       }}>
                         {hd.loaiThanhToan === 'tra_het' ? 'Trả hết' : 'Công nợ'}
                       </span>
+                      {hd.loaiThanhToan === 'cong_no' && hd.hanTraCongNo && (
+                        <span style={{ fontSize: 11, color: '#e53935', fontWeight: 600 }}>
+                          Hạn: {new Date(hd.hanTraCongNo).toLocaleDateString('vi-VN')}
+                        </span>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button
@@ -576,29 +571,80 @@ export default function ChiTietDonHangPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Thông tin chi tiết */}
                   <div style={{ padding: '10px 14px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 6 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                        <span style={{ color: 'var(--color-text-secondary)' }}>Tiền bê tông:</span>
-                        <span style={{ fontWeight: 600 }}>{hd.tienBeTong?.toLocaleString('vi-VN')} đ</span>
+                    {/* Thông tin khách + sản phẩm */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Khách hàng</div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{hd.khachHang}</div>
                       </div>
-                      {hd.buuVanChuyen > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                          <span style={{ color: 'var(--color-text-secondary)' }}>Bù VC:</span>
-                          <span style={{ fontWeight: 600 }}>{hd.buuVanChuyen?.toLocaleString('vi-VN')} đ</span>
-                        </div>
-                      )}
-                      {hd.giamTru > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                          <span style={{ color: 'var(--color-text-secondary)' }}>Giảm trừ:</span>
-                          <span style={{ fontWeight: 600, color: 'var(--color-success)' }}>-{hd.giamTru?.toLocaleString('vi-VN')} đ</span>
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, borderTop: '1px solid var(--color-border)', paddingTop: 6, gridColumn: '1 / -1' }}>
-                        <span>Tổng cộng:</span>
-                        <span>{hd.tongCong?.toLocaleString('vi-VN')} đ</span>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Loại xi măng</div>
+                        <div style={{ fontSize: 13 }}>{hd.loaiXiMang || '—'}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Giờ đổ</div>
+                        <div style={{ fontSize: 13 }}>{hd.gioDo ? new Date(hd.gioDo).toLocaleString('vi-VN') : '—'}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Phương thức TT</div>
+                        <div style={{ fontSize: 13 }}>{hd.phuongThucThanhToan === 'chuyen_khoan' ? 'Chuyển khoản' : 'Tiền mặt'}</div>
                       </div>
                     </div>
+
+                    {/* Bảng chi tiết */}
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 8, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                      <thead>
+                        <tr style={{ background: 'var(--color-primary)', color: 'white' }}>
+                          <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700, fontSize: 11 }}>Nội dung</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: 11 }}>Đơn giá</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: 11 }}>Thành tiền</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <td style={{ padding: '6px 8px' }}>Bê tông thương phẩm</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right' }}>{hd.tienBeTong?.toLocaleString('vi-VN')} đ</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{hd.tienBeTong?.toLocaleString('vi-VN')} đ</td>
+                        </tr>
+                        {(hd.buuVanChuyen || 0) > 0 && (
+                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <td style={{ padding: '6px 8px', color: 'var(--color-text-secondary)' }}>Bù vận chuyển</td>
+                            <td style={{ padding: '6px 8px', textAlign: 'right' }}></td>
+                            <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{hd.buuVanChuyen?.toLocaleString('vi-VN')} đ</td>
+                          </tr>
+                        )}
+                        {(hd.phiPhatSinh || 0) > 0 && (
+                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <td style={{ padding: '6px 8px', color: 'var(--color-text-secondary)' }}>Chi phí phát sinh</td>
+                            <td style={{ padding: '6px 8px', textAlign: 'right' }}></td>
+                            <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{hd.phiPhatSinh?.toLocaleString('vi-VN')} đ</td>
+                          </tr>
+                        )}
+                        {(hd.giamTru || 0) > 0 && (
+                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <td style={{ padding: '6px 8px', color: 'var(--color-text-secondary)' }}>Giảm trừ / Khuyến mãi</td>
+                            <td style={{ padding: '6px 8px', textAlign: 'right' }}></td>
+                            <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: 'var(--color-success)' }}>-{hd.giamTru?.toLocaleString('vi-VN')} đ</td>
+                          </tr>
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: '#f0f4ff' }}>
+                          <td colSpan={2} style={{ padding: '7px 8px', textAlign: 'right', fontWeight: 700, fontSize: 13 }}>TỔNG CỘNG</td>
+                          <td style={{ padding: '7px 8px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: 'var(--color-primary)' }}>{hd.tongCong?.toLocaleString('vi-VN')} đ</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+
+                    {/* Ghi chú */}
+                    {hd.ghiChu && (
+                      <div style={{ fontSize: 12, color: '#92400e', background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 6, padding: '6px 10px', marginTop: 4 }}>
+                        <strong>Ghi chú:</strong> {hd.ghiChu}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
