@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiDownload, FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiExternalLink } from 'react-icons/fi';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { layDanhSachKhachHang, taoKhachHang, suaKhachHang, xoaKhachHang, exportKhachHang, taoCongNoKhachHang } from '../../../shared/services/api';
+import { layDanhSachKhachHang, taoKhachHang, suaKhachHang, xoaKhachHang, exportKhachHang } from '../../../shared/services/api';
 import { KhachHang, ApiResponseWithPagination } from '../../../shared/types';
 import { exportToExcel, formatDateForExport } from '../../../shared/utils/exportData';
 import { useToast, usePagination, usePageRole } from '../../../shared/hooks';
@@ -100,14 +100,6 @@ export default function KhachHangPage() {
         await suaKhachHang(editingId, payload);
       } else {
         await taoKhachHang(payload);
-        // Auto thêm khách hàng vào công nợ với nhóm tương ứng
-        try {
-          await taoCongNoKhachHang({
-            tenKhachHang: form.tenKhachHang,
-            maKhachHang: form.maKhachHang || undefined,
-            nhom: form.nhom || undefined,
-          });
-        } catch { /* Bỏ qua lỗi nếu đã tồn tại trong công nợ */ }
       }
       setModalOpen(false);
       setShowSuccess(true);
