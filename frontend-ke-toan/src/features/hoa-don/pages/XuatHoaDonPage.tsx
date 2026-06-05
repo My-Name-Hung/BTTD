@@ -264,6 +264,7 @@ export default function XuatHoaDonPage() {
         phuongThucThanhToan: phuongThuc,
         ghiChu,
         hanTraCongNo: activeTab === "cong_no" ? hanTraCongNo : undefined,
+        soTienThanhToanTruoc: activeTab === "cong_no" ? soTTTS : tongCong,
       });
 
       showToast(

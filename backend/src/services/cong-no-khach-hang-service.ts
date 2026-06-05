@@ -1,6 +1,84 @@
 import { query, vnNow } from '../config/database';
 import { CongNoKhachHang, CongNoKhachHangGroup } from '../models';
 
+export async function dongBoCongNoKhachHangTheoPhatSinh(data: {
+  maKhachHang?: string | null;
+  tenKhachHang: string;
+  nhom?: string | null;
+  phatSinhNoTang?: number;
+  phatSinhCoTang?: number;
+}): Promise<CongNoKhachHang> {
+  const phatSinhNoTang = data.phatSinhNoTang || 0;
+  const phatSinhCoTang = data.phatSinhCoTang || 0;
+
+  const existing = await query<CongNoKhachHang>(
+    `SELECT TOP 1 * FROM CongNoKhachHang WHERE tenKhachHang = @tenKhachHang ORDER BY id ASC`,
+    { tenKhachHang: data.tenKhachHang },
+  );
+
+  if (existing.length === 0) {
+    const created = await taoCongNoKhachHang({
+      maKhachHang: data.maKhachHang,
+      tenKhachHang: data.tenKhachHang,
+      nhom: data.nhom,
+    });
+
+    const duCuoiNo = Math.max(0, (created.duDauNo || 0) + phatSinhNoTang - phatSinhCoTang - (created.duDauCo || 0));
+    const duCuoiCo = Math.max(0, (created.duDauCo || 0) + phatSinhCoTang - phatSinhNoTang - (created.duDauNo || 0));
+
+    await query(
+      `UPDATE CongNoKhachHang
+       SET phatSinhNo = @phatSinhNo,
+           phatSinhCo = @phatSinhCo,
+           duCuoiNo = @duCuoiNo,
+           duCuoiCo = @duCuoiCo,
+           ngayCapNhat = ${vnNow()}
+       WHERE id = @id`,
+      {
+        id: created.id,
+        phatSinhNo: phatSinhNoTang,
+        phatSinhCo: phatSinhCoTang,
+        duCuoiNo,
+        duCuoiCo,
+      },
+    );
+
+    return (await query<CongNoKhachHang>(`SELECT * FROM CongNoKhachHang WHERE id = @id`, { id: created.id }))[0];
+  }
+
+  const row = existing[0];
+  const duDauNo = row.duDauNo || 0;
+  const duDauCo = row.duDauCo || 0;
+  const phatSinhNo = (row.phatSinhNo || 0) + phatSinhNoTang;
+  const phatSinhCo = (row.phatSinhCo || 0) + phatSinhCoTang;
+  const chenhLech = duDauNo + phatSinhNo - duDauCo - phatSinhCo;
+  const duCuoiNo = Math.max(0, chenhLech);
+  const duCuoiCo = Math.max(0, -chenhLech);
+
+  await query(
+    `UPDATE CongNoKhachHang
+     SET maKhachHang = COALESCE(@maKhachHang, maKhachHang),
+         nhom = COALESCE(@nhom, nhom),
+         phatSinhNo = @phatSinhNo,
+         phatSinhCo = @phatSinhCo,
+         duCuoiNo = @duCuoiNo,
+         duCuoiCo = @duCuoiCo,
+         ngayCapNhat = ${vnNow()}
+     WHERE id = @id`,
+    {
+      id: row.id,
+      maKhachHang: data.maKhachHang || null,
+      nhom: data.nhom || null,
+      phatSinhNo,
+      phatSinhCo,
+      duCuoiNo,
+      duCuoiCo,
+    },
+  );
+
+  return (await query<CongNoKhachHang>(`SELECT * FROM CongNoKhachHang WHERE id = @id`, { id: row.id }))[0];
+}
+
 export async function taoCongNoKhachHang(data: {
   maKhachHang?: string | null;
   tenKhachHang: string;

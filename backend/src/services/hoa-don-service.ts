@@ -1,5 +1,6 @@
 import { query, vnNow } from '../config/database';
 import { DonHang, ThanhToan } from '../models';
+import { dongBoCongNoKhachHangTheoPhatSinh } from './cong-no-khach-hang-service';
 
 export interface HoaDon {
   id: number;
@@ -37,6 +38,7 @@ interface TaoHoaDonInput {
   phuongThucThanhToan?: string;
   ghiChu?: string;
   hanTraCongNo?: string;
+  soTienThanhToanTruoc?: number;
 }
 
 export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promise<HoaDon> {
@@ -62,8 +64,10 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
   const giamTru = data.giamTru || 0;
   // tongCong = tiền bê tông + bù vận chuyển + phí phát sinh - giảm trừ
   const tongCong = tienBeTong + buuVanChuyen + phiPhatSinh - giamTru;
-  // soTienThanhToan = số tiền thực sự thanh toán trong hóa đơn này (= tongCong)
-  const soTienThanhToan = tongCong;
+  const soTienThanhToanTruoc = Math.max(0, data.soTienThanhToanTruoc || 0);
+  const soTienThanhToan = data.loaiThanhToan === 'tra_het'
+    ? tongCong
+    : Math.min(soTienThanhToanTruoc, tongCong);
 
   const result = await query<HoaDon>(
     `INSERT INTO HoaDon (
@@ -91,7 +95,7 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       phiPhatSinh,
       giamTru,
       tongCong,
-      soTienThanhToan: tongCong,
+      soTienThanhToan,
       loaiThanhToan: data.loaiThanhToan,
       hanTraCongNo: data.hanTraCongNo ? new Date(data.hanTraCongNo) : null,
       nguoiTaoId,
@@ -118,51 +122,102 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
     await query(
       `UPDATE DonHang SET
         daThanhToan = @daThanhToan, conLai = 0,
+        thanhTien = @tongCong,
         trangThaiDon = N'da_thanh_toan', trangThaiHoanThanh = N'da_hoan_thanh',
         ngayCapNhat = ${vnNow()}
        WHERE id = @id`,
       {
         id: data.idDonHang,
         daThanhToan: tongCong,
+        tongCong,
       }
     );
+
+    await dongBoCongNoKhachHangTheoPhatSinh({
+      maKhachHang: dh.maKhachHang || null,
+      tenKhachHang: dh.tenKhachHang || data.khachHang || '',
+      nhom: dh.nhom || null,
+      phatSinhNoTang: tongCong,
+      phatSinhCoTang: tongCong,
+    });
   }
 
-  // Nếu là công nợ (thanh toán 1 phần): tạo bản ghi thanh toán + cập nhật đơn hàng
+  // Nếu là công nợ: ghi nhận phát sinh nợ bằng tổng hóa đơn, phát sinh có bằng số trả trước
   if (data.loaiThanhToan === 'cong_no') {
-    // Lấy đơn hàng hiện tại để tính lại daThanhToan
-    const dhHienTai = (await query<DonHang>(
-      `SELECT * FROM DonHang WHERE id = @id`, { id: data.idDonHang }
-    ))[0];
-    const daThanhToanMoi = (dhHienTai.daThanhToan || 0) + tongCong;
-    const conLaiMoi = (dhHienTai.thanhTien || 0) - daThanhToanMoi;
+    const daThanhToanMoi = (dh.daThanhToan || 0) + soTienThanhToan;
+    const conLaiMoi = tongCong - soTienThanhToan;
 
-    await query<ThanhToan>(
-      `INSERT INTO ThanhToan (idDonHang, soTien, hinhThuc, ngayThanhToan, nguoiNhan, ghiChu, nguoiTaoId)
-       VALUES (@idDonHang, @soTien, @hinhThuc, ${vnNow()}, @nguoiNhan, @ghiChu, @nguoiTaoId);`,
-      {
-        idDonHang: data.idDonHang,
-        soTien: tongCong,
-        hinhThuc: data.phuongThucThanhToan || 'tien_mat',
-        nguoiNhan: '',
-        ghiChu: `Hóa đơn công nợ ${maHoaDon}`,
-        nguoiTaoId,
-      }
-    );
+    if (soTienThanhToan > 0) {
+      await query<ThanhToan>(
+        `INSERT INTO ThanhToan (idDonHang, soTien, hinhThuc, ngayThanhToan, nguoiNhan, ghiChu, nguoiTaoId)
+         VALUES (@idDonHang, @soTien, @hinhThuc, ${vnNow()}, @nguoiNhan, @ghiChu, @nguoiTaoId);`,
+        {
+          idDonHang: data.idDonHang,
+          soTien: soTienThanhToan,
+          hinhThuc: data.phuongThucThanhToan || 'tien_mat',
+          nguoiNhan: '',
+          ghiChu: `Thanh toán trước cho hóa đơn công nợ ${maHoaDon}`,
+          nguoiTaoId,
+        }
+      );
+    }
 
     await query(
       `UPDATE DonHang SET
         daThanhToan = @daThanhToan, conLai = @conLai,
-        trangThaiDon = CASE WHEN @conLai <= 0 THEN N'da_thanh_toan' ELSE trangThaiDon END,
-        trangThaiHoanThanh = CASE WHEN @conLai <= 0 THEN N'da_hoan_thanh' ELSE trangThaiHoanThanh END,
+        thanhTien = @tongCong,
         ngayCapNhat = ${vnNow()}
        WHERE id = @id`,
       {
         id: data.idDonHang,
         daThanhToan: daThanhToanMoi,
         conLai: conLaiMoi < 0 ? 0 : conLaiMoi,
+        tongCong,
       }
     );
+
+    await query(
+      `IF EXISTS (SELECT * FROM CongNo WHERE idDonHang = @idDonHang)
+       BEGIN
+         UPDATE CongNo
+         SET tongTien = @tongTien,
+             daThanhToan = @daThanhToan,
+             conLai = @conLai,
+             ngayBatDau = COALESCE(ngayBatDau, CAST(GETDATE() AS DATE)),
+             hanThanhToan = @hanThanhToan,
+             trangThai = CASE WHEN @conLai <= 0 THEN N'da_thanh_toan' ELSE N'chua_thanh_toan' END,
+             ngayCapNhat = ${vnNow()}
+         WHERE idDonHang = @idDonHang;
+       END
+       ELSE
+       BEGIN
+         INSERT INTO CongNo (idDonHang, tongTien, daThanhToan, conLai, ngayBatDau, hanThanhToan, trangThai)
+         VALUES (
+           @idDonHang,
+           @tongTien,
+           @daThanhToan,
+           @conLai,
+           CAST(GETDATE() AS DATE),
+           @hanThanhToan,
+           CASE WHEN @conLai <= 0 THEN N'da_thanh_toan' ELSE N'chua_thanh_toan' END
+         );
+       END`,
+      {
+        idDonHang: data.idDonHang,
+        tongTien: tongCong,
+        daThanhToan: soTienThanhToan,
+        conLai: conLaiMoi < 0 ? 0 : conLaiMoi,
+        hanThanhToan: data.hanTraCongNo ? new Date(data.hanTraCongNo) : null,
+      }
+    );
+
+    await dongBoCongNoKhachHangTheoPhatSinh({
+      maKhachHang: dh.maKhachHang || null,
+      tenKhachHang: dh.tenKhachHang || data.khachHang || '',
+      nhom: dh.nhom || null,
+      phatSinhNoTang: tongCong,
+      phatSinhCoTang: soTienThanhToan,
+    });
   }
 
   return hoaDon;

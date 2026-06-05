@@ -1229,6 +1229,7 @@ export async function taoHoaDon(data: {
   phuongThucThanhToan?: string;
   ghiChu?: string;
   hanTraCongNo?: string;
+  soTienThanhToanTruoc?: number;
 }): Promise<any> {
   return request('/hoa-don', {
     method: 'POST',

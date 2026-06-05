@@ -1,6 +1,7 @@
 import { query, vnNow } from '../config/database';
 import { ThanhToan, CongNo, DonHang, ApiResponseWithPagination } from '../models';
 import { guiThongBao } from './thong-bao-service';
+import { dongBoCongNoKhachHangTheoPhatSinh } from './cong-no-khach-hang-service';
 
 const THANH_TOAN = 'da_thanh_toan';
 const DA_HOAN_THANH = 'da_hoan_thanh';
@@ -78,6 +79,13 @@ export async function taoThanhToan(
       }
     );
   }
+
+  await dongBoCongNoKhachHangTheoPhatSinh({
+    maKhachHang: donHangHienTai.maKhachHang || null,
+    tenKhachHang: donHangHienTai.tenKhachHang || '',
+    nhom: donHangHienTai.nhom || null,
+    phatSinhCoTang: thanhToanMoi.soTien,
+  });
 
   // Gửi thông báo thanh toán
   guiThongBao('PAYMENT_RECEIVED', {
