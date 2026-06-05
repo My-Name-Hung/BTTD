@@ -220,10 +220,10 @@ export default function XuatHoaDonPage() {
     activeTab === "tra_het_du" || activeTab === "cong_no_du"
       ? tongCong + soTienDuSo
       : tongCong;
-  const soTienConLai =
-    activeTab === "cong_no" || activeTab === "cong_no_du"
-      ? Math.max(0, tongCong - soTTTS)
-      : 0;
+  const soTienConLaiSauKyNay =
+    activeTab === "cong_no"
+      ? Math.max(0, tienBeTong - tongHienThiHoaDon)
+      : Math.max(0, tongCong - soTTTS);
 
   // Auto-fill tiền thanh toán trước từ hóa đơn công nợ đã xuất
   useEffect(() => {
@@ -890,7 +890,7 @@ export default function XuatHoaDonPage() {
                   Số tiền còn lại sau lần thanh toán này:
                 </span>
                 <span className={styles.conLaiValue}>
-                  {formatCurrency(soTienConLai)}
+                  {formatCurrency(soTienConLaiSauKyNay)}
                 </span>
               </div>
             )}
@@ -963,6 +963,14 @@ export default function XuatHoaDonPage() {
                   </span>
                 </div>
               )}
+            {activeTab === "cong_no" && (
+              <div className={styles.totalRow}>
+                <span>Số tiền còn lại cần thanh toán</span>
+                <span style={{ color: "var(--color-warning)" }}>
+                  {formatCurrency(soTienConLaiSauKyNay)}
+                </span>
+              </div>
+            )}
             {soTienDuSo > 0 &&
               (activeTab === "tra_het_du" || activeTab === "cong_no_du") && (
                 <div className={styles.totalRow}>
