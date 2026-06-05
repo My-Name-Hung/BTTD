@@ -224,30 +224,6 @@ export default function CongNoPage() {
     }
   };
 
-  const handleAddKhachHang = async () => {
-    if (!addForm.tenKhachHang.trim()) {
-      showToast("Tên khách hàng là bắt buộc", "error");
-      return;
-    }
-    setAddLoading(true);
-    try {
-      await taoCongNoKhachHang({
-        maKhachHang: addForm.maKhachHang || undefined,
-        tenKhachHang: addForm.tenKhachHang,
-        nhom: addForm.nhom || undefined,
-      });
-      showToast("Thêm khách hàng vào công nợ thành công!");
-      setAddKhachHangModal(false);
-      setAddForm({ maKhachHang: '', tenKhachHang: '', nhom: '' });
-      setNhomSearchQuery('');
-      loadGroups();
-      loadNhomList();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Lỗi thêm", "error");
-    } finally {
-      setAddLoading(false);
-    }
-  };
 
   const handleFile = (f: File) => {
     const ext = f.name.toLowerCase();
@@ -294,6 +270,12 @@ export default function CongNoPage() {
       }
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi khi import", "error");
+      // Vẫn hiện thẻ kết quả lỗi ở tab tải lên
+      setUploadResult({
+        success: 0,
+        failed: 1,
+        errors: [err instanceof Error ? err.message : "Lỗi không xác định"],
+      });
     } finally {
       setUploading(false);
     }
@@ -383,14 +365,6 @@ export default function CongNoPage() {
               </>
             )}
           </button>
-          {canWrite && (
-            <button
-              className="btn btn-add"
-              onClick={() => setAddKhachHangModal(true)}
-            >
-              <FiPlus /> Thêm khách hàng
-            </button>
-          )}
         </div>
       </div>
 
@@ -1011,89 +985,6 @@ export default function CongNoPage() {
         onClose={() => setConfirmDelete(null)}
         loading={deletingId !== null}
       />
-
-      {/* Modal thêm nhanh khách hàng vào công nợ */}
-      {addKhachHangModal && (
-        <div className={styles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) setAddKhachHangModal(false); }}>
-          <div className={styles.modal}>
-            <div className={styles.modalHeader}>
-              <span>Thêm khách hàng vào công nợ</span>
-              <button className={styles.modalClose} onClick={() => setAddKhachHangModal(false)}>
-                <FiX size={18} />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Mã khách hàng</label>
-                <input
-                  className={styles.formInput}
-                  value={addForm.maKhachHang}
-                  onChange={(e) => setAddForm({ ...addForm, maKhachHang: e.target.value })}
-                  placeholder="Tự sinh nếu để trống"
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Tên khách hàng *</label>
-                <input
-                  className={styles.formInput}
-                  value={addForm.tenKhachHang}
-                  onChange={(e) => setAddForm({ ...addForm, tenKhachHang: e.target.value })}
-                  placeholder="VD: Công ty TNHH ABC"
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Thuộc nhóm</label>
-                <div className={styles.searchDropdownWrap}>
-                  <div
-                    className={styles.searchDropdownDisplay}
-                    onClick={() => {
-                      const el = document.getElementById('add-nhom-input');
-                      if (el) (el as HTMLInputElement).focus();
-                    }}
-                  >
-                    <span className={addForm.nhom ? '' : styles.searchDropdownPlaceholder}>
-                      {addForm.nhom || '— Chọn nhóm —'}
-                    </span>
-                    <svg className={styles.searchDropdownArrow} width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <div className={styles.searchDropdownPanel} style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: 'white', border: '1.5px solid var(--color-border)', borderRadius: 10, marginTop: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', maxHeight: 240, overflowY: 'auto' }}>
-                    <input
-                      id="add-nhom-input"
-                      className={styles.searchDropdownInput}
-                      placeholder="Tìm hoặc nhập nhóm..."
-                      value={nhomSearchQuery}
-                      onChange={(e) => { setNhomSearchQuery(e.target.value); setAddForm({ ...addForm, nhom: e.target.value }); }}
-                      autoFocus
-                    />
-                    {NHOM_CONG_NO_OPTIONS.filter(n => n.toLowerCase().includes(nhomSearchQuery.toLowerCase())).map(n => (
-                      <div key={n} className={styles.searchDropdownItem}
-                        onClick={() => { setAddForm({ ...addForm, nhom: n }); setNhomSearchQuery(n); }}>
-                        {n}
-                      </div>
-                    ))}
-                    {nhomList.filter(n => n.nhom.toLowerCase().includes(nhomSearchQuery.toLowerCase()) && !NHOM_CONG_NO_OPTIONS.includes(n.nhom)).map(n => (
-                      <div key={n.nhom} className={styles.searchDropdownItem}
-                        onClick={() => { setAddForm({ ...addForm, nhom: n.nhom }); setNhomSearchQuery(n.nhom); }}>
-                        {n.nhom}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button className="btn btn-secondary" onClick={() => setAddKhachHangModal(false)}>
-                Hủy
-              </button>
-              <button className="btn btn-primary" onClick={handleAddKhachHang} disabled={addLoading}>
-                {addLoading ? <><Loading /></> : "Thêm mới"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

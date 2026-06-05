@@ -888,8 +888,8 @@ export async function importCongNoKhachHang(
   if (dataRows.length > 0) {
     // Xây dựng câu MERGE (SQL Server) để upsert nhanh
     const values = dataRows
-      .map((r, idx) =>
-        `SELECT ${idx + 1} as rn, N'${r.maKhachHang.replace(/'/g, "''")}', N'${r.tenKhachHang.replace(/'/g, "''")}', ${r.duDauNo}, ${r.duDauCo}, ${r.phatSinhNo}, ${r.phatSinhCo}, ${r.duCuoiNo}, ${r.duCuoiCo}, N'${r.nhom.replace(/'/g, "''")}', ${r.rowNum}`
+      .map((r) =>
+        `SELECT N'${r.maKhachHang.replace(/'/g, "''")}', N'${r.tenKhachHang.replace(/'/g, "''")}', ${r.duDauNo}, ${r.duDauCo}, ${r.phatSinhNo}, ${r.phatSinhCo}, ${r.duCuoiNo}, ${r.duCuoiCo}, N'${r.nhom.replace(/'/g, "''")}'`
       )
       .join(" UNION ALL ");
 
@@ -899,7 +899,7 @@ export async function importCongNoKhachHang(
         `MERGE INTO CongNoKhachHang AS target
          USING (
            ${values}
-         ) AS source (rn, maKhachHang, tenKhachHang, duDauNo, duDauCo, phatSinhNo, phatSinhCo, duCuoiNo, duCuoiCo, nhom, rowNum)
+         ) AS source (maKhachHang, tenKhachHang, duDauNo, duDauCo, phatSinhNo, phatSinhCo, duCuoiNo, duCuoiCo, nhom)
          ON (target.tenKhachHang = source.tenKhachHang)
          WHEN MATCHED THEN
            UPDATE SET
@@ -918,23 +918,29 @@ export async function importCongNoKhachHang(
       );
       success = dataRows.length;
 
-      // Auto tạo KhachHang nếu chưa tồn tại (theo tenKhachHang)
+      // Auto tạo hoặc cập nhật KhachHang nếu chưa tồn tại (theo tenKhachHang)
       const uniqueKhachHang = dataRows.filter((v, i, a) => a.findIndex(t => t.tenKhachHang === v.tenKhachHang) === i);
       for (const row of uniqueKhachHang) {
         try {
-          // Kiểm tra đã tồn tại chưa
-          const existing = await query<{ id: number }[]>(
-            `SELECT id FROM KhachHang WHERE tenKhachHang = @tenKhachHang`,
+          const existing = await query<{ id: number; nhom: string | null }[]>(
+            `SELECT id, nhom FROM KhachHang WHERE tenKhachHang = @tenKhachHang`,
             { tenKhachHang: row.tenKhachHang },
           );
           if (existing.recordset.length === 0) {
+            // Tạo mới nếu chưa có
             await taoKhachHang({
               maKhachHang: row.maKhachHang || undefined,
               tenKhachHang: row.tenKhachHang,
               nhom: row.nhom || undefined,
             });
+          } else if (!existing.recordset[0].nhom && row.nhom) {
+            // Cập nhật nhom nếu KH đã có nhưng chưa có nhóm
+            await query(
+              `UPDATE KhachHang SET nhom = @nhom WHERE id = @id`,
+              { nhom: row.nhom, id: existing.recordset[0].id },
+            );
           }
-        } catch { /* Bỏ qua lỗi tạo KH trùng */ }
+        } catch { /* Bỏ qua lỗi */ }
       }
 
       // Tính tổng cộng từ dataRows
