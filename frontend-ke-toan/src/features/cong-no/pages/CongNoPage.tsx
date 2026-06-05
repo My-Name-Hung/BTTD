@@ -368,19 +368,6 @@ export default function CongNoPage() {
           </div>
         </div>
         <div className={styles.pageHeaderActions}>
-          {canWrite && (
-            <button className="btn btn-secondary" onClick={handleDongBoCongNo} disabled={syncing}>
-              {syncing ? (
-                <>
-                  <Loading />
-                </>
-              ) : (
-                <>
-                  <FiCheckCircle /> Đồng bộ công nợ
-                </>
-              )}
-            </button>
-          )}
           <button
             className="btn btn-export"
             onClick={handleExportExcel}
