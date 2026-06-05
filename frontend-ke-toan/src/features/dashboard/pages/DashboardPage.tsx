@@ -39,6 +39,8 @@ import {
   TRANG_THAI_DON_COLORS,
   TRANG_THAI_DON_LABELS,
   DashboardSummary,
+  DoanhThuTheoThang,
+  DonHangTheoTrangThai,
 } from "../../../shared/types";
 import styles from "./DashboardPage.module.css";
 
@@ -215,12 +217,12 @@ export default function DashboardPage() {
           dangNghiemThu: 0,
         });
         // Transform tram data: backend trả tenTram/soDon, component expect tramTron/doanhThu
-        setTramTron(summary.tram.map(t => ({
+        setTramTron(summary.tram.map((t: { tenTram: string; soDon: number }) => ({
           tramTron: t.tenTram || 'N/A',
           soDonHang: t.soDon,
-          doanhThu: 0, // API mới không trả doanhThu theo trạm
+          doanhThu: 0,
         })));
-        setCongNoThang(summary.congNo.map(c => ({ thang: c.thang, congNoCu: c.congNo })));
+        setCongNoThang(summary.congNo.map((c: { thang: string; congNo: number }) => ({ thang: c.thang, congNoCu: c.congNo })));
         setCounts({
           xe: summary.xe.length,
           khach: summary.khachHang.length,

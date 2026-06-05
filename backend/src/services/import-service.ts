@@ -54,6 +54,11 @@ export async function layLichSuImport(
   tuNgay?: string,
   denNgay?: string,
 ): Promise<{ data: ImportHistory[]; total: number }> {
+  const hasLoai = await cotTonTai("ImportHistory", "loai");
+  if (!hasLoai) {
+    return { data: [], total: 0 };
+  }
+
   const offset = (page - 1) * limit;
   let where = "WHERE 1=1 AND ih.loai = @loai";
   const params: Record<string, unknown> = { loai, offset, limit };
@@ -106,9 +111,10 @@ async function ghiLichSuImport(
   thatBai: number,
   nguoiTaiId: number,
 ): Promise<void> {
+  const hasLoai = await cotTonTai("ImportHistory", "loai");
   const hasNguoiTaiId = await cotTonTai("ImportHistory", "nguoiTaiId");
 
-  if (hasNguoiTaiId) {
+  if (hasLoai && hasNguoiTaiId) {
     await query(
       `INSERT INTO ImportHistory (loai, tenFile, tongSo, thanhCong, thatBai, nguoiTaiId)
        VALUES (@loai, @tenFile, @tongSo, @thanhCong, @thatBai, @nguoiTaiId)`,
@@ -117,11 +123,14 @@ async function ghiLichSuImport(
     return;
   }
 
-  await query(
-    `INSERT INTO ImportHistory (loai, tenFile, tongSo, thanhCong, thatBai)
-     VALUES (@loai, @tenFile, @tongSo, @thanhCong, @thatBai)`,
-    { loai, tenFile, tongSo, thanhCong, thatBai },
-  );
+  if (hasLoai) {
+    await query(
+      `INSERT INTO ImportHistory (loai, tenFile, tongSo, thanhCong, thatBai)
+       VALUES (@loai, @tenFile, @tongSo, @thanhCong, @thatBai)`,
+      { loai, tenFile, tongSo, thanhCong, thatBai },
+    );
+    return;
+  }
 }
 
 // ===== Import đơn hàng =====

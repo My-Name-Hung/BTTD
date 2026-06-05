@@ -19,6 +19,7 @@ import {
   ThongKeDashboard,
   TramTron,
   Xe,
+  DashboardSummary,
 } from "../types";
 
 const BASE_URL =
@@ -74,7 +75,6 @@ export async function dangNhap(
     {
       method: "POST",
       body: JSON.stringify({ tenDangNhap, matKhau }),
-      skipAuth401: true,
     },
   );
   localStorage.setItem("bttd_token", result.token);

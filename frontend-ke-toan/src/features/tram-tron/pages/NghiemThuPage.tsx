@@ -17,6 +17,8 @@ import {
   layThanhToanBatch,
   uploadBienBanNghiemThu,
   xacNhanNghiemThu,
+  BatchNghiemThuResponse,
+  BatchThanhToanResponse,
 } from "../../../shared/services/api";
 import { DonHang, NghiemThu, ThanhToan } from "../../../shared/types";
 import styles from "./NghiemThuPage.module.css";
@@ -112,8 +114,8 @@ export default function NghiemThuPage() {
           layThanhToanBatch(donHangIds),
         ]);
 
-        const ntMap: Record<number, NghiemThu | null> = {};
-        const ttMap: Record<number, ThanhToan[]> = {};
+        const ntMap: Record<number, BatchNghiemThuResponse[number]> = {};
+        const ttMap: Record<number, BatchThanhToanResponse[number]> = {};
         dhs.forEach((dh: DonHang) => {
           ntMap[dh.id] = batchNT[dh.id] || null;
           ttMap[dh.id] = batchTT[dh.id] || [];
