@@ -15,7 +15,7 @@ router.post(
   requireRole('admin', 'ke_toan'),
   [
     body('idDonHang').isInt({ min: 1 }).withMessage('ID đơn hàng không hợp lệ'),
-    body('loaiThanhToan').isIn(['tra_het', 'cong_no']).withMessage('Loại thanh toán không hợp lệ'),
+    body('loaiThanhToan').isIn(['tra_het', 'tra_het_du', 'cong_no', 'cong_no_du']).withMessage('Loại thanh toán không hợp lệ'),
   ],
   validate([]),
   async (req: AuthRequest, res: Response<ApiResponse>) => {

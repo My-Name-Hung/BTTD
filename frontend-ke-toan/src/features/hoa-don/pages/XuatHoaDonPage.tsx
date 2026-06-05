@@ -117,9 +117,9 @@ export default function XuatHoaDonPage() {
       );
       setDuCuoiCoHienTai(currentCongNo?.duCuoiCo || 0);
 
-      // Lấy hóa đơn công nợ đã xuất trước đó (lọc theo loaiThanhToan = cong_no)
+      // Lấy hóa đơn công nợ đã xuất trước đó
       const hoaDonCongNo = (Array.isArray(existingHDs) ? existingHDs : [])
-        .filter((h: any) => h.loaiThanhToan === "cong_no")
+        .filter((h: any) => h.loaiThanhToan === "cong_no" || h.loaiThanhToan === "cong_no_du")
         .sort(
           (a: any, b: any) =>
             new Date(b.ngayLap || 0).getTime() -
@@ -127,7 +127,7 @@ export default function XuatHoaDonPage() {
         );
       if (hoaDonCongNo.length > 0) {
         setExistingHoaDon(hoaDonCongNo[0]);
-        setActiveTab("cong_no");
+        setActiveTab("cong_no_du");
       }
 
       if (dh.ngayGiao) {
@@ -267,7 +267,7 @@ export default function XuatHoaDonPage() {
 
   const handleSubmit = async () => {
     if (!donHang) return;
-    if (activeTab === "cong_no" && !hanTraCongNo) {
+    if ((activeTab === "cong_no" || activeTab === "cong_no_du") && !hanTraCongNo && !existingHoaDon) {
       showToast("Vui lòng nhập hạn trả công nợ", "error");
       return;
     }
