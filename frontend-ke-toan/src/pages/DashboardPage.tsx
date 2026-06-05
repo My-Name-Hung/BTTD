@@ -738,7 +738,6 @@ export default function DashboardPage() {
             <div className={styles.chartCard}>
               <div className={styles.chartCardHeader}>
                 <h3 className={styles.chartCardTitle}>Tỷ lệ trạng thái</h3>
-                <p className={styles.chartCardDesc}>Biểu đồ donut</p>
               </div>
               <div className={styles.chartArea}>
                 <Doughnut data={statusDonutData} options={createDonutOpts("đơn")} />
@@ -848,7 +847,6 @@ export default function DashboardPage() {
             <div className={styles.chartCard}>
               <div className={styles.chartCardHeader}>
                 <h3 className={styles.chartCardTitle}>Tỷ lệ nghiệm thu</h3>
-                <p className={styles.chartCardDesc}>Biểu đồ donut</p>
               </div>
               <div className={styles.chartArea}>
                 <Doughnut data={nghiemThuDonutData} options={createDonutOpts("đơn")} />

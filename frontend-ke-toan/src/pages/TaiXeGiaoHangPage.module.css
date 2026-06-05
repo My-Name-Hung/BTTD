@@ -690,3 +690,313 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* ===== Lịch sử giao hàng - Filter Bar ===== */
+.lichSuFilterBar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+/* Search */
+.lichSuSearchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.lichSuSearchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.lichSuSearchInput {
+  width: 100%;
+  padding: 10px 36px 10px 38px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-white);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.lichSuSearchInput:focus {
+  border-color: var(--color-primary);
+}
+
+.lichSuSearchClear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+/* Date Picker */
+.lichSuDateWrap {
+  position: relative;
+}
+
+.lichSuDateBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  height: 44px;
+}
+
+.lichSuDateBtn:hover {
+  border-color: var(--color-primary);
+}
+
+.lichSuDateBtnActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+.lichSuDateBtnActive svg {
+  color: white;
+}
+
+.lichSuDateDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 240px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  padding: 12px;
+}
+
+.lichSuDateInputWrap {
+  margin-bottom: 12px;
+}
+
+.lichSuDateInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-white);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.lichSuDateInput:focus {
+  border-color: var(--color-primary);
+}
+
+.lichSuDateQuick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.lichSuQuickBtn {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lichSuQuickBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.lichSuQuickBtnActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+.lichSuDateRecent {
+  margin-bottom: 8px;
+}
+
+.lichSuDateRecentLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.lichSuDateItem {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.lichSuDateItem:hover {
+  background: var(--color-bg);
+}
+
+.lichSuDateItemActive {
+  background: var(--color-primary);
+  color: white;
+}
+
+.lichSuDateClear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.lichSuDateClear:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+/* Customer Filter Button */
+.lichSuCustomerBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  height: 44px;
+  min-width: 120px;
+  justify-content: space-between;
+  transition: all 0.2s;
+}
+
+.lichSuCustomerBtn:hover {
+  border-color: var(--color-primary);
+}
+
+.lichSuCustomerBtnActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+.lichSuCustomerBtnActive svg {
+  color: white;
+}
+
+/* Active Filter Tags */
+.lichSuActiveFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lichSuFilterTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.lichSuFilterTag button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.lichSuFilterTag button:hover {
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .lichSuFilterBar {
+    flex-direction: column;
+  }
+
+  .lichSuSearchWrap {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .lichSuDateBtn,
+  .lichSuCustomerBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .lichSuDateDropdown {
+    left: 0;
+    right: 0;
+    min-width: unset;
+  }
+}

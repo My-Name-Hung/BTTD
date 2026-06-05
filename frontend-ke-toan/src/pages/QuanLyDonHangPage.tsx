@@ -21,8 +21,10 @@ import {
   duyetDonHang,
   exportDonHang,
   layDanhSachDonHang,
+  layThongKeDonHang,
   tuChoiDonHang,
   xoaDonHang,
+  ThongKeDonHang,
 } from "../services/api";
 import {
   ApiResponseWithPagination,
@@ -69,6 +71,7 @@ export default function QuanLyDonHangPage() {
     data: [],
     pagination: { page: 1, limit: 20, total: 0, totalPages: 1 },
   });
+  const [thongKe, setThongKe] = useState<ThongKeDonHang | null>(null);
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState("");
   const [trangThai, setTrangThai] = useState("");
@@ -99,13 +102,17 @@ export default function QuanLyDonHangPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await layDanhSachDonHang(
-        page,
-        20,
-        trangThai || undefined,
-        tuKhoa || undefined,
-      );
+      const [res, stats] = await Promise.all([
+        layDanhSachDonHang(
+          page,
+          20,
+          trangThai || undefined,
+          tuKhoa || undefined,
+        ),
+        trangThai ? Promise.resolve(null) : layThongKeDonHang(),
+      ]);
       setData(res);
+      if (stats) setThongKe(stats);
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {
@@ -117,21 +124,23 @@ export default function QuanLyDonHangPage() {
     loadData();
   }, [loadData]);
 
-  const kpiTotal = data.data?.length || 0;
-  const kpiChoDuyet =
-    data.data?.filter((d) => d.trangThaiDon === "cho_duyet").length || 0;
-  const kpiDangXL =
-    data.data?.filter((d) =>
-      [
-        "da_duyet",
-        "dang_san_xuat",
-        "dang_giao",
-        "da_giao",
-        "nghiem_thu",
-      ].includes(d.trangThaiDon),
-    ).length || 0;
-  const kpiHoanThanh =
-    data.data?.filter((d) => d.trangThaiDon === "hoan_thanh").length || 0;
+  // KPI: dùng thongKe nếu không filter, ngược lại đếm từ data.data
+  const kpiTotal = thongKe && !trangThai && !tuKhoa
+    ? thongKe.tongDon
+    : (data.data?.length || 0);
+  const kpiChoDuyet = thongKe && !trangThai && !tuKhoa
+    ? thongKe.choDuyet
+    : (data.data?.filter((d) => d.trangThaiDon === "cho_duyet").length || 0);
+  const kpiDangXL = thongKe && !trangThai && !tuKhoa
+    ? (thongKe.daDuyet + thongKe.dangSanXuat + thongKe.dangGiao + thongKe.daGiao + thongKe.nghiemThu)
+    : (data.data?.filter((d) =>
+        ["da_duyet", "dang_san_xuat", "dang_giao", "da_giao", "nghiem_thu"].includes(d.trangThaiDon),
+      ).length || 0);
+  const kpiHoanThanh = thongKe && !trangThai && !tuKhoa
+    ? (thongKe.hoanThanh + thongKe.daThanhToan)
+    : (data.data?.filter((d) =>
+        ["hoan_thanh", "da_thanh_toan"].includes(d.trangThaiDon)
+      ).length || 0);
 
   const handleDuyet = async (id: number) => {
     setApprovingId(id);

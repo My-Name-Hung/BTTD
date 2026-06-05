@@ -45,12 +45,33 @@ export default function LichSuGiaoHangPage() {
   const [khachHangSearch, setKhachHangSearch] = useState("");
   const khachHangSearchRef = useRef<HTMLInputElement>(null);
 
-  // Date filter
-  const [filterDate, setFilterDate] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  });
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  // Date filter - mặc định không lọc (xem tất cả)
+  const [filterDate, setFilterDate] = useState("");
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
+  const dateDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Quick date options
+  const quickDateOptions = [
+    { label: "Hôm nay", getValue: () => {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    }},
+    { label: "Hôm qua", getValue: () => {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }},
+    { label: "7 ngày qua", getValue: () => {
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }},
+    { label: "30 ngày qua", getValue: () => {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }},
+  ];
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -75,6 +96,17 @@ export default function LichSuGiaoHangPage() {
     }
   }, [showKhachHangDropdown]);
 
+  // Close date dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dateDropdownRef.current && !dateDropdownRef.current.contains(e.target as Node)) {
+        setShowDateDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const khachHangOptions = useMemo(() => {
     const unique = Array.from(
       new Set(donHangList.map((d) => d.tenKhachHang || "")),
@@ -90,7 +122,7 @@ export default function LichSuGiaoHangPage() {
     return khachHangOptions.filter((kh) => kh.toLowerCase().includes(q));
   }, [khachHangOptions, khachHangSearch]);
 
-  // Get unique dates for calendar
+  // Get unique dates for quick select
   const availableDates = useMemo(() => {
     const dates = new Set<string>();
     donHangList.forEach((d) => {
@@ -99,23 +131,6 @@ export default function LichSuGiaoHangPage() {
     });
     return Array.from(dates).sort().reverse();
   }, [donHangList]);
-
-  // Date navigation
-  const currentDateIndex = availableDates.indexOf(filterDate);
-  const hasPrevDate = currentDateIndex < availableDates.length - 1;
-  const hasNextDate = currentDateIndex > 0;
-
-  const goToPrevDate = () => {
-    if (hasPrevDate) {
-      setFilterDate(availableDates[currentDateIndex + 1]);
-    }
-  };
-
-  const goToNextDate = () => {
-    if (hasNextDate) {
-      setFilterDate(availableDates[currentDateIndex - 1]);
-    }
-  };
 
   const filteredList = useMemo(() => {
     return donHangList.filter((d) => {
@@ -135,7 +150,11 @@ export default function LichSuGiaoHangPage() {
     if (!dateStr) return "";
     const [year, month, day] = dateStr.split("-");
     const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    return d.toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+    return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+
+  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterDate(e.target.value);
   };
 
   return (
@@ -155,85 +174,22 @@ export default function LichSuGiaoHangPage() {
           <div className={styles.kpiValue}>{donHangList.length}</div>
           <div className={styles.kpiLabel}>Tổng đã giao</div>
         </div>
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiValue} style={{ color: "#009688" }}>
-            {filteredList.length}
-          </div>
-          <div className={styles.kpiLabel}>Đang xem</div>
-        </div>
       </div>
 
-      {/* Date Filter */}
-      <div className={styles.dateFilterWrap}>
-        <button
-          className={styles.dateNavBtn}
-          onClick={goToPrevDate}
-          disabled={!hasPrevDate}
-        >
-          ‹
-        </button>
-        <button
-          className={styles.dateDisplayBtn}
-          onClick={() => setShowDatePicker(!showDatePicker)}
-        >
-          <FiCalendar size={14} />
-          <span>{formatDisplayDate(filterDate) || "Tất cả ngày"}</span>
-          <FiChevronDown size={14} className={showDatePicker ? styles.rotated : ""} />
-        </button>
-        <button
-          className={styles.dateNavBtn}
-          onClick={goToNextDate}
-          disabled={!hasNextDate}
-        >
-          ›
-        </button>
-        {filterDate && (
-          <button
-            className={styles.dateClearBtn}
-            onClick={() => { setFilterDate(""); setShowDatePicker(false); }}
-          >
-            <FiX size={12} /> Tất cả
-          </button>
-        )}
-
-        {showDatePicker && (
-          <>
-            <div
-              className={styles.dropdownOverlay}
-              onClick={() => setShowDatePicker(false)}
-            />
-            <div className={styles.datePickerDropdown}>
-              {availableDates.length === 0 ? (
-                <div className={styles.datePickerEmpty}>Không có dữ liệu</div>
-              ) : (
-                availableDates.map((date) => (
-                  <button
-                    key={date}
-                    className={`${styles.datePickerItem} ${filterDate === date ? styles.datePickerItemActive : ""}`}
-                    onClick={() => { setFilterDate(date); setShowDatePicker(false); }}
-                  >
-                    {formatDisplayDate(date)}
-                  </button>
-                ))
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Search + Filter */}
-      <div className={styles.filterBar}>
-        <div className={styles.searchWrap}>
-          <FiSearch size={15} className={styles.searchIcon} />
+      {/* Filter Bar - Compact */}
+      <div className={styles.lichSuFilterBar}>
+        {/* Search */}
+        <div className={styles.lichSuSearchWrap}>
+          <FiSearch size={16} className={styles.lichSuSearchIcon} />
           <input
-            className={styles.searchInput}
-            placeholder="Tìm theo mã đơn, khách hàng, địa chỉ..."
+            className={styles.lichSuSearchInput}
+            placeholder="Tìm kiếm..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
             <button
-              className={styles.searchClear}
+              className={styles.lichSuSearchClear}
               onClick={() => setSearch("")}
             >
               <FiX size={14} />
@@ -241,13 +197,95 @@ export default function LichSuGiaoHangPage() {
           )}
         </div>
 
+        {/* Date Picker */}
+        <div className={styles.lichSuDateWrap} ref={dateDropdownRef}>
+          <button
+            className={`${styles.lichSuDateBtn} ${filterDate ? styles.lichSuDateBtnActive : ""}`}
+            onClick={() => setShowDateDropdown(!showDateDropdown)}
+          >
+            <FiCalendar size={16} />
+            <span>{filterDate ? formatDisplayDate(filterDate) : "Chọn ngày"}</span>
+            <FiChevronDown size={14} className={showDateDropdown ? styles.rotated : ""} />
+          </button>
+
+          {showDateDropdown && (
+            <>
+              <div
+                className={styles.dropdownOverlay}
+                onClick={() => setShowDateDropdown(false)}
+              />
+              <div className={styles.lichSuDateDropdown}>
+                {/* Date input */}
+                <div className={styles.lichSuDateInputWrap}>
+                  <input
+                    type="date"
+                    className={styles.lichSuDateInput}
+                    value={filterDate}
+                    onChange={handleDateInputChange}
+                    max={new Date().toISOString().split("T")[0]}
+                  />
+                </div>
+
+                {/* Quick select */}
+                <div className={styles.lichSuDateQuick}>
+                  {quickDateOptions.map((opt) => (
+                    <button
+                      key={opt.label}
+                      className={`${styles.lichSuQuickBtn} ${filterDate === opt.getValue() ? styles.lichSuQuickBtnActive : ""}`}
+                      onClick={() => {
+                        setFilterDate(opt.getValue());
+                        setShowDateDropdown(false);
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Recent dates with data */}
+                {availableDates.length > 0 && (
+                  <div className={styles.lichSuDateRecent}>
+                    <div className={styles.lichSuDateRecentLabel}>Ngày có đơn</div>
+                    {availableDates.slice(0, 5).map((date) => (
+                      <button
+                        key={date}
+                        className={`${styles.lichSuDateItem} ${filterDate === date ? styles.lichSuDateItemActive : ""}`}
+                        onClick={() => {
+                          setFilterDate(date);
+                          setShowDateDropdown(false);
+                        }}
+                      >
+                        {formatDisplayDate(date)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Clear */}
+                {filterDate && (
+                  <button
+                    className={styles.lichSuDateClear}
+                    onClick={() => {
+                      setFilterDate("");
+                      setShowDateDropdown(false);
+                    }}
+                  >
+                    <FiX size={12} /> Bỏ lọc ngày
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Customer Filter */}
         <div className={styles.dropdownWrap}>
           <button
-            className={styles.dropdownTrigger}
+            className={`${styles.lichSuCustomerBtn} ${filterKhachHang ? styles.lichSuCustomerBtnActive : ""}`}
             onClick={() => setShowKhachHangDropdown((v) => !v)}
           >
-            <span>{filterKhachHang || "Tất cả khách hàng"}</span>
-            <FiChevronDown size={15} />
+            <span>{filterKhachHang || "Khách hàng"}</span>
+            <FiChevronDown size={14} />
           </button>
           {showKhachHangDropdown && (
             <>
@@ -309,14 +347,25 @@ export default function LichSuGiaoHangPage() {
         </div>
       </div>
 
-      {filterKhachHang && (
-        <div className={styles.activeFilter}>
-          <span>
-            Khách hàng: <strong>{filterKhachHang}</strong>
-          </span>
-          <button onClick={() => setFilterKhachHang("")}>
-            <FiX size={12} /> Xóa
-          </button>
+      {/* Active Filters Tags */}
+      {(filterKhachHang || filterDate) && (
+        <div className={styles.lichSuActiveFilters}>
+          {filterKhachHang && (
+            <span className={styles.lichSuFilterTag}>
+              {filterKhachHang}
+              <button onClick={() => setFilterKhachHang("")}>
+                <FiX size={12} />
+              </button>
+            </span>
+          )}
+          {filterDate && (
+            <span className={styles.lichSuFilterTag}>
+              {formatDisplayDate(filterDate)}
+              <button onClick={() => setFilterDate("")}>
+                <FiX size={12} />
+              </button>
+            </span>
+          )}
         </div>
       )}
 

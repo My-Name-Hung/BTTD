@@ -107,6 +107,28 @@ export async function layDonHang(id: number): Promise<DonHang> {
   return request<DonHang>(`/don-hang/${id}`);
 }
 
+export interface ThongKeDonHang {
+  tongDon: number;
+  choDuyet: number;
+  daDuyet: number;
+  dangSanXuat: number;
+  dangGiao: number;
+  daGiao: number;
+  nghiemThu: number;
+  daThanhToan: number;
+  hoanThanh: number;
+  tuChoi: number;
+}
+
+export async function layThongKeDonHang(): Promise<ThongKeDonHang> {
+  const res = await fetch(`${BASE_URL}/don-hang/thong-ke`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data as ThongKeDonHang;
+}
+
 export async function taoDonHang(data: Partial<DonHang>): Promise<DonHang> {
   return request<DonHang>("/don-hang", {
     method: "POST",

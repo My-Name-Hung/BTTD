@@ -128,6 +128,67 @@ router.get(
   }
 );
 
+/** Thống kê đơn hàng theo trạng thái */
+router.get('/thong-ke', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const vaiTro = req.user?.vaiTro;
+    const idTram = req.user?.idTramTron ?? null;
+    const isSale = vaiTro === 'sale';
+    const isTramTron = vaiTro === 'tram_tron';
+
+    let whereClause = '';
+    const params: Record<string, unknown> = {};
+
+    if (isSale) {
+      whereClause = 'WHERE dh.nguoiTaoId = @nguoiTaoId';
+      params.nguoiTaoId = req.user!.id;
+    } else if (isTramTron && idTram) {
+      whereClause = 'WHERE dh.idTramTron = @idTram';
+      params.idTram = idTram;
+    }
+
+    const dbModule = await import('../config/database');
+
+    const statuses = ['cho_duyet', 'da_duyet', 'dang_san_xuat', 'dang_giao', 'da_giao', 'nghiem_thu', 'da_thanh_toan', 'hoan_thanh', 'tu_choi'];
+    const stats: Record<string, number> = {};
+    for (const status of statuses) {
+      const where = whereClause
+        ? `${whereClause} AND dh.trangThaiDon = @trangThai`
+        : 'WHERE dh.trangThaiDon = @trangThai';
+      const result = await dbModule.query<{ cnt: number }>(
+        `SELECT COUNT(*) as cnt FROM DonHang dh ${where}`,
+        { ...params, trangThai: status }
+      );
+      stats[status] = result[0]?.cnt || 0;
+    }
+
+    const tongRes = await dbModule.query<{ cnt: number }>(
+      `SELECT COUNT(*) as cnt FROM DonHang dh ${whereClause}`,
+      params
+    );
+
+    res.json({
+      success: true,
+      message: 'Lấy thống kê thành công',
+      data: {
+        tongDon: tongRes[0]?.cnt || 0,
+        choDuyet: stats['cho_duyet'] || 0,
+        daDuyet: stats['da_duyet'] || 0,
+        dangSanXuat: stats['dang_san_xuat'] || 0,
+        dangGiao: stats['dang_giao'] || 0,
+        daGiao: stats['da_giao'] || 0,
+        nghiemThu: stats['nghiem_thu'] || 0,
+        daThanhToan: stats['da_thanh_toan'] || 0,
+        hoanThanh: stats['hoan_thanh'] || 0,
+        tuChoi: stats['tu_choi'] || 0,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy thống kê';
+    res.status(500).json({ success: false, message });
+  }
+});
+
 /** Lấy đơn hàng của người tạo (sale) */
 router.get('/cua-toi', authMiddleware, async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
