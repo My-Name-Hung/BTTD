@@ -603,6 +603,9 @@ export async function taoThanhToan(data: {
   hinhThuc?: string;
   nguoiNhan?: string;
   ghiChu?: string;
+  soTienDu?: number;
+  soTienDuSuDung?: number;
+  laCongNoDu?: boolean;
 }): Promise<ThanhToan> {
   return request<ThanhToan>("/thanh-toan", {
     method: "POST",

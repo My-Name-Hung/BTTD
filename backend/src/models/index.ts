@@ -121,6 +121,7 @@ export interface DonHang {
 
   // Fields từ JOIN để export
   tenTramTron?: string | null;
+  maKhachHang?: string | null;
   maNguoiTao?: string | null;
   tenNguoiTao?: string | null;
   maNguoiDuyet?: string | null;

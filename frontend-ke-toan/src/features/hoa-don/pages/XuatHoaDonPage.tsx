@@ -113,7 +113,7 @@ export default function XuatHoaDonPage() {
       setKhachHang(dh.tenKhachHang || "");
       const allCongNoItems = (congNoGroups || []).flatMap((g) => g.items || []);
       const currentCongNo = allCongNoItems.find(
-        (item) => item.tenKhachHang === dh.tenKhachHang,
+        (item) => item.maKhachHang === (dh.maKhachHang || null) || item.tenKhachHang === dh.tenKhachHang,
       );
       setDuCuoiCoHienTai(currentCongNo?.duCuoiCo || 0);
 

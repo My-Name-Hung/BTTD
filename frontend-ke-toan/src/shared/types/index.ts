@@ -80,6 +80,7 @@ export interface DonHang {
   idMacBeTong: number | null;
   idTramTron: number | null;
   tenTramTron: string | null;
+  maKhachHang?: string | null;
   tenKhachHang: string;
   diaChiNhan: string;
   soDienThoai: string;

@@ -1,14 +1,22 @@
 import { query, vnNow } from '../config/database';
 import { ThanhToan, CongNo, DonHang, ApiResponseWithPagination } from '../models';
 import { guiThongBao } from './thong-bao-service';
-import { dongBoCongNoKhachHangTheoPhatSinh } from './cong-no-khach-hang-service';
+import {
+  capNhatSoDuCoKhachHang,
+  dongBoCongNoKhachHangTheoPhatSinh,
+  layDuCuoiCoKhachHang,
+} from './cong-no-khach-hang-service';
 
 const THANH_TOAN = 'da_thanh_toan';
 const DA_HOAN_THANH = 'da_hoan_thanh';
 const CHUA_THANH_TOAN = 'chua_thanh_toan';
 
 export async function taoThanhToan(
-  data: Partial<ThanhToan>,
+  data: Partial<ThanhToan> & {
+    soTienDu?: number;
+    soTienDuSuDung?: number;
+    laCongNoDu?: boolean;
+  },
   nguoiTaoId: number
 ): Promise<ThanhToan> {
   const donHang = await query<DonHang>(
@@ -20,13 +28,29 @@ export async function taoThanhToan(
     throw new Error('Không tìm thấy đơn hàng');
   }
 
+  const donHangHienTai = donHang[0];
+  const soTienDu = Math.max(0, data.soTienDu || 0);
+  const duCuoiCoHienTai = await layDuCuoiCoKhachHang({
+    idKhachHang: donHangHienTai.idKhachHang || null,
+    maKhachHang: donHangHienTai.maKhachHang || null,
+    tenKhachHang: donHangHienTai.tenKhachHang || '',
+  });
+  const soTienDuSuDung = Math.min(
+    Math.max(0, data.soTienDuSuDung || 0),
+    duCuoiCoHienTai,
+    donHangHienTai.conLai || 0,
+  );
+  const soTienKhachTra = Math.max(0, data.soTien || 0);
+  const tongThanhToanHieuLuc = soTienKhachTra + soTienDuSuDung;
+  const thanhToanApDungVaoDon = Math.min(tongThanhToanHieuLuc, donHangHienTai.conLai || 0);
+
   const result = await query<ThanhToan>(
     `INSERT INTO ThanhToan (idDonHang, soTien, hinhThuc, ngayThanhToan, nguoiNhan, ghiChu, nguoiTaoId)
      VALUES (@idDonHang, @soTien, @hinhThuc, ${vnNow()}, @nguoiNhan, @ghiChu, @nguoiTaoId);
      SELECT * FROM ThanhToan WHERE id = SCOPE_IDENTITY();`,
     {
       idDonHang: data.idDonHang,
-      soTien: data.soTien || 0,
+      soTien: soTienKhachTra + soTienDu,
       hinhThuc: data.hinhThuc || 'tien_mat',
       nguoiNhan: data.nguoiNhan || null,
       ghiChu: data.ghiChu || null,
@@ -35,9 +59,8 @@ export async function taoThanhToan(
   );
 
   const thanhToanMoi = result[0];
-  const donHangHienTai = donHang[0];
-  const daThanhToanMoi = donHangHienTai.daThanhToan + thanhToanMoi.soTien;
-  const conLaiMoi = donHangHienTai.thanhTien - daThanhToanMoi;
+  const daThanhToanMoi = donHangHienTai.daThanhToan + thanhToanApDungVaoDon;
+  const conLaiMoi = Math.max(0, (donHangHienTai.thanhTien || 0) - daThanhToanMoi);
 
   const trangThaiMoi =
     conLaiMoi <= 0 ? THANH_TOAN : donHangHienTai.trangThaiDon;
@@ -53,40 +76,47 @@ export async function taoThanhToan(
     {
       id: data.idDonHang,
       daThanhToan: daThanhToanMoi,
-      conLai: conLaiMoi < 0 ? 0 : conLaiMoi,
+      conLai: conLaiMoi,
       trangThaiDon: trangThaiMoi,
       trangThaiHoanThanh: hoanThanhMoi,
     }
   );
 
-  if (conLaiMoi > 0) {
-    await query(
-      `IF EXISTS (SELECT * FROM CongNo WHERE idDonHang = @idDonHang)
-       BEGIN
-         UPDATE CongNo SET daThanhToan = @daThanhToan, conLai = @conLai, ngayCapNhat = ${vnNow()} WHERE idDonHang = @idDonHang;
-       END
-       ELSE
-       BEGIN
-         INSERT INTO CongNo (idDonHang, tongTien, daThanhToan, conLai, trangThai)
-         VALUES (@idDonHang, @tongTien, @daThanhToan, @conLai, @trangThai_cn);
-       END`,
-      {
-        idDonHang: data.idDonHang,
-        daThanhToan: daThanhToanMoi,
-        conLai: conLaiMoi < 0 ? 0 : conLaiMoi,
-        tongTien: donHangHienTai.thanhTien,
-        trangThai_cn: CHUA_THANH_TOAN,
-      }
-    );
-  }
+  await query(
+    `IF EXISTS (SELECT * FROM CongNo WHERE idDonHang = @idDonHang)
+     BEGIN
+       UPDATE CongNo SET daThanhToan = @daThanhToan, conLai = @conLai, trangThai = CASE WHEN @conLai <= 0 THEN N'da_thanh_toan' ELSE N'chua_thanh_toan' END, ngayCapNhat = ${vnNow()} WHERE idDonHang = @idDonHang;
+     END
+     ELSE
+     BEGIN
+       INSERT INTO CongNo (idDonHang, tongTien, daThanhToan, conLai, trangThai)
+       VALUES (@idDonHang, @tongTien, @daThanhToan, @conLai, @trangThai_cn);
+     END`,
+    {
+      idDonHang: data.idDonHang,
+      daThanhToan: daThanhToanMoi,
+      conLai: conLaiMoi,
+      tongTien: donHangHienTai.thanhTien,
+      trangThai_cn: CHUA_THANH_TOAN,
+    }
+  );
 
   await dongBoCongNoKhachHangTheoPhatSinh({
     idKhachHang: donHangHienTai.idKhachHang || null,
     maKhachHang: donHangHienTai.maKhachHang || null,
     tenKhachHang: donHangHienTai.tenKhachHang || '',
     nhom: donHangHienTai.nhom || null,
-    phatSinhCoTang: thanhToanMoi.soTien,
+    phatSinhCoTang: soTienKhachTra + soTienDu,
   });
+
+  if (soTienDuSuDung > 0) {
+    await capNhatSoDuCoKhachHang({
+      idKhachHang: donHangHienTai.idKhachHang || null,
+      maKhachHang: donHangHienTai.maKhachHang || null,
+      tenKhachHang: donHangHienTai.tenKhachHang || '',
+      giamDuCo: soTienDuSuDung,
+    });
+  }
 
   // Gửi thông báo thanh toán
   guiThongBao('PAYMENT_RECEIVED', {
@@ -96,14 +126,12 @@ export async function taoThanhToan(
     soTien: thanhToanMoi.soTien,
   });
 
-  // Nếu đơn hoàn thành (đã thanh toán đủ), thông báo ORDER_COMPLETED
   if (conLaiMoi <= 0) {
     guiThongBao('ORDER_COMPLETED', {
       id: data.idDonHang,
       maDonHang: donHangHienTai.maDonHang,
     });
 
-    // Cập nhật trạng thái thành hoàn thành
     await query(
       `UPDATE DonHang SET trangThaiDon = N'hoan_thanh', trangThaiHoanThanh = N'hoan_thanh', ngayCapNhat = ${vnNow()} WHERE id = @id`,
       { id: data.idDonHang }
