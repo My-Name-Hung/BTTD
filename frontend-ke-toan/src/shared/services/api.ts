@@ -41,13 +41,15 @@ async function request<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  const skipAuth401 = (options as any).skipAuth401;
+
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers: { ...headers, ...(options.headers as Record<string, string>) },
   });
 
-  // Auto-logout when token is invalid or expired
-  if (response.status === 401) {
+  // Auto-logout when token is invalid or expired (skip for login endpoint)
+  if (response.status === 401 && !skipAuth401) {
     localStorage.removeItem("bttd_token");
     localStorage.removeItem("bttd_user");
     window.location.href = "/login";
@@ -72,6 +74,7 @@ export async function dangNhap(
     {
       method: "POST",
       body: JSON.stringify({ tenDangNhap, matKhau }),
+      skipAuth401: true,
     },
   );
   localStorage.setItem("bttd_token", result.token);

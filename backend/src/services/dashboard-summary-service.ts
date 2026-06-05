@@ -93,6 +93,36 @@ export interface CongNoItem {
 // Main Dashboard API
 // ============================================================
 
+// Helper: wrap query để không crash dashboard nếu 1 query lỗi
+async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error(`[Dashboard] Query error: ${err instanceof Error ? err.message : err}`);
+    return fallback;
+  }
+}
+
+function getDefaultThongKe(): ThongKe {
+  return {
+    tongDon: 0,
+    donChoDuyet: 0,
+    donDangXuLy: 0,
+    donDaHoanThanh: 0,
+    tongDoanhThu: 0,
+    tongCongNo: 0,
+    donQuaHan: 0,
+  };
+}
+
+function getDefaultThanhToan(): ThanhToanStats {
+  return { tongThanhToan: 0, chuaThanhToan: 0 };
+}
+
+function getDefaultNghiemThu(): NghiemThuStats {
+  return { choNghiemThu: 0, daNghiemThu: 0 };
+}
+
 export async function layDashboardSummary(): Promise<DashboardSummary> {
   // Check cache first
   const cached = cache.get<DashboardSummary>(CACHE_KEYS.DASHBOARD_STATS);
@@ -100,7 +130,7 @@ export async function layDashboardSummary(): Promise<DashboardSummary> {
     return cached;
   }
 
-  // Run all queries in parallel
+  // Run all queries in parallel với error handling riêng
   const [
     thongKeResult,
     doanhThuResult,
@@ -114,17 +144,17 @@ export async function layDashboardSummary(): Promise<DashboardSummary> {
     tramResult,
     congNoResult,
   ] = await Promise.all([
-    getThongKe(),
-    getDoanhThu(),
-    getTrangThai(),
-    getXe(),
-    getKhachHang(),
-    getTramTron(),
-    getTaiXe(),
-    getThanhToanStats(),
-    getNghiemThuStats(),
-    getTramStats(),
-    getCongNo(),
+    safeQuery(getThongKe, getDefaultThongKe()),
+    safeQuery(getDoanhThu, []),
+    safeQuery(getTrangThai, []),
+    safeQuery(getXe, []),
+    safeQuery(getKhachHang, []),
+    safeQuery(getTramTron, []),
+    safeQuery(getTaiXe, []),
+    safeQuery(getThanhToanStats, getDefaultThanhToan()),
+    safeQuery(getNghiemThuStats, getDefaultNghiemThu()),
+    safeQuery(getTramStats, []),
+    safeQuery(getCongNo, []),
   ]);
 
   const summary: DashboardSummary = {
@@ -214,7 +244,7 @@ async function getDoanhThu(): Promise<DoanhThuItem[]> {
 async function getTrangThai(): Promise<TrangThaiItem[]> {
   return query<TrangThaiItem>(
     `SELECT trangThaiDon as trangThai, COUNT(*) as soLuong
-     FROM DonHang
+     FROM DonHang WITH (NOLOCK)
      WHERE trangThaiDon <> N'tu_choi'
      GROUP BY trangThaiDon`
   );

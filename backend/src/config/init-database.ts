@@ -872,21 +872,21 @@ async function createPerformanceIndexes(db: mssql.ConnectionPool): Promise<void>
             CREATE NONCLUSTERED INDEX IX_NguoiDung_VaiTro ON NguoiDung(vaiTro)`
     },
 
-    // Xe indexes
+    // Xe indexes - bảng Xe có cột tramTron (NVARCHAR) không phải idTramTron
     {
       name: 'IX_Xe_TramTron',
       sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Xe_TramTron' AND object_id = OBJECT_ID('Xe'))
-            CREATE NONCLUSTERED INDEX IX_Xe_TramTron ON Xe(idTramTron)`
+            CREATE NONCLUSTERED INDEX IX_Xe_TramTron ON Xe(tramTron)`
     },
 
-    // ThongBao indexes
+    // ThongBao indexes - bảng ThongBao có cột idNguoiNhan (đúng)
     {
-      name: 'IX_ThongBao_NguoiDung_DaDoc',
-      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ThongBao_NguoiDung_DaDoc' AND object_id = OBJECT_ID('ThongBao'))
-            CREATE NONCLUSTERED INDEX IX_ThongBao_NguoiDung_DaDoc ON ThongBao(idNguoiNhan, daDoc, ngayTao DESC)`
+      name: 'IX_ThongBao_NguoiNhan_DaDoc',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ThongBao_NguoiNhan_DaDoc' AND object_id = OBJECT_ID('ThongBao'))
+            CREATE NONCLUSTERED INDEX IX_ThongBao_NguoiNhan_DaDoc ON ThongBao(idNguoiNhan, daDoc, ngayTao DESC)`
     },
 
-    // LoginSession indexes
+    // LoginSession indexes - bảng LoginSession có cột idNguoiDung và ngayDangNhap
     {
       name: 'IX_LoginSession_NguoiDung',
       sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LoginSession_NguoiDung' AND object_id = OBJECT_ID('LoginSession'))
