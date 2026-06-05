@@ -111,7 +111,9 @@ export default function ThanhToanPage() {
   }, [loadData]);
 
   // Lọc theo tab — chỉ dựa vào tiền, không dựa vào trạng thái đơn hàng
+  // Chỉ hiện đơn chưa từ chối, đơn đã từ chối không cho thanh toán
   const chuaTatToan = donHangs.filter((dh) => {
+    if (dh.trangThaiDon === "tu_choi") return false;
     const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
     return conLai > 0;
   });
@@ -120,6 +122,18 @@ export default function ThanhToanPage() {
     const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
     return conLai <= 0;
   });
+
+  /** Kiểm tra đơn có được phép thanh toán hay không (phải đã nghiệm thu) */
+  const isChoPhepThanhToan = (dh: DonHang) => {
+    if (dh.trangThaiDon === "tu_choi") return false;
+    const cacTrangThaiDuocPhep = [
+      "da_giao",
+      "nghiem_thu",
+      "da_thanh_toan",
+      "hoan_thanh",
+    ];
+    return cacTrangThaiDuocPhep.includes(dh.trangThaiDon);
+  };
 
   const displayList = activeTab === "chua_tat_toan" ? chuaTatToan : daTatToan;
   const LIMIT = 20;
@@ -339,8 +353,8 @@ export default function ThanhToanPage() {
                       </td>
                       <td>
                         <div className={styles.actionBtns}>
-                          {/* Chưa tất toán: nút thanh toán luôn hiện */}
-                          {!daTatToanOrder && canCreate && (
+                          {/* Chưa tất toán & đơn đủ điều kiện thanh toán (đã nghiệm thu, không bị từ chối) */}
+                          {!daTatToanOrder && canCreate && isChoPhepThanhToan(dh) && (
                             <button
                               className={styles.btnPay}
                               onClick={() =>
@@ -351,6 +365,13 @@ export default function ThanhToanPage() {
                               <FiDollarSign size={13} />{" "}
                               {conLai > 0 ? formatCurrency(conLai) : "Thanh toán"}
                             </button>
+                          )}
+
+                          {/* Đơn chưa đủ điều kiện thanh toán (chưa nghiệm thu hoặc từ chối): hiện badge */}
+                          {!daTatToanOrder && canCreate && !isChoPhepThanhToan(dh) && (
+                            <span className={styles.badgeKhongChoPhep} title="Đơn hàng chưa đủ điều kiện thanh toán">
+                              Chưa NT
+                            </span>
                           )}
 
                           {/* Nếu đã có hóa đơn (công nợ đã xuất HĐ trước đó): hiện nút xem HĐ */}

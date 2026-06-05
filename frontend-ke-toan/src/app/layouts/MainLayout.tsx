@@ -26,9 +26,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { ROLE_LABELS, useAuth, useNotifications } from "../../shared/hooks";
 import "../../shared/styles/layout.css";
-
-const LOGO_URL =
-  "https://betongtaydo.com/wp-content/uploads/2024/06/Logo-Be-Tong-Tay-Do-xanh-duong-1024x1024.png";
+import logo from "../../assets/logo.png";
 
 interface LayoutProps {
   children: ReactNode;
@@ -435,7 +433,7 @@ export function Layout({ children }: LayoutProps) {
               <>
                 <a href="/">
                   <img
-                    src={LOGO_URL}
+                    src={logo}
                     alt="Bê Tông Tây Đô"
                     className="sidebar-logo-img"
                   />
@@ -448,7 +446,7 @@ export function Layout({ children }: LayoutProps) {
             )}
             {sidebarCollapsed && (
               <img
-                src={LOGO_URL}
+                src={logo}
                 alt="Bê Tông Tây Đô"
                 className="sidebar-logo-img sidebar-logo-img-center"
               />

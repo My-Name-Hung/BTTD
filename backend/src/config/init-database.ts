@@ -483,6 +483,7 @@ async function initDatabase(): Promise<void> {
           nguoiLap NVARCHAR(200),
           nguoiKy NVARCHAR(200),
           chucVu NVARCHAR(200),
+          tenNguoiNghiemThu NVARCHAR(200),
           daGuiKhach BIT DEFAULT 0,
           ngayGuiKhach DATETIME,
           ghiChu NVARCHAR(MAX),
@@ -492,6 +493,14 @@ async function initDatabase(): Promise<void> {
       `);
     } else {
       console.log("  ✅ Bảng NghiemThu đã tồn tại");
+      // Migration: thêm cột tenNguoiNghiemThu nếu chưa có
+      const colExists = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('NghiemThu') AND name = 'tenNguoiNghiemThu'`,
+      );
+      if (colExists.recordset.length === 0) {
+        console.log("  ➕ Thêm cột tenNguoiNghiemThu vào NghiemThu...");
+        await db.query(`ALTER TABLE NghiemThu ADD tenNguoiNghiemThu NVARCHAR(200)`);
+      }
     }
 
     // Tạo bảng HoaDon

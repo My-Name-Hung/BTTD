@@ -5,9 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../shared/hooks";
 import { dangNhap } from "../../../shared/services/api";
 import styles from "./LoginPage.module.css";
-
-const LOGO_URL =
-  "https://betongtaydo.com/wp-content/uploads/2024/06/Logo-Be-Tong-Tay-Do-xanh-duong-1024x1024.png";
+import logo from "../../../assets/logo.png";
 
   const REMEMBER_PASSWORD_KEY = "bttd_remember";
 const SAVED_USERNAME_KEY = "bttd_saved_user";
@@ -58,7 +56,7 @@ export default function LoginPage() {
       <div className={styles.authIllustration}>
         <div className={styles.illustrationContent}>
           <img
-            src={LOGO_URL}
+            src={logo}
             alt="Bê Tông Tây Đô"
             className={styles.illustrationLogo}
           />
@@ -82,7 +80,7 @@ export default function LoginPage() {
         <div className={styles.loginCard}>
           <div className={styles.loginHeader}>
             <img
-              src={LOGO_URL}
+              src={logo}
               alt="Bê Tông Tây Đô"
               className={styles.loginLogo}
             />
