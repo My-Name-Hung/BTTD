@@ -309,7 +309,7 @@ export default function InHoaDonPage() {
   const debtInvoiceSummary = debtHoaDons.map((item, index) => ({
     id: item.id,
     label: `Lần ${index + 1}`,
-    amount: item.tongCong || item.soTienThanhToan || 0,
+    amount: item.soTienThanhToan || item.tongCong || 0,
   }));
   const tongDaThanhToanToanBo = debtInvoiceSummary.reduce(
     (sum, item) => sum + item.amount,

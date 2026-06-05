@@ -248,19 +248,23 @@ export default function XuatHoaDonPage() {
       ? Math.max(0, donHang?.conLai || 0)
       : tienBeTong + tienBuVC + phiPhatSinhSo - giamTruSo;
   const tongCong = Math.max(0, tongGoc - soTienDuSuDungSo);
-  const tongHienThiHoaDon =
-    isCongNo && !existingHoaDon
-      ? Math.max(0, Math.min(tongCong, soTTTS + soTienDuSuDungSo))
-      : activeTab === "cong_no_du"
-        ? Math.max(0, soTTTS + soTienDuSuDungSo)
-        : tongCong;
-  const tongKhachCanTra =
-    activeTab === "tra_het_du" || activeTab === "cong_no_du"
-      ? tongCong + soTienDuSo
+  const soTienThanhToanKyNay =
+    activeTab === "cong_no" || activeTab === "cong_no_du"
+      ? Math.max(0, Math.min(tongCong, soTTTS))
       : tongCong;
+  const tongHienThiHoaDon =
+    activeTab === "cong_no" || activeTab === "cong_no_du"
+      ? soTienThanhToanKyNay
+      : tongCong;
+  const tongKhachCanTra =
+    activeTab === "tra_het_du"
+      ? tongCong + soTienDuSo
+      : activeTab === "cong_no_du"
+        ? soTienThanhToanKyNay + soTienDuSo
+        : tongCong;
   const soTienConLaiSauKyNay =
-    activeTab === "cong_no"
-      ? Math.max(0, tienBeTong - tongHienThiHoaDon)
+    activeTab === "cong_no" || activeTab === "cong_no_du"
+      ? Math.max(0, tongCong - soTienThanhToanKyNay)
       : Math.max(0, tongCong - soTTTS);
 
   // Auto-fill tiền thanh toán trước từ hóa đơn công nợ đã xuất
@@ -336,7 +340,7 @@ export default function XuatHoaDonPage() {
             : undefined,
         soTienThanhToanTruoc:
           activeTab === "cong_no" || activeTab === "cong_no_du"
-            ? soTTTS
+            ? soTienThanhToanKyNay
             : tongCong,
         soTienDu:
           activeTab === "tra_het_du" || activeTab === "cong_no_du"
@@ -1030,7 +1034,7 @@ export default function XuatHoaDonPage() {
                 <div className={styles.totalRow}>
                   <span>Khách thanh toán kỳ này</span>
                   <span style={{ color: "var(--color-success)" }}>
-                    {formatCurrency(soTTTS)}
+                    {formatCurrency(soTienThanhToanKyNay)}
                   </span>
                 </div>
               )}
