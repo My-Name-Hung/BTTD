@@ -45,14 +45,12 @@ export async function layTatCaDonHang(
 
   const donHangs = await query<DonHang>(
     `SELECT d.*,
-            kh.maKhachHang,
             t.tenTram as tenTramTron,
             nt.tenDangNhap as maNguoiTao,
             nt.hoTen as tenNguoiTao,
             nd.tenDangNhap as maNguoiDuyet,
             nd.hoTen as tenNguoiDuyet
      FROM DonHang d
-     LEFT JOIN KhachHang kh ON d.idKhachHang = kh.id
      LEFT JOIN TramTron t ON d.idTramTron = t.id
      LEFT JOIN NguoiDung nt ON d.nguoiTaoId = nt.id
      LEFT JOIN NguoiDung nd ON d.nguoiDuyetId = nd.id
@@ -78,12 +76,10 @@ export async function layTatCaDonHang(
 export async function layDonHangTheoId(id: number): Promise<DonHang> {
   const donHangs = await query<DonHang>(
     `SELECT d.*,
-            kh.maKhachHang,
             t.tenTram as tenTramTron,
             m.donGia as giaNiemYet,
             (SELECT TOP 1 hd.giamTru FROM HoaDon hd WHERE hd.idDonHang = d.id ORDER BY hd.id DESC) as giamTru
      FROM DonHang d
-     LEFT JOIN KhachHang kh ON d.idKhachHang = kh.id
      LEFT JOIN TramTron t ON d.idTramTron = t.id
      LEFT JOIN MacBeTong m ON d.idMacBeTong = m.id
      WHERE d.id = @id`,
@@ -234,7 +230,7 @@ export async function suaDonHang(
 
   const updated = (
     await query<DonHang>(
-      `SELECT d.*, kh.maKhachHang, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN KhachHang kh ON d.idKhachHang = kh.id LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
+      `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
       { id },
     )
   )[0];
@@ -258,7 +254,7 @@ export async function duyetDonHang(
 
   const donHang = (
     await query<DonHang>(
-      `SELECT d.*, kh.maKhachHang, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN KhachHang kh ON d.idKhachHang = kh.id LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
+      `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
       { id },
     )
   )[0];
@@ -291,7 +287,7 @@ export async function tuChoiDonHang(
 
   const donHang = (
     await query<DonHang>(
-      `SELECT d.*, kh.maKhachHang, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN KhachHang kh ON d.idKhachHang = kh.id LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
+      `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
       { id },
     )
   )[0];
@@ -313,7 +309,7 @@ export async function capNhatTrangThaiDon(
 
   const donHang = (
     await query<DonHang>(
-      `SELECT d.*, kh.maKhachHang, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN KhachHang kh ON d.idKhachHang = kh.id LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
+      `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
       { id },
     )
   )[0];
@@ -368,7 +364,7 @@ export async function xacNhanGiaoThanhCong(
 
   return (
     await query<DonHang>(
-      `SELECT d.*, kh.maKhachHang, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN KhachHang kh ON d.idKhachHang = kh.id LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
+      `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
       { id: idDonHang },
     )
   )[0];

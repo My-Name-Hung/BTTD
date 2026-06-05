@@ -99,6 +99,7 @@ export default function CongNoPage() {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [uploadResult, setUploadResult] = useState<{
     success: number;
     failed: number;
@@ -343,6 +344,7 @@ export default function CongNoPage() {
   };
 
   const handleDongBoCongNo = async () => {
+    setSyncing(true);
     try {
       const result = await dongBoCongNoKhachHang();
       showToast(`Đã đồng bộ ${result.soKhachHang} khách hàng`);
@@ -350,6 +352,8 @@ export default function CongNoPage() {
       await loadNhomList();
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi đồng bộ công nợ", "error");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -365,8 +369,16 @@ export default function CongNoPage() {
         </div>
         <div className={styles.pageHeaderActions}>
           {canWrite && (
-            <button className="btn btn-secondary" onClick={handleDongBoCongNo}>
-              <FiCheckCircle /> Đồng bộ công nợ
+            <button className="btn btn-secondary" onClick={handleDongBoCongNo} disabled={syncing}>
+              {syncing ? (
+                <>
+                  <Loading />
+                </>
+              ) : (
+                <>
+                  <FiCheckCircle /> Đồng bộ công nợ
+                </>
+              )}
             </button>
           )}
           <button

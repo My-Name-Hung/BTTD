@@ -14,11 +14,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
 import {
+  layCongNoKhachHangGrouped,
   layDonHang,
   layDonHangGiaoTrongNgay,
   layHoaDonTheoDonHang,
   layLichSanXuat,
-  layCongNoKhachHangGrouped,
   taoHoaDon,
 } from "../../../shared/services/api";
 import { DonHang, HoaDon, LichSanXuat } from "../../../shared/types";
@@ -113,7 +113,7 @@ export default function XuatHoaDonPage() {
       setKhachHang(dh.tenKhachHang || "");
       const allCongNoItems = (congNoGroups || []).flatMap((g) => g.items || []);
       const currentCongNo = allCongNoItems.find(
-        (item) => item.maKhachHang === (dh.maKhachHang || null) || item.tenKhachHang === dh.tenKhachHang,
+        (item) => item.tenKhachHang === dh.tenKhachHang,
       );
       setDuCuoiCoHienTai(currentCongNo?.duCuoiCo || 0);
 
@@ -180,7 +180,10 @@ export default function XuatHoaDonPage() {
   const giamTruSo = parseCurrency(giamTru);
   const soTTTS = parseCurrency(soTienThanhToanTruoc);
   const soTienDuSo = parseCurrency(soTienDu);
-  const soTienDuSuDungSo = Math.min(parseCurrency(soTienDuSuDung), duCuoiCoHienTai);
+  const soTienDuSuDungSo = Math.min(
+    parseCurrency(soTienDuSuDung),
+    duCuoiCoHienTai,
+  );
 
   const khoiLuongDisplay = donHang?.khoiLuongDat || 0;
   const donGiaDisplay = donHang?.donGia || 0;
@@ -201,9 +204,10 @@ export default function XuatHoaDonPage() {
   // Nếu đã có hóa đơn công nợ trước đó → tổng tiền = số còn lại thực tế của đơn hàng
   const isTraPhanConLai = !!existingHoaDon;
   const isCongNoDu = activeTab === "cong_no_du";
-  const tongGoc = isTraPhanConLai || isCongNoDu
-    ? Math.max(0, donHang?.conLai || 0)
-    : tienBeTong + tienBuVC + phiPhatSinhSo - giamTruSo;
+  const tongGoc =
+    isTraPhanConLai || isCongNoDu
+      ? Math.max(0, donHang?.conLai || 0)
+      : tienBeTong + tienBuVC + phiPhatSinhSo - giamTruSo;
   const tongCong = Math.max(0, tongGoc - soTienDuSuDungSo);
   const tongKhachCanTra =
     activeTab === "tra_het_du" || activeTab === "cong_no_du"
@@ -587,7 +591,8 @@ export default function XuatHoaDonPage() {
                 readOnly
               />
               <span className={styles.formHint}>
-                = {soKhoiCanBuSo} × {formatCurrency(donGiaBuVCSo)} = {formatCurrency(tienBuVC)}
+                = {soKhoiCanBuSo} × {formatCurrency(donGiaBuVCSo)} ={" "}
+                {formatCurrency(tienBuVC)}
               </span>
             </div>
           </div>
@@ -765,7 +770,9 @@ export default function XuatHoaDonPage() {
         </div>
 
         {/* ====== FULL WIDTH SECTIONS ====== */}
-        {(activeTab === "cong_no" || activeTab === "cong_no_du" || activeTab === "tra_het_du") && (
+        {(activeTab === "cong_no" ||
+          activeTab === "cong_no_du" ||
+          activeTab === "tra_het_du") && (
           <div className={`${styles.section} ${styles.fullWidth}`}>
             <div className={styles.sectionHeader}>
               <FiClock size={18} />
@@ -773,7 +780,9 @@ export default function XuatHoaDonPage() {
             </div>
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Dư cuối Có hiện tại (đ)</label>
+                <label className={styles.formLabel}>
+                  Dư cuối Có hiện tại (đ)
+                </label>
                 <input
                   className={`${styles.formInput} ${styles.inputReadOnly}`}
                   type="text"
@@ -785,12 +794,16 @@ export default function XuatHoaDonPage() {
                 </span>
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Số tiền dư sử dụng (đ)</label>
+                <label className={styles.formLabel}>
+                  Số tiền dư sử dụng (đ)
+                </label>
                 <input
                   className={styles.formInput}
                   type="text"
                   value={soTienDuSuDung}
-                  onChange={(e) => setSoTienDuSuDung(formatNumberInput(e.target.value))}
+                  onChange={(e) =>
+                    setSoTienDuSuDung(formatNumberInput(e.target.value))
+                  }
                   placeholder="0"
                 />
                 <span className={styles.formHint}>
@@ -830,12 +843,16 @@ export default function XuatHoaDonPage() {
             {(activeTab === "tra_het_du" || activeTab === "cong_no_du") && (
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Số tiền dư ghi nhận thêm (đ)</label>
+                  <label className={styles.formLabel}>
+                    Số tiền dư ghi nhận thêm (đ)
+                  </label>
                   <input
                     className={styles.formInput}
                     type="text"
                     value={soTienDu}
-                    onChange={(e) => setSoTienDu(formatNumberInput(e.target.value))}
+                    onChange={(e) =>
+                      setSoTienDu(formatNumberInput(e.target.value))
+                    }
                     placeholder="0"
                   />
                   <span className={styles.formHint}>
@@ -843,7 +860,9 @@ export default function XuatHoaDonPage() {
                   </span>
                 </div>
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Khách thực trả kỳ này (đ)</label>
+                  <label className={styles.formLabel}>
+                    Khách thực trả kỳ này (đ)
+                  </label>
                   <input
                     className={`${styles.formInput} ${styles.inputReadOnly}`}
                     type="text"
@@ -928,22 +947,24 @@ export default function XuatHoaDonPage() {
                 </span>
               </div>
             )}
-            {soTTTS > 0 && (activeTab === "cong_no" || activeTab === "cong_no_du") && (
-              <div className={styles.totalRow}>
-                <span>Khách thanh toán kỳ này</span>
-                <span style={{ color: "var(--color-success)" }}>
-                  {formatCurrency(soTTTS)}
-                </span>
-              </div>
-            )}
-            {soTienDuSo > 0 && (activeTab === "tra_het_du" || activeTab === "cong_no_du") && (
-              <div className={styles.totalRow}>
-                <span>Tiền dư ghi nhận thêm</span>
-                <span style={{ color: "var(--color-success)" }}>
-                  + {formatCurrency(soTienDuSo)}
-                </span>
-              </div>
-            )}
+            {soTTTS > 0 &&
+              (activeTab === "cong_no" || activeTab === "cong_no_du") && (
+                <div className={styles.totalRow}>
+                  <span>Khách thanh toán kỳ này</span>
+                  <span style={{ color: "var(--color-success)" }}>
+                    {formatCurrency(soTTTS)}
+                  </span>
+                </div>
+              )}
+            {soTienDuSo > 0 &&
+              (activeTab === "tra_het_du" || activeTab === "cong_no_du") && (
+                <div className={styles.totalRow}>
+                  <span>Tiền dư ghi nhận thêm</span>
+                  <span style={{ color: "var(--color-success)" }}>
+                    + {formatCurrency(soTienDuSo)}
+                  </span>
+                </div>
+              )}
             <div className={`${styles.totalRow} ${styles.totalRowBold}`}>
               <span>
                 {activeTab === "tra_het_du"
