@@ -49,6 +49,27 @@ function formatDate(d: string | null | undefined): string {
   return `${y}-${m}-${day}`;
 }
 
+function normalizeCustomerKey(value: string | null | undefined): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isSameCustomer(a: DonHang, b: DonHang): boolean {
+  if (a.idKhachHang && b.idKhachHang) {
+    return a.idKhachHang === b.idKhachHang;
+  }
+
+  return normalizeCustomerKey(a.tenKhachHang) === normalizeCustomerKey(b.tenKhachHang);
+}
+
+function isSameDeliveryDate(a: string | null | undefined, b: string | null | undefined): boolean {
+  return formatDate(a) === formatDate(b);
+}
+
 function sortHoaDonsByTime(items: HoaDon[]) {
   return [...items].sort((a, b) => {
     const aTime = new Date(a.ngayLap || a.createdAt || 0).getTime();
@@ -155,18 +176,19 @@ export default function XuatHoaDonPage() {
       if (dh.ngayGiao) {
         try {
           const dsNgay = await layDonHangGiaoTrongNgay(dh.ngayGiao);
-          // Lọc chỉ đơn cùng khách hàng trong ngày
-          const dsCungKhach = dsNgay.filter(
-            (d: DonHang) => d.idKhachHang === dh.idKhachHang,
+          const dsCungNgay = dsNgay.filter((d: DonHang) =>
+            isSameDeliveryDate(d.ngayGiao, dh.ngayGiao),
           );
-          // Tổng khối và số đơn tính theo các đơn cùng khách trong ngày
+          const dsCungKhach = dsCungNgay.filter((d: DonHang) =>
+            isSameCustomer(d, dh),
+          );
           const tongKL = dsCungKhach.reduce(
-            (sum: number, d: any) => sum + (d.khoiLuongDat || 0),
+            (sum: number, d: DonHang) => sum + (d.khoiLuongDat || 0),
             0,
           );
           setKhoiLuongNgay(tongKL);
           setSoDonNgay(dsCungKhach.length);
-          setIsDonCuoiNgay(dsCungKhach.length > 1);
+          setIsDonCuoiNgay(dsCungKhach.length > 0);
         } catch {
           setKhoiLuongNgay(dh.khoiLuongDat || 0);
           setSoDonNgay(1);
