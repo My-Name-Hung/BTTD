@@ -155,27 +155,18 @@ export default function XuatHoaDonPage() {
       if (dh.ngayGiao) {
         try {
           const dsNgay = await layDonHangGiaoTrongNgay(dh.ngayGiao);
-          // Lọc chỉ đơn cùng khách hàng
+          // Lọc chỉ đơn cùng khách hàng trong ngày
           const dsCungKhach = dsNgay.filter(
             (d: DonHang) => d.idKhachHang === dh.idKhachHang,
           );
-          // Sort theo ngày tạo để xác định đơn cuối ngày
-          const dsSorted = [...dsCungKhach].sort(
-            (a: DonHang, b: DonHang) =>
-              new Date(a.ngayTaoDon).getTime() -
-              new Date(b.ngayTaoDon).getTime(),
-          );
-          // Tìm đơn cuối cùng trong ngày của khách này
-          const lastOrder = dsSorted[dsSorted.length - 1];
-          const isLast = lastOrder?.id === dh.id;
-          setIsDonCuoiNgay(isLast);
-
-          const tongKL = dsNgay.reduce(
+          // Tổng khối và số đơn tính theo các đơn cùng khách trong ngày
+          const tongKL = dsCungKhach.reduce(
             (sum: number, d: any) => sum + (d.khoiLuongDat || 0),
             0,
           );
           setKhoiLuongNgay(tongKL);
-          setSoDonNgay(dsNgay.length);
+          setSoDonNgay(dsCungKhach.length);
+          setIsDonCuoiNgay(dsCungKhach.length > 1);
         } catch {
           setKhoiLuongNgay(dh.khoiLuongDat || 0);
           setSoDonNgay(1);
@@ -217,13 +208,10 @@ export default function XuatHoaDonPage() {
   const donGiaDisplay = donHang?.donGia || 0;
   const tienBeTong = khoiLuongDisplay * donGiaDisplay;
 
-  // Số khối cần bù - MỖI ĐƠN đều có bù VC riêng
-  // - Đơn cuối ngày: dùng tổng KL ngày (của tất cả đơn cùng khách) để tính bù
-  // - Đơn trước đó: dùng KL của chính đơn đó để tính bù (riêng biệt)
+  // Số khối cần bù - LUÔN dùng tổng khối cùng khách trong ngày cho mọi đơn
   const soKhoiCanBuSo = parseFloat(soKhoiCanBu) || 0;
-
-  // Với đơn cuối ngày: dùng khoiLuongNgay (tổng), đơn khác: dùng KL đơn đó
-  const khoiLuongTinhBuVC = isDonCuoiNgay ? khoiLuongNgay : khoiLuongDisplay;
+  // Luôn dùng tổng khối trong ngày để tính bù VC, bất kể đơn nào
+  const khoiLuongTinhBuVC = khoiLuongNgay;
   const khoiBuVC = Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongTinhBuVC);
 
   // Tiền bù VC = Số khối cần bù × Đơn giá bù VC
