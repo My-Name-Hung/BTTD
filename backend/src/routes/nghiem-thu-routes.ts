@@ -10,13 +10,13 @@ import {
   xacNhanNghiemThu,
   xoaNghiemThu,
 } from '../services/nghiem-thu-service';
-import { uploadFilesToDrive } from '../services/google-drive-service';
+import { saveUploadedFilesLocally } from '../services/local-file-service';
 import { NghiemThu } from '../models';
 import { ghiNhatKy } from '../services/access-history-service';
 
 const router = Router();
 
-// Cấu hình multer lưu file tạm vào memory (sẽ upload lên Cloudinary)
+// Cấu hình multer lưu file tạm vào memory, sau đó ghi xuống ổ đĩa local
 const uploadBienBan = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024, files: 10 }, // 50MB mỗi file, tối đa 10 file
@@ -35,7 +35,7 @@ router.post('/', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), as
   try {
     const nghiemThu = await taoNghiemThu(req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'TAO', 'NghiemThu', nghiemThu.id, undefined,
+    await ghiNhatKy(req.user?.id ?? null, 'TAO', 'NghiemThu', nghiemThu.id, undefined,
       JSON.stringify(req.body), ip);
     res.status(201).json({ success: true, message: 'Tạo biên bản nghiệm thu thành công', data: nghiemThu });
   } catch (error) {
@@ -61,7 +61,7 @@ router.put('/:id', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), 
     const existing = (await query<any[]>(`SELECT * FROM NghiemThu WHERE id = @id`, { id }))[0];
     const nghiemThu = await capNhatNghiemThu(id, req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'SUA', 'NghiemThu', id,
+    await ghiNhatKy(req.user?.id ?? null, 'SUA', 'NghiemThu', id,
       JSON.stringify(existing),
       JSON.stringify(req.body),
       ip);
@@ -79,19 +79,19 @@ router.put('/xac-nhan/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan
     const dhCu = (await query<any[]>(`SELECT * FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
     const dh = await xacNhanNghiemThu(idDonHang, loai);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang,
+    await ghiNhatKy(req.user?.id ?? null, 'XAC_NHAN', 'NghiemThu', idDonHang,
       JSON.stringify(dhCu),
       JSON.stringify({ loai, trangThaiDon: 'nghiem_thu' }),
       ip);
     res.json({ success: true, message: 'Xác nhận nghiệm thu thành công', data: dh });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Lỗi tải file lên Google Drive. Vui lòng kiểm tra cấu hình Shared Drive và quyền Service Account.';
+    const msg = error instanceof Error ? error.message : 'Lỗi tải file nghiệm thu lên máy chủ';
     console.error('[XacNhanUpload NghiemThu]', msg, error);
     res.status(500).json({ success: false, message: msg });
   }
 });
 
-// Upload file biên bản nghiệm thu lên Google Drive
+// Upload file biên bản nghiệm thu lên máy chủ local
 router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), uploadBienBan.array('files', 10), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const files = req.files as Express.Multer.File[];
@@ -103,13 +103,11 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
     const idDonHang = parseInt(req.params.idDonHang, 10);
 
     // Lấy mã đơn hàng để tạo thư mục
-    const donHangRow = (await query<any[]>(`SELECT maDonHang FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
+    const donHangRow = (await query<{ maDonHang: string }>(`SELECT maDonHang FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
     const maDonHang = donHangRow?.maDonHang || `DH${idDonHang}`;
 
-    // Upload từng file lên Google Drive
-    const buffers = files.map(f => f.buffer);
-    const filenames = files.map(f => f.originalname);
-    const fileUrls = await uploadFilesToDrive(buffers, filenames, maDonHang);
+    // Lưu từng file vào local filesystem
+    const fileUrls = await saveUploadedFilesLocally(files, maDonHang);
 
     const existing = await query<NghiemThu>(
       `SELECT * FROM NghiemThu WHERE idDonHang = @idDonHang`,
@@ -134,39 +132,37 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
     }
 
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'UPLOAD', 'NghiemThu', idDonHang, undefined,
+    await ghiNhatKy(req.user?.id ?? null, 'UPLOAD', 'NghiemThu', idDonHang, undefined,
       JSON.stringify({ bienBanFiles: fileUrls }), ip);
 
     res.json({ success: true, message: `Đã tải lên ${files.length} file thành công`, data: { bienBanFiles: fileUrls } });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Lỗi tải file lên Google Drive. Vui lòng kiểm tra cấu hình Shared Drive và quyền Service Account.';
+    const msg = error instanceof Error ? error.message : 'Lỗi tải file nghiệm thu lên máy chủ';
     console.error('[Upload NghiemThu]', msg, error);
     res.status(500).json({ success: false, message: msg });
   }
 });
 
-// Xác nhận nghiệm thu kèm upload file lên Google Drive
+// Xác nhận nghiệm thu kèm upload file lên máy chủ local
 router.post('/xac-nhan-upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), uploadBienBan.array('files', 10), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const files = req.files as Express.Multer.File[];
     const idDonHang = parseInt(req.params.idDonHang, 10);
 
     // Lấy mã đơn hàng
-    const donHangRow = (await query<any[]>(`SELECT maDonHang FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
+    const donHangRow = (await query<{ maDonHang: string }>(`SELECT maDonHang FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
     const maDonHang = donHangRow?.maDonHang || `DH${idDonHang}`;
 
     const fileUrls: string[] = [];
     if (files && files.length > 0) {
-      const buffers = files.map(f => f.buffer);
-      const filenames = files.map(f => f.originalname);
-      const urls = await uploadFilesToDrive(buffers, filenames, maDonHang);
+      const urls = await saveUploadedFilesLocally(files, maDonHang);
       fileUrls.push(...urls);
     }
 
     const dhCu = (await query<any[]>(`SELECT * FROM DonHang WHERE id = @idDonHang`, { idDonHang }))[0];
     const dh = await xacNhanNghiemThu(idDonHang, 'da', fileUrls.length > 0 ? JSON.stringify(fileUrls) : undefined);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'NghiemThu', idDonHang,
+    await ghiNhatKy(req.user?.id ?? null, 'XAC_NHAN', 'NghiemThu', idDonHang,
       JSON.stringify(dhCu),
       JSON.stringify({ loai: 'da', bienBanFiles: fileUrls }),
       ip);
@@ -177,7 +173,7 @@ router.post('/xac-nhan-upload/:idDonHang', authMiddleware, requireRole('admin', 
       data: { donHang: dh, bienBanFiles: fileUrls },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Lỗi tải file lên Google Drive. Vui lòng kiểm tra cấu hình Shared Drive và quyền Service Account.';
+    const msg = error instanceof Error ? error.message : 'Lỗi tải file nghiệm thu lên máy chủ';
     console.error('[XacNhanUpload NghiemThu]', msg, error);
     res.status(500).json({ success: false, message: msg });
   }
@@ -190,7 +186,7 @@ router.delete('/:id', authMiddleware, requireRole('admin', 'ke_toan'), async (re
     const existing = (await query<any[]>(`SELECT * FROM NghiemThu WHERE id = @id`, { id }))[0];
     await xoaNghiemThu(id);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XOA', 'NghiemThu', id,
+    await ghiNhatKy(req.user?.id ?? null, 'XOA', 'NghiemThu', id,
       JSON.stringify(existing), undefined, ip);
     res.json({ success: true, message: 'Xóa biên bản nghiệm thu thành công' });
   } catch (error) {

@@ -411,10 +411,10 @@ export async function xacNhanNghiemThu(
 export async function xacNhanNghiemThuUploadFile(
   idDonHang: number,
   file: File,
-): Promise<{ donHang: DonHang; bienBanFile: string }> {
+): Promise<{ donHang: DonHang; bienBanFiles: string[] }> {
   const token = getToken();
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("files", file);
 
   const response = await fetch(
     `${BASE_URL}/nghiem-thu/xac-nhan-upload/${idDonHang}`,

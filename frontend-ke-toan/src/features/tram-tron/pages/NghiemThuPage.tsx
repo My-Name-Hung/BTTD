@@ -54,13 +54,9 @@ function getBaseUrl() {
   );
 }
 
-function isDriveLink(url: string): boolean {
-  return url.includes("drive.google.com") || url.includes("docs.google.com");
-}
-
 function buildFileUrl(fileUrl: string): string {
-  if (isDriveLink(fileUrl)) return fileUrl;
-  return `${getBaseUrl()}${fileUrl}`;
+  if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
+  return `${getBaseUrl()}${fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`}`;
 }
 
 export default function NghiemThuPage() {
