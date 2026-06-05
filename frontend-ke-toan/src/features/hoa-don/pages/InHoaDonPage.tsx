@@ -528,22 +528,6 @@ export default function InHoaDonPage() {
                   </td>
                 </tr>
               )}
-              {(hd.giamTru || 0) > 0 && (
-                <tr>
-                  <td className={styles.tdCenter}>
-                    {(hd.buuVanChuyen || 0) > 0 || (hd.phiPhatSinh || 0) > 0
-                      ? "4"
-                      : "2"}
-                  </td>
-                  <td>Giảm trừ / Khuyến mãi</td>
-                  <td className={styles.tdCenter}></td>
-                  <td className={styles.tdRight}></td>
-                  <td className={styles.tdRight}></td>
-                  <td className={`${styles.tdRight} ${styles.red}`}>
-                    -{(hd.giamTru || 0).toLocaleString("vi-VN")}
-                  </td>
-                </tr>
-              )}
             </tbody>
             <tfoot>
               <tr className={styles.totalRow}>
