@@ -1224,7 +1224,7 @@ export async function exportCongNo(): Promise<ExportCongNo[]> {
 // ===== HÓA ĐƠN =====
 export async function taoHoaDon(data: {
   idDonHang: number;
-  loaiThanhToan: 'tra_het' | 'cong_no';
+  loaiThanhToan: 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du';
   buuVanChuyen?: number;
   phiPhatSinh?: number;
   giamTru?: number;
@@ -1236,6 +1236,8 @@ export async function taoHoaDon(data: {
   ghiChu?: string;
   hanTraCongNo?: string;
   soTienThanhToanTruoc?: number;
+  soTienDu?: number;
+  soTienDuSuDung?: number;
 }): Promise<any> {
   return request('/hoa-don', {
     method: 'POST',

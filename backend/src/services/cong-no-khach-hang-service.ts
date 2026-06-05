@@ -1,6 +1,87 @@
 import { query, vnNow } from '../config/database';
 import { CongNoKhachHang, CongNoKhachHangGroup } from '../models';
 
+export async function layDuCuoiCoKhachHang(data: {
+  idKhachHang?: number | null;
+  maKhachHang?: string | null;
+  tenKhachHang?: string | null;
+}): Promise<number> {
+  let normalizedMaKhachHang = data.maKhachHang?.trim() || null;
+
+  if (!normalizedMaKhachHang && data.idKhachHang) {
+    const khachHang = await query<{ maKhachHang: string | null }>(
+      `SELECT TOP 1 maKhachHang FROM KhachHang WHERE id = @idKhachHang`,
+      { idKhachHang: data.idKhachHang },
+    );
+    normalizedMaKhachHang = khachHang[0]?.maKhachHang?.trim() || null;
+  }
+
+  const rows = await query<CongNoKhachHang>(
+    normalizedMaKhachHang
+      ? `SELECT TOP 1 * FROM CongNoKhachHang
+         WHERE maKhachHang = @maKhachHang OR tenKhachHang = @tenKhachHang
+         ORDER BY CASE WHEN maKhachHang = @maKhachHang THEN 0 ELSE 1 END, id ASC`
+      : `SELECT TOP 1 * FROM CongNoKhachHang WHERE tenKhachHang = @tenKhachHang ORDER BY id ASC`,
+    {
+      maKhachHang: normalizedMaKhachHang,
+      tenKhachHang: data.tenKhachHang || '',
+    },
+  );
+
+  return rows[0]?.duCuoiCo || 0;
+}
+
+export async function capNhatSoDuCoKhachHang(data: {
+  idKhachHang?: number | null;
+  maKhachHang?: string | null;
+  tenKhachHang?: string | null;
+  tangDuCo?: number;
+  giamDuCo?: number;
+}): Promise<CongNoKhachHang | null> {
+  let normalizedMaKhachHang = data.maKhachHang?.trim() || null;
+
+  if (!normalizedMaKhachHang && data.idKhachHang) {
+    const khachHang = await query<{ maKhachHang: string | null }>(
+      `SELECT TOP 1 maKhachHang FROM KhachHang WHERE id = @idKhachHang`,
+      { idKhachHang: data.idKhachHang },
+    );
+    normalizedMaKhachHang = khachHang[0]?.maKhachHang?.trim() || null;
+  }
+
+  const rows = await query<CongNoKhachHang>(
+    normalizedMaKhachHang
+      ? `SELECT TOP 1 * FROM CongNoKhachHang
+         WHERE maKhachHang = @maKhachHang OR tenKhachHang = @tenKhachHang
+         ORDER BY CASE WHEN maKhachHang = @maKhachHang THEN 0 ELSE 1 END, id ASC`
+      : `SELECT TOP 1 * FROM CongNoKhachHang WHERE tenKhachHang = @tenKhachHang ORDER BY id ASC`,
+    {
+      maKhachHang: normalizedMaKhachHang,
+      tenKhachHang: data.tenKhachHang || '',
+    },
+  );
+
+  const row = rows[0];
+  if (!row) return null;
+
+  const duCuoiCo = Math.max(0, (row.duCuoiCo || 0) + (data.tangDuCo || 0) - (data.giamDuCo || 0));
+  const duCuoiNo = Math.max(0, (row.duCuoiNo || 0) - (data.tangDuCo || 0) + (data.giamDuCo || 0));
+
+  await query(
+    `UPDATE CongNoKhachHang
+     SET duCuoiCo = @duCuoiCo,
+         duCuoiNo = @duCuoiNo,
+         ngayCapNhat = ${vnNow()}
+     WHERE id = @id`,
+    {
+      id: row.id,
+      duCuoiCo,
+      duCuoiNo,
+    },
+  );
+
+  return (await query<CongNoKhachHang>(`SELECT * FROM CongNoKhachHang WHERE id = @id`, { id: row.id }))[0];
+}
+
 export async function dongBoCongNoKhachHangTheoPhatSinh(data: {
   idKhachHang?: number | null;
   maKhachHang?: string | null;

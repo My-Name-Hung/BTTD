@@ -1,6 +1,10 @@
 import { query, vnNow } from '../config/database';
 import { DonHang, ThanhToan } from '../models';
-import { dongBoCongNoKhachHangTheoPhatSinh } from './cong-no-khach-hang-service';
+import {
+  dongBoCongNoKhachHangTheoPhatSinh,
+  layDuCuoiCoKhachHang,
+  capNhatSoDuCoKhachHang,
+} from './cong-no-khach-hang-service';
 
 export interface HoaDon {
   id: number;
@@ -19,7 +23,7 @@ export interface HoaDon {
   giamTru: number;
   tongCong: number;
   soTienThanhToan: number;
-  loaiThanhToan: 'tra_het' | 'cong_no';
+  loaiThanhToan: 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du';
   hanTraCongNo: Date | null;
   nguoiTaoId: number | null;
   createdAt: Date;
@@ -27,7 +31,7 @@ export interface HoaDon {
 
 interface TaoHoaDonInput {
   idDonHang: number;
-  loaiThanhToan: 'tra_het' | 'cong_no';
+  loaiThanhToan: 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du';
   buuVanChuyen?: number;
   phiPhatSinh?: number;
   giamTru?: number;
@@ -39,6 +43,8 @@ interface TaoHoaDonInput {
   ghiChu?: string;
   hanTraCongNo?: string;
   soTienThanhToanTruoc?: number;
+  soTienDu?: number;
+  soTienDuSuDung?: number;
 }
 
 export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promise<HoaDon> {
@@ -65,9 +71,30 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
   // tongCong = tiền bê tông + bù vận chuyển + phí phát sinh - giảm trừ
   const tongCong = tienBeTong + buuVanChuyen + phiPhatSinh - giamTru;
   const soTienThanhToanTruoc = Math.max(0, data.soTienThanhToanTruoc || 0);
-  const soTienThanhToan = data.loaiThanhToan === 'tra_het'
-    ? tongCong
-    : Math.min(soTienThanhToanTruoc, tongCong);
+  const soTienDu = Math.max(0, data.soTienDu || 0);
+  const duCuoiCoHienTai = await layDuCuoiCoKhachHang({
+    idKhachHang: dh.idKhachHang || null,
+    maKhachHang: dh.maKhachHang || null,
+    tenKhachHang: dh.tenKhachHang || data.khachHang || '',
+  });
+  const soTienDuSuDung = Math.min(
+    Math.max(0, data.soTienDuSuDung || 0),
+    duCuoiCoHienTai,
+    tongCong,
+  );
+  const tongThanhToanHieuLuc = soTienThanhToanTruoc + soTienDuSuDung;
+  const soTienThanhToan =
+    data.loaiThanhToan === 'tra_het' || data.loaiThanhToan === 'tra_het_du'
+      ? tongCong
+      : Math.min(tongThanhToanHieuLuc, tongCong);
+  const soTienThuMoi =
+    data.loaiThanhToan === 'tra_het'
+      ? tongCong
+      : data.loaiThanhToan === 'tra_het_du'
+        ? tongCong + soTienDu
+        : data.loaiThanhToan === 'cong_no_du'
+          ? soTienThanhToanTruoc + soTienDu
+          : soTienThanhToanTruoc;
 
   const result = await query<HoaDon>(
     `INSERT INTO HoaDon (
@@ -104,17 +131,19 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
 
   const hoaDon = result[0];
 
-  // Nếu là trả hết: tạo bản ghi thanh toán + cập nhật đơn hàng
-  if (data.loaiThanhToan === 'tra_het') {
+  // Nếu là trả hết hoặc trả hết dư
+  if (data.loaiThanhToan === 'tra_het' || data.loaiThanhToan === 'tra_het_du') {
     await query<ThanhToan>(
       `INSERT INTO ThanhToan (idDonHang, soTien, hinhThuc, ngayThanhToan, nguoiNhan, ghiChu, nguoiTaoId)
        VALUES (@idDonHang, @soTien, @hinhThuc, ${vnNow()}, @nguoiNhan, @ghiChu, @nguoiTaoId);`,
       {
         idDonHang: data.idDonHang,
-        soTien: tongCong,
+        soTien: soTienThuMoi,
         hinhThuc: data.phuongThucThanhToan || 'tien_mat',
         nguoiNhan: '',
-        ghiChu: `Hóa đơn ${maHoaDon}`,
+        ghiChu: data.loaiThanhToan === 'tra_het_du'
+          ? `Hóa đơn trả hết dư ${maHoaDon}`
+          : `Hóa đơn ${maHoaDon}`,
         nguoiTaoId,
       }
     );
@@ -139,25 +168,38 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       tenKhachHang: dh.tenKhachHang || data.khachHang || '',
       nhom: dh.nhom || null,
       phatSinhNoTang: tongCong,
-      phatSinhCoTang: tongCong,
+      phatSinhCoTang: soTienThuMoi,
     });
+
+    if (soTienDuSuDung > 0) {
+      await capNhatSoDuCoKhachHang({
+        idKhachHang: dh.idKhachHang || null,
+        maKhachHang: dh.maKhachHang || null,
+        tenKhachHang: dh.tenKhachHang || data.khachHang || '',
+        giamDuCo: soTienDuSuDung,
+      });
+    }
   }
 
-  // Nếu là công nợ: ghi nhận phát sinh nợ bằng tổng hóa đơn, phát sinh có bằng số trả trước
-  if (data.loaiThanhToan === 'cong_no') {
-    const daThanhToanMoi = (dh.daThanhToan || 0) + soTienThanhToan;
-    const conLaiMoi = tongCong - soTienThanhToan;
+  // Nếu là công nợ hoặc công nợ dư
+  if (data.loaiThanhToan === 'cong_no' || data.loaiThanhToan === 'cong_no_du') {
+    const isCongNoDu = data.loaiThanhToan === 'cong_no_du';
+    const tongTienCanTinh = isCongNoDu ? (dh.conLai || 0) : tongCong;
+    const daThanhToanMoi = (dh.daThanhToan || 0) + Math.min(tongThanhToanHieuLuc, tongTienCanTinh);
+    const conLaiMoi = Math.max(0, tongTienCanTinh - tongThanhToanHieuLuc);
 
-    if (soTienThanhToan > 0) {
+    if (soTienThuMoi > 0) {
       await query<ThanhToan>(
         `INSERT INTO ThanhToan (idDonHang, soTien, hinhThuc, ngayThanhToan, nguoiNhan, ghiChu, nguoiTaoId)
          VALUES (@idDonHang, @soTien, @hinhThuc, ${vnNow()}, @nguoiNhan, @ghiChu, @nguoiTaoId);`,
         {
           idDonHang: data.idDonHang,
-          soTien: soTienThanhToan,
+          soTien: soTienThuMoi,
           hinhThuc: data.phuongThucThanhToan || 'tien_mat',
           nguoiNhan: '',
-          ghiChu: `Thanh toán trước cho hóa đơn công nợ ${maHoaDon}`,
+          ghiChu: isCongNoDu
+            ? `Thanh toán công nợ dư cho hóa đơn ${maHoaDon}`
+            : `Thanh toán trước cho hóa đơn công nợ ${maHoaDon}`,
           nguoiTaoId,
         }
       );
@@ -166,14 +208,15 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
     await query(
       `UPDATE DonHang SET
         daThanhToan = @daThanhToan, conLai = @conLai,
-        thanhTien = @tongCong,
+        thanhTien = CASE WHEN @isCongNoDu = 1 THEN thanhTien ELSE @tongCong END,
         ngayCapNhat = ${vnNow()}
        WHERE id = @id`,
       {
         id: data.idDonHang,
         daThanhToan: daThanhToanMoi,
-        conLai: conLaiMoi < 0 ? 0 : conLaiMoi,
+        conLai: conLaiMoi,
         tongCong,
+        isCongNoDu: isCongNoDu ? 1 : 0,
       }
     );
 
@@ -181,11 +224,11 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       `IF EXISTS (SELECT * FROM CongNo WHERE idDonHang = @idDonHang)
        BEGIN
          UPDATE CongNo
-         SET tongTien = @tongTien,
+         SET tongTien = CASE WHEN @isCongNoDu = 1 THEN tongTien ELSE @tongTien END,
              daThanhToan = @daThanhToan,
              conLai = @conLai,
              ngayBatDau = COALESCE(ngayBatDau, CAST(GETDATE() AS DATE)),
-             hanThanhToan = @hanThanhToan,
+             hanThanhToan = COALESCE(@hanThanhToan, hanThanhToan),
              trangThai = CASE WHEN @conLai <= 0 THEN N'da_thanh_toan' ELSE N'chua_thanh_toan' END,
              ngayCapNhat = ${vnNow()}
          WHERE idDonHang = @idDonHang;
@@ -206,9 +249,10 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       {
         idDonHang: data.idDonHang,
         tongTien: tongCong,
-        daThanhToan: soTienThanhToan,
-        conLai: conLaiMoi < 0 ? 0 : conLaiMoi,
+        daThanhToan: daThanhToanMoi,
+        conLai: conLaiMoi,
         hanThanhToan: data.hanTraCongNo ? new Date(data.hanTraCongNo) : null,
+        isCongNoDu: isCongNoDu ? 1 : 0,
       }
     );
 
@@ -217,9 +261,18 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       maKhachHang: dh.maKhachHang || null,
       tenKhachHang: dh.tenKhachHang || data.khachHang || '',
       nhom: dh.nhom || null,
-      phatSinhNoTang: tongCong,
-      phatSinhCoTang: soTienThanhToan,
+      phatSinhNoTang: isCongNoDu ? 0 : tongCong,
+      phatSinhCoTang: soTienThuMoi,
     });
+
+    if (soTienDuSuDung > 0) {
+      await capNhatSoDuCoKhachHang({
+        idKhachHang: dh.idKhachHang || null,
+        maKhachHang: dh.maKhachHang || null,
+        tenKhachHang: dh.tenKhachHang || data.khachHang || '',
+        giamDuCo: soTienDuSuDung,
+      });
+    }
   }
 
   return hoaDon;
