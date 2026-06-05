@@ -81,7 +81,7 @@ export interface BatchThanhToanResult {
     idDonHang: number;
     soTien: number;
     ngayThanhToan: string;
-    loaiThanhToan: string;
+    hinhThuc: string | null;
     ghiChu: string | null;
     nguoiTaoHoTen: string | null;
   }>;
@@ -103,7 +103,7 @@ export async function layThanhToanBatch(idDonHangs: number[]): Promise<BatchThan
     id: number;
     soTien: number;
     ngayThanhToan: string;
-    loaiThanhToan: string;
+    hinhThuc: string | null;
     ghiChu: string | null;
     nguoiTaoHoTen: string | null;
   }>(
@@ -112,7 +112,7 @@ export async function layThanhToanBatch(idDonHangs: number[]): Promise<BatchThan
        tt.id,
        tt.soTien,
        CONVERT(varchar, tt.ngayThanhToan, 120) as ngayThanhToan,
-       tt.loaiThanhToan,
+       tt.hinhThuc,
        tt.ghiChu,
        nd.hoTen as nguoiTaoHoTen
      FROM ThanhToan tt
@@ -132,7 +132,7 @@ export async function layThanhToanBatch(idDonHangs: number[]): Promise<BatchThan
       idDonHang: r.idDonHang,
       soTien: r.soTien,
       ngayThanhToan: r.ngayThanhToan,
-      loaiThanhToan: r.loaiThanhToan,
+      hinhThuc: r.hinhThuc,
       ghiChu: r.ghiChu,
       nguoiTaoHoTen: r.nguoiTaoHoTen,
     });
@@ -149,8 +149,7 @@ export interface BatchHoaDonResult {
     id: number;
     idDonHang: number;
     soHoaDon: string | null;
-    tongTien: number;
-    thue: number | null;
+    tongCong: number;
     giamTru: number | null;
     ngayTao: string;
     tenNguoiTao: string | null;
@@ -172,8 +171,7 @@ export async function layHoaDonBatch(idDonHangs: number[]): Promise<BatchHoaDonR
     idDonHang: number;
     id: number;
     soHoaDon: string | null;
-    tongTien: number;
-    thue: number | null;
+    tongCong: number;
     giamTru: number | null;
     ngayTao: string;
     tenNguoiTao: string | null;
@@ -182,8 +180,7 @@ export async function layHoaDonBatch(idDonHangs: number[]): Promise<BatchHoaDonR
        hd.idDonHang,
        hd.id,
        hd.soHoaDon,
-       hd.tongTien,
-       hd.thue,
+       hd.tongCong,
        hd.giamTru,
        CONVERT(varchar, hd.ngayTao, 120) as ngayTao,
        nd.hoTen as tenNguoiTao
@@ -203,8 +200,7 @@ export async function layHoaDonBatch(idDonHangs: number[]): Promise<BatchHoaDonR
         id: r.id,
         idDonHang: r.idDonHang,
         soHoaDon: r.soHoaDon,
-        tongTien: r.tongTien,
-        thue: r.thue,
+        tongCong: r.tongCong,
         giamTru: r.giamTru,
         ngayTao: r.ngayTao,
         tenNguoiTao: r.tenNguoiTao,

@@ -89,7 +89,7 @@ export default function ThanhToanPage() {
             buuVanChuyen: 0,
             phiPhatSinh: 0,
             giamTru: h.giamTru || 0,
-            tongCong: h.tongTien - (h.giamTru || 0),
+            tongCong: (h.tongCong || 0) - (h.giamTru || 0),
             loaiThanhToan: 'tra_het',
           }));
         });

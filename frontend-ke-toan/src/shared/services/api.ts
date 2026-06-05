@@ -1269,7 +1269,7 @@ export interface BatchThanhToanResponse {
     idDonHang: number;
     soTien: number;
     ngayThanhToan: string;
-    loaiThanhToan: string;
+    hinhThuc: string | null;
     ghiChu: string | null;
     nguoiTaoHoTen: string | null;
   }>;
@@ -1280,8 +1280,7 @@ export interface BatchHoaDonResponse {
     id: number;
     idDonHang: number;
     soHoaDon: string | null;
-    tongTien: number;
-    thue: number | null;
+    tongCong: number;
     giamTru: number | null;
     ngayTao: string;
     tenNguoiTao: string | null;
