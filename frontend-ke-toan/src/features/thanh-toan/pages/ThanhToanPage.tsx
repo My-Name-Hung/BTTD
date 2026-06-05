@@ -17,6 +17,8 @@ import {
   layDanhSachDonHang,
   layThanhToanBatch,
   layHoaDonBatch,
+  layNghiemThuBatch,
+  BatchNghiemThuResponse,
 } from "../../../shared/services/api";
 import { DonHang, ThanhToan } from "../../../shared/types";
 import styles from "./ThanhToanPage.module.css";
@@ -48,6 +50,7 @@ export default function ThanhToanPage() {
   const [donHangs, setDonHangs] = useState<DonHang[]>([]);
   const [thanhToans, setThanhToans] = useState<Record<number, ThanhToan[]>>({});
   const [hoaDons, setHoaDons] = useState<Record<number, HoaDonItem[]>>({});
+  const [nghiemThus, setNghiemThus] = useState<BatchNghiemThuResponse>({});
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState("");
   const [activeTab, setActiveTab] = useState<TabFilter>("chua_tat_toan");
@@ -71,9 +74,10 @@ export default function ThanhToanPage() {
       // OPTIMIZED: Batch API calls thay vì N+1 queries
       if (dhs.length > 0) {
         const donHangIds = dhs.map((dh: DonHang) => dh.id);
-        const [batchTT, batchHD] = await Promise.all([
+        const [batchTT, batchHD, batchNT] = await Promise.all([
           layThanhToanBatch(donHangIds),
           layHoaDonBatch(donHangIds),
+          layNghiemThuBatch(donHangIds),
         ]);
 
         const mapTT: Record<number, ThanhToan[]> = {};
@@ -95,6 +99,7 @@ export default function ThanhToanPage() {
         });
         setThanhToans(mapTT);
         setHoaDons(mapHD);
+        setNghiemThus(batchNT);
       } else {
         setThanhToans({});
         setHoaDons({});
@@ -123,16 +128,13 @@ export default function ThanhToanPage() {
     return conLai <= 0;
   });
 
-  /** Kiểm tra đơn có được phép thanh toán hay không (phải đã nghiệm thu) */
+  /** Kiểm tra đơn có được phép thanh toán hay không (phải đã nghiệm thu với kết quả 'dat') */
   const isChoPhepThanhToan = (dh: DonHang) => {
     if (dh.trangThaiDon === "tu_choi") return false;
-    const cacTrangThaiDuocPhep = [
-      "da_giao",
-      "nghiem_thu",
-      "da_thanh_toan",
-      "hoan_thanh",
-    ];
-    return cacTrangThaiDuocPhep.includes(dh.trangThaiDon);
+    // Phải có record NghiemThu với ketQua = 'dat'
+    const nt = nghiemThus[dh.id];
+    if (!nt || nt.ketQua !== "dat") return false;
+    return true;
   };
 
   const displayList = activeTab === "chua_tat_toan" ? chuaTatToan : daTatToan;
