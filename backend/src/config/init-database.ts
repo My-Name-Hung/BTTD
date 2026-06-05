@@ -739,10 +739,24 @@ async function initDatabase(): Promise<void> {
     }
     // ===== END MIGRATIONS =====
 
-    // ===== CREATE PERFORMANCE INDEXES =====
+    // ===== CREATE PERFORMANCE INDEXES (sử dụng dbPool) =====
     console.log("  🔄 Đang tạo performance indexes...");
     try {
-      await createPerformanceIndexes(db);
+      // Tạo connection riêng để tránh bị đóng
+      const indexPool = await mssql.connect({
+        server: config.db.server,
+        port: config.db.port,
+        database: config.db.database,
+        user: config.db.user,
+        password: config.db.password,
+        options: {
+          encrypt: config.db.encrypt,
+          trustServerCertificate: config.db.trustServerCertificate,
+        },
+      });
+
+      await createPerformanceIndexes(indexPool);
+      await indexPool.close();
     } catch (error) {
       console.error("  ⚠️  Lỗi tạo indexes:", error instanceof Error ? error.message : error);
     }
@@ -885,25 +899,22 @@ async function createPerformanceIndexes(db: mssql.ConnectionPool): Promise<void>
 
   for (const idx of indexes) {
     try {
-      // Check if index exists
-      const exists = await db.query<{ name: string }[]>(
-        `SELECT name FROM sys.indexes WHERE name = @idxName AND object_id = OBJECT_ID(@tableName)`,
-        { idxName: idx.name, tableName: idx.sql.includes('DonHang') ? 'DonHang' : idx.sql.includes('LichSanXuat') ? 'LichSanXuat' : idx.sql.includes('CongNo') ? 'CongNo' : idx.sql.includes('ThanhToan') ? 'ThanhToan' : idx.sql.includes('HoaDon') ? 'HoaDon' : idx.sql.includes('NghiemThu') ? 'NghiemThu' : idx.sql.includes('NguoiDung') ? 'NguoiDung' : idx.sql.includes('Xe') ? 'Xe' : idx.sql.includes('ThongBao') ? 'ThongBao' : 'LoginSession' }
-      );
-
-      if (exists.recordset.length === 0) {
-        await db.query(idx.sql);
-        console.log(`    ✅ Đã tạo index: ${idx.name}`);
-        createdCount++;
-      } else {
-        skippedCount++;
-      }
+      // SQL đã có IF NOT EXISTS, chỉ cần execute
+      await db.query(idx.sql);
+      console.log(`    ✅ ${idx.name}`);
+      createdCount++;
     } catch (error) {
-      console.log(`    ⚠️  Lỗi tạo index ${idx.name}: ${error instanceof Error ? error.message : error}`);
+      // Kiểm tra xem có phải lỗi "index already exists" không
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes('already exists') || errMsg.includes('duplicate')) {
+        skippedCount++;
+      } else {
+        console.log(`    ⚠️  Lỗi ${idx.name}: ${errMsg}`);
+      }
     }
   }
 
-  console.log(`  ✅ Performance indexes: ${createdCount} tạo mới, ${skippedCount} đã tồn tại`);
+  console.log(`  ✅ Performance indexes: ${createdCount - skippedCount} tạo mới, ${skippedCount} đã tồn tại`);
 }
 
 export { initDatabase };
