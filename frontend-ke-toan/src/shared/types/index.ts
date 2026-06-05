@@ -237,13 +237,16 @@ export interface HoaDon {
   giamTru: number;
   tongCong: number;
   soTienThanhToan: number;
-  loaiThanhToan: 'tra_het' | 'cong_no';
+  loaiThanhToan: 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du';
   hanTraCongNo: string | null;
   maDonHang?: string;
   tenMacBeTong?: string;
   khoiLuongDat?: number;
   donGia?: number;
   thanhTien?: number;
+  createdAt?: string;
+  tenKhachHang?: string;
+  donHangConLai?: number;
 }
 
 export interface CongNoKhachHang {

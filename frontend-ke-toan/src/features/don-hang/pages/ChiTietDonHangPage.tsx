@@ -106,6 +106,26 @@ function formatDate(d: string | null | undefined) {
   return d ? formatDateVN(d) : "";
 }
 
+function sortHoaDonsByTime(items: HoaDon[]) {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a.ngayLap || a.createdAt || 0).getTime();
+    const bTime = new Date(b.ngayLap || b.createdAt || 0).getTime();
+    if (aTime !== bTime) return aTime - bTime;
+    return a.id - b.id;
+  });
+}
+
+function getDebtInvoiceStepLabel(items: HoaDon[], invoiceId: number) {
+  const debtInvoices = sortHoaDonsByTime(
+    items.filter(
+      (item) => item.loaiThanhToan === "cong_no" || item.loaiThanhToan === "cong_no_du",
+    ),
+  );
+  const index = debtInvoices.findIndex((item) => item.id === invoiceId);
+  if (index === -1) return "";
+  return `Thanh toán lần ${index + 1}`;
+}
+
 function formatDateTime(d: string | null | undefined): string {
   return d ? formatDateVN(d) : "";
 }
@@ -255,7 +275,8 @@ export default function ChiTietDonHangPage() {
   const currentDisplayIdx = TRANG_THAI_STEPS.findIndex(
     (s) => s.key === displayTrangThai,
   );
-  const connLai = (donHang.thanhTien || 0) - (donHang.daThanhToan || 0);
+  const connLai = donHang.conLai ?? (donHang.thanhTien || 0) - (donHang.daThanhToan || 0);
+  const sortedHoaDons = sortHoaDonsByTime(hoaDons);
 
   return (
     <div className={styles.detailPage}>
@@ -820,7 +841,9 @@ export default function ChiTietDonHangPage() {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {hoaDons.map((hd, idx) => (
+              {sortedHoaDons.map((hd, idx) => {
+                const debtLabel = getDebtInvoiceStepLabel(sortedHoaDons, hd.id);
+                return (
                 <div
                   key={hd.id}
                   style={{
@@ -850,7 +873,9 @@ export default function ChiTietDonHangPage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <strong style={{ fontSize: 13 }}>HĐ #{idx + 1}</strong>
+                      <strong style={{ fontSize: 13 }}>
+                        {debtLabel || `HĐ #${idx + 1}`}
+                      </strong>
                       <span
                         style={{
                           fontSize: 12,
@@ -886,7 +911,9 @@ export default function ChiTietDonHangPage() {
                               : "var(--color-warning)",
                         }}
                       >
-                        {hd.loaiThanhToan === "tra_het" ? "Trả hết" : "Công nợ"}
+                        {hd.loaiThanhToan === "tra_het" || hd.loaiThanhToan === "tra_het_du"
+                          ? "Trả hết"
+                          : debtLabel || "Công nợ"}
                       </span>
                       {hd.loaiThanhToan === "cong_no" && hd.hanTraCongNo && (
                         <span
@@ -1238,7 +1265,8 @@ export default function ChiTietDonHangPage() {
                     )}
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>

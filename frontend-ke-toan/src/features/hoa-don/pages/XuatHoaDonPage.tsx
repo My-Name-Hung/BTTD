@@ -49,6 +49,26 @@ function formatDate(d: string | null | undefined): string {
   return `${y}-${m}-${day}`;
 }
 
+function sortHoaDonsByTime(items: HoaDon[]) {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a.ngayLap || a.createdAt || 0).getTime();
+    const bTime = new Date(b.ngayLap || b.createdAt || 0).getTime();
+    if (aTime !== bTime) return aTime - bTime;
+    return a.id - b.id;
+  });
+}
+
+function getDebtInvoiceStepLabel(items: HoaDon[], invoiceId: number) {
+  const debtInvoices = sortHoaDonsByTime(
+    items.filter(
+      (item) => item.loaiThanhToan === "cong_no" || item.loaiThanhToan === "cong_no_du",
+    ),
+  );
+  const index = debtInvoices.findIndex((item) => item.id === invoiceId);
+  if (index === -1) return "";
+  return `Thanh toán lần ${index + 1}`;
+}
+
 const MUC_GIA_BU_VC = 110000;
 const NGƯỠNG_TOI_THIEU_M3 = 5;
 
@@ -63,6 +83,7 @@ export default function XuatHoaDonPage() {
   const [donHang, setDonHang] = useState<DonHang | null>(null);
   const [lichSX, setLichSX] = useState<LichSanXuat | null>(null);
   const [existingHoaDon, setExistingHoaDon] = useState<HoaDon | null>(null);
+  const [allHoaDons, setAllHoaDons] = useState<HoaDon[]>([]);
   const [khoiLuongNgay, setKhoiLuongNgay] = useState(0);
   const [soDonNgay, setSoDonNgay] = useState(0);
   const [isDonCuoiNgay, setIsDonCuoiNgay] = useState(false); // Đánh dấu có phải đơn cuối ngày không
@@ -110,6 +131,7 @@ export default function XuatHoaDonPage() {
       ]);
       setDonHang(dh);
       setLichSX(Array.isArray(ls) ? ls[0] : ls);
+      setAllHoaDons(Array.isArray(existingHDs) ? existingHDs : []);
       setKhachHang(dh.tenKhachHang || "");
       const allCongNoItems = (congNoGroups || []).flatMap((g) => g.items || []);
       const currentCongNo = allCongNoItems.find(
@@ -176,6 +198,12 @@ export default function XuatHoaDonPage() {
   }, [loadData]);
 
   const donGiaBuVCSo = parseCurrency(donGiaBuVC) || MUC_GIA_BU_VC;
+  const debtHoaDons = sortHoaDonsByTime(
+    allHoaDons.filter(
+      (item) => item.loaiThanhToan === "cong_no" || item.loaiThanhToan === "cong_no_du",
+    ),
+  );
+  const nextDebtStep = debtHoaDons.length + 1;
   const phiPhatSinhSo = parseCurrency(phiPhatSinh);
   const giamTruSo = parseCurrency(giamTru);
   const soTTTS = parseCurrency(soTienThanhToanTruoc);
@@ -365,8 +393,8 @@ export default function XuatHoaDonPage() {
             : activeTab === "tra_het_du"
               ? "Trả hết dư"
               : activeTab === "cong_no_du"
-                ? "Công nợ dư"
-                : "Công nợ"}
+                ? `Thanh toán lần ${nextDebtStep}`
+                : `Thanh toán lần ${nextDebtStep}`}
         </div>
       </div>
 
@@ -419,6 +447,39 @@ export default function XuatHoaDonPage() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className={`${styles.section} ${styles.fullWidth}`}>
+          <div className={styles.sectionHeader}>
+            <FiFileText size={18} />
+            <h3>Lịch sử hóa đơn</h3>
+          </div>
+          {allHoaDons.length === 0 ? (
+            <div className={styles.totalRowNote}>
+              <span>Chưa có hóa đơn nào cho đơn hàng này</span>
+            </div>
+          ) : (
+            <div className={styles.totalRows}>
+              {sortHoaDonsByTime(allHoaDons).map((hd) => {
+                const debtLabel = getDebtInvoiceStepLabel(allHoaDons, hd.id);
+                return (
+                  <div key={hd.id} className={styles.totalRow}>
+                    <span>
+                      <strong>{hd.maHoaDon}</strong>
+                      {debtLabel ? ` · ${debtLabel}` : ""}
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.backBtn}
+                      onClick={() => navigate(`/in-hoa-don/${hd.id}`)}
+                    >
+                      Xem
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Tab bar - full width */}

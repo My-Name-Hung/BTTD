@@ -12,6 +12,7 @@ import {
   layDonHang,
   layNghiemThu,
   layLichSanXuat,
+  layHoaDonTheoDonHang,
 } from "../../../shared/services/api";
 import styles from "./InHoaDonPage.module.css";
 
@@ -34,6 +35,15 @@ function formatDateTime(d: string | Date | null | undefined): string {
   if (!d) return "";
   const dt = new Date(d);
   return `${formatDate(dt)} lúc ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
+}
+
+function sortHoaDonsByTime(items: HoaDonData[]) {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a.ngayLap || a.createdAt || 0).getTime();
+    const bTime = new Date(b.ngayLap || b.createdAt || 0).getTime();
+    if (aTime !== bTime) return aTime - bTime;
+    return a.id - b.id;
+  });
 }
 
 /** Đọc số tiền thành chữ tiếng Việt (hỗ trợ đến hàng tỷ) */
@@ -161,6 +171,7 @@ export default function InHoaDonPage() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const [hoaDon, setHoaDon] = useState<HoaDonData | null>(null);
+  const [allHoaDons, setAllHoaDons] = useState<HoaDonData[]>([]);
   const [nghiemThu, setNghiemThu] = useState<NghiemThuData | null>(null);
   const [lichSX, setLichSX] = useState<LichSanXuatItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,12 +252,14 @@ export default function InHoaDonPage() {
       }
 
       // Bước 2: Lấy thêm nghiệm thu + lịch sản xuất (song song)
-      const [nt, lsArr] = await Promise.all([
+      const [nt, lsArr, hdArr] = await Promise.all([
         layNghiemThu(hd.idDonHang).catch(() => null),
         layLichSanXuat(hd.idDonHang).catch(() => null),
+        layHoaDonTheoDonHang(hd.idDonHang).catch(() => []),
       ]);
 
       setHoaDon(hd);
+      setAllHoaDons(Array.isArray(hdArr) ? hdArr : []);
       setNghiemThu(nt || null);
       setLichSX(Array.isArray(lsArr) ? lsArr : []);
     } catch (err) {
@@ -284,7 +297,24 @@ export default function InHoaDonPage() {
 
   const hd = hoaDon;
   const ls = Array.isArray(lichSX) && lichSX.length > 0 ? lichSX[0] : null;
-  const isCongNo = hd.loaiThanhToan === "cong_no";
+  const isCongNo = hd.loaiThanhToan === "cong_no" || hd.loaiThanhToan === "cong_no_du";
+  const debtHoaDons = sortHoaDonsByTime(
+    allHoaDons.filter(
+      (item) => item.loaiThanhToan === "cong_no" || item.loaiThanhToan === "cong_no_du",
+    ),
+  );
+  const currentDebtIndex = debtHoaDons.findIndex((item) => item.id === hd.id);
+  const debtStepLabel = currentDebtIndex >= 0 ? `Thanh toán lần ${currentDebtIndex + 1}` : "";
+  const isLastDebtInvoice = currentDebtIndex >= 0 && currentDebtIndex === debtHoaDons.length - 1;
+  const debtInvoiceSummary = debtHoaDons.map((item, index) => ({
+    id: item.id,
+    label: `Lần ${index + 1}`,
+    amount: item.tongCong || item.soTienThanhToan || 0,
+  }));
+  const tongDaThanhToanToanBo = debtInvoiceSummary.reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
   const phuongThucText =
     hd.phuongThucThanhToan === "chuyen_khoan" ? "Chuyển khoản" : "Tiền mặt";
 
@@ -342,6 +372,11 @@ export default function InHoaDonPage() {
           <div className={styles.invoiceTitle}>
             <h2>HÓA ĐƠN BÁN HÀNG</h2>
             <p className={styles.titleSub}>VAT INVOICE</p>
+            {debtStepLabel && (
+              <p className={styles.titleSub}>
+                {debtStepLabel}{isLastDebtInvoice ? " · Lần tất toán cuối" : ""}
+              </p>
+            )}
           </div>
 
           {/* ── Số hóa đơn + Ngày ── */}
@@ -527,6 +562,40 @@ export default function InHoaDonPage() {
               </tr>
             </tfoot>
           </table>
+
+          {isLastDebtInvoice && debtInvoiceSummary.length > 1 && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>TỔNG HỢP CÁC LẦN THANH TOÁN</div>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th className={styles.thSTT}>STT</th>
+                    <th className={styles.thNoiDung}>Nội dung</th>
+                    <th className={styles.thThanhTien}>Số tiền (đ)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {debtInvoiceSummary.map((item, index) => (
+                    <tr key={item.id}>
+                      <td className={styles.tdCenter}>{index + 1}</td>
+                      <td>{item.label}</td>
+                      <td className={styles.tdRight}>{item.amount.toLocaleString("vi-VN")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className={styles.totalRow}>
+                    <td colSpan={2} className={styles.tdRightBold}>
+                      TỔNG ĐÃ THANH TOÁN TOÀN BỘ
+                    </td>
+                    <td className={styles.tdRightBold}>
+                      {tongDaThanhToanToanBo.toLocaleString("vi-VN")}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
 
           {/* ── Thông tin thanh toán ── */}
           <div className={styles.section}>
