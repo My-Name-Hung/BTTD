@@ -8,3 +8,6 @@ frontend-ke-toan/dist/
 frontend-lanh-dao/dist/
 .next
 node_modules/
+# Google Service Account
+*.json
+backend/*.json
