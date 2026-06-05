@@ -6,6 +6,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
+import logo from "../../../assets/Logo.png";
 import {
   layHoaDon,
   layDonHang,
@@ -323,7 +324,7 @@ export default function InHoaDonPage() {
             <div className={styles.headerLeft}>
               <div className={styles.companyLogo}>
                 <img
-                  src="https://betongtaydo.com/wp-content/uploads/2024/06/Logo-Be-Tong-Tay-Do-xanh-duong-1024x1024.png"
+                  src={logo}
                   alt="Logo BTTD"
                   className={styles.logoImg}
                 />

@@ -66,9 +66,12 @@ export default function XuatHoaDonPage() {
   const [existingHoaDon, setExistingHoaDon] = useState<HoaDon | null>(null);
   const [khoiLuongNgay, setKhoiLuongNgay] = useState(0);
   const [soDonNgay, setSoDonNgay] = useState(0);
+  const [isDonCuoiNgay, setIsDonCuoiNgay] = useState(false); // Đánh dấu có phải đơn cuối ngày không
 
   const [buVanChuyen, setBuVanChuyen] = useState("");
   const [buVanChuyenDaSet, setBuVanChuyenDaSet] = useState(false);
+  const [soKhoiCanBu, setSoKhoiCanBu] = useState("");
+  const [soKhoiCanBuDaSet, setSoKhoiCanBuDaSet] = useState(false);
   const [phiPhatSinh, setPhiPhatSinh] = useState("");
   const [giamTru, setGiamTru] = useState("");
   const [soTienThanhToanTruoc, setSoTienThanhToanTruoc] = useState("");
@@ -116,16 +119,29 @@ export default function XuatHoaDonPage() {
       if (dh.ngayGiao) {
         try {
           const dsNgay = await layDonHangGiaoTrongNgay(dh.ngayGiao);
+          // Lọc chỉ đơn cùng khách hàng
+          const dsCungKhach = dsNgay.filter((d: DonHang) => d.idKhachHang === dh.idKhachHang);
+          // Sort theo ngày tạo để xác định đơn cuối ngày
+          const dsSorted = [...dsCungKhach].sort((a: DonHang, b: DonHang) => 
+            new Date(a.ngayTaoDon).getTime() - new Date(b.ngayTaoDon).getTime()
+          );
+          // Tìm đơn cuối cùng trong ngày của khách này
+          const lastOrder = dsSorted[dsSorted.length - 1];
+          const isLast = lastOrder?.id === dh.id;
+          setIsDonCuoiNgay(isLast);
+          
           const tongKL = dsNgay.reduce((sum: number, d: any) => sum + (d.khoiLuongDat || 0), 0);
           setKhoiLuongNgay(tongKL);
           setSoDonNgay(dsNgay.length);
         } catch {
           setKhoiLuongNgay(dh.khoiLuongDat || 0);
           setSoDonNgay(1);
+          setIsDonCuoiNgay(true);
         }
       } else {
         setKhoiLuongNgay(dh.khoiLuongDat || 0);
         setSoDonNgay(1);
+        setIsDonCuoiNgay(true);
       }
     } catch (err) {
       showToast("Không tải được thông tin đơn hàng", "error");
@@ -146,7 +162,10 @@ export default function XuatHoaDonPage() {
   const khoiLuongDisplay = donHang?.khoiLuongDat || 0;
   const donGiaDisplay = donHang?.donGia || 0;
   const tienBeTong = khoiLuongDisplay * donGiaDisplay;
-  const khoiBuVC = Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay);
+
+  // Số khối cần bù - chỉ tính cho đơn cuối ngày
+  const soKhoiCanBuSo = parseFloat(soKhoiCanBu) || 0;
+  const khoiBuVC = isDonCuoiNgay ? Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay) : 0;
   const tienBuVCAuto = khoiBuVC * MUC_GIA_BU_VC;
 
   // Nếu đã có hóa đơn công nợ trước đó → tổng tiền = số còn lại thực tế của đơn hàng
@@ -169,12 +188,23 @@ export default function XuatHoaDonPage() {
     }
   }, [loading, existingHoaDon]);
 
+  // Auto-fill số khối cần bù - chỉ cho đơn cuối ngày và khi chưa chỉnh sửa
+  useEffect(() => {
+    if (!loading && isDonCuoiNgay && khoiLuongNgay > 0 && !soKhoiCanBuDaSet) {
+      setSoKhoiCanBu(khoiBuVC.toString());
+    } else if (!loading && !isDonCuoiNgay && !soKhoiCanBuDaSet) {
+      setSoKhoiCanBu("0");
+    }
+  }, [loading, isDonCuoiNgay, khoiLuongNgay, khoiBuVC, soKhoiCanBuDaSet]);
+
   // Auto-fill tiền bù vận chuyển khi load xong dữ liệu và chưa từng chỉnh sửa
   useEffect(() => {
-    if (!loading && khoiLuongNgay > 0 && !buVanChuyenDaSet) {
+    if (!loading && isDonCuoiNgay && khoiLuongNgay > 0 && !buVanChuyenDaSet) {
       setBuVanChuyen(tienBuVCAuto > 0 ? formatNumberInput(tienBuVCAuto) : "0");
+    } else if (!loading && !isDonCuoiNgay && !buVanChuyenDaSet) {
+      setBuVanChuyen("0");
     }
-  }, [loading, khoiLuongNgay, tienBuVCAuto, buVanChuyenDaSet]);
+  }, [loading, isDonCuoiNgay, khoiLuongNgay, tienBuVCAuto, buVanChuyenDaSet]);
 
   // Auto-fill thông tin nhân sự & xe từ lịch sản xuất
   useEffect(() => {
@@ -345,13 +375,19 @@ export default function XuatHoaDonPage() {
           <div className={styles.sectionHeader}>
             <FiTruck size={18} />
             <h3>Bù vận chuyển</h3>
+            {!isDonCuoiNgay && (
+              <span className={styles.badgeDonTruoc}>Đơn trước đó - Bù VC chuyển cho đơn cuối ngày</span>
+            )}
+            {isDonCuoiNgay && (
+              <span className={styles.badgeDonCuoi}>Đơn cuối ngày - Tính bù VC</span>
+            )}
           </div>
           <div className={styles.sectionHint}>
             <strong>Quy tắc tính bù vận chuyển:</strong><br />
-            • Đơn hàng có khối lượng giao trong ngày dưới <strong>{NGƯỠNG_TOI_THIEU_M3}m³</strong> sẽ tính bù vận chuyển<br />
+            • Chỉ <strong>đơn cuối cùng</strong> trong ngày của khách mới được tính bù VC<br />
             • <strong>Công thức:</strong> Số khối bù = {NGƯỠNG_TOI_THIEU_M3} - Tổng khối lượng giao trong ngày<br />
             • <strong>Tiền bù VC</strong> = Số khối bù × Đơn giá bù VC (<strong>{formatCurrency(MUC_GIA_BU_VC)}/m³</strong>)<br />
-            • <strong>Ví dụ:</strong> Giao {khoiLuongNgay} m³ → Bù {khoiBuVC} m³ → Tiền bù = {khoiBuVC} × {formatCurrency(MUC_GIA_BU_VC)} = <strong>{formatCurrency(tienBuVCAuto)}</strong>
+            • <strong>Ví dụ:</strong> Tổng {khoiLuongNgay} m³ → Bù {khoiBuVC} m³ → Tiền bù = <strong>{formatCurrency(tienBuVCAuto)}</strong>
           </div>
 
           <div className={styles.buVcGrid}>
@@ -365,9 +401,23 @@ export default function XuatHoaDonPage() {
             </div>
             <div className={styles.buVcCard}>
               <span className={styles.buVcLabel}>Số khối cần bù</span>
-              <span className={`${styles.buVcValue} ${khoiLuongNgay < NGƯỠNG_TOI_THIEU_M3 ? styles.buVcWarning : styles.buVcOk}`}>
-                {khoiBuVC} m³
-              </span>
+              {isDonCuoiNgay ? (
+                <input
+                  className={`${styles.buVcInput}`}
+                  type="number"
+                  value={soKhoiCanBu}
+                  onChange={(e) => {
+                    setSoKhoiCanBuDaSet(true);
+                    setSoKhoiCanBu(e.target.value);
+                    // Reset buVanChuyenDaSet để auto-fill không overwrite
+                    setBuVanChuyenDaSet(false);
+                  }}
+                  min="0"
+                  step="0.5"
+                />
+              ) : (
+                <span className={`${styles.buVcValue} ${styles.buVcZero}`}>0 m³</span>
+              )}
             </div>
             <div className={styles.buVcCard}>
               <span className={styles.buVcLabel}>Đơn giá bù VC</span>
@@ -383,14 +433,25 @@ export default function XuatHoaDonPage() {
                 type="text"
                 value={buVanChuyen}
                 onChange={(e) => {
-                  setBuVanChuyenDaSet(true); // Đánh dấu đã chỉnh sửa thủ công
+                  setBuVanChuyenDaSet(true);
                   setBuVanChuyen(formatNumberInput(e.target.value));
+                  // Reset soKhoiCanBuDaSet để auto-fill không overwrite
+                  setSoKhoiCanBuDaSet(false);
                 }}
                 placeholder="0"
+                readOnly={!isDonCuoiNgay}
+                style={{ backgroundColor: !isDonCuoiNgay ? 'var(--color-bg)' : undefined }}
               />
-              <span className={styles.formHint}>
-                Auto: {khoiBuVC} × {formatCurrency(MUC_GIA_BU_VC)} = {formatCurrency(tienBuVCAuto)}
-              </span>
+              {isDonCuoiNgay && (
+                <span className={styles.formHint}>
+                  Auto: {soKhoiCanBuSo} × {formatCurrency(MUC_GIA_BU_VC)} = {formatCurrency(soKhoiCanBuSo * MUC_GIA_BU_VC)}
+                </span>
+              )}
+              {!isDonCuoiNgay && (
+                <span className={styles.formHint} style={{ color: 'var(--color-text-secondary)' }}>
+                  Đơn trước đó - Tiền bù VC = 0đ
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -549,20 +610,29 @@ export default function XuatHoaDonPage() {
                   <span>Tiền bê tông</span>
                   <span>{formatCurrency(tienBeTong)}</span>
                 </div>
-                <div className={styles.totalRow}>
-                  <span>Bù vận chuyển</span>
-                  <span>{formatCurrency(buVanChuyenSo)}</span>
-                </div>
-                {phiPhatSinhSo > 0 && (
-                  <div className={styles.totalRow}>
-                    <span>Chi phí phát sinh</span>
-                    <span>+ {formatCurrency(phiPhatSinhSo)}</span>
-                  </div>
+                {isDonCuoiNgay && (
+                  <>
+                    <div className={styles.totalRow}>
+                      <span>Bù vận chuyển</span>
+                      <span>{formatCurrency(buVanChuyenSo)}</span>
+                    </div>
+                    {phiPhatSinhSo > 0 && (
+                      <div className={styles.totalRow}>
+                        <span>Chi phí phát sinh</span>
+                        <span>+ {formatCurrency(phiPhatSinhSo)}</span>
+                      </div>
+                    )}
+                    {giamTruSo > 0 && (
+                      <div className={styles.totalRow}>
+                        <span>Giảm trừ / Khuyến mãi</span>
+                        <span style={{ color: "var(--color-success)" }}>- {formatCurrency(giamTruSo)}</span>
+                      </div>
+                    )}
+                  </>
                 )}
-                {giamTruSo > 0 && (
-                  <div className={styles.totalRow}>
-                    <span>Giảm trừ / Khuyến mãi</span>
-                    <span style={{ color: "var(--color-success)" }}>- {formatCurrency(giamTruSo)}</span>
+                {!isDonCuoiNgay && (
+                  <div className={styles.totalRowNote}>
+                    <span>Đơn trước đó trong ngày - Bù VC, Chi phí phát sinh, Giảm trừ = 0đ (chuyển cho đơn cuối ngày)</span>
                   </div>
                 )}
               </>

@@ -341,11 +341,55 @@
   color: var(--color-success) !important;
 }
 
+.buVcZero {
+  color: var(--color-text-secondary) !important;
+}
+
 .buVcNote {
   font-size: 11px;
   color: var(--color-warning);
   font-style: italic;
   margin-top: 2px;
+}
+
+.buVcInput {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  text-align: right;
+  box-sizing: border-box;
+}
+
+.buVcInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.1);
+}
+
+.badgeDonCuoi {
+  margin-left: auto;
+  padding: 4px 10px;
+  background: rgba(7, 60, 235, 0.1);
+  color: var(--color-primary);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badgeDonTruoc {
+  margin-left: auto;
+  padding: 4px 10px;
+  background: rgba(108, 117, 125, 0.1);
+  color: #6c757d;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 /* ── Form Rows ── */
@@ -460,6 +504,14 @@
   padding-top: 12px;
   margin-top: 4px;
   border-top: 2px solid var(--color-primary);
+}
+
+.totalRowNote {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
 }
 
 /* ── Actions ── */
