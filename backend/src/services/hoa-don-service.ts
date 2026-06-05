@@ -68,8 +68,6 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
   const buuVanChuyen = data.buuVanChuyen || 0;
   const phiPhatSinh = data.phiPhatSinh || 0;
   const giamTru = data.giamTru || 0;
-  // tongCong = tiền bê tông + bù vận chuyển + phí phát sinh - giảm trừ
-  const tongCong = tienBeTong + buuVanChuyen + phiPhatSinh - giamTru;
   const soTienThanhToanTruoc = Math.max(0, data.soTienThanhToanTruoc || 0);
   const soTienDu = Math.max(0, data.soTienDu || 0);
   const duCuoiCoHienTai = await layDuCuoiCoKhachHang({
@@ -83,6 +81,12 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
     tongCong,
   );
   const tongThanhToanHieuLuc = soTienThanhToanTruoc + soTienDuSuDung;
+  // tongCong lưu trên hóa đơn là giá trị thể hiện trên chứng từ,
+  // còn công nợ thực tế của đơn hàng vẫn tính theo tổng nghĩa vụ thanh toán.
+  const tongCongHoaDon =
+    data.loaiThanhToan === 'cong_no' || data.loaiThanhToan === 'cong_no_du'
+      ? Math.min(tongCong, tongThanhToanHieuLuc)
+      : tongCong;
   const soTienThanhToan =
     data.loaiThanhToan === 'tra_het' || data.loaiThanhToan === 'tra_het_du'
       ? tongCong
@@ -121,7 +125,7 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       buuVanChuyen,
       phiPhatSinh,
       giamTru,
-      tongCong,
+      tongCong: tongCongHoaDon,
       soTienThanhToan,
       loaiThanhToan: data.loaiThanhToan,
       hanTraCongNo: data.hanTraCongNo ? new Date(data.hanTraCongNo) : null,

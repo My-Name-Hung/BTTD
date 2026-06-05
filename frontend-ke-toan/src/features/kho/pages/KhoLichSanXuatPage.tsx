@@ -39,21 +39,32 @@ function getFilterSourceDate(item: LichSanXuatItem) {
   return item.thoiGianTron || item.thoiGianBatDauDo || item.thoiGianKetThucDo || item.ngayTao || "";
 }
 
+function parseLocalDateParts(d: string) {
+  if (!d) return null;
+  const cleaned = d.replace("Z", "").replace(/\.\d+$/, "");
+  const [datePart] = cleaned.split("T");
+  if (!datePart) return null;
+  const [y, mo, day] = datePart.split("-").map(Number);
+  if (!y || !mo || !day) return null;
+  return { y, mo, day };
+}
+
 function getDateKey(d: string) {
-  if (!d) return "";
-  const dt = new Date(d);
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+  const parts = parseLocalDateParts(d);
+  if (!parts) return "";
+  return `${parts.y}-${String(parts.mo).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
 }
 
 function getMonthKey(d: string) {
-  if (!d) return "";
-  const dt = new Date(d);
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+  const parts = parseLocalDateParts(d);
+  if (!parts) return "";
+  return `${parts.y}-${String(parts.mo).padStart(2, "0")}`;
 }
 
 function getYearKey(d: string) {
-  if (!d) return "";
-  return String(new Date(d).getFullYear());
+  const parts = parseLocalDateParts(d);
+  if (!parts) return "";
+  return String(parts.y);
 }
 
 function statusColor(key: string) {

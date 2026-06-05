@@ -203,12 +203,19 @@ export default function XuatHoaDonPage() {
 
   // Nếu đã có hóa đơn công nợ trước đó → tổng tiền = số còn lại thực tế của đơn hàng
   const isTraPhanConLai = !!existingHoaDon;
+  const isCongNo = activeTab === "cong_no";
   const isCongNoDu = activeTab === "cong_no_du";
   const tongGoc =
     isTraPhanConLai || isCongNoDu
       ? Math.max(0, donHang?.conLai || 0)
       : tienBeTong + tienBuVC + phiPhatSinhSo - giamTruSo;
   const tongCong = Math.max(0, tongGoc - soTienDuSuDungSo);
+  const tongHienThiHoaDon =
+    isCongNo && !existingHoaDon
+      ? Math.max(0, Math.min(tongCong, soTTTS + soTienDuSuDungSo))
+      : activeTab === "cong_no_du"
+        ? Math.max(0, soTTTS + soTienDuSuDungSo)
+        : tongCong;
   const tongKhachCanTra =
     activeTab === "tra_het_du" || activeTab === "cong_no_du"
       ? tongCong + soTienDuSo
@@ -972,14 +979,18 @@ export default function XuatHoaDonPage() {
                   : activeTab === "cong_no_du"
                     ? "TỔNG KHÁCH THANH TOÁN KỲ NÀY"
                     : activeTab === "cong_no"
-                      ? "CÒN LẠI CẦN THANH TOÁN"
+                      ? "TỔNG THANH TOÁN KỲ NÀY"
                       : "TỔNG CỘNG"}
               </span>
               <span>
                 {formatCurrency(
-                  activeTab === "tra_het_du" || activeTab === "cong_no_du"
+                  activeTab === "tra_het_du"
                     ? tongKhachCanTra
-                    : tongCong,
+                    : activeTab === "cong_no_du"
+                      ? tongHienThiHoaDon + soTienDuSo
+                      : activeTab === "cong_no"
+                        ? tongHienThiHoaDon
+                        : tongCong,
                 )}
               </span>
             </div>
