@@ -120,13 +120,6 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdDeliveryDining size={20} />,
     roles: ["admin", "tai_xe"],
   },
-  {
-    path: "/tai-xe/lich-su-giao",
-    label: "Lịch sử giao",
-    icon: <MdDeliveryDining size={20} />,
-    iconActive: <MdDeliveryDining size={20} />,
-    roles: ["admin", "tai_xe"],
-  },
   // Nghiệm thu
   {
     path: "/nghiem-thu",

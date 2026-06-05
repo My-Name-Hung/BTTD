@@ -62,6 +62,7 @@ export default function TaoDonHangPage() {
   const [macSearchQuery, setMacSearchQuery] = useState('');
   const [khachSearchOpen, setKhachSearchOpen] = useState(false);
   const [khachSearchQuery, setKhachSearchQuery] = useState('');
+  const [khachSearchLoading, setKhachSearchLoading] = useState(false);
   const [showKhachHangModal, setShowKhachHangModal] = useState(false);
   const [newKhachHang, setNewKhachHang] = useState({ tenKhachHang: '', soDienThoai: '', diaChi: '' });
   const [newKhachLoading, setNewKhachLoading] = useState(false);
@@ -106,7 +107,7 @@ export default function TaoDonHangPage() {
     Promise.all([
       layDanhSachMacBeTong(),
       layDanhSachTramTron(),
-      layDanhSachKhachHang(),
+      layDanhSachKhachHang(1, 20),
     ]).then(([mac, tram, kh]) => {
       setMacBeTongs(mac || []);
       setTramTrons(tram);
@@ -141,6 +142,27 @@ export default function TaoDonHangPage() {
       setInitialThoiGian(null);
     }
   }, [editingId, showToast]);
+
+  useEffect(() => {
+    if (!khachSearchOpen) {
+      setKhachSearchLoading(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      setKhachSearchLoading(true);
+      try {
+        const res = await layDanhSachKhachHang(1, 20, khachSearchQuery.trim() || undefined);
+        setKhachHangs(res.data || []);
+      } catch {
+        // giữ danh sách hiện tại để tránh nhấp nháy UI
+      } finally {
+        setKhachSearchLoading(false);
+      }
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [khachSearchOpen, khachSearchQuery]);
 
   const handleMacChange = (macId: string) => {
     const mac = macBeTongs.find((m) => m.id === parseInt(macId));
@@ -300,17 +322,20 @@ export default function TaoDonHangPage() {
               </div>
               {khachSearchOpen && (
                 <div className={styles.searchDropdownPanel}>
-                  <input className={styles.searchDropdownInput} placeholder="Tìm tên khách hàng..." value={khachSearchQuery}
+                  <input className={styles.searchDropdownInput} placeholder="Tìm mã hoặc tên khách hàng..." value={khachSearchQuery}
                     onChange={(e) => setKhachSearchQuery(e.target.value)} autoFocus />
                   <div className={styles.searchDropdownList}>
-                    {khachHangs.filter(k => (k.tenKhachHang || '').toLowerCase().includes(khachSearchQuery.toLowerCase())).length === 0 && (
+                    {khachSearchLoading && (
+                      <div className={styles.searchDropdownEmpty}>Đang tìm khách hàng...</div>
+                    )}
+                    {!khachSearchLoading && khachHangs.length === 0 && (
                       <div className={styles.searchDropdownEmpty}>Không tìm thấy</div>
                     )}
-                    {khachHangs.filter(k => (k.tenKhachHang || '').toLowerCase().includes(khachSearchQuery.toLowerCase())).map((k) => (
+                    {!khachSearchLoading && khachHangs.map((k) => (
                       <div key={k.id} className={`${styles.searchDropdownItem} ${parseInt(form.idKhachHang) === k.id ? styles.searchDropdownItemActive : ''}`}
                         onClick={() => handleKhachHangChange(k)}>
                         <div className={styles.searchDropdownItemName}>{k.tenKhachHang}</div>
-                        <div className={styles.searchDropdownItemSub}>{k.soDienThoai || '—'}</div>
+                        <div className={styles.searchDropdownItemSub}>{k.maKhachHang || '—'} • {k.soDienThoai || '—'}</div>
                       </div>
                     ))}
                   </div>

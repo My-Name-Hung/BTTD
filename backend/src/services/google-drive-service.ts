@@ -24,14 +24,37 @@ let driveClient: drive_v3.Drive | null = null;
 const ROOT_FOLDER_ID = config.google.driveFolderId;
 let cachedFolderId: string | null = null;
 
+function normalizePrivateKey(privateKey: string): string {
+  return privateKey
+    .trim()
+    .replace(/^['"]|['"]$/g, '')
+    .replace(/\r/g, '')
+    .replace(/\\n/g, '\n');
+}
+
 function getServiceAccountCredentials() {
   const inlineKey = config.google.serviceAccountKey?.trim();
   const serviceAccountEmail = config.google.serviceAccountEmail?.trim();
 
+  if (inlineKey) {
+    try {
+      const parsed = JSON.parse(inlineKey);
+      if (parsed?.client_email && parsed?.private_key) {
+        return {
+          ...parsed,
+          client_email: String(parsed.client_email).trim(),
+          private_key: normalizePrivateKey(String(parsed.private_key)),
+        };
+      }
+    } catch {
+      // không phải JSON, tiếp tục xử lý dạng PEM thuần
+    }
+  }
+
   if (inlineKey && serviceAccountEmail) {
     return {
       client_email: serviceAccountEmail,
-      private_key: inlineKey.replace(/\\n/g, '\n'),
+      private_key: normalizePrivateKey(inlineKey),
     };
   }
 
