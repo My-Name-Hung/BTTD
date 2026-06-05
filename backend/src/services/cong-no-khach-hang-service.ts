@@ -2,6 +2,7 @@ import { query, vnNow } from '../config/database';
 import { CongNoKhachHang, CongNoKhachHangGroup } from '../models';
 
 export async function dongBoCongNoKhachHangTheoPhatSinh(data: {
+  idKhachHang?: number | null;
   maKhachHang?: string | null;
   tenKhachHang: string;
   nhom?: string | null;
@@ -11,14 +12,30 @@ export async function dongBoCongNoKhachHangTheoPhatSinh(data: {
   const phatSinhNoTang = data.phatSinhNoTang || 0;
   const phatSinhCoTang = data.phatSinhCoTang || 0;
 
+  let normalizedMaKhachHang = data.maKhachHang?.trim() || null;
+  if (!normalizedMaKhachHang && data.idKhachHang) {
+    const khachHang = await query<{ maKhachHang: string | null }>(
+      `SELECT TOP 1 maKhachHang FROM KhachHang WHERE id = @idKhachHang`,
+      { idKhachHang: data.idKhachHang },
+    );
+    normalizedMaKhachHang = khachHang[0]?.maKhachHang?.trim() || null;
+  }
+
   const existing = await query<CongNoKhachHang>(
-    `SELECT TOP 1 * FROM CongNoKhachHang WHERE tenKhachHang = @tenKhachHang ORDER BY id ASC`,
-    { tenKhachHang: data.tenKhachHang },
+    normalizedMaKhachHang
+      ? `SELECT TOP 1 * FROM CongNoKhachHang
+         WHERE maKhachHang = @maKhachHang OR tenKhachHang = @tenKhachHang
+         ORDER BY CASE WHEN maKhachHang = @maKhachHang THEN 0 ELSE 1 END, id ASC`
+      : `SELECT TOP 1 * FROM CongNoKhachHang WHERE tenKhachHang = @tenKhachHang ORDER BY id ASC`,
+    {
+      maKhachHang: normalizedMaKhachHang,
+      tenKhachHang: data.tenKhachHang,
+    },
   );
 
   if (existing.length === 0) {
     const created = await taoCongNoKhachHang({
-      maKhachHang: data.maKhachHang,
+      maKhachHang: normalizedMaKhachHang,
       tenKhachHang: data.tenKhachHang,
       nhom: data.nhom,
     });
@@ -28,7 +45,8 @@ export async function dongBoCongNoKhachHangTheoPhatSinh(data: {
 
     await query(
       `UPDATE CongNoKhachHang
-       SET phatSinhNo = @phatSinhNo,
+       SET maKhachHang = COALESCE(@maKhachHang, maKhachHang),
+           phatSinhNo = @phatSinhNo,
            phatSinhCo = @phatSinhCo,
            duCuoiNo = @duCuoiNo,
            duCuoiCo = @duCuoiCo,
@@ -36,6 +54,7 @@ export async function dongBoCongNoKhachHangTheoPhatSinh(data: {
        WHERE id = @id`,
       {
         id: created.id,
+        maKhachHang: normalizedMaKhachHang,
         phatSinhNo: phatSinhNoTang,
         phatSinhCo: phatSinhCoTang,
         duCuoiNo,
@@ -58,6 +77,7 @@ export async function dongBoCongNoKhachHangTheoPhatSinh(data: {
   await query(
     `UPDATE CongNoKhachHang
      SET maKhachHang = COALESCE(@maKhachHang, maKhachHang),
+         tenKhachHang = COALESCE(@tenKhachHang, tenKhachHang),
          nhom = COALESCE(@nhom, nhom),
          phatSinhNo = @phatSinhNo,
          phatSinhCo = @phatSinhCo,
@@ -67,7 +87,8 @@ export async function dongBoCongNoKhachHangTheoPhatSinh(data: {
      WHERE id = @id`,
     {
       id: row.id,
-      maKhachHang: data.maKhachHang || null,
+      maKhachHang: normalizedMaKhachHang,
+      tenKhachHang: data.tenKhachHang || null,
       nhom: data.nhom || null,
       phatSinhNo,
       phatSinhCo,
@@ -176,6 +197,7 @@ export async function dongBoLaiCongNoKhachHangTuHoaDonVaThanhToan(): Promise<{
   tongPhatSinhCo: number;
 }> {
   const customers = await query<{
+    id: number;
     tenKhachHang: string;
     maKhachHang: string | null;
     nhom: string | null;
@@ -193,28 +215,93 @@ export async function dongBoLaiCongNoKhachHangTuHoaDonVaThanhToan(): Promise<{
      WHERE c.tenKhachHang <> N'Tổng cộng'`,
   );
 
+  const hoaDonRows = await query<{
+    idKhachHang: number | null;
+    maKhachHang: string | null;
+    tenKhachHang: string;
+    tongCong: number;
+  }>(
+    `SELECT
+       dh.idKhachHang,
+       kh.maKhachHang,
+       dh.tenKhachHang,
+       ISNULL(hd.tongCong, 0) as tongCong
+     FROM HoaDon hd
+     INNER JOIN DonHang dh ON hd.idDonHang = dh.id
+     LEFT JOIN KhachHang kh ON dh.idKhachHang = kh.id`,
+  );
+
+  const thanhToanRows = await query<{
+    idKhachHang: number | null;
+    maKhachHang: string | null;
+    tenKhachHang: string;
+    soTien: number;
+  }>(
+    `SELECT
+       dh.idKhachHang,
+       kh.maKhachHang,
+       dh.tenKhachHang,
+       ISNULL(tt.soTien, 0) as soTien
+     FROM ThanhToan tt
+     INNER JOIN DonHang dh ON tt.idDonHang = dh.id
+     LEFT JOIN KhachHang kh ON dh.idKhachHang = kh.id`,
+  );
+
+  const taoKey = (row: { idKhachHang: number | null; maKhachHang: string | null; tenKhachHang: string }) => {
+    if (row.idKhachHang) return `id:${row.idKhachHang}`;
+    if (row.maKhachHang?.trim()) return `ma:${row.maKhachHang.trim()}`;
+    return `ten:${row.tenKhachHang.trim().toLowerCase()}`;
+  };
+
+  const phatSinhNoMap = new Map<string, number>();
+  const phatSinhCoMap = new Map<string, number>();
+
+  for (const row of hoaDonRows) {
+    const key = taoKey(row);
+    phatSinhNoMap.set(key, (phatSinhNoMap.get(key) || 0) + (row.tongCong || 0));
+  }
+
+  for (const row of thanhToanRows) {
+    const key = taoKey(row);
+    phatSinhCoMap.set(key, (phatSinhCoMap.get(key) || 0) + (row.soTien || 0));
+  }
+
   let tongPhatSinhNo = 0;
   let tongPhatSinhCo = 0;
 
   for (const customer of customers) {
-    const tongHoaDon = await query<{ tong: number }>(
-      `SELECT ISNULL(SUM(ISNULL(hd.tongCong, 0)), 0) as tong
-       FROM HoaDon hd
-       INNER JOIN DonHang dh ON hd.idDonHang = dh.id
-       WHERE dh.tenKhachHang = @tenKhachHang`,
-      { tenKhachHang: customer.tenKhachHang },
-    );
+    let resolvedKey = '';
 
-    const tongThanhToan = await query<{ tong: number }>(
-      `SELECT ISNULL(SUM(ISNULL(tt.soTien, 0)), 0) as tong
-       FROM ThanhToan tt
-       INNER JOIN DonHang dh ON tt.idDonHang = dh.id
-       WHERE dh.tenKhachHang = @tenKhachHang`,
-      { tenKhachHang: customer.tenKhachHang },
-    );
+    if (customer.maKhachHang?.trim()) {
+      const khRows = await query<{ id: number }>(
+        `SELECT TOP 1 id FROM KhachHang WHERE maKhachHang = @maKhachHang`,
+        { maKhachHang: customer.maKhachHang.trim() },
+      );
+      if (khRows[0]?.id) {
+        resolvedKey = `id:${khRows[0].id}`;
+      } else {
+        resolvedKey = `ma:${customer.maKhachHang.trim()}`;
+      }
+    }
 
-    const phatSinhNo = tongHoaDon[0]?.tong || 0;
-    const phatSinhCo = tongThanhToan[0]?.tong || 0;
+    if (!resolvedKey) {
+      const khRows = await query<{ id: number; maKhachHang: string | null }>(
+        `SELECT TOP 1 id, maKhachHang FROM KhachHang WHERE tenKhachHang = @tenKhachHang ORDER BY id ASC`,
+        { tenKhachHang: customer.tenKhachHang },
+      );
+      if (khRows[0]?.id) {
+        resolvedKey = `id:${khRows[0].id}`;
+      } else if (khRows[0]?.maKhachHang?.trim()) {
+        resolvedKey = `ma:${khRows[0].maKhachHang.trim()}`;
+      }
+    }
+
+    if (!resolvedKey) {
+      resolvedKey = `ten:${customer.tenKhachHang.trim().toLowerCase()}`;
+    }
+
+    const phatSinhNo = phatSinhNoMap.get(resolvedKey) || 0;
+    const phatSinhCo = phatSinhCoMap.get(resolvedKey) || 0;
     const chenhLech = (customer.duDauNo || 0) + phatSinhNo - (customer.duDauCo || 0) - phatSinhCo;
     const duCuoiNo = Math.max(0, chenhLech);
     const duCuoiCo = Math.max(0, -chenhLech);
@@ -229,9 +316,9 @@ export async function dongBoLaiCongNoKhachHangTuHoaDonVaThanhToan(): Promise<{
            duCuoiNo = @duCuoiNo,
            duCuoiCo = @duCuoiCo,
            ngayCapNhat = ${vnNow()}
-       WHERE tenKhachHang = @tenKhachHang`,
+       WHERE id = @id`,
       {
-        tenKhachHang: customer.tenKhachHang,
+        id: customer.id,
         phatSinhNo,
         phatSinhCo,
         duCuoiNo,

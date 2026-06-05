@@ -134,6 +134,7 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
     );
 
     await dongBoCongNoKhachHangTheoPhatSinh({
+      idKhachHang: dh.idKhachHang || null,
       maKhachHang: dh.maKhachHang || null,
       tenKhachHang: dh.tenKhachHang || data.khachHang || '',
       nhom: dh.nhom || null,
@@ -212,6 +213,7 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
     );
 
     await dongBoCongNoKhachHangTheoPhatSinh({
+      idKhachHang: dh.idKhachHang || null,
       maKhachHang: dh.maKhachHang || null,
       tenKhachHang: dh.tenKhachHang || data.khachHang || '',
       nhom: dh.nhom || null,

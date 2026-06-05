@@ -81,6 +81,7 @@ export async function taoThanhToan(
   }
 
   await dongBoCongNoKhachHangTheoPhatSinh({
+    idKhachHang: donHangHienTai.idKhachHang || null,
     maKhachHang: donHangHienTai.maKhachHang || null,
     tenKhachHang: donHangHienTai.tenKhachHang || '',
     nhom: donHangHienTai.nhom || null,
