@@ -63,7 +63,7 @@ type TabKey = "tongquan" | "doanhthu" | "trangthai" | "thanhtoan" | "nghiemthu" 
 const TABS_BY_ROLE: Record<string, { key: TabKey; label: string; icon: React.ReactNode }[]> = {
   admin: [
     { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
-    { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
+    // { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
     { key: "trangthai", label: "Trạng thái", icon: <FiBarChart2 size={16} /> },
     { key: "thanhtoan", label: "Thanh toán", icon: <FiDollarSign size={16} /> },
     { key: "nghiemthu", label: "Nghiệm thu", icon: <FiFileText size={16} /> },
@@ -71,13 +71,13 @@ const TABS_BY_ROLE: Record<string, { key: TabKey; label: string; icon: React.Rea
   ],
   ke_toan: [
     { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
-    { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
+    // { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
     { key: "thanhtoan", label: "Thanh toán", icon: <FiDollarSign size={16} /> },
     { key: "nghiemthu", label: "Nghiệm thu", icon: <FiFileText size={16} /> },
   ],
   lanh_dao: [
     { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
-    { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
+    // { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
     { key: "trangthai", label: "Trạng thái", icon: <FiBarChart2 size={16} /> },
     { key: "thanhtoan", label: "Thanh toán", icon: <FiDollarSign size={16} /> },
     { key: "tramtron", label: "Trạm trộn", icon: <FiPieChart size={16} /> },
@@ -93,7 +93,7 @@ const TABS_BY_ROLE: Record<string, { key: TabKey; label: string; icon: React.Rea
   ],
   sale: [
     { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
-    { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
+    // { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
     { key: "trangthai", label: "Trạng thái", icon: <FiBarChart2 size={16} /> },
   ],
   tai_xe: [
@@ -404,6 +404,70 @@ export default function DashboardPage() {
       },
     },
   });
+
+  // Line chart options for revenue
+  const revenueLineOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { raw: unknown }) => {
+            const v = ctx.raw as number;
+            return ` ${(v / 1_000_000).toFixed(1)} triệu VNĐ`;
+          },
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          font: chartFont,
+          callback: (v: unknown) => `${(Number(v) / 1_000_000).toFixed(0)}M`,
+        },
+        grid: { color: "#f0f0f0" },
+      },
+      x: {
+        ticks: { font: chartFont },
+        grid: { display: false },
+      },
+    },
+  };
+
+  // Bar chart options for công nợ
+  const congNoBarOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { raw: unknown }) => {
+            const v = ctx.raw as number;
+            return ` ${(v / 1_000_000).toFixed(1)} triệu VNĐ`;
+          },
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          font: chartFont,
+          callback: (v: unknown) => `${(Number(v) / 1_000_000).toFixed(0)}M`,
+        },
+        grid: { color: "#f0f0f0" },
+      },
+      x: {
+        ticks: { font: chartFont },
+        grid: { display: false },
+      },
+    },
+  };
 
   // ── TRẠNG THÁI CHARTS ──
   const statusBarData = {
