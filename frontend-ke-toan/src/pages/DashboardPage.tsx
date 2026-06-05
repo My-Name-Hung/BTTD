@@ -11,6 +11,7 @@ import {
   Title,
   Tooltip,
 } from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 import { useCallback, useEffect, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import {
@@ -63,6 +64,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   Filler,
+  ChartDataLabels,
 );
 
 type FilterPeriod = "ngay" | "tuan" | "thang";
@@ -327,8 +329,7 @@ export default function DashboardPage() {
     cutout: "65%",
     plugins: {
       legend: {
-        position: "bottom" as const,
-        labels: { padding: 14, usePointStyle: true, pointStyle: "circle" as const, font: { size: 11 } },
+        display: false,
       },
       tooltip: {
         callbacks: {
@@ -336,6 +337,15 @@ export default function DashboardPage() {
             const v = ctx.raw as number;
             return ` ${ctx.label}: ${unit === "đơn" ? v : `${v.toFixed(1)} tr VNĐ`}`;
           },
+        },
+      },
+      datalabels: {
+        color: "#fff",
+        font: { size: 12, weight: "bold" as const },
+        formatter: (v: unknown) => {
+          const n = v as number;
+          if (n === 0) return "";
+          return `${n.toFixed(1)}`;
         },
       },
     },
@@ -428,6 +438,16 @@ export default function DashboardPage() {
           label: (ctx: { raw: unknown }) => `${(ctx.raw as number).toFixed(1)} tr VNĐ`,
         },
       },
+      datalabels: {
+        anchor: "end" as const,
+        align: "top" as const,
+        font: { size: 11, weight: "bold" as const },
+        color: "#374151",
+        formatter: (v: unknown) => {
+          const n = v as number;
+          return n > 0 ? `${n.toFixed(1)}` : "";
+        },
+      },
     },
     scales: {
       x: { grid: { display: false }, ticks: { font: { size: 11 } } },
@@ -471,7 +491,7 @@ export default function DashboardPage() {
 
   // ── THANH TOÁN CHARTS ──
   const thanhToanBarData = {
-    labels: ["Đã thanh toán", "Chưa thanh toán", "Công nợ"],
+    labels: ["Hoàn thành", "Chưa thanh toán", "Công nợ"],
     datasets: [{
       data: [thanhToan.daThanhToan, thanhToan.chuaThanhToan, thanhToan.congNo].map(v => v / 1_000_000),
       backgroundColor: ["#10b981", "#f59e0b", "#ef4444"],
@@ -482,7 +502,7 @@ export default function DashboardPage() {
   };
 
   const thanhToanDonutData = {
-    labels: ["Đã thanh toán", "Chưa thanh toán", "Công nợ"],
+    labels: ["Hoàn thành", "Chưa thanh toán", "Công nợ"],
     datasets: [{
       data: [thanhToan.daThanhToan, thanhToan.chuaThanhToan, thanhToan.congNo].map(v => v / 1_000_000),
       backgroundColor: ["#10b981", "#f59e0b", "#ef4444"],
