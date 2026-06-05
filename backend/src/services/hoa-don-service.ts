@@ -30,7 +30,6 @@ interface TaoHoaDonInput {
   buuVanChuyen?: number;
   phiPhatSinh?: number;
   giamTru?: number;
-  soTienThanhToan?: number;
   ngayLap?: string;
   khachHang?: string;
   loaiXiMang?: string;
@@ -56,14 +55,15 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
   const soHoaDon = `BBTD-${randomNum}-${dh.maDonHang}`;
   const maHoaDon = soHoaDon;
 
-  // Tiền bê tông = số tiền thanh toán trước (nếu có) hoặc tổng thanh tiền đơn hàng
-  // Khi user nhập "tiền thanh toán trước" ở tab công nợ -> đó chính là tienBeTong
-  const tienBeTong = data.soTienThanhToan || dh.thanhTien || 0;
+  // Tiền bê tông = thanhTien của đơn hàng (khối lượng × đơn giá)
+  const tienBeTong = dh.thanhTien || 0;
   const buuVanChuyen = data.buuVanChuyen || 0;
   const phiPhatSinh = data.phiPhatSinh || 0;
   const giamTru = data.giamTru || 0;
-  // tổng hóa đơn = tiền bê tông + bù vận chuyển + phí phát sinh - giảm trừ
+  // tongCong = tiền bê tông + bù vận chuyển + phí phát sinh - giảm trừ
   const tongCong = tienBeTong + buuVanChuyen + phiPhatSinh - giamTru;
+  // soTienThanhToan = số tiền thực sự thanh toán trong hóa đơn này (= tongCong)
+  const soTienThanhToan = tongCong;
 
   const result = await query<HoaDon>(
     `INSERT INTO HoaDon (

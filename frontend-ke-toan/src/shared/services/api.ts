@@ -1222,7 +1222,6 @@ export async function taoHoaDon(data: {
   buuVanChuyen?: number;
   phiPhatSinh?: number;
   giamTru?: number;
-  soTienThanhToan?: number;
   ngayLap?: string;
   khachHang?: string;
   loaiXiMang?: string;
