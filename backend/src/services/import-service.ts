@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { query, vnNow } from "../config/database";
+import { taoKhachHang } from "./tham-so-service";
 
 export interface ImportResult {
   total: number;
@@ -916,6 +917,25 @@ export async function importCongNoKhachHang(
            VALUES (source.maKhachHang, source.tenKhachHang, source.duDauNo, source.duDauCo, source.phatSinhNo, source.phatSinhCo, source.duCuoiNo, source.duCuoiCo, source.nhom);`,
       );
       success = dataRows.length;
+
+      // Auto tạo KhachHang nếu chưa tồn tại (theo tenKhachHang)
+      const uniqueKhachHang = dataRows.filter((v, i, a) => a.findIndex(t => t.tenKhachHang === v.tenKhachHang) === i);
+      for (const row of uniqueKhachHang) {
+        try {
+          // Kiểm tra đã tồn tại chưa
+          const existing = await query<{ id: number }[]>(
+            `SELECT id FROM KhachHang WHERE tenKhachHang = @tenKhachHang`,
+            { tenKhachHang: row.tenKhachHang },
+          );
+          if (existing.recordset.length === 0) {
+            await taoKhachHang({
+              maKhachHang: row.maKhachHang || undefined,
+              tenKhachHang: row.tenKhachHang,
+              nhom: row.nhom || undefined,
+            });
+          }
+        } catch { /* Bỏ qua lỗi tạo KH trùng */ }
+      }
 
       // Tính tổng cộng từ dataRows
       const tongCong = {
