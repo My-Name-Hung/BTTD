@@ -207,7 +207,7 @@ async function getThongKe(): Promise<ThongKe> {
   );
 
   const [donQuaHan] = await query<{ soLuong: number }>(
-    `SELECT COUNT(*) as soLuong FROM CongNo WHERE trangThai = N'qua_han'`
+    `SELECT COUNT(*) as soLuong FROM CongNo WITH (NOLOCK) WHERE trangThai = N'qua_han'`
   );
 
   return {
@@ -258,7 +258,7 @@ async function getXe(): Promise<XeItem[]> {
 
 async function getKhachHang(): Promise<KhachHangItem[]> {
   return query<KhachHangItem>(
-    `SELECT TOP 50 id, tenKhachHang, soDienThoai FROM KhachHang WHERE trangThai = N'hoat_dong' ORDER BY tenKhachHang`
+    `SELECT TOP 50 id, tenKhachHang, soDienThoai FROM KhachHang ORDER BY tenKhachHang`
   );
 }
 

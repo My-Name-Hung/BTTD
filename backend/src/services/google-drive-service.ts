@@ -207,6 +207,7 @@ export async function uploadFileToDrive(
 
 /**
  * Upload nhiều file lên Google Drive trong thư mục con của đơn hàng.
+ * Có retry 1 lần nếu lỗi tạm thời.
  *
  * @returns Mảng URL công khai của các file đã upload
  */
@@ -218,7 +219,11 @@ export async function uploadFilesToDrive(
   const drive = getDriveClient();
   const folderId = await resolveFolderId(drive);
   const bttdFolderId = await getOrCreateSubFolder(drive, folderId, 'BTTD_BienBan');
-  const orderFolderId = await getOrCreateSubFolder(drive, bttdFolderId, `DonHang_${maDonHang.replace(/[^a-zA-Z0-9_\-]/g, '_')}`);
+  const orderFolderId = await getOrCreateSubFolder(
+    drive,
+    bttdFolderId,
+    `DonHang_${maDonHang.replace(/[^a-zA-Z0-9_\-]/g, '_')}`,
+  );
 
   const urls: string[] = [];
 
@@ -229,20 +234,57 @@ export async function uploadFilesToDrive(
     const safeFilename = `${originalName.slice(0, dotIdx || originalName.length)}_${Date.now()}_${i}${ext}`;
     const mimeType = getMimeType(originalName) || 'application/octet-stream';
 
-    const file = await drive.files.create({
-      requestBody: {
-        name: safeFilename,
-        parents: [orderFolderId],
-      },
-      media: {
-        mimeType,
-        body: require('stream').Readable.from(buffers[i]),
-      },
-      fields: 'id, webViewLink, webContentLink',
-      ...driveOpts,
-    } as drive_v3.Params$Resource$Files$Create);
+    let file: drive_v3.Schema$File | null = null;
+    let lastError: unknown;
 
-    urls.push(file.data.webViewLink || file.data.webContentLink || '');
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const result = await drive.files.create({
+          requestBody: {
+            name: safeFilename,
+            parents: [orderFolderId],
+          },
+          media: {
+            mimeType,
+            body: require('stream').Readable.from(buffers[i]),
+          },
+          fields: 'id, webViewLink, webContentLink',
+          ...driveOpts,
+        } as drive_v3.Params$Resource$Files$Create);
+        file = result.data ?? null;
+        break; // thành công
+      } catch (err: unknown) {
+        lastError = err;
+        const status = (err as { code?: number }).code;
+        if (attempt === 1 && (status === 403 || status === 500 || status === 503)) {
+          await new Promise<void>((r) => setTimeout(r, 1000));
+          continue;
+        }
+        break;
+      }
+    }
+
+    if (!file?.id) {
+      const msg = lastError instanceof Error ? lastError.message : JSON.stringify(lastError);
+      throw new Error(`Upload file "${originalName}" lên Google Drive thất bại: ${msg}`);
+    }
+
+    const url = file.webViewLink || file.webContentLink || '';
+    if (!url) {
+      // Upload thành công nhưng không lấy được link → thử get lại
+      try {
+        const refreshed = await drive.files.get({
+          fileId: file.id!,
+          fields: 'webViewLink, webContentLink',
+          ...driveOpts,
+        } as drive_v3.Params$Resource$Files$Get);
+        urls.push(refreshed.data?.webViewLink || refreshed.data?.webContentLink || '');
+      } catch {
+        urls.push('');
+      }
+    } else {
+      urls.push(url);
+    }
   }
 
   return urls;

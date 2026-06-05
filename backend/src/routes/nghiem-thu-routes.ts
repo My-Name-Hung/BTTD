@@ -85,8 +85,9 @@ router.put('/xac-nhan/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan
       ip);
     res.json({ success: true, message: 'Xác nhận nghiệm thu thành công', data: dh });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Lỗi xác nhận nghiệm thu';
-    res.status(400).json({ success: false, message });
+    const msg = error instanceof Error ? error.message : 'Lỗi tải file lên Google Drive. Vui lòng kiểm tra cấu hình Shared Drive và quyền Service Account.';
+    console.error('[XacNhanUpload NghiemThu]', msg, error);
+    res.status(500).json({ success: false, message: msg });
   }
 });
 
@@ -138,8 +139,9 @@ router.post('/upload/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan'
 
     res.json({ success: true, message: `Đã tải lên ${files.length} file thành công`, data: { bienBanFiles: fileUrls } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Lỗi tải file';
-    res.status(500).json({ success: false, message });
+    const msg = error instanceof Error ? error.message : 'Lỗi tải file lên Google Drive. Vui lòng kiểm tra cấu hình Shared Drive và quyền Service Account.';
+    console.error('[Upload NghiemThu]', msg, error);
+    res.status(500).json({ success: false, message: msg });
   }
 });
 
@@ -175,8 +177,9 @@ router.post('/xac-nhan-upload/:idDonHang', authMiddleware, requireRole('admin', 
       data: { donHang: dh, bienBanFiles: fileUrls },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Lỗi xác nhận nghiệm thu';
-    res.status(400).json({ success: false, message });
+    const msg = error instanceof Error ? error.message : 'Lỗi tải file lên Google Drive. Vui lòng kiểm tra cấu hình Shared Drive và quyền Service Account.';
+    console.error('[XacNhanUpload NghiemThu]', msg, error);
+    res.status(500).json({ success: false, message: msg });
   }
 });
 

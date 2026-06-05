@@ -633,6 +633,15 @@ async function initDatabase(): Promise<void> {
       } else {
         console.log("  ✅ Cột nhom đã tồn tại trong CongNo");
       }
+      // Migration: thêm cột trangThai nếu chưa có
+      const colTrangThai = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('CongNo') AND name = 'trangThai'`,
+      );
+      if (colTrangThai.recordset.length === 0) {
+        console.log("  ➕ Thêm cột trangThai vào CongNo...");
+        await db.query(`ALTER TABLE CongNo ADD trangThai NVARCHAR(50) DEFAULT N'chua_thanh_toan'`);
+        console.log("  ✅ Đã thêm cột trangThai");
+      }
     }
 
     // Tạo bảng CongNoKhachHang (theo khách hàng, giống Bravo)
