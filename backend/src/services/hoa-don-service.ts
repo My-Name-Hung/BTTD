@@ -91,7 +91,7 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       phiPhatSinh,
       giamTru,
       tongCong,
-      soTienThanhToan: tienBeTong,
+      soTienThanhToan: tongCong,
       loaiThanhToan: data.loaiThanhToan,
       hanTraCongNo: data.hanTraCongNo ? new Date(data.hanTraCongNo) : null,
       nguoiTaoId,
