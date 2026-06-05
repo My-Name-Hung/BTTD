@@ -16,9 +16,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "https://bttd.onrender.com",
+        target: "https://apibttd.ximangtaydo.vn",
         changeOrigin: true,
-        secure: false,
+        secure: true,
         onProxyReq: (proxyReq, req) => {
           // Forward Authorization header explicitly
           const authHeader = req.headers["authorization"];
