@@ -485,6 +485,7 @@ async function initDatabase(): Promise<void> {
           chucVu NVARCHAR(200),
           tenNguoiNghiemThu NVARCHAR(200),
           ngayNghiemThu DATETIME,
+          ketQua NVARCHAR(50),
           daGuiKhach BIT DEFAULT 0,
           ngayGuiKhach DATETIME,
           ghiChu NVARCHAR(MAX),
@@ -509,6 +510,14 @@ async function initDatabase(): Promise<void> {
       if (colExists2.recordset.length === 0) {
         console.log("  ➕ Thêm cột ngayNghiemThu vào NghiemThu...");
         await db.query(`ALTER TABLE NghiemThu ADD ngayNghiemThu DATETIME`);
+      }
+      // Migration: thêm cột ketQua nếu chưa có
+      const colExists3 = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('NghiemThu') AND name = 'ketQua'`,
+      );
+      if (colExists3.recordset.length === 0) {
+        console.log("  ➕ Thêm cột ketQua vào NghiemThu...");
+        await db.query(`ALTER TABLE NghiemThu ADD ketQua NVARCHAR(50)`);
       }
     }
 
