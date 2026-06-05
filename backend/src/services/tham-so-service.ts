@@ -11,7 +11,7 @@ export async function layTatCaKhachHang(
   const params: Record<string, unknown> = { offset, limit };
 
   if (tuKhoa) {
-    whereClause = `WHERE tenKhachHang LIKE @tuKhoa OR soDienThoai LIKE @tuKhoa`;
+    whereClause = `WHERE maKhachHang LIKE @tuKhoa OR tenKhachHang LIKE @tuKhoa OR soDienThoai LIKE @tuKhoa`;
     params.tuKhoa = `%${tuKhoa}%`;
   }
 
