@@ -1,48 +1,73 @@
 import React, { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { Layout } from "./components";
-import { Loading } from "./components/Common";
-import { AuthProvider, useAuth } from "./hooks";
-import { useMaintenanceCheck } from "./hooks/useMaintenanceCheck";
+import { Layout } from "./shared/components";
+import { Loading } from "./shared/components/ui";
+import { AuthProvider, useAuth } from "./shared/hooks";
+import { useMaintenanceCheck } from "./shared/hooks/useMaintenanceCheck";
 
-const ChiTietDonHangPage = lazy(() => import("./pages/ChiTietDonHangPage"));
-const CongNoPage = lazy(() => import("./pages/CongNoPage"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
-const DieuPhoiPage = lazy(() => import("./pages/DieuPhoiPage"));
-const KhachHangPage = lazy(() => import("./pages/KhachHangPage"));
-const LoginPage = lazy(() => import("./pages/LoginPage"));
-const NghiemThuPage = lazy(() => import("./pages/NghiemThuPage"));
-const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
-const QuanLyDonHangPage = lazy(() => import("./pages/QuanLyDonHangPage"));
-const QuanLyNguoiDungPage = lazy(() => import("./pages/QuanLyNguoiDungPage"));
-const QuanLyTramTronPage = lazy(() => import("./pages/QuanLyTramTronPage"));
-const QuanLyXePage = lazy(() => import("./pages/QuanLyXePage"));
-const TaoDonHangPage = lazy(() => import("./pages/TaoDonHangPage"));
-const TaoLichSanXuatPage = lazy(() => import("./pages/TaoLichSanXuatPage"));
-const ThamSoPage = lazy(() => import("./pages/ThamSoPage"));
-const ThanhToanPage = lazy(() => import("./pages/ThanhToanPage"));
-const TaiLenDanhSachPage = lazy(() => import("./pages/TaiLenDanhSachPage"));
-const BaoTriPage = lazy(() => import("./pages/BaoTriPage"));
-const MaintenanceBlockPage = lazy(() => import("./pages/MaintenanceBlockPage"));
-const KhoDashboardPage = lazy(() => import("./pages/KhoDashboardPage"));
-const KhoLichSanXuatPage = lazy(() => import("./pages/KhoLichSanXuatPage"));
-const KhoDonHangPage = lazy(() => import("./pages/KhoDonHangPage"));
-const QuanLyMacBeTongPage = lazy(() => import("./pages/QuanLyMacBeTongPage"));
-const DonHangTheoXePage = lazy(() => import("./pages/DonHangTheoXePage"));
-const DonHangTheoTramPage = lazy(() => import("./pages/DonHangTheoTramPage"));
-const AccessHistoryPage = lazy(() => import("./pages/AccessHistoryPage"));
-const AccessHistoryDetailPage = lazy(
-  () => import("./pages/AccessHistoryDetailPage"),
-);
-const TaoNguoiDungPage = lazy(() => import("./pages/TaoNguoiDungPage"));
+// Auth
+const LoginPage = lazy(() => import("./features/auth/pages/LoginPage"));
 
-// Role-specific pages
-const SaleDonHangPage = lazy(() => import("./pages/SaleDonHangPage"));
-const TaiXeGiaoHangPage = lazy(() => import("./pages/TaiXeGiaoHangPage"));
-const LichSuGiaoHangPage = lazy(() => import("./pages/LichSuGiaoHangPage"));
-const KyThuatNghiemThuPage = lazy(() => import("./pages/KyThuatNghiemThuPage"));
-const XuatHoaDonPage = lazy(() => import("./pages/XuatHoaDonPage"));
-const InHoaDonPage = lazy(() => import("./pages/InHoaDonPage"));
+// Dashboard
+const DashboardPage = lazy(() => import("./features/dashboard/pages/DashboardPage"));
+
+// Đơn hàng
+const QuanLyDonHangPage = lazy(() => import("./features/don-hang/pages/QuanLyDonHangPage"));
+const TaoDonHangPage = lazy(() => import("./features/don-hang/pages/TaoDonHangPage"));
+const ChiTietDonHangPage = lazy(() => import("./features/don-hang/pages/ChiTietDonHangPage"));
+const SaleDonHangPage = lazy(() => import("./features/don-hang/pages/SaleDonHangPage"));
+const DonHangTheoXePage = lazy(() => import("./features/don-hang/pages/DonHangTheoXePage"));
+const DonHangTheoTramPage = lazy(() => import("./features/don-hang/pages/DonHangTheoTramPage"));
+
+// Kho
+const KhoDashboardPage = lazy(() => import("./features/kho/pages/KhoDashboardPage"));
+const KhoDonHangPage = lazy(() => import("./features/kho/pages/KhoDonHangPage"));
+const KhoLichSanXuatPage = lazy(() => import("./features/kho/pages/KhoLichSanXuatPage"));
+
+// Trạm trộn
+const QuanLyTramTronPage = lazy(() => import("./features/tram-tron/pages/QuanLyTramTronPage"));
+const DieuPhoiPage = lazy(() => import("./features/tram-tron/pages/DieuPhoiPage"));
+const TaoLichSanXuatPage = lazy(() => import("./features/tram-tron/pages/TaoLichSanXuatPage"));
+const NghiemThuPage = lazy(() => import("./features/tram-tron/pages/NghiemThuPage"));
+const ThamSoPage = lazy(() => import("./features/tram-tron/pages/ThamSoPage"));
+
+// Tài xế
+const TaiXeGiaoHangPage = lazy(() => import("./features/tai-xe/pages/TaiXeGiaoHangPage"));
+const LichSuGiaoHangPage = lazy(() => import("./features/tai-xe/pages/LichSuGiaoHangPage"));
+
+// Kỹ thuật
+const KyThuatNghiemThuPage = lazy(() => import("./features/ky-thuat/pages/KyThuatNghiemThuPage"));
+
+// Thanh toán
+const ThanhToanPage = lazy(() => import("./features/thanh-toan/pages/ThanhToanPage"));
+const XuatHoaDonPage = lazy(() => import("./features/hoa-don/pages/XuatHoaDonPage"));
+const InHoaDonPage = lazy(() => import("./features/hoa-don/pages/InHoaDonPage"));
+
+// Công nợ
+const CongNoPage = lazy(() => import("./features/cong-no/pages/CongNoPage"));
+
+// Khách hàng
+const KhachHangPage = lazy(() => import("./features/khach-hang/pages/KhachHangPage"));
+
+// Người dùng
+const QuanLyNguoiDungPage = lazy(() => import("./features/nguoi-dung/pages/QuanLyNguoiDungPage"));
+const TaoNguoiDungPage = lazy(() => import("./features/nguoi-dung/pages/TaoNguoiDungPage"));
+
+// Quản lý
+const QuanLyXePage = lazy(() => import("./features/quan-ly/pages/QuanLyXePage"));
+const QuanLyMacBeTongPage = lazy(() => import("./features/quan-ly/pages/QuanLyMacBeTongPage"));
+const AccessHistoryPage = lazy(() => import("./features/quan-ly/pages/AccessHistoryPage"));
+const AccessHistoryDetailPage = lazy(() => import("./features/lich-su/pages/AccessHistoryDetailPage"));
+
+// Import/Export
+const TaiLenDanhSachPage = lazy(() => import("./features/import-export/pages/TaiLenDanhSachPage"));
+
+// Thông báo
+const NotificationsPage = lazy(() => import("./features/thong-bao/pages/NotificationsPage"));
+
+// Bảo trì
+const BaoTriPage = lazy(() => import("./features/bao-tri/pages/BaoTriPage"));
+const MaintenanceBlockPage = lazy(() => import("./features/maintenance/pages/MaintenanceBlockPage"));
 
 function PageFallback() {
   return (
