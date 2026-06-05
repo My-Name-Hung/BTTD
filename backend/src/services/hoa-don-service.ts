@@ -71,6 +71,7 @@ function phanBoGiaTriHoaDon(params: {
   phiPhatSinh: number;
   giamTru: number;
   soTienTheHienKyNay: number;
+  tongThuMoi?: number;
 }): HoaDonPhanBo {
   const {
     loaiThanhToan,
@@ -81,6 +82,7 @@ function phanBoGiaTriHoaDon(params: {
     phiPhatSinh,
     giamTru,
     soTienTheHienKyNay,
+    tongThuMoi = soTienTheHienKyNay,
   } = params;
 
   const soTienMucTieu = Math.max(0, Math.min(soTienTheHienKyNay, tongNghiaVu));
@@ -97,23 +99,37 @@ function phanBoGiaTriHoaDon(params: {
 
   const tienBeTongDaPhuTruocDo = Math.min(tongDaThanhToanTruocDo, tienBeTongGoc);
   const tienBeTongConLai = Math.max(0, tienBeTongGoc - tienBeTongDaPhuTruocDo);
-  const tienBeTongHoaDon = Math.min(soTienMucTieu, tienBeTongConLai);
-  let phanConLai = soTienMucTieu - tienBeTongHoaDon;
 
-  const buuVanChuyenHoaDon = Math.min(phanConLai, Math.max(0, buuVanChuyen));
-  phanConLai -= buuVanChuyenHoaDon;
+  // Khi khach tra du hoac vuot nghia vu, lay 100% gia tri cac thanh phan
+  const isTraDu = tongThuMoi >= tongNghiaVu;
+  if (isTraDu) {
+    return {
+      tienBeTongHoaDon: tienBeTongGoc,
+      buuVanChuyenHoaDon: buuVanChuyen,
+      phiPhatSinhHoaDon: phiPhatSinh,
+      giamTruHoaDon: giamTru,
+      tongCongHoaDon: Math.max(0, tongNghiaVu),
+    };
+  }
 
-  const phiPhatSinhHoaDon = Math.min(phanConLai, Math.max(0, phiPhatSinh));
-  phanConLai -= phiPhatSinhHoaDon;
+  // Phan bo theo ty le: soTienTheHienKyNay / tongNghiaVu
+  const soTienPhanBo = Math.min(soTienTheHienKyNay, tongNghiaVu);
+  const tyLe = tongNghiaVu > 0 ? soTienPhanBo / tongNghiaVu : 0;
 
-  const giamTruHoaDon = Math.max(0, Math.min(giamTru, tienBeTongHoaDon + buuVanChuyenHoaDon + phiPhatSinhHoaDon));
+  const tienBeTongHoaDon = Math.round(tienBeTongConLai * tyLe * 100) / 100;
+  const buuVanChuyenHoaDon = Math.round(buuVanChuyen * tyLe * 100) / 100;
+  const phiPhatSinhHoaDon = Math.round(phiPhatSinh * tyLe * 100) / 100;
+  const giamTruHoaDon = Math.round(giamTru * tyLe * 100) / 100;
+
+  // tongCongHoaDon = soTienTheHienKyNay (so tien thuc nhan), khong phu thuoc vao tong cac thanh phan
+  const tongCongHoaDon = Math.max(0, soTienTheHienKyNay);
 
   return {
     tienBeTongHoaDon,
     buuVanChuyenHoaDon,
     phiPhatSinhHoaDon,
     giamTruHoaDon,
-    tongCongHoaDon: Math.max(0, tienBeTongHoaDon + buuVanChuyenHoaDon + phiPhatSinhHoaDon - giamTruHoaDon),
+    tongCongHoaDon: Math.max(0, tongCongHoaDon),
   };
 }
 
@@ -174,16 +190,16 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
     buuVanChuyen,
     phiPhatSinh,
     giamTru,
+    // soTienTheHienKyNay = số tiền thực tế khách trả kỳ này (đã bao gồm cả dư sử dụng)
     soTienTheHienKyNay:
       data.loaiThanhToan === 'tra_het' || data.loaiThanhToan === 'tra_het_du'
         ? tongConLaiTruocKhiLap
-        : tongThanhToanHieuLuc,
+        : soTienThuMoi,
+    tongThuMoi: soTienThuMoi,
   });
 
-  const soTienThanhToan =
-    data.loaiThanhToan === 'tra_het' || data.loaiThanhToan === 'tra_het_du'
-      ? tongConLaiTruocKhiLap
-      : tongThanhToanHieuLuc;
+  // tongCong = soTienThuMoi (số tiền thực nhận), không bị giới hạn bởi tongThanhToanHieuLuc
+  const soTienThanhToan = soTienThuMoi;
 
   const result = await query<HoaDon>(
     `INSERT INTO HoaDon (

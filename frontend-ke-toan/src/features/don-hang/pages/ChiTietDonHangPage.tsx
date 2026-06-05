@@ -509,7 +509,8 @@ export default function ChiTietDonHangPage() {
 
           {/* Tính từ hóa đơn - đồng bộ với phần hóa đơn bên dưới */}
           {(() => {
-            const tongTienHoaDon = hoaDons.reduce((sum, hd) => sum + (hd.tongCong || 0), 0);
+            // Tổng tiền = tổng tongCong + giamTru (để tongCong gốc không bị giảm trừ)
+            const tongTienHoaDon = hoaDons.reduce((sum, hd) => sum + (hd.tongCong || 0) + (hd.giamTru || 0), 0);
             const daThanhToanTuHD = hoaDons.reduce((sum, hd) => sum + (hd.soTienThanhToan || 0), 0);
             const tongPhatSinh = hoaDons.reduce((sum, hd) => sum + (hd.phiPhatSinh || 0), 0);
             const tongBuVC = hoaDons.reduce((sum, hd) => sum + (hd.buuVanChuyen || 0), 0);

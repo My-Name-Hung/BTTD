@@ -352,7 +352,7 @@ export default function XuatHoaDonPage() {
             : undefined,
         soTienThanhToanTruoc:
           activeTab === "cong_no" || activeTab === "cong_no_du"
-            ? soTienThanhToanKyNay
+            ? soTTTS  // Luôn truyền số tiền khách thực trả, backend sẽ xử lý giới hạn
             : tongCong,
         soTienDu:
           activeTab === "tra_het_du" || activeTab === "cong_no_du"
