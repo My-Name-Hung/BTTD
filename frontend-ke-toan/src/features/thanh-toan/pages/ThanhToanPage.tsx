@@ -367,10 +367,10 @@ export default function ThanhToanPage() {
                             </button>
                           )}
 
-                          {/* Đơn chưa đủ điều kiện thanh toán (chưa nghiệm thu hoặc từ chối): hiện badge */}
+                          {/* Đơn chưa đủ điều kiện thanh toán (chưa nghiệm thu hoặc từ chối): hiện mô tả */}
                           {!daTatToanOrder && canCreate && !isChoPhepThanhToan(dh) && (
-                            <span className={styles.badgeKhongChoPhep} title="Đơn hàng chưa đủ điều kiện thanh toán">
-                              Chưa NT
+                            <span className={styles.badgeKhongChoPhep}>
+                              Cần nghiệm thu trước khi thanh toán
                             </span>
                           )}
 
