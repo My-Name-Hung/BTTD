@@ -249,7 +249,7 @@ export async function layNghiemThuBatch(idDonHangs: number[]): Promise<BatchNghi
     `SELECT 
        nt.idDonHang,
        nt.id,
-       nt.ketQua,
+       nt.chatLuong as ketQua,
        CONVERT(varchar, nt.ngayNghiemThu, 120) as ngayNghiemThu,
        nt.tenNguoiNghiemThu,
        nt.ghiChu,
