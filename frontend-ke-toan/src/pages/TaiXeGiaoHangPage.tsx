@@ -14,8 +14,8 @@ import { useNavigate } from "react-router-dom";
 import { ConfirmModal, Loading } from "../components/Common";
 import { useAuth, useToast } from "../hooks";
 import {
+  layDonHangDaGiao,
   layDonHangGiaoCuaToi,
-  layLichSuGiaoHangTaiXe,
   taiXeCapNhatTrangThaiGiao,
   layThongKeTaiXe,
 } from "../services/api";
@@ -30,18 +30,18 @@ function formatDate(d: string | null | undefined): string {
   return d ? formatDateVN(d) : "";
 }
 
-type TabType = "can_giao" | "lich_su";
+type TabType = "dang_giao" | "da_giao";
 
 export default function TaiXeGiaoHangPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toasts, showToast } = useToast();
 
-  const [allCanGiao, setAllCanGiao] = useState<DonHang[]>([]);
-  const [allLichSu, setAllLichSu] = useState<DonHang[]>([]);
+  const [allDangGiao, setAllDangGiao] = useState<DonHang[]>([]);
+  const [allDaGiao, setAllDaGiao] = useState<DonHang[]>([]);
   const [thongKe, setThongKe] = useState({ tongDon: 0, chuaGiao: 0, daGiao: 0 });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>("can_giao");
+  const [activeTab, setActiveTab] = useState<TabType>("dang_giao");
 
   // Search & filter state
   const [search, setSearch] = useState("");
@@ -55,13 +55,13 @@ export default function TaiXeGiaoHangPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [canGiao, lichSu, stats] = await Promise.all([
+      const [dangGiao, daGiao, stats] = await Promise.all([
         layDonHangGiaoCuaToi(),
-        layLichSuGiaoHangTaiXe(),
+        layDonHangDaGiao(),
         layThongKeTaiXe(),
       ]);
-      setAllCanGiao(canGiao);
-      setAllLichSu(lichSu);
+      setAllDangGiao(dangGiao);
+      setAllDaGiao(daGiao);
       setThongKe(stats);
     } catch {
       showToast("Không tải được danh sách", "error");
@@ -76,16 +76,16 @@ export default function TaiXeGiaoHangPage() {
 
   // Danh sách khách hàng duy nhất cho dropdown filter
   const khachHangOptions = useMemo(() => {
-    const list = activeTab === "can_giao" ? allCanGiao : allLichSu;
+    const list = activeTab === "dang_giao" ? allDangGiao : allDaGiao;
     const unique = Array.from(new Set(list.map((d) => d.tenKhachHang || "")))
       .filter(Boolean)
       .sort();
     return unique;
-  }, [activeTab, allCanGiao, allLichSu]);
+  }, [activeTab, allDangGiao, allDaGiao]);
 
   // Lọc danh sách theo search + filter khách hàng
   const filteredList = useMemo(() => {
-    const list = activeTab === "can_giao" ? allCanGiao : allLichSu;
+    const list = activeTab === "dang_giao" ? allDangGiao : allDaGiao;
     return list.filter((d) => {
       const matchSearch =
         !search ||
@@ -96,7 +96,7 @@ export default function TaiXeGiaoHangPage() {
         !filterKhachHang || d.tenKhachHang === filterKhachHang;
       return matchSearch && matchKhachHang;
     });
-  }, [activeTab, allCanGiao, allLichSu, search, filterKhachHang]);
+  }, [activeTab, allDangGiao, allDaGiao, search, filterKhachHang]);
 
   const handleXacNhanDangGiao = async (dh: DonHang) => {
     setUpdating(dh.id);
@@ -115,8 +115,8 @@ export default function TaiXeGiaoHangPage() {
     if (!confirmTarget) return;
     const targetId = confirmTarget.id;
 
-    // Optimistic: xóa khỏi danh sách "cần giao" ngay, không block UI
-    setAllCanGiao((prev) => prev.filter((d) => d.id !== targetId));
+    // Optimistic: xóa khỏi danh sách "đang giao" ngay, không block UI
+    setAllDangGiao((prev) => prev.filter((d) => d.id !== targetId));
     setConfirmTarget(null);
 
     try {
@@ -144,23 +144,6 @@ export default function TaiXeGiaoHangPage() {
     return s;
   };
 
-  const getStatusColorLichSu = (s: string) => {
-    if (s === "nghiem_thu" || s === "da_thanh_toan")
-      return { bg: "#10b98122", color: "#10b981" };
-    if (s === "hoan_thanh") return { bg: "#073ceb22", color: "#073ceb" };
-    return { bg: "#00968822", color: "#009688" };
-  };
-
-  const getStatusLabelLichSu = (s: string) => {
-    const labels: Record<string, string> = {
-      da_giao: "Đã giao",
-      nghiem_thu: "Nghiệm thu",
-      da_thanh_toan: "Thanh toán",
-      hoan_thanh: "Hoàn thành",
-    };
-    return labels[s] || s;
-  };
-
   return (
     <div className={styles.page}>
       {/* Header */}
@@ -175,24 +158,24 @@ export default function TaiXeGiaoHangPage() {
       {/* Tabs */}
       <div className={styles.tabs}>
         <button
-          className={`${styles.tab} ${activeTab === "can_giao" ? styles.tabActive : ""}`}
-          onClick={() => setActiveTab("can_giao")}
+          className={`${styles.tab} ${activeTab === "dang_giao" ? styles.tabActive : ""}`}
+          onClick={() => setActiveTab("dang_giao")}
         >
           <FiNavigation size={15} />
-          Cần giao
-          {allCanGiao.length > 0 && (
-            <span className={styles.tabBadge}>{allCanGiao.length}</span>
+          Đang giao
+          {allDangGiao.length > 0 && (
+            <span className={styles.tabBadge}>{allDangGiao.length}</span>
           )}
         </button>
         <button
-          className={`${styles.tab} ${activeTab === "lich_su" ? styles.tabActive : ""}`}
-          onClick={() => setActiveTab("lich_su")}
+          className={`${styles.tab} ${activeTab === "da_giao" ? styles.tabActive : ""}`}
+          onClick={() => setActiveTab("da_giao")}
         >
           <FiCheck size={15} />
-          Lịch sử
-          {allLichSu.length > 0 && (
+          Đã giao
+          {allDaGiao.length > 0 && (
             <span className={`${styles.tabBadge} ${styles.tabBadgeSuccess}`}>
-              {allLichSu.length}
+              {allDaGiao.length}
             </span>
           )}
         </button>
@@ -291,21 +274,21 @@ export default function TaiXeGiaoHangPage() {
         <div className={styles.emptyState}>
           <FiPackage size={48} />
           <p>
-            {activeTab === "can_giao"
-              ? "Không có đơn cần giao"
+            {activeTab === "dang_giao"
+              ? "Không có đơn đang giao"
               : "Chưa có đơn hàng nào được giao"}
           </p>
         </div>
       ) : (
         <div className={styles.orderGrid}>
           {filteredList.map((dh) => {
-            const isCanGiao = activeTab === "can_giao";
-            const sc = isCanGiao
+            const isDangGiao = activeTab === "dang_giao";
+            const sc = isDangGiao
               ? statusColor(dh.trangThaiDon)
-              : getStatusColorLichSu(dh.trangThaiDon);
-            const label = isCanGiao
+              : { bg: "#4caf5022", color: "#4caf50" };
+            const label = isDangGiao
               ? statusLabel(dh.trangThaiDon)
-              : getStatusLabelLichSu(dh.trangThaiDon);
+              : "Đã giao";
 
             return (
               <div key={dh.id} className={styles.orderCard}>

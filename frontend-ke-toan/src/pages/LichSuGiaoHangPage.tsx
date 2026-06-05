@@ -12,7 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../components/Common";
 import { useAuth, useToast } from "../hooks";
-import { layLichSuGiaoHangTaiXe } from "../services/api";
+import { layDonHangDaGiao } from "../services/api";
 import { DonHang } from "../types";
 import styles from "./TaiXeGiaoHangPage.module.css";
 import { formatDateVN } from "../utils/dateUtils";
@@ -39,7 +39,7 @@ export default function LichSuGiaoHangPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await layLichSuGiaoHangTaiXe();
+      const data = await layDonHangDaGiao();
       setDonHangList(data);
     } catch {
       showToast("Không tải được lịch sử giao hàng", "error");
@@ -74,23 +74,6 @@ export default function LichSuGiaoHangPage() {
     });
   }, [donHangList, search, filterKhachHang]);
 
-  const getStatusColor = (s: string) => {
-    if (s === "nghiem_thu" || s === "da_thanh_toan")
-      return { bg: "#10b98122", color: "#10b981" };
-    if (s === "hoan_thanh") return { bg: "#073ceb22", color: "#073ceb" };
-    return { bg: "#00968822", color: "#009688" };
-  };
-
-  const getStatusLabel = (s: string) => {
-    const labels: Record<string, string> = {
-      da_giao: "Đã giao",
-      nghiem_thu: "Nghiệm thu",
-      da_thanh_toan: "Thanh toán",
-      hoan_thanh: "Hoàn thành",
-    };
-    return labels[s] || s;
-  };
-
   return (
     <div className={styles.page}>
       {/* Header */}
@@ -107,12 +90,6 @@ export default function LichSuGiaoHangPage() {
         <div className={styles.kpiCard}>
           <div className={styles.kpiValue}>{donHangList.length}</div>
           <div className={styles.kpiLabel}>Tổng đã giao</div>
-        </div>
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiValue} style={{ color: "#009688" }}>
-            {donHangList.filter((d) => d.trangThaiDon === "nghiem_thu" || d.trangThaiDon === "da_thanh_toan" || d.trangThaiDon === "hoan_thanh").length}
-          </div>
-          <div className={styles.kpiLabel}>Đã nghiệm thu</div>
         </div>
       </div>
 
@@ -199,11 +176,7 @@ export default function LichSuGiaoHangPage() {
         </div>
       ) : (
         <div className={styles.orderGrid}>
-          {filteredList.map((dh) => {
-            const sc = getStatusColor(dh.trangThaiDon);
-            const label = getStatusLabel(dh.trangThaiDon);
-
-            return (
+          {filteredList.map((dh) => (
               <div key={dh.id} className={styles.orderCard}>
                 <div className={styles.orderCardHeader}>
                   <div>
@@ -212,10 +185,10 @@ export default function LichSuGiaoHangPage() {
                   </div>
                   <span
                     className={styles.orderStatus}
-                    style={{ background: sc.bg, color: sc.color }}
+                    style={{ background: "#4caf5022", color: "#4caf50" }}
                   >
                     <FiCheck size={10} style={{ marginRight: 4 }} />
-                    {label}
+                    Đã giao
                   </span>
                 </div>
 

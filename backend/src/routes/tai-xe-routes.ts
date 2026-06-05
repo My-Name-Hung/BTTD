@@ -8,7 +8,7 @@ import { ghiNhatKy } from "../services/access-history-service";
 
 const router = Router();
 
-/** Lấy đơn hàng của tài xế đang giao (admin xem tất cả) */
+/** Lấy đơn hàng của tài xế đang giao (admin xem tất cả) - chỉ trạng thái DANG_GIAO */
 router.get(
   "/don-hang-cua-toi",
   authMiddleware,
@@ -23,10 +23,10 @@ router.get(
       let data;
 
       if (isAdmin) {
-        // Admin xem tất cả đơn đang chờ giao (đã xác nhận sản xuất)
+        // Admin xem tất cả đơn đang giao
         data = await query<any>(
           `SELECT dh.* FROM DonHang dh
-           WHERE dh.trangThaiDon IN (N'dang_giao', N'da_giao')
+           WHERE dh.trangThaiDon = N'dang_giao'
            ORDER BY dh.ngayGiao DESC`,
           {}
         );
@@ -38,7 +38,7 @@ router.get(
            INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
            INNER JOIN Xe xe ON ls.idXe = xe.id
            WHERE xe.idTaiKhoan = @idTaiXe
-             AND dh.trangThaiDon IN (N'dang_giao', N'da_giao')
+             AND dh.trangThaiDon = N'dang_giao'
            ORDER BY dh.ngayGiao DESC`,
           { idTaiXe },
         );
@@ -131,7 +131,52 @@ router.get(
   },
 );
 
-/** Lịch sử giao hàng — đơn đã giao hoàn thành */
+/** Lấy đơn đã giao (tab "Đã giao" trong trang giao hàng) */
+router.get(
+  "/don-hang-da-giao",
+  authMiddleware,
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Chưa đăng nhập" });
+        return;
+      }
+
+      const isAdmin = req.user.vaiTro === 'admin';
+      let data;
+
+      if (isAdmin) {
+        // Admin xem tất cả đơn đã giao
+        data = await query<any>(
+          `SELECT dh.* FROM DonHang dh
+           WHERE dh.trangThaiDon = N'da_giao'
+           ORDER BY dh.ngayGiao DESC`,
+          {}
+        );
+      } else {
+        // Tài xế chỉ xem đơn của mình
+        const idTaiXe = req.user.id;
+        data = await query<any>(
+          `SELECT dh.* FROM DonHang dh
+           INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
+           INNER JOIN Xe xe ON ls.idXe = xe.id
+           WHERE xe.idTaiKhoan = @idTaiXe
+             AND dh.trangThaiDon = N'da_giao'
+           ORDER BY dh.ngayGiao DESC`,
+          { idTaiXe },
+        );
+      }
+
+      res.json({ success: true, message: "Lấy đơn đã giao thành công", data });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Lỗi lấy đơn đã giao";
+      res.status(500).json({ success: false, message });
+    }
+  },
+);
+
+/** Lịch sử giao hàng — chỉ trạng thái ĐÃ GIAO */
 router.get(
   "/lich-su-giao",
   authMiddleware,
@@ -146,22 +191,22 @@ router.get(
       let data;
 
       if (isAdmin) {
-        // Admin xem tất cả lịch sử giao hàng
+        // Admin xem tất cả lịch sử giao hàng - chỉ ĐÃ GIAO
         data = await query<any>(
           `SELECT dh.* FROM DonHang dh
-           WHERE dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')
+           WHERE dh.trangThaiDon = N'da_giao'
            ORDER BY dh.ngayGiao DESC`,
           {}
         );
       } else {
-        // Tài xế chỉ xem đơn của mình
+        // Tài xế chỉ xem đơn của mình - chỉ ĐÃ GIAO
         const idTaiXe = req.user.id;
         data = await query<any>(
           `SELECT dh.* FROM DonHang dh
            INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
            INNER JOIN Xe xe ON ls.idXe = xe.id
            WHERE xe.idTaiKhoan = @idTaiXe
-             AND dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')
+             AND dh.trangThaiDon = N'da_giao'
            ORDER BY dh.ngayGiao DESC`,
           { idTaiXe },
         );

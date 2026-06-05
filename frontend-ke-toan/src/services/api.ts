@@ -888,6 +888,16 @@ export async function layDonHangGiaoCuaToi(): Promise<any[]> {
   return json.data || [];
 }
 
+// Tài xế lấy đơn đã giao (tab "Đã giao")
+export async function layDonHangDaGiao(): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/tai-xe/don-hang-da-giao`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
 // Tài xế cập nhật trạng thái giao
 export async function taiXeCapNhatTrangThaiGiao(
   idDonHang: number,
