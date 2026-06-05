@@ -218,7 +218,7 @@ export interface BatchNghiemThuResult {
   [idDonHang: number]: {
     id: number;
     idDonHang: number;
-    chatLuong: string;
+    ketQua: string;
     ngayNghiemThu: string;
     tenNguoiNghiemThu: string | null;
     ghiChu: string | null;
@@ -240,18 +240,18 @@ export async function layNghiemThuBatch(idDonHangs: number[]): Promise<BatchNghi
   const results = await query<{
     idDonHang: number;
     id: number;
-    chatLuong: string;
+    ketQua: string;
     ngayNghiemThu: string;
-    nguoiLap: string | null;
+    tenNguoiNghiemThu: string | null;
     ghiChu: string | null;
     bienBanFile: string | null;
   }>(
     `SELECT 
        nt.idDonHang,
        nt.id,
-       nt.chatLuong,
-       CONVERT(varchar, nt.ngayTao, 120) as ngayNghiemThu,
-       nt.nguoiLap,
+       nt.ketQua,
+       CONVERT(varchar, nt.ngayNghiemThu, 120) as ngayNghiemThu,
+       nt.tenNguoiNghiemThu,
        nt.ghiChu,
        nt.bienBanFile
      FROM NghiemThu nt
@@ -265,15 +265,7 @@ export async function layNghiemThuBatch(idDonHangs: number[]): Promise<BatchNghi
   });
   results.forEach(r => {
     if (!result[r.idDonHang]) {
-      result[r.idDonHang] = {
-        id: r.id,
-        idDonHang: r.idDonHang,
-        chatLuong: r.chatLuong,
-        ngayNghiemThu: r.ngayNghiemThu,
-        tenNguoiNghiemThu: r.nguoiLap,
-        ghiChu: r.ghiChu,
-        bienBanFile: r.bienBanFile,
-      };
+      result[r.idDonHang] = r;
     }
   });
 

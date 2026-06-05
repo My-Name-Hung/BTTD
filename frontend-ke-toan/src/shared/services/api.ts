@@ -1291,7 +1291,7 @@ export interface BatchNghiemThuResponse {
   [idDonHang: number]: {
     id: number;
     idDonHang: number;
-    chatLuong: string;
+    ketQua: string;
     ngayNghiemThu: string;
     tenNguoiNghiemThu: string | null;
     ghiChu: string | null;
