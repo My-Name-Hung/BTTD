@@ -14,6 +14,8 @@
  */
 
 import { google, drive_v3 } from 'googleapis';
+import fs from 'fs';
+import path from 'path';
 import { config } from '../config';
 
 let driveClient: drive_v3.Drive | null = null;
@@ -22,20 +24,43 @@ let driveClient: drive_v3.Drive | null = null;
 const ROOT_FOLDER_ID = config.google.driveFolderId;
 let cachedFolderId: string | null = null;
 
+function getServiceAccountCredentials() {
+  const inlineKey = config.google.serviceAccountKey?.trim();
+  const serviceAccountEmail = config.google.serviceAccountEmail?.trim();
+
+  if (inlineKey && serviceAccountEmail) {
+    return {
+      client_email: serviceAccountEmail,
+      private_key: inlineKey.replace(/\\n/g, '\n'),
+    };
+  }
+
+  const credsPath = config.google.credentialsPath?.trim();
+  if (!credsPath) {
+    throw new Error(
+      'Chưa cấu hình Google Service Account. Hãy đặt GOOGLE_SERVICE_ACCOUNT_KEY + GOOGLE_SERVICE_ACCOUNT_EMAIL hoặc GOOGLE_APPLICATION_CREDENTIALS.'
+    );
+  }
+
+  const resolvedPath = path.isAbsolute(credsPath)
+    ? credsPath
+    : path.resolve(process.cwd(), credsPath);
+
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error(
+      `Không tìm thấy file Service Account tại "${resolvedPath}". Hãy kiểm tra GOOGLE_APPLICATION_CREDENTIALS trên môi trường deploy.`
+    );
+  }
+
+  return JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
+}
+
 /** Khởi tạo Drive client từ Service Account */
 function getDriveClient(): drive_v3.Drive {
   if (driveClient) return driveClient;
 
-  const credsPath = config.google.credentialsPath;
-  if (!credsPath) {
-    throw new Error(
-      'Chưa cấu hình GOOGLE_APPLICATION_CREDENTIALS trong .env. ' +
-      'Đặt đường dẫn đến file JSON key của Service Account.'
-    );
-  }
-
   const auth = new google.auth.GoogleAuth({
-    credentials: JSON.parse(require('fs').readFileSync(credsPath, 'utf8')),
+    credentials: getServiceAccountCredentials(),
     scopes: ['https://www.googleapis.com/auth/drive.file'],
   });
 
