@@ -70,11 +70,23 @@ export async function taoKhachHang(data: Partial<KhachHang>): Promise<KhachHang>
   // Dùng MERGE để tránh lỗi trùng nếu đã tồn tại (do import công nợ chạy trước)
   await query(
     `MERGE INTO CongNoKhachHang AS target
-     USING (SELECT 1 as src) AS source
-     ON (target.tenKhachHang = @tenKhachHang)
+     USING (SELECT @maKhachHang AS maKhachHang, @tenKhachHang AS tenKhachHang, @nhom AS nhom) AS source
+     ON (
+       (source.maKhachHang IS NOT NULL AND LTRIM(RTRIM(ISNULL(target.maKhachHang, ''))) = LTRIM(RTRIM(source.maKhachHang)))
+       OR (
+         (source.maKhachHang IS NULL OR LTRIM(RTRIM(source.maKhachHang)) = '')
+         AND target.tenKhachHang = source.tenKhachHang
+       )
+     )
+     WHEN MATCHED THEN
+       UPDATE SET
+         target.maKhachHang = COALESCE(source.maKhachHang, target.maKhachHang),
+         target.tenKhachHang = source.tenKhachHang,
+         target.nhom = COALESCE(source.nhom, target.nhom),
+         target.ngayCapNhat = ${vnNow()}
      WHEN NOT MATCHED THEN
        INSERT (maKhachHang, tenKhachHang, nhom)
-       VALUES (@maKhachHang, @tenKhachHang, @nhom);`,
+       VALUES (source.maKhachHang, source.tenKhachHang, source.nhom);`,
     {
       maKhachHang: maKH,
       tenKhachHang: tenKH,

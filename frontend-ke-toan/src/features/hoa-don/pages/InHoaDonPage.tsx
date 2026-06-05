@@ -532,22 +532,6 @@ export default function InHoaDonPage() {
                   </td>
                 </tr>
               )}
-              {isCongNo && !isCongNoDu && (
-                <tr>
-                  <td className={styles.tdCenter}>
-                    {(hd.buuVanChuyen || 0) > 0 || (hd.phiPhatSinh || 0) > 0
-                      ? "4"
-                      : "2"}
-                  </td>
-                  <td>Khách thanh toán kỳ này</td>
-                  <td className={styles.tdCenter}></td>
-                  <td className={styles.tdRight}></td>
-                  <td className={styles.tdRight}></td>
-                  <td className={`${styles.tdRight} ${styles.red}`}>
-                    -{soTienDuocChot.toLocaleString("vi-VN")}
-                  </td>
-                </tr>
-              )}
             </tbody>
             <tfoot>
               <tr className={styles.totalRow}>

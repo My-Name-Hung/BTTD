@@ -19,8 +19,8 @@ export async function layDuCuoiCoKhachHang(data: {
   const rows = await query<CongNoKhachHang>(
     normalizedMaKhachHang
       ? `SELECT TOP 1 * FROM CongNoKhachHang
-         WHERE maKhachHang = @maKhachHang OR tenKhachHang = @tenKhachHang
-         ORDER BY CASE WHEN maKhachHang = @maKhachHang THEN 0 ELSE 1 END, id ASC`
+         WHERE maKhachHang = @maKhachHang
+         ORDER BY id ASC`
       : `SELECT TOP 1 * FROM CongNoKhachHang WHERE tenKhachHang = @tenKhachHang ORDER BY id ASC`,
     {
       maKhachHang: normalizedMaKhachHang,
@@ -51,8 +51,8 @@ export async function capNhatSoDuCoKhachHang(data: {
   const rows = await query<CongNoKhachHang>(
     normalizedMaKhachHang
       ? `SELECT TOP 1 * FROM CongNoKhachHang
-         WHERE maKhachHang = @maKhachHang OR tenKhachHang = @tenKhachHang
-         ORDER BY CASE WHEN maKhachHang = @maKhachHang THEN 0 ELSE 1 END, id ASC`
+         WHERE maKhachHang = @maKhachHang
+         ORDER BY id ASC`
       : `SELECT TOP 1 * FROM CongNoKhachHang WHERE tenKhachHang = @tenKhachHang ORDER BY id ASC`,
     {
       maKhachHang: normalizedMaKhachHang,
@@ -105,8 +105,8 @@ export async function dongBoCongNoKhachHangTheoPhatSinh(data: {
   const existing = await query<CongNoKhachHang>(
     normalizedMaKhachHang
       ? `SELECT TOP 1 * FROM CongNoKhachHang
-         WHERE maKhachHang = @maKhachHang OR tenKhachHang = @tenKhachHang
-         ORDER BY CASE WHEN maKhachHang = @maKhachHang THEN 0 ELSE 1 END, id ASC`
+         WHERE maKhachHang = @maKhachHang
+         ORDER BY id ASC`
       : `SELECT TOP 1 * FROM CongNoKhachHang WHERE tenKhachHang = @tenKhachHang ORDER BY id ASC`,
     {
       maKhachHang: normalizedMaKhachHang,
@@ -225,7 +225,18 @@ export async function layCongNoKhachHangGrouped(
   }
 
   const rows = await query<CongNoKhachHang>(
-    `SELECT * FROM CongNoKhachHang ${whereClause} ORDER BY nhom ASC, tenKhachHang ASC`,
+    `WITH RankedCongNo AS (
+       SELECT *,
+         ROW_NUMBER() OVER (
+           PARTITION BY COALESCE(NULLIF(LTRIM(RTRIM(maKhachHang)), ''), LOWER(LTRIM(RTRIM(tenKhachHang))))
+           ORDER BY id ASC
+         ) AS rn
+       FROM CongNoKhachHang ${whereClause}
+     )
+     SELECT *
+     FROM RankedCongNo
+     WHERE rn = 1
+     ORDER BY nhom ASC, tenKhachHang ASC`,
     params,
   );
 
