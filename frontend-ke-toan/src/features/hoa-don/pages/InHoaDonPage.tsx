@@ -298,6 +298,7 @@ export default function InHoaDonPage() {
   const hd = hoaDon;
   const ls = Array.isArray(lichSX) && lichSX.length > 0 ? lichSX[0] : null;
   const isCongNo = hd.loaiThanhToan === "cong_no" || hd.loaiThanhToan === "cong_no_du";
+  const isCongNoDu = hd.loaiThanhToan === "cong_no_du";
   const debtHoaDons = sortHoaDonsByTime(
     allHoaDons.filter(
       (item) => item.loaiThanhToan === "cong_no" || item.loaiThanhToan === "cong_no_du",
@@ -315,6 +316,9 @@ export default function InHoaDonPage() {
     (sum, item) => sum + item.amount,
     0,
   );
+  const soTienDuocChot = hd.soTienThanhToan || hd.tongCong || 0;
+  const tongCongHienThi =
+    isCongNo && !isCongNoDu ? soTienDuocChot : hd.tongCong || 0;
   const phuongThucText =
     hd.phuongThucThanhToan === "chuyen_khoan" ? "Chuyển khoản" : "Tiền mặt";
 
@@ -528,6 +532,22 @@ export default function InHoaDonPage() {
                   </td>
                 </tr>
               )}
+              {isCongNo && !isCongNoDu && (
+                <tr>
+                  <td className={styles.tdCenter}>
+                    {(hd.buuVanChuyen || 0) > 0 || (hd.phiPhatSinh || 0) > 0
+                      ? "4"
+                      : "2"}
+                  </td>
+                  <td>Khách thanh toán kỳ này</td>
+                  <td className={styles.tdCenter}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={`${styles.tdRight} ${styles.red}`}>
+                    -{soTienDuocChot.toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+              )}
             </tbody>
             <tfoot>
               <tr className={styles.totalRow}>
@@ -535,13 +555,13 @@ export default function InHoaDonPage() {
                   TỔNG CỘNG
                 </td>
                 <td className={styles.tdRightBold}>
-                  {(hd.tongCong || 0).toLocaleString("vi-VN")}
+                  {tongCongHienThi.toLocaleString("vi-VN")}
                 </td>
               </tr>
               <tr>
                 <td colSpan={6} className={styles.soTienChu}>
                   Số tiền bằng chữ:{" "}
-                  {numberToVietnamese(hd.tongCong || 0)}
+                  {numberToVietnamese(tongCongHienThi)}
                 </td>
               </tr>
             </tfoot>
