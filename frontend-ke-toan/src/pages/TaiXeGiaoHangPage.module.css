@@ -495,3 +495,198 @@
     font-size: 24px;
   }
 }
+
+/* Date Filter */
+.dateFilterWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dateNavBtn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.dateNavBtn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.dateNavBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dateDisplayBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.dateDisplayBtn:hover {
+  border-color: var(--color-primary);
+}
+
+.rotated {
+  transform: rotate(180deg);
+}
+
+.dateClearBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dateClearBtn:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.datePickerDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+}
+
+.datePickerEmpty {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.datePickerItem {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.datePickerItem:hover {
+  background: var(--color-bg);
+}
+
+.datePickerItemActive {
+  color: var(--color-primary);
+  font-weight: 600;
+  background: var(--color-bg);
+}
+
+/* Dropdown with search */
+.dropdownSearchWrap {
+  position: relative;
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dropdownSearchIcon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.dropdownSearchInput {
+  width: 100%;
+  padding: 8px 28px 8px 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.dropdownSearchInput:focus {
+  border-color: var(--color-primary);
+}
+
+.dropdownSearchClear {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.dropdownEmpty {
+  padding: 12px 14px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .dateFilterWrap {
+    max-width: 320px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .orderGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1400px) {
+  .orderGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

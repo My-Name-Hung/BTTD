@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  FiCalendar,
   FiCheck,
   FiChevronDown,
   FiMapPin,
@@ -24,6 +25,12 @@ function formatDate(d: string | null | undefined): string {
   return d ? formatDateVN(d) : "";
 }
 
+function getDateKey(d: string | null | undefined): string {
+  if (!d) return "";
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
 export default function LichSuGiaoHangPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -35,6 +42,15 @@ export default function LichSuGiaoHangPage() {
   const [search, setSearch] = useState("");
   const [filterKhachHang, setFilterKhachHang] = useState("");
   const [showKhachHangDropdown, setShowKhachHangDropdown] = useState(false);
+  const [khachHangSearch, setKhachHangSearch] = useState("");
+  const khachHangSearchRef = useRef<HTMLInputElement>(null);
+
+  // Date filter
+  const [filterDate, setFilterDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -52,6 +68,13 @@ export default function LichSuGiaoHangPage() {
     loadData();
   }, [loadData]);
 
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (showKhachHangDropdown && khachHangSearchRef.current) {
+      khachHangSearchRef.current.focus();
+    }
+  }, [showKhachHangDropdown]);
+
   const khachHangOptions = useMemo(() => {
     const unique = Array.from(
       new Set(donHangList.map((d) => d.tenKhachHang || "")),
@@ -60,6 +83,39 @@ export default function LichSuGiaoHangPage() {
       .sort();
     return unique;
   }, [donHangList]);
+
+  const filteredKhachHangOptions = useMemo(() => {
+    if (!khachHangSearch) return khachHangOptions;
+    const q = khachHangSearch.toLowerCase();
+    return khachHangOptions.filter((kh) => kh.toLowerCase().includes(q));
+  }, [khachHangOptions, khachHangSearch]);
+
+  // Get unique dates for calendar
+  const availableDates = useMemo(() => {
+    const dates = new Set<string>();
+    donHangList.forEach((d) => {
+      const key = getDateKey(d.ngayGiao as unknown as string);
+      if (key) dates.add(key);
+    });
+    return Array.from(dates).sort().reverse();
+  }, [donHangList]);
+
+  // Date navigation
+  const currentDateIndex = availableDates.indexOf(filterDate);
+  const hasPrevDate = currentDateIndex < availableDates.length - 1;
+  const hasNextDate = currentDateIndex > 0;
+
+  const goToPrevDate = () => {
+    if (hasPrevDate) {
+      setFilterDate(availableDates[currentDateIndex + 1]);
+    }
+  };
+
+  const goToNextDate = () => {
+    if (hasNextDate) {
+      setFilterDate(availableDates[currentDateIndex - 1]);
+    }
+  };
 
   const filteredList = useMemo(() => {
     return donHangList.filter((d) => {
@@ -70,9 +126,17 @@ export default function LichSuGiaoHangPage() {
         d.diaChiNhan?.toLowerCase().includes(search.toLowerCase());
       const matchKhachHang =
         !filterKhachHang || d.tenKhachHang === filterKhachHang;
-      return matchSearch && matchKhachHang;
+      const matchDate = !filterDate || getDateKey(d.ngayGiao as unknown as string) === filterDate;
+      return matchSearch && matchKhachHang && matchDate;
     });
-  }, [donHangList, search, filterKhachHang]);
+  }, [donHangList, search, filterKhachHang, filterDate]);
+
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return d.toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+  };
 
   return (
     <div className={styles.page}>
@@ -91,6 +155,70 @@ export default function LichSuGiaoHangPage() {
           <div className={styles.kpiValue}>{donHangList.length}</div>
           <div className={styles.kpiLabel}>Tổng đã giao</div>
         </div>
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiValue} style={{ color: "#009688" }}>
+            {filteredList.length}
+          </div>
+          <div className={styles.kpiLabel}>Đang xem</div>
+        </div>
+      </div>
+
+      {/* Date Filter */}
+      <div className={styles.dateFilterWrap}>
+        <button
+          className={styles.dateNavBtn}
+          onClick={goToPrevDate}
+          disabled={!hasPrevDate}
+        >
+          ‹
+        </button>
+        <button
+          className={styles.dateDisplayBtn}
+          onClick={() => setShowDatePicker(!showDatePicker)}
+        >
+          <FiCalendar size={14} />
+          <span>{formatDisplayDate(filterDate) || "Tất cả ngày"}</span>
+          <FiChevronDown size={14} className={showDatePicker ? styles.rotated : ""} />
+        </button>
+        <button
+          className={styles.dateNavBtn}
+          onClick={goToNextDate}
+          disabled={!hasNextDate}
+        >
+          ›
+        </button>
+        {filterDate && (
+          <button
+            className={styles.dateClearBtn}
+            onClick={() => { setFilterDate(""); setShowDatePicker(false); }}
+          >
+            <FiX size={12} /> Tất cả
+          </button>
+        )}
+
+        {showDatePicker && (
+          <>
+            <div
+              className={styles.dropdownOverlay}
+              onClick={() => setShowDatePicker(false)}
+            />
+            <div className={styles.datePickerDropdown}>
+              {availableDates.length === 0 ? (
+                <div className={styles.datePickerEmpty}>Không có dữ liệu</div>
+              ) : (
+                availableDates.map((date) => (
+                  <button
+                    key={date}
+                    className={`${styles.datePickerItem} ${filterDate === date ? styles.datePickerItemActive : ""}`}
+                    onClick={() => { setFilterDate(date); setShowDatePicker(false); }}
+                  >
+                    {formatDisplayDate(date)}
+                  </button>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Search + Filter */}
@@ -125,30 +253,56 @@ export default function LichSuGiaoHangPage() {
             <>
               <div
                 className={styles.dropdownOverlay}
-                onClick={() => setShowKhachHangDropdown(false)}
+                onClick={() => { setShowKhachHangDropdown(false); setKhachHangSearch(""); }}
               />
               <div className={styles.dropdownMenu}>
+                {/* Search input in dropdown */}
+                <div className={styles.dropdownSearchWrap}>
+                  <FiSearch size={13} className={styles.dropdownSearchIcon} />
+                  <input
+                    ref={khachHangSearchRef}
+                    className={styles.dropdownSearchInput}
+                    placeholder="Tìm khách hàng..."
+                    value={khachHangSearch}
+                    onChange={(e) => setKhachHangSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  {khachHangSearch && (
+                    <button
+                      className={styles.dropdownSearchClear}
+                      onClick={(e) => { e.stopPropagation(); setKhachHangSearch(""); }}
+                    >
+                      <FiX size={12} />
+                    </button>
+                  )}
+                </div>
                 <button
                   className={`${styles.dropdownItem} ${!filterKhachHang ? styles.dropdownItemActive : ""}`}
                   onClick={() => {
                     setFilterKhachHang("");
                     setShowKhachHangDropdown(false);
+                    setKhachHangSearch("");
                   }}
                 >
                   Tất cả khách hàng
                 </button>
-                {khachHangOptions.map((kh) => (
-                  <button
-                    key={kh}
-                    className={`${styles.dropdownItem} ${filterKhachHang === kh ? styles.dropdownItemActive : ""}`}
-                    onClick={() => {
-                      setFilterKhachHang(kh);
-                      setShowKhachHangDropdown(false);
-                    }}
-                  >
-                    {kh}
-                  </button>
-                ))}
+                {filteredKhachHangOptions.length === 0 ? (
+                  <div className={styles.dropdownEmpty}>Không tìm thấy</div>
+                ) : (
+                  filteredKhachHangOptions.map((kh) => (
+                    <button
+                      key={kh}
+                      className={`${styles.dropdownItem} ${filterKhachHang === kh ? styles.dropdownItemActive : ""}`}
+                      onClick={() => {
+                        setFilterKhachHang(kh);
+                        setShowKhachHangDropdown(false);
+                        setKhachHangSearch("");
+                      }}
+                    >
+                      {kh}
+                    </button>
+                  ))
+                )}
               </div>
             </>
           )}
