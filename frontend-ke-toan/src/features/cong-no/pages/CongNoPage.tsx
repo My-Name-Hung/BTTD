@@ -103,6 +103,7 @@ export default function CongNoPage() {
     failed: number;
     errors: string[];
   } | null>(null);
+  const [importSuccess, setImportSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canWrite = hasAnyRole(["admin", "ke_toan"]);
@@ -258,6 +259,7 @@ export default function CongNoPage() {
       setUploadResult(result);
       if (result.success > 0) {
         showToast(`Import thành công ${result.success}/${result.total} dòng`);
+        setImportSuccess(true);
         setFile(null);
         if (activeTab === "tai_len") setActiveTab("danh_sach");
         loadGroups();
@@ -984,6 +986,18 @@ export default function CongNoPage() {
         onConfirm={handleDelete}
         onClose={() => setConfirmDelete(null)}
         loading={deletingId !== null}
+      />
+
+      {/* Import thành công */}
+      <ConfirmModal
+        isOpen={importSuccess}
+        title="Import thành công"
+        message={`Đã import thành công ${uploadResult?.success || 0} dòng công nợ. Khách hàng đã được đồng bộ vào trang khách hàng.`}
+        confirmText="Đồng ý"
+        cancelText=""
+        onConfirm={() => setImportSuccess(false)}
+        onClose={() => setImportSuccess(false)}
+        type="success"
       />
     </div>
   );

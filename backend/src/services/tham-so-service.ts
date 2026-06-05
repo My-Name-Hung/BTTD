@@ -67,9 +67,14 @@ export async function taoKhachHang(data: Partial<KhachHang>): Promise<KhachHang>
   const kh = result[0];
 
   // Đồng thời tạo dòng công nợ cho khách hàng mới (tất cả giá trị = 0)
+  // Dùng MERGE để tránh lỗi trùng nếu đã tồn tại (do import công nợ chạy trước)
   await query(
-    `INSERT INTO CongNoKhachHang (maKhachHang, tenKhachHang, nhom)
-     VALUES (@maKhachHang, @tenKhachHang, @nhom)`,
+    `MERGE INTO CongNoKhachHang AS target
+     USING (SELECT 1 as src) AS source
+     ON (target.tenKhachHang = @tenKhachHang)
+     WHEN NOT MATCHED THEN
+       INSERT (maKhachHang, tenKhachHang, nhom)
+       VALUES (@maKhachHang, @tenKhachHang, @nhom);`,
     {
       maKhachHang: maKH,
       tenKhachHang: tenKH,
