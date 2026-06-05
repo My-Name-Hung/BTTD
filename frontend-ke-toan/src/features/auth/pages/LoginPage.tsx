@@ -67,7 +67,7 @@ export default function LoginPage() {
           <ul className={styles.illustrationContact}>
             <li>SĐT: 0292 651 8375</li>
             <li>MST: 1801286137</li>
-            <li>Địa chỉ: Km14, QL91, P.Phước Thới, TP.Cần Thơ</li>
+            <li>Địa chỉ: Km14, QL91, P. Phước Thới, TP. Cần Thơ</li>
           </ul>
           <div className={styles.illustrationFooter}>
             ĐƯỢC THỰC HIỆN BỞI ĐỘI NGŨ IT GROUP XMTĐ

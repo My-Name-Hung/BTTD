@@ -181,19 +181,6 @@ export default function TaiXeGiaoHangPage() {
         </button>
       </div>
 
-      {/* KPI row */}
-      <div className={styles.kpiRow}>
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiValue}>{thongKe.chuaGiao}</div>
-          <div className={styles.kpiLabel}>Chưa giao</div>
-        </div>
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiValue} style={{ color: "#009688" }}>
-            {thongKe.daGiao}
-          </div>
-          <div className={styles.kpiLabel}>Đã giao</div>
-        </div>
-      </div>
 
       {/* Search + Filter bar */}
       <div className={styles.filterBar}>
