@@ -12,7 +12,7 @@ import {
   Tooltip,
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import {
   FiAlertTriangle,
@@ -31,25 +31,14 @@ import { useNavigate } from "react-router-dom";
 import { Loading } from "../../../shared/components/Common";
 import { ROLE_LABELS, useAuth, usePageRole } from "../../../shared/hooks";
 import {
-  layDoanhThuTheoThang,
-  layDonHangTheoTrangThai,
-  layThongKeDashboard,
+  layDashboardSummary,
   layThongKeTaiXe,
-  layDanhSachXe,
-  layDanhSachKhachHang,
-  layDanhSachTramTron,
-  layDanhSachTaiXe,
-  layThongKeThanhToan,
-  layThongKeNghiemThu,
-  layThongKeTheoTramTron,
-  layCongNoTheoThang,
 } from "../../../shared/services/api";
 import {
-  DoanhThuTheoThang,
-  DonHangTheoTrangThai,
   ThongKeDashboard,
   TRANG_THAI_DON_COLORS,
   TRANG_THAI_DON_LABELS,
+  DashboardSummary,
 } from "../../../shared/types";
 import styles from "./DashboardPage.module.css";
 
@@ -200,32 +189,38 @@ export default function DashboardPage() {
         setDoanhThu([]);
         setTrangThai([]);
       } else {
-        const { tuNgay, denNgay } = getDateRange(period);
-        const [dashRes, revenueRes, statusRes, xeRes, khachRes, tramRes, txRes, ttRes, ntRes, ttThangRes, cnThangRes] = await Promise.all([
-          layThongKeDashboard(),
-          layDoanhThuTheoThang(tuNgay, denNgay),
-          layDonHangTheoTrangThai(),
-          layDanhSachXe(),
-          layDanhSachKhachHang(),
-          layDanhSachTramTron(),
-          layDanhSachTaiXe(),
-          layThongKeThanhToan(),
-          layThongKeNghiemThu(),
-          layThongKeTheoTramTron(),
-          layCongNoTheoThang(),
-        ]);
-        setDashboard(dashRes);
-        setDoanhThu(revenueRes);
-        setTrangThai(statusRes);
-        setThanhToan(ttRes);
-        setNghiemThu(ntRes);
-        setTramTron(ttThangRes);
-        setCongNoThang(cnThangRes);
+        // OPTIMIZED: Sử dụng Dashboard Summary API - 1 request thay vì 11 requests
+        const summary = await layDashboardSummary();
+        
+        setDashboard({
+          tongDonHang: summary.thongKe.tongDon,
+          donChoDuyet: summary.thongKe.donChoDuyet,
+          donDangXuLy: summary.thongKe.donDangXuLy,
+          donDaHoanThanh: summary.thongKe.donDaHoanThanh,
+          tongDoanhThu: summary.thongKe.tongDoanhThu,
+          tongCongNo: summary.thongKe.tongCongNo,
+          donQuaHan: summary.thongKe.donQuaHan,
+        } as ThongKeDashboard);
+        
+        setDoanhThu(summary.doanhThu);
+        setTrangThai(summary.trangThai);
+        setThanhToan({
+          daThanhToan: summary.thanhToan.tongThanhToan,
+          chuaThanhToan: summary.thanhToan.chuaThanhToan,
+          congNo: summary.thongKe.tongCongNo,
+        });
+        setNghiemThu({
+          daNghiemThu: summary.nghiemThu.daNghiemThu,
+          chuaNghiemThu: summary.nghiemThu.choNghiemThu,
+          dangNghiemThu: 0,
+        });
+        setTramTron(summary.tram);
+        setCongNoThang(summary.congNo.map(c => ({ thang: c.thang, congNoCu: c.congNo })));
         setCounts({
-          xe: Array.isArray(xeRes) ? xeRes.length : 0,
-          khach: Array.isArray(khachRes?.data) ? khachRes.data.length : 0,
-          tram: Array.isArray(tramRes) ? tramRes.length : 0,
-          taiXe: Array.isArray(txRes) ? txRes.length : 0,
+          xe: summary.xe.length,
+          khach: summary.khachHang.length,
+          tram: summary.tramTron.length,
+          taiXe: summary.taiXe.length,
         });
       }
     } catch (err) {
@@ -244,7 +239,61 @@ export default function DashboardPage() {
   const roleLabel = vaiTro ? ROLE_LABELS[vaiTro] : "";
   const isTaiXe = vaiTro === "tai_xe";
 
-  const totalOrders = trangThai.reduce((sum, d) => sum + d.soLuong, 0);
+  // OPTIMIZED: Memoize expensive computations
+  const totalOrders = useMemo(() => 
+    trangThai.reduce((sum, d) => sum + d.soLuong, 0), 
+  [trangThai]);
+
+  // OPTIMIZED: Memoize chart data objects
+  const revenueLineData = useMemo(() => ({
+    labels: doanhThu.map(d => {
+      const [y, m] = d.thang.split("-");
+      return `T${m}/${y.slice(2)}`;
+    }),
+    datasets: [{
+      label: "Doanh thu (triệu VNĐ)",
+      data: doanhThu.map(d => d.doanhThu / 1_000_000),
+      borderColor: "#073ceb",
+      backgroundColor: "rgba(7, 60, 235, 0.08)",
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: "#073ceb",
+      pointRadius: 5,
+      pointHoverRadius: 7,
+    }],
+  }), [doanhThu]);
+
+  const revenueBarData = useMemo(() => ({
+    labels: doanhThu.map(d => {
+      const [y, m] = d.thang.split("-");
+      return `T${m}/${y.slice(2)}`;
+    }),
+    datasets: [{
+      label: "Số đơn hàng",
+      data: doanhThu.map(d => d.soDonHang),
+      backgroundColor: "rgba(16, 185, 129, 0.85)",
+      borderColor: "#10b981",
+      borderWidth: 1,
+      borderRadius: 8,
+      barThickness: 36,
+    }],
+  }), [doanhThu]);
+
+  const congNoBarData = useMemo(() => ({
+    labels: congNoThang.map(d => {
+      const [y, m] = d.thang.split("-");
+      return `T${m}/${y.slice(2)}`;
+    }),
+    datasets: [{
+      label: "Công nợ (triệu VNĐ)",
+      data: congNoThang.map(d => d.congNoCu / 1_000_000),
+      backgroundColor: "rgba(239, 68, 68, 0.75)",
+      borderColor: "#ef4444",
+      borderWidth: 1,
+      borderRadius: 8,
+      barThickness: 32,
+    }],
+  }), [congNoThang]);
 
   // Chart font config
   const chartFont = { size: 12, weight: "bold" as const };
@@ -350,116 +399,6 @@ export default function DashboardPage() {
       },
     },
   });
-
-  // ── DOANH THU CHARTS ──
-  const revenueLineData = {
-    labels: doanhThu.map(d => {
-      const [y, m] = d.thang.split("-");
-      return `T${m}/${y.slice(2)}`;
-    }),
-    datasets: [{
-      label: "Doanh thu (triệu VNĐ)",
-      data: doanhThu.map(d => d.doanhThu / 1_000_000),
-      borderColor: "#073ceb",
-      backgroundColor: "rgba(7, 60, 235, 0.08)",
-      fill: true,
-      tension: 0.4,
-      pointBackgroundColor: "#073ceb",
-      pointRadius: 5,
-      pointHoverRadius: 7,
-    }],
-  };
-
-  const revenueLineOpts = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx: { raw: unknown }) => `${(ctx.raw as number).toFixed(1)} tr VNĐ`,
-        },
-      },
-      datalabels: {
-        display: false,
-      },
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-      y: {
-        grid: { color: "rgba(226,232,240,0.6)" },
-        ticks: {
-          font: { size: 11 },
-          callback: (v: unknown) => `${v} tr`,
-        },
-      },
-    },
-  };
-
-  const revenueBarData = {
-    labels: doanhThu.map(d => {
-      const [y, m] = d.thang.split("-");
-      return `T${m}/${y.slice(2)}`;
-    }),
-    datasets: [{
-      label: "Số đơn hàng",
-      data: doanhThu.map(d => d.soDonHang),
-      backgroundColor: "rgba(16, 185, 129, 0.85)",
-      borderColor: "#10b981",
-      borderWidth: 1,
-      borderRadius: 8,
-      barThickness: 36,
-    }],
-  };
-
-  const congNoBarData = {
-    labels: congNoThang.map(d => {
-      const [y, m] = d.thang.split("-");
-      return `T${m}/${y.slice(2)}`;
-    }),
-    datasets: [{
-      label: "Công nợ (triệu VNĐ)",
-      data: congNoThang.map(d => d.congNoCu / 1_000_000),
-      backgroundColor: "rgba(239, 68, 68, 0.75)",
-      borderColor: "#ef4444",
-      borderWidth: 1,
-      borderRadius: 8,
-      barThickness: 32,
-    }],
-  };
-
-  const congNoBarOpts = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx: { raw: unknown }) => `${(ctx.raw as number).toFixed(1)} tr VNĐ`,
-        },
-      },
-      datalabels: {
-        anchor: "end" as const,
-        align: "top" as const,
-        font: { size: 11, weight: "bold" as const },
-        color: "#374151",
-        formatter: (v: unknown) => {
-          const n = v as number;
-          return n > 0 ? `${n.toFixed(1)}` : "";
-        },
-      },
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-      y: {
-        grid: { color: "rgba(226,232,240,0.6)" },
-        ticks: {
-          font: { size: 11 },
-          callback: (v: unknown) => `${v} tr`,
-        },
-      },
-    },
-  };
 
   // ── TRẠNG THÁI CHARTS ──
   const statusBarData = {

@@ -15,8 +15,8 @@ import {
   exportThanhToan,
   ExportThanhToan,
   layDanhSachDonHang,
-  layHoaDonTheoDonHang,
-  layLichSuThanhToan,
+  layThanhToanBatch,
+  layHoaDonBatch,
 } from "../../../shared/services/api";
 import { DonHang, ThanhToan } from "../../../shared/types";
 import styles from "./ThanhToanPage.module.css";
@@ -68,30 +68,37 @@ export default function ThanhToanPage() {
 
       const dhs = dhRes.data || [];
 
-      const [histories, hoaDonLists] = await Promise.all([
-        Promise.all(dhs.map((dh: DonHang) => layLichSuThanhToan(dh.id))),
-        Promise.all(dhs.map((dh: DonHang) => layHoaDonTheoDonHang(dh.id))),
-      ]);
+      // OPTIMIZED: Batch API calls thay vì N+1 queries
+      if (dhs.length > 0) {
+        const donHangIds = dhs.map((dh: DonHang) => dh.id);
+        const [batchTT, batchHD] = await Promise.all([
+          layThanhToanBatch(donHangIds),
+          layHoaDonBatch(donHangIds),
+        ]);
 
-      const mapTT: Record<number, ThanhToan[]> = {};
-      const mapHD: Record<number, HoaDonItem[]> = {};
-      dhs.forEach((dh: DonHang, i: number) => {
-        mapTT[dh.id] = histories[i] || [];
-        mapHD[dh.id] = (hoaDonLists[i] || []).map((h: any) => ({
-          id: h.id,
-          maHoaDon: h.maHoaDon,
-          ngayLap: h.ngayLap,
-          khachHang: h.khachHang,
-          tienBeTong: h.tienBeTong,
-          buuVanChuyen: h.buuVanChuyen,
-          phiPhatSinh: h.phiPhatSinh,
-          giamTru: h.giamTru,
-          tongCong: h.tongCong,
-          loaiThanhToan: h.loaiThanhToan,
-        }));
-      });
-      setThanhToans(mapTT);
-      setHoaDons(mapHD);
+        const mapTT: Record<number, ThanhToan[]> = {};
+        const mapHD: Record<number, HoaDonItem[]> = {};
+        dhs.forEach((dh: DonHang) => {
+          mapTT[dh.id] = batchTT[dh.id] || [];
+          mapHD[dh.id] = (batchHD[dh.id] ? [batchHD[dh.id]] : []).map((h: any) => ({
+            id: h.id,
+            maHoaDon: h.soHoaDon,
+            ngayLap: h.ngayTao,
+            khachHang: dh.tenKhachHang,
+            tienBeTong: h.tongTien,
+            buuVanChuyen: 0,
+            phiPhatSinh: 0,
+            giamTru: h.giamTru || 0,
+            tongCong: h.tongTien - (h.giamTru || 0),
+            loaiThanhToan: 'tra_het',
+          }));
+        });
+        setThanhToans(mapTT);
+        setHoaDons(mapHD);
+      } else {
+        setThanhToans({});
+        setHoaDons({});
+      }
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {

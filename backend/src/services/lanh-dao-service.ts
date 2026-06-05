@@ -169,8 +169,10 @@ export async function layDonHangGiaoHang(): Promise<DonHangGiaoHang[]> {
        xe.tenTaiXe,
        xe.soDienThoaiTaiXe
      FROM DonHang dh
-     LEFT JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-       AND ls.id = (SELECT TOP 1 id FROM LichSanXuat WHERE idDonHang = dh.id ORDER BY ngayTao DESC)
+     LEFT JOIN (
+       SELECT *, ROW_NUMBER() OVER(PARTITION BY idDonHang ORDER BY ngayTao DESC) as rn
+       FROM LichSanXuat
+     ) ls ON dh.id = ls.idDonHang AND ls.rn = 1
      LEFT JOIN Xe xe ON ls.idXe = xe.id
      WHERE dh.trangThaiDon IN (N'dang_giao', N'da_giao', N'nghiem_thu', N'dang_san_xuat')
      ORDER BY dh.ngayCapNhat DESC`

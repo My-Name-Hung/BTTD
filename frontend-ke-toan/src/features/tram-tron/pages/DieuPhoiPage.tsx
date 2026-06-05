@@ -3,10 +3,10 @@ import { FiSearch, FiEdit2, FiCheck, FiX } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import {
   taoXe, layDanhSachDonHang,
-  layLichSanXuat,
+  layLichSanXuatBatch,
   xacNhanDaGiao, layDanhSachTramTron, layDanhSachMacBeTong,
 } from '../../../shared/services/api';
-import { DonHang, LichSanXuat, TramTron, MacBeTong, TRANG_THAI_DON_LABELS } from '../../../shared/types';
+import { DonHang, TramTron, MacBeTong, TRANG_THAI_DON_LABELS } from '../../../shared/types';
 import { useToast, usePageRole } from '../../../shared/hooks';
 import { Modal, Loading, EmptyState } from '../../../shared/components/Common';
 import styles from './DieuPhoiPage.module.css';
@@ -20,7 +20,7 @@ export default function DieuPhoiPage() {
   const [donHangs, setDonHangs] = useState<DonHang[]>([]);
   const [tramTrons, setTramTrons] = useState<TramTron[]>([]);
   const [macBeTongs, setMacBeTongs] = useState<MacBeTong[]>([]);
-  const [lichSanXuats, setLichSanXuats] = useState<Record<number, LichSanXuat[]>>({});
+  const [lichSanXuats, setLichSanXuats] = useState<Record<number, any>>({});
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState('');
   const [xeModal, setXeModal] = useState(false);
@@ -43,14 +43,18 @@ export default function DieuPhoiPage() {
       setTramTrons(tramRes);
       setMacBeTongs(macRes);
 
-      const allLichs = await Promise.all(
-        (dhRes.data || []).map((dh: DonHang) => layLichSanXuat(dh.id))
-      );
-      const lichMap: Record<number, LichSanXuat[]> = {};
-      (dhRes.data || []).forEach((dh: DonHang, i: number) => {
-        lichMap[dh.id] = allLichs[i];
-      });
-      setLichSanXuats(lichMap);
+      // OPTIMIZED: Batch API call thay vì N+1 queries
+      const donHangIds = (dhRes.data || []).map((dh: DonHang) => dh.id);
+      if (donHangIds.length > 0) {
+        const batchResult = await layLichSanXuatBatch(donHangIds);
+        const lichMap: Record<number, any> = {};
+        donHangIds.forEach((id: number) => {
+          lichMap[id] = batchResult[id] ? [batchResult[id]] : [];
+        });
+        setLichSanXuats(lichMap);
+      } else {
+        setLichSanXuats({});
+      }
     } catch { showToast('Lỗi tải dữ liệu', 'error'); }
     finally { setLoading(false); }
   }, [showToast]);

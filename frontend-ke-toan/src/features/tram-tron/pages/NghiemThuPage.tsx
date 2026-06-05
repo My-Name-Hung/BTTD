@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiSearch, FiCheck, FiFileText, FiX, FiUpload, FiExternalLink, FiCheckCircle, FiClock, FiImage, FiFile } from 'react-icons/fi';
 import {
-  layDanhSachDonHang, layNghiemThu,
-  xacNhanNghiemThu, layLichSuThanhToan,
+  layDanhSachDonHang,
+  xacNhanNghiemThu,
+  layThanhToanBatch,
+  layNghiemThuBatch,
   uploadBienBanNghiemThu,
 } from '../../../shared/services/api';
 import { DonHang, NghiemThu, ThanhToan } from '../../../shared/types';
@@ -78,15 +80,27 @@ export default function NghiemThuPage() {
       ]);
       const dhs = [...(dangGiaoRes.data || []), ...(nghiemThuRes.data || [])];
       setDonHangs(dhs);
-      const ntMap: Record<number, NghiemThu | null> = {};
-      const ttMap: Record<number, ThanhToan[]> = {};
-      for (const dh of dhs) {
-        const [nt, tt] = await Promise.all([layNghiemThu(dh.id), layLichSuThanhToan(dh.id)]);
-        ntMap[dh.id] = nt;
-        ttMap[dh.id] = tt || [];
+
+      // OPTIMIZED: Batch API calls thay vì N+1 queries
+      if (dhs.length > 0) {
+        const donHangIds = dhs.map((dh: DonHang) => dh.id);
+        const [batchNT, batchTT] = await Promise.all([
+          layNghiemThuBatch(donHangIds),
+          layThanhToanBatch(donHangIds),
+        ]);
+
+        const ntMap: Record<number, NghiemThu | null> = {};
+        const ttMap: Record<number, ThanhToan[]> = {};
+        dhs.forEach((dh: DonHang) => {
+          ntMap[dh.id] = batchNT[dh.id] || null;
+          ttMap[dh.id] = batchTT[dh.id] || [];
+        });
+        setNghiemThus(ntMap);
+        setLichSuTT(ttMap);
+      } else {
+        setNghiemThus({});
+        setLichSuTT({});
       }
-      setNghiemThus(ntMap);
-      setLichSuTT(ttMap);
     } catch { showToast('Lỗi tải dữ liệu', 'error'); }
     finally { setLoading(false); }
   }, [showToast]);

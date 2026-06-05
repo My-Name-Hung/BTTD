@@ -387,3 +387,86 @@ export interface AccessSessionDetail {
   session: AccessSession;
   logs: AccessLogItem[];
 }
+
+// ============================================================
+// Dashboard Summary Types
+// ============================================================
+
+export interface DashboardSummary {
+  thongKe: ThongKe;
+  doanhThu: DoanhThuItem[];
+  trangThai: TrangThaiItem[];
+  xe: XeItem[];
+  khachHang: KhachHangItem[];
+  tramTron: TramTronItem[];
+  taiXe: TaiXeItem[];
+  thanhToan: ThanhToanStats;
+  nghiemThu: NghiemThuStats;
+  tram: TramStats[];
+  congNo: CongNoItem[];
+}
+
+export interface ThongKe {
+  tongDon: number;
+  donChoDuyet: number;
+  donDangXuLy: number;
+  donDaHoanThanh: number;
+  tongDoanhThu: number;
+  tongCongNo: number;
+  donQuaHan: number;
+}
+
+export interface DoanhThuItem {
+  thang: string;
+  doanhThu: number;
+  soDonHang: number;
+}
+
+export interface TrangThaiItem {
+  trangThai: string;
+  soLuong: number;
+}
+
+export interface XeItem {
+  id: number;
+  bienSo: string;
+  tenTaiXe: string | null;
+}
+
+export interface KhachHangItem {
+  id: number;
+  tenKhachHang: string;
+  soDienThoai: string;
+}
+
+export interface TramTronItem {
+  id: number;
+  tenTram: string;
+  diaChi: string;
+}
+
+export interface TaiXeItem {
+  id: number;
+  hoTen: string;
+  soDienThoai: string;
+}
+
+export interface ThanhToanStats {
+  tongThanhToan: number;
+  chuaThanhToan: number;
+}
+
+export interface NghiemThuStats {
+  choNghiemThu: number;
+  daNghiemThu: number;
+}
+
+export interface TramStats {
+  tenTram: string;
+  soDon: number;
+}
+
+export interface CongNoItem {
+  thang: string;
+  congNo: number;
+}

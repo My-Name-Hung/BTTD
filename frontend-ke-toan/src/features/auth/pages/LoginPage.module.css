@@ -1,0 +1,242 @@
+/* LoginPage — scoped styles */
+.authWrapper {
+  min-height: 100vh;
+  display: flex;
+}
+
+.authIllustration {
+  flex: 1;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.illustrationContent {
+  text-align: center;
+  color: white;
+  max-width: 440px;
+}
+
+.illustrationLogo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  border-radius: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.introText {
+  font-size: 18px;
+  line-height: 1.6;
+  opacity: 0.9;
+  margin-top: 20px;
+}
+
+.illustrationContact {
+  margin-top: 32px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 2;
+  opacity: 0.85;
+  background: rgba(255,255,255,0.1);
+  padding: 20px 24px;
+  border-radius: var(--radius-lg);
+}
+
+.illustrationContact li {
+  list-style: none;
+  position: relative;
+  padding-left: 20px;
+}
+
+.illustrationContact li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: rgba(255,255,255,0.7);
+}
+
+.illustrationFooter {
+  margin-top: 40px;
+  font-size: 11px;
+  opacity: 0.5;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.loginContainer {
+  flex: 0 0 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  padding: 40px;
+}
+
+.loginCard {
+  background: var(--color-white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.loginHeader {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.loginLogo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  margin-bottom: 16px;
+}
+
+.loginTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.loginSubtitle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.errorMessage {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--color-danger);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.loginFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.loginLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.inputWithIcon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 12px;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.inputWithIcon input {
+  width: 100%;
+  padding: 10px 40px 10px 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.inputWithIcon input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.1);
+}
+
+.eyeButton {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 18px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.eyeButton:hover { color: var(--color-primary); }
+
+.rememberRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rememberCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.rememberCheckbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-family: inherit;
+}
+
+.submitBtn:hover { background: var(--color-primary-dark); }
+.submitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.loginVersion {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .authWrapper { flex-direction: column; }
+  .authIllustration { flex: 0 0 auto; padding: 32px 24px; min-height: auto; }
+  .illustrationContent { max-width: 100%; }
+  .illustrationContact { display: none; }
+  .loginContainer { flex: 1; padding: 24px; }
+}

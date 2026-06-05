@@ -10,6 +10,7 @@ import { authMiddleware } from "./middleware/auth";
 
 import authRoutes from "./routes/auth-routes";
 import dashboardRoutes from "./routes/dashboard-routes";
+import dashboardSummaryRoutes from "./routes/dashboard-summary-routes";
 import dieuPhoiRoutes from "./routes/dieu-phoi-routes";
 import donHangRoutes from "./routes/don-hang-routes";
 import nghiemThuRoutes from "./routes/nghiem-thu-routes";
@@ -28,6 +29,7 @@ import kyThuatRoutes from "./routes/ky-thuat-routes";
 import congNoKhachHangRoutes from "./routes/cong-no-khach-hang-routes";
 import accessHistoryRoutes from "./routes/access-history-routes";
 import exportRoutes from "./routes/export-routes";
+import batchRoutes from "./routes/batch-routes";
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -64,6 +66,7 @@ app.get("/api/health", (_req: Request, res: Response<ApiResponse>) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/don-hang", authMiddleware, maintenanceMiddleware, donHangRoutes);
 app.use("/api/dashboard", authMiddleware, maintenanceMiddleware, dashboardRoutes);
+app.use("/api/dashboard", authMiddleware, maintenanceMiddleware, dashboardSummaryRoutes);
 app.use("/api/dieu-phoi", authMiddleware, maintenanceMiddleware, dieuPhoiRoutes);
 app.use("/api/nghiem-thu", authMiddleware, maintenanceMiddleware, nghiemThuRoutes);
 app.use("/api/thanh-toan", authMiddleware, maintenanceMiddleware, thanhToanRoutes);
@@ -81,6 +84,7 @@ app.use("/api/import", authMiddleware, maintenanceMiddleware, importRoutes);
 app.use("/api", authMiddleware, maintenanceMiddleware, congNoKhachHangRoutes);
 app.use("/api/access-history", authMiddleware, maintenanceMiddleware, accessHistoryRoutes);
 app.use("/api/export", authMiddleware, maintenanceMiddleware, exportRoutes);
+app.use("/api/batch", authMiddleware, maintenanceMiddleware, batchRoutes);
 
 // Error handler
 app.use(

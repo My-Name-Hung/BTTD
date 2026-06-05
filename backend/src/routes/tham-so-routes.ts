@@ -18,6 +18,7 @@ import {
 } from '../services/tham-so-service';
 import { query } from '../config/database';
 import { ghiNhatKy } from '../services/access-history-service';
+import { invalidateDanhMucCache } from '../services/cache-service';
 
 const router = Router();
 
@@ -41,6 +42,7 @@ router.post('/khach-hang', authMiddleware, requireRole('admin', 'ke_toan', 'dieu
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user.id, 'TAO', 'KhachHang', kh.id, undefined,
       JSON.stringify(req.body), ip);
+    invalidateDanhMucCache(); // Invalidate cache
     res.status(201).json({ success: true, message: 'Tạo khách hàng thành công', data: kh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo khách hàng';
@@ -58,6 +60,7 @@ router.put('/khach-hang/:id', authMiddleware, requireRole('admin', 'ke_toan'), a
       JSON.stringify(khCu),
       JSON.stringify(req.body),
       ip);
+    invalidateDanhMucCache(); // Invalidate cache
     res.json({ success: true, message: 'Cập nhật khách hàng thành công', data: kh });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật khách hàng';
@@ -73,6 +76,7 @@ router.delete('/khach-hang/:id', authMiddleware, requireRole('admin'), async (re
     await ghiNhatKy(req.user.id, 'XOA', 'KhachHang', id,
       JSON.stringify(khCu), undefined, ip);
     await xoaKhachHang(id);
+    invalidateDanhMucCache(); // Invalidate cache
     res.json({ success: true, message: 'Xóa khách hàng thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xóa khách hàng';

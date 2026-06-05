@@ -178,6 +178,14 @@ export async function layThongKeDashboard(): Promise<ThongKeDashboard> {
   return request<ThongKeDashboard>("/dashboard/tong-quan");
 }
 
+/**
+ * Lấy tất cả dữ liệu dashboard trong 1 request
+ * Thay thế 11 API calls riêng biệt
+ */
+export async function layDashboardSummary(): Promise<DashboardSummary> {
+  return request<DashboardSummary>("/dashboard/tong-hop");
+}
+
 export async function layDoanhThuTheoThang(
   thangBatDau = "2025-01",
   thangKetThuc = "2026-12",
@@ -1234,5 +1242,106 @@ export async function layHoaDonTheoDonHang(idDonHang: number): Promise<any[]> {
 // Lấy hóa đơn theo ID hóa đơn (dùng cho trang in)
 export async function layHoaDon(id: number): Promise<any> {
   return request<any>(`/hoa-don/${id}`);
+}
+
+// ============================================================
+// BATCH APIs - Tối ưu N+1 queries
+// ============================================================
+
+export interface BatchLichSanXuatResponse {
+  [idDonHang: number]: {
+    id: number;
+    idDonHang: number;
+    idXe: number | null;
+    bienSoXe: string | null;
+    tenTaiXe: string | null;
+    trangThai: string | null;
+    ngayTao: string | null;
+  } | null;
+}
+
+export interface BatchThanhToanResponse {
+  [idDonHang: number]: Array<{
+    id: number;
+    idDonHang: number;
+    soTien: number;
+    ngayThanhToan: string;
+    loaiThanhToan: string;
+    ghiChu: string | null;
+    nguoiTaoHoTen: string | null;
+  }>;
+}
+
+export interface BatchHoaDonResponse {
+  [idDonHang: number]: {
+    id: number;
+    idDonHang: number;
+    soHoaDon: string | null;
+    tongTien: number;
+    thue: number | null;
+    giamTru: number | null;
+    ngayTao: string;
+    tenNguoiTao: string | null;
+  } | null;
+}
+
+export interface BatchNghiemThuResponse {
+  [idDonHang: number]: {
+    id: number;
+    idDonHang: number;
+    ketQua: string;
+    ngayNghiemThu: string;
+    tenNguoiNghiemThu: string | null;
+    ghiChu: string | null;
+    bienBanFile: string | null;
+  } | null;
+}
+
+/**
+ * Lấy lịch sản xuất cho nhiều đơn hàng cùng lúc
+ * Thay thế N+1 queries bằng 1 query
+ */
+export async function layLichSanXuatBatch(ids: number[]): Promise<BatchLichSanXuatResponse> {
+  if (!ids || ids.length === 0) return {};
+  return request<BatchLichSanXuatResponse>("/batch/lich-san-xuat", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+}
+
+/**
+ * Lấy lịch sử thanh toán cho nhiều đơn hàng cùng lúc
+ * Thay thế N+1 queries bằng 1 query
+ */
+export async function layThanhToanBatch(ids: number[]): Promise<BatchThanhToanResponse> {
+  if (!ids || ids.length === 0) return {};
+  return request<BatchThanhToanResponse>("/batch/thanh-toan", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+}
+
+/**
+ * Lấy hóa đơn cho nhiều đơn hàng cùng lúc
+ * Thay thế N+1 queries bằng 1 query
+ */
+export async function layHoaDonBatch(ids: number[]): Promise<BatchHoaDonResponse> {
+  if (!ids || ids.length === 0) return {};
+  return request<BatchHoaDonResponse>("/batch/hoa-don", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+}
+
+/**
+ * Lấy nghiệm thu cho nhiều đơn hàng cùng lúc
+ * Thay thế N+1 queries bằng 1 query
+ */
+export async function layNghiemThuBatch(ids: number[]): Promise<BatchNghiemThuResponse> {
+  if (!ids || ids.length === 0) return {};
+  return request<BatchNghiemThuResponse>("/batch/nghiem-thu", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
 }
 
