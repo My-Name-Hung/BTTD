@@ -68,16 +68,20 @@ export default function NghiemThuPage() {
   const { toasts, showToast } = useToast();
   const [donHangs, setDonHangs] = useState<DonHang[]>([]);
   const [nghiemThus, setNghiemThus] = useState<
-    Record<number, NghiemThu | null>
+    Record<number, BatchNghiemThuResponse[number]>
   >({});
-  const [lichSuTT, setLichSuTT] = useState<Record<number, ThanhToan[]>>({});
+  const [lichSuTT, setLichSuTT] = useState<
+    Record<number, BatchThanhToanResponse[number]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState("");
   const [tab, setTab] = useState<TabType>("can_nghiem_thu");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
-  const [selectedNt, setSelectedNt] = useState<NghiemThu | null>(null);
+  const [selectedNt, setSelectedNt] = useState<
+    BatchNghiemThuResponse[number]
+  >(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadLoading, setUploadLoading] = useState(false);
 
@@ -194,7 +198,7 @@ export default function NghiemThuPage() {
     }
   };
 
-  const openUploadFile = (dh: DonHang, nt: NghiemThu) => {
+  const openUploadFile = (dh: DonHang, nt: BatchNghiemThuResponse[number]) => {
     setSelectedDonHang(dh);
     setSelectedNt(nt);
     setUploadFiles([]);
