@@ -163,9 +163,14 @@ export default function XuatHoaDonPage() {
   const donGiaDisplay = donHang?.donGia || 0;
   const tienBeTong = khoiLuongDisplay * donGiaDisplay;
 
-  // Số khối cần bù - chỉ tính cho đơn cuối ngày
+  // Số khối cần bù - MỖI ĐƠN đều có bù VC riêng
+  // - Đơn cuối ngày: dùng tổng KL ngày (của tất cả đơn cùng khách) để tính bù
+  // - Đơn trước đó: dùng KL của chính đơn đó để tính bù (riêng biệt)
   const soKhoiCanBuSo = parseFloat(soKhoiCanBu) || 0;
-  const khoiBuVC = isDonCuoiNgay ? Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongNgay) : 0;
+  
+  // Với đơn cuối ngày: dùng khoiLuongNgay (tổng), đơn khác: dùng KL đơn đó
+  const khoiLuongTinhBuVC = isDonCuoiNgay ? khoiLuongNgay : khoiLuongDisplay;
+  const khoiBuVC = Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongTinhBuVC);
   const tienBuVCAuto = khoiBuVC * MUC_GIA_BU_VC;
 
   // Nếu đã có hóa đơn công nợ trước đó → tổng tiền = số còn lại thực tế của đơn hàng
@@ -188,23 +193,23 @@ export default function XuatHoaDonPage() {
     }
   }, [loading, existingHoaDon]);
 
-  // Auto-fill số khối cần bù - chỉ cho đơn cuối ngày và khi chưa chỉnh sửa
+  // Auto-fill số khối cần bù - MỖI ĐƠN đều được tính bù riêng
   useEffect(() => {
-    if (!loading && isDonCuoiNgay && khoiLuongNgay > 0 && !soKhoiCanBuDaSet) {
+    if (!loading && khoiLuongTinhBuVC > 0 && !soKhoiCanBuDaSet) {
       setSoKhoiCanBu(khoiBuVC.toString());
-    } else if (!loading && !isDonCuoiNgay && !soKhoiCanBuDaSet) {
+    } else if (!loading && !soKhoiCanBuDaSet) {
       setSoKhoiCanBu("0");
     }
-  }, [loading, isDonCuoiNgay, khoiLuongNgay, khoiBuVC, soKhoiCanBuDaSet]);
+  }, [loading, khoiLuongTinhBuVC, khoiBuVC, soKhoiCanBuDaSet]);
 
-  // Auto-fill tiền bù vận chuyển khi load xong dữ liệu và chưa từng chỉnh sửa
+  // Auto-fill tiền bù vận chuyển - MỖI ĐƠN đều được tính bù riêng
   useEffect(() => {
-    if (!loading && isDonCuoiNgay && khoiLuongNgay > 0 && !buVanChuyenDaSet) {
+    if (!loading && khoiLuongTinhBuVC > 0 && !buVanChuyenDaSet) {
       setBuVanChuyen(tienBuVCAuto > 0 ? formatNumberInput(tienBuVCAuto) : "0");
-    } else if (!loading && !isDonCuoiNgay && !buVanChuyenDaSet) {
+    } else if (!loading && !buVanChuyenDaSet) {
       setBuVanChuyen("0");
     }
-  }, [loading, isDonCuoiNgay, khoiLuongNgay, tienBuVCAuto, buVanChuyenDaSet]);
+  }, [loading, khoiLuongTinhBuVC, tienBuVCAuto, buVanChuyenDaSet]);
 
   // Auto-fill thông tin nhân sự & xe từ lịch sản xuất
   useEffect(() => {
@@ -375,19 +380,19 @@ export default function XuatHoaDonPage() {
           <div className={styles.sectionHeader}>
             <FiTruck size={18} />
             <h3>Bù vận chuyển</h3>
-            {!isDonCuoiNgay && (
-              <span className={styles.badgeDonTruoc}>Đơn trước đó - Bù VC chuyển cho đơn cuối ngày</span>
-            )}
             {isDonCuoiNgay && (
-              <span className={styles.badgeDonCuoi}>Đơn cuối ngày - Tính bù VC</span>
+              <span className={styles.badgeDonCuoi}>Đơn cuối ngày - Dùng tổng KL ngày để tính bù</span>
+            )}
+            {!isDonCuoiNgay && (
+              <span className={styles.badgeDonTruoc}>Đơn trước đó - Dùng KL đơn này để tính bù</span>
             )}
           </div>
           <div className={styles.sectionHint}>
             <strong>Quy tắc tính bù vận chuyển:</strong><br />
-            • Chỉ <strong>đơn cuối cùng</strong> trong ngày của khách mới được tính bù VC<br />
-            • <strong>Công thức:</strong> Số khối bù = {NGƯỠNG_TOI_THIEU_M3} - Tổng khối lượng giao trong ngày<br />
-            • <strong>Tiền bù VC</strong> = Số khối bù × Đơn giá bù VC (<strong>{formatCurrency(MUC_GIA_BU_VC)}/m³</strong>)<br />
-            • <strong>Ví dụ:</strong> Tổng {khoiLuongNgay} m³ → Bù {khoiBuVC} m³ → Tiền bù = <strong>{formatCurrency(tienBuVCAuto)}</strong>
+            • <strong>Đơn cuối ngày:</strong> Dùng <strong>Tổng KL ngày</strong> (tổng tất cả đơn cùng khách) để tính bù<br />
+            • <strong>Đơn trước đó:</strong> Dùng <strong>KL đơn này</strong> để tính bù (riêng biệt)<br />
+            • <strong>Công thức:</strong> Số khối bù = {NGƯỠNG_TOI_THIEU_M3} - KL tính bù<br />
+            • <strong>Tiền bù VC</strong> = Số khối bù × Đơn giá bù VC (<strong>{formatCurrency(MUC_GIA_BU_VC)}/m³</strong>)
           </div>
 
           <div className={styles.buVcGrid}>
@@ -401,27 +406,40 @@ export default function XuatHoaDonPage() {
             </div>
             <div className={styles.buVcCard}>
               <span className={styles.buVcLabel}>Số khối cần bù</span>
-              {isDonCuoiNgay ? (
-                <input
-                  className={`${styles.buVcInput}`}
-                  type="number"
-                  value={soKhoiCanBu}
-                  onChange={(e) => {
-                    setSoKhoiCanBuDaSet(true);
-                    setSoKhoiCanBu(e.target.value);
-                    // Reset buVanChuyenDaSet để auto-fill không overwrite
-                    setBuVanChuyenDaSet(false);
-                  }}
-                  min="0"
-                  step="0.5"
-                />
-              ) : (
-                <span className={`${styles.buVcValue} ${styles.buVcZero}`}>0 m³</span>
-              )}
+              <span className={`${styles.buVcValue} ${khoiBuVC > 0 ? styles.buVcWarning : styles.buVcZero}`}>
+                {soKhoiCanBuSo} m³
+              </span>
             </div>
             <div className={styles.buVcCard}>
               <span className={styles.buVcLabel}>Đơn giá bù VC</span>
               <span className={styles.buVcValue}>{formatCurrency(MUC_GIA_BU_VC)}/m³</span>
+            </div>
+          </div>
+
+          {/* Input editable cho Số khối cần bù */}
+          <div className={styles.formRow}>
+            <div className={styles.formGroup} style={{ flex: 1 }}>
+              <label className={styles.formLabel}>Số khối cần bù (m³)</label>
+              <input
+                className={styles.formInput}
+                type="number"
+                value={soKhoiCanBu}
+                onChange={(e) => {
+                  setSoKhoiCanBuDaSet(true);
+                  setSoKhoiCanBu(e.target.value);
+                  // Reset buVanChuyenDaSet để auto-fill không overwrite
+                  setBuVanChuyenDaSet(false);
+                }}
+                min="0"
+                step="0.5"
+                placeholder="0"
+              />
+              <span className={styles.formHint}>
+                {isDonCuoiNgay 
+                  ? `Auto: ${NGƯỠNG_TOI_THIEU_M3} - ${khoiLuongNgay} = ${khoiBuVC} m³ (dùng tổng KL ngày)`
+                  : `Auto: ${NGƯỠNG_TOI_THIEU_M3} - ${khoiLuongDisplay} = ${khoiBuVC} m³ (dùng KL đơn này)`
+                }
+              </span>
             </div>
           </div>
 
@@ -439,19 +457,10 @@ export default function XuatHoaDonPage() {
                   setSoKhoiCanBuDaSet(false);
                 }}
                 placeholder="0"
-                readOnly={!isDonCuoiNgay}
-                style={{ backgroundColor: !isDonCuoiNgay ? 'var(--color-bg)' : undefined }}
               />
-              {isDonCuoiNgay && (
-                <span className={styles.formHint}>
-                  Auto: {soKhoiCanBuSo} × {formatCurrency(MUC_GIA_BU_VC)} = {formatCurrency(soKhoiCanBuSo * MUC_GIA_BU_VC)}
-                </span>
-              )}
-              {!isDonCuoiNgay && (
-                <span className={styles.formHint} style={{ color: 'var(--color-text-secondary)' }}>
-                  Đơn trước đó - Tiền bù VC = 0đ
-                </span>
-              )}
+              <span className={styles.formHint}>
+                Auto: {soKhoiCanBuSo} × {formatCurrency(MUC_GIA_BU_VC)} = {formatCurrency(soKhoiCanBuSo * MUC_GIA_BU_VC)}
+              </span>
             </div>
           </div>
         </div>
@@ -610,29 +619,27 @@ export default function XuatHoaDonPage() {
                   <span>Tiền bê tông</span>
                   <span>{formatCurrency(tienBeTong)}</span>
                 </div>
-                {isDonCuoiNgay && (
-                  <>
-                    <div className={styles.totalRow}>
-                      <span>Bù vận chuyển</span>
-                      <span>{formatCurrency(buVanChuyenSo)}</span>
-                    </div>
-                    {phiPhatSinhSo > 0 && (
-                      <div className={styles.totalRow}>
-                        <span>Chi phí phát sinh</span>
-                        <span>+ {formatCurrency(phiPhatSinhSo)}</span>
-                      </div>
-                    )}
-                    {giamTruSo > 0 && (
-                      <div className={styles.totalRow}>
-                        <span>Giảm trừ / Khuyến mãi</span>
-                        <span style={{ color: "var(--color-success)" }}>- {formatCurrency(giamTruSo)}</span>
-                      </div>
-                    )}
-                  </>
+                {buVanChuyenSo > 0 && (
+                  <div className={styles.totalRow}>
+                    <span>Bù vận chuyển</span>
+                    <span>{formatCurrency(buVanChuyenSo)}</span>
+                  </div>
                 )}
-                {!isDonCuoiNgay && (
+                {phiPhatSinhSo > 0 && (
+                  <div className={styles.totalRow}>
+                    <span>Chi phí phát sinh</span>
+                    <span>+ {formatCurrency(phiPhatSinhSo)}</span>
+                  </div>
+                )}
+                {giamTruSo > 0 && (
+                  <div className={styles.totalRow}>
+                    <span>Giảm trừ / Khuyến mãi</span>
+                    <span style={{ color: "var(--color-success)" }}>- {formatCurrency(giamTruSo)}</span>
+                  </div>
+                )}
+                {buVanChuyenSo === 0 && phiPhatSinhSo === 0 && giamTruSo === 0 && (
                   <div className={styles.totalRowNote}>
-                    <span>Đơn trước đó trong ngày - Bù VC, Chi phí phát sinh, Giảm trừ = 0đ (chuyển cho đơn cuối ngày)</span>
+                    <span>Không có chi phí bù VC, phát sinh hay giảm trừ</span>
                   </div>
                 )}
               </>
