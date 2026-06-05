@@ -419,16 +419,6 @@ export default function XuatHoaDonPage() {
           <div className={styles.sectionHeader}>
             <FiTruck size={18} />
             <h3>Bù vận chuyển</h3>
-            {isDonCuoiNgay && (
-              <span className={styles.badgeDonCuoi}>
-                Đơn cuối ngày - Dùng tổng KL ngày để tính bù
-              </span>
-            )}
-            {!isDonCuoiNgay && (
-              <span className={styles.badgeDonTruoc}>
-                Đơn trước đó - Dùng KL đơn này để tính bù
-              </span>
-            )}
           </div>
           <div className={styles.sectionHint}>
             <strong>Quy tắc tính bù vận chuyển:</strong>

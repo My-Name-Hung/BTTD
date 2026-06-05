@@ -486,60 +486,87 @@ export default function ChiTietDonHangPage() {
             <FiDollarSign size={14} /> Thông tin thanh toán
           </div>
 
-          {/* Hiển thị chi tiết cho vai trò admin, sale, dieu_phoi, tram_tron */}
-          {hienThiChiTietThanhToan && (
-            <div className={styles.chiTietThanhToanGrid}>
-              <div>
-                <div className={`${styles.chiTietRow}`}>
-                  <span className={styles.infoLabel}>Giá niêm yết</span>
-                  <span className={styles.infoValue}>
-                    {formatCurrency(donHang.giaNiemYet ?? donHang.donGia)}
-                  </span>
-                </div>
-                <div className={`${styles.chiTietRow}`}>
-                  <span className={styles.infoLabel}>Chi phí phát sinh</span>
-                  <span className={styles.infoValue}>
-                    {formatCurrency(donHang.chiPhiPhatSinh ?? 0)}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <div className={`${styles.chiTietRow}`}>
-                  <span className={styles.infoLabel}>Phí bù vận chuyển</span>
-                  <span className={styles.infoValue}>
-                    {formatCurrency(donHang.buVanChuyen ?? 0)}
-                  </span>
-                </div>
-                <div className={`${styles.chiTietRow}`}>
-                  <span className={styles.infoLabel}>Giảm trừ</span>
-                  <span className={styles.infoValue}>
-                    {formatCurrency(donHang.giamTru ?? 0)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Tính từ hóa đơn - đồng bộ với phần hóa đơn bên dưới */}
+          {(() => {
+            const tongTienHoaDon = hoaDons.reduce((sum, hd) => sum + (hd.tongCong || 0), 0);
+            const daThanhToanTuHD = hoaDons.reduce((sum, hd) => sum + (hd.soTienThanhToan || hd.tongCong || 0), 0);
+            const tongPhatSinh = hoaDons.reduce((sum, hd) => sum + (hd.phiPhatSinh || 0), 0);
+            const tongBuVC = hoaDons.reduce((sum, hd) => sum + (hd.buuVanChuyen || 0), 0);
+            const tongGiamTru = hoaDons.reduce((sum, hd) => sum + (hd.giamTru || 0), 0);
+            const conLaiTuHD = tongTienHoaDon - daThanhToanTuHD;
 
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Tổng tiền</span>
-            <span className={`${styles.infoValue} ${styles.infoValuePrimary}`}>
-              {formatCurrency(donHang.thanhTien || 0)}
-            </span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Đã thanh toán</span>
-            <span className={`${styles.infoValue} ${styles.infoValueSuccess}`}>
-              {formatCurrency(donHang.daThanhToan || 0)}
-            </span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Còn lại</span>
-            <span
-              className={`${styles.infoValue} ${connLai > 0 ? styles.infoValueDanger : styles.infoValueSuccess}`}
-            >
-              {formatCurrency(connLai)}
-            </span>
-          </div>
+            const hienThiPhatSinh = tongPhatSinh > 0;
+            const hienThiBuVC = tongBuVC > 0;
+            const hienThiGiamTru = tongGiamTru > 0;
+
+            return (
+              <>
+                <div className={styles.chiTietThanhToanGrid}>
+                  <div>
+                    <div className={`${styles.chiTietRow}`}>
+                      <span className={styles.infoLabel}>Tiền bê tông</span>
+                      <span className={styles.infoValue}>
+                        {formatCurrency(donHang.thanhTien || 0)}
+                      </span>
+                    </div>
+                    {hienThiPhatSinh && (
+                      <div className={`${styles.chiTietRow}`}>
+                        <span className={styles.infoLabel}>Chi phí phát sinh</span>
+                        <span className={styles.infoValue}>
+                          {formatCurrency(tongPhatSinh)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    {hienThiBuVC && (
+                      <div className={`${styles.chiTietRow}`}>
+                        <span className={styles.infoLabel}>Phí bù vận chuyển</span>
+                        <span className={styles.infoValue}>
+                          {formatCurrency(tongBuVC)}
+                        </span>
+                      </div>
+                    )}
+                    {hienThiGiamTru && (
+                      <div className={`${styles.chiTietRow}`}>
+                        <span className={styles.infoLabel}>Giảm trừ</span>
+                        <span className={styles.infoValue}>
+                          -{formatCurrency(tongGiamTru)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Tổng tiền</span>
+                  <span className={`${styles.infoValue} ${styles.infoValuePrimary}`}>
+                    {hoaDons.length > 0
+                      ? formatCurrency(tongTienHoaDon)
+                      : formatCurrency(donHang.thanhTien || 0)}
+                  </span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Đã thanh toán</span>
+                  <span className={`${styles.infoValue} ${styles.infoValueSuccess}`}>
+                    {hoaDons.length > 0
+                      ? formatCurrency(daThanhToanTuHD)
+                      : formatCurrency(donHang.daThanhToan || 0)}
+                  </span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Còn lại</span>
+                  <span
+                    className={`${styles.infoValue} ${(hoaDons.length > 0 ? conLaiTuHD : connLai) > 0 ? styles.infoValueDanger : styles.infoValueSuccess}`}
+                  >
+                    {hoaDons.length > 0
+                      ? formatCurrency(Math.max(0, conLaiTuHD))
+                      : formatCurrency(connLai)}
+                  </span>
+                </div>
+              </>
+            );
+          })()}
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Ngày duyệt</span>
             <span className={styles.infoValue}>
