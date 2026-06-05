@@ -35,6 +35,10 @@ function formatDate(d: string) {
   return d ? formatDateVN(d) : '';
 }
 
+function getFilterSourceDate(item: LichSanXuatItem) {
+  return item.thoiGianTron || item.thoiGianBatDauDo || item.thoiGianKetThucDo || item.ngayTao || "";
+}
+
 function getDateKey(d: string) {
   if (!d) return "";
   const dt = new Date(d);
@@ -123,15 +127,15 @@ export default function KhoLichSanXuatPage() {
     // Lọc theo filter
     if (filterMode === "ngay") {
       items = items.filter(
-        (item) => getDateKey(item.ngayTao || "") === filterValue,
+        (item) => getDateKey(getFilterSourceDate(item)) === filterValue,
       );
     } else if (filterMode === "thang") {
       items = items.filter(
-        (item) => getMonthKey(item.ngayTao || "") === filterValue,
+        (item) => getMonthKey(getFilterSourceDate(item)) === filterValue,
       );
     } else if (filterMode === "nam") {
       items = items.filter(
-        (item) => getYearKey(item.ngayTao || "") === filterValue,
+        (item) => getYearKey(getFilterSourceDate(item)) === filterValue,
       );
     }
 
@@ -160,7 +164,7 @@ export default function KhoLichSanXuatPage() {
       if (isA && !isB) return -1;
       if (!isA && isB) return 1;
       return (
-        new Date(b.ngayTao || 0).getTime() - new Date(a.ngayTao || 0).getTime()
+        new Date(getFilterSourceDate(b) || 0).getTime() - new Date(getFilterSourceDate(a) || 0).getTime()
       );
     });
 
