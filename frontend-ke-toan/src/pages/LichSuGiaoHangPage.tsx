@@ -330,7 +330,8 @@ export default function LichSuGiaoHangPage() {
         </div>
       ) : (
         <div className={styles.orderGrid}>
-          {filteredList.map((dh) => (
+          {filteredList.map((dh) => {
+            return (
               <div key={dh.id} className={styles.orderCard}>
                 <div className={styles.orderCardHeader}>
                   <div>

@@ -349,22 +349,7 @@ export default function TaiXeGiaoHangPage() {
                   >
                     Chi tiết
                   </button>
-                  {isCanGiao && dh.trangThaiDon === "dang_san_xuat" && (
-                    <button
-                      className={styles.btnDangGiao}
-                      onClick={() => handleXacNhanDangGiao(dh)}
-                      disabled={updating === dh.id}
-                    >
-                      {updating === dh.id ? (
-                        "..."
-                      ) : (
-                        <>
-                          <FiNavigation size={14} /> Đang giao
-                        </>
-                      )}
-                    </button>
-                  )}
-                  {isCanGiao && dh.trangThaiDon === "dang_giao" && (
+                  {isDangGiao && dh.trangThaiDon === "dang_giao" && (
                     <button
                       className={styles.btnDaGiao}
                       onClick={() => setConfirmTarget(dh)}

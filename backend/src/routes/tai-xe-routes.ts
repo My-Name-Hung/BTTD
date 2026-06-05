@@ -72,12 +72,12 @@ router.get(
           query<any>(`SELECT COUNT(*) as cnt FROM DonHang dh`, {}),
           query<any>(
             `SELECT COUNT(*) as cnt FROM DonHang dh
-             WHERE dh.trangThaiDon NOT IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'dang_giao')`,
+             WHERE dh.trangThaiDon IN (N'dang_san_xuat')`,
             {}
           ),
           query<any>(
             `SELECT COUNT(*) as cnt FROM DonHang dh
-             WHERE dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')`,
+             WHERE dh.trangThaiDon = N'da_giao'`,
             {}
           ),
         ]);
@@ -103,7 +103,7 @@ router.get(
              INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
              INNER JOIN Xe xe ON ls.idXe = xe.id
              WHERE xe.idTaiKhoan = @idTaiXe
-               AND dh.trangThaiDon NOT IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'dang_giao')`,
+               AND dh.trangThaiDon = N'dang_giao'`,
             { idTaiXe },
           ),
           query<any>(
@@ -111,7 +111,7 @@ router.get(
              INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
              INNER JOIN Xe xe ON ls.idXe = xe.id
              WHERE xe.idTaiKhoan = @idTaiXe
-               AND dh.trangThaiDon IN (N'da_giao', N'hoan_thanh', N'da_thanh_toan', N'nghiem_thu')`,
+               AND dh.trangThaiDon = N'da_giao'`,
             { idTaiXe },
           ),
         ]);
