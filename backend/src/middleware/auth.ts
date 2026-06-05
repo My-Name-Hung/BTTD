@@ -63,6 +63,12 @@ export function requireRole(...roles: string[]) {
     const userRole = normalize(req.user.vaiTro || '');
     const allowed = roles.map(normalize);
 
+    // Admin có full access
+    if (userRole === 'admin') {
+      next();
+      return;
+    }
+
     if (!allowed.includes(userRole)) {
       res.status(403).json({
         success: false,

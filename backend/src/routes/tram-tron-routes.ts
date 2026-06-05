@@ -136,43 +136,74 @@ router.get(
   },
 );
 
-// Lấy chi tiết đơn hàng - đơn có lịch sản xuất (chỉ trạm của user)
+// Lấy chi tiết đơn hàng - đơn có lịch sản xuất (chỉ trạm của user, admin xem tất cả)
 router.get(
   "/don-hang/:id",
   authMiddleware,
-  requireRole("tram_tron"),
+  requireRole("tram_tron", "admin"),
   async (req: AuthRequest, res: Response) => {
     try {
       const idDonHang = parseInt(req.params.id, 10);
-      const idTram = req.user?.idTramTron ?? null;
+      const isAdmin = req.user?.vaiTro?.replace(/_/g, '').toLowerCase() === 'admin';
 
-      if (!idTram) {
-        res
-          .status(403)
-          .json({
-            success: false,
-            message: "Tài khoản chưa được gắn trạm trộn nào",
-          });
+      // Nếu không phải admin, kiểm tra quyền trạm
+      if (!isAdmin) {
+        const idTram = req.user?.idTramTron ?? null;
+
+        if (!idTram) {
+          res
+            .status(403)
+            .json({
+              success: false,
+              message: "Tài khoản chưa được gắn trạm trộn nào",
+            });
+          return;
+        }
+
+        const lichSanXuatList = await query<any[]>(
+          `SELECT ls.*,
+                nd.hoTen as tenTaiXe
+         FROM LichSanXuat ls
+         INNER JOIN TramTron tt ON ls.idTramTron = tt.id
+         LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
+         WHERE ls.idDonHang = @idDonHang AND tt.id = @idTram`,
+          { idDonHang, idTram },
+        );
+
+        if (lichSanXuatList.length === 0) {
+          res
+            .status(403)
+            .json({
+              success: false,
+              message: "Đơn hàng không thuộc quyền truy cập của trạm này",
+            });
+          return;
+        }
+
+        const donHang = await layDonHangTheoId(idDonHang);
+        res.json({
+          success: true,
+          message: "Lấy chi tiết đơn hàng thành công",
+          data: { donHang, lichSanXuat: lichSanXuatList[0] },
+        });
         return;
       }
 
+      // Admin: xem đơn hàng bất kỳ
       const lichSanXuatList = await query<any[]>(
         `SELECT ls.*,
               nd.hoTen as tenTaiXe
        FROM LichSanXuat ls
-       INNER JOIN TramTron tt ON ls.idTramTron = tt.id
        LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
-       WHERE ls.idDonHang = @idDonHang AND tt.id = @idTram`,
-        { idDonHang, idTram },
+       WHERE ls.idDonHang = @idDonHang`,
+        { idDonHang },
       );
 
       if (lichSanXuatList.length === 0) {
-        res
-          .status(403)
-          .json({
-            success: false,
-            message: "Đơn hàng không thuộc quyền truy cập của trạm này",
-          });
+        res.status(404).json({
+          success: false,
+          message: "Không tìm thấy lịch sản xuất cho đơn hàng này",
+        });
         return;
       }
 
