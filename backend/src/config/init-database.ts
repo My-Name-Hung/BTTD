@@ -739,6 +739,15 @@ async function initDatabase(): Promise<void> {
     }
     // ===== END MIGRATIONS =====
 
+    // ===== CREATE PERFORMANCE INDEXES =====
+    console.log("  🔄 Đang tạo performance indexes...");
+    try {
+      await createPerformanceIndexes(db);
+    } catch (error) {
+      console.error("  ⚠️  Lỗi tạo indexes:", error instanceof Error ? error.message : error);
+    }
+    // ===== END CREATE INDEXES =====
+
     // Xóa lịch sử import quá 2 ngày
     try {
       const deleted = await xoaLichSuImportCu();
@@ -753,6 +762,148 @@ async function initDatabase(): Promise<void> {
     );
     console.log("  ⚠ Backend sẽ tiếp tục chạy mà không có database.\n");
   }
+}
+
+// ============================================================
+// PERFORMANCE INDEXES
+// ============================================================
+async function createPerformanceIndexes(db: mssql.ConnectionPool): Promise<void> {
+  const indexes = [
+    // DonHang indexes
+    {
+      name: 'IX_DonHang_NgayTao_TrangThai',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_DonHang_NgayTao_TrangThai' AND object_id = OBJECT_ID('DonHang'))
+            CREATE NONCLUSTERED INDEX IX_DonHang_NgayTao_TrangThai ON DonHang(ngayTao DESC, trangThaiDon)`
+    },
+    {
+      name: 'IX_DonHang_TrangThai',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_DonHang_TrangThai' AND object_id = OBJECT_ID('DonHang'))
+            CREATE NONCLUSTERED INDEX IX_DonHang_TrangThai ON DonHang(trangThaiDon)`
+    },
+    {
+      name: 'IX_DonHang_KhachHang',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_DonHang_KhachHang' AND object_id = OBJECT_ID('DonHang'))
+            CREATE NONCLUSTERED INDEX IX_DonHang_KhachHang ON DonHang(idKhachHang)`
+    },
+    {
+      name: 'IX_DonHang_MaDonHang',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_DonHang_MaDonHang' AND object_id = OBJECT_ID('DonHang'))
+            CREATE NONCLUSTERED INDEX IX_DonHang_MaDonHang ON DonHang(maDonHang)`
+    },
+    {
+      name: 'IX_DonHang_NguoiTao',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_DonHang_NguoiTao' AND object_id = OBJECT_ID('DonHang'))
+            CREATE NONCLUSTERED INDEX IX_DonHang_NguoiTao ON DonHang(nguoiTaoId)`
+    },
+    {
+      name: 'IX_DonHang_TramTron',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_DonHang_TramTron' AND object_id = OBJECT_ID('DonHang'))
+            CREATE NONCLUSTERED INDEX IX_DonHang_TramTron ON DonHang(idTramTron)`
+    },
+
+    // LichSanXuat indexes
+    {
+      name: 'IX_LichSanXuat_DonHang_Ngay',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LichSanXuat_DonHang_Ngay' AND object_id = OBJECT_ID('LichSanXuat'))
+            CREATE NONCLUSTERED INDEX IX_LichSanXuat_DonHang_Ngay ON LichSanXuat(idDonHang, ngayTao DESC)`
+    },
+    {
+      name: 'IX_LichSanXuat_NgayTao',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LichSanXuat_NgayTao' AND object_id = OBJECT_ID('LichSanXuat'))
+            CREATE NONCLUSTERED INDEX IX_LichSanXuat_NgayTao ON LichSanXuat(ngayTao DESC)`
+    },
+    {
+      name: 'IX_LichSanXuat_Xe',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LichSanXuat_Xe' AND object_id = OBJECT_ID('LichSanXuat'))
+            CREATE NONCLUSTERED INDEX IX_LichSanXuat_Xe ON LichSanXuat(idXe)`
+    },
+
+    // CongNo indexes
+    {
+      name: 'IX_CongNo_DonHang',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_CongNo_DonHang' AND object_id = OBJECT_ID('CongNo'))
+            CREATE NONCLUSTERED INDEX IX_CongNo_DonHang ON CongNo(idDonHang)`
+    },
+    {
+      name: 'IX_CongNo_TrangThai',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_CongNo_TrangThai' AND object_id = OBJECT_ID('CongNo'))
+            CREATE NONCLUSTERED INDEX IX_CongNo_TrangThai ON CongNo(trangThai)`
+    },
+
+    // ThanhToan indexes
+    {
+      name: 'IX_ThanhToan_DonHang',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ThanhToan_DonHang' AND object_id = OBJECT_ID('ThanhToan'))
+            CREATE NONCLUSTERED INDEX IX_ThanhToan_DonHang ON ThanhToan(idDonHang, ngayThanhToan DESC)`
+    },
+
+    // HoaDon indexes
+    {
+      name: 'IX_HoaDon_DonHang',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_HoaDon_DonHang' AND object_id = OBJECT_ID('HoaDon'))
+            CREATE NONCLUSTERED INDEX IX_HoaDon_DonHang ON HoaDon(idDonHang)`
+    },
+
+    // NghiemThu indexes
+    {
+      name: 'IX_NghiemThu_DonHang',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_NghiemThu_DonHang' AND object_id = OBJECT_ID('NghiemThu'))
+            CREATE NONCLUSTERED INDEX IX_NghiemThu_DonHang ON NghiemThu(idDonHang)`
+    },
+
+    // NguoiDung indexes
+    {
+      name: 'IX_NguoiDung_VaiTro',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_NguoiDung_VaiTro' AND object_id = OBJECT_ID('NguoiDung'))
+            CREATE NONCLUSTERED INDEX IX_NguoiDung_VaiTro ON NguoiDung(vaiTro)`
+    },
+
+    // Xe indexes
+    {
+      name: 'IX_Xe_TramTron',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Xe_TramTron' AND object_id = OBJECT_ID('Xe'))
+            CREATE NONCLUSTERED INDEX IX_Xe_TramTron ON Xe(idTramTron)`
+    },
+
+    // ThongBao indexes
+    {
+      name: 'IX_ThongBao_NguoiDung_DaDoc',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ThongBao_NguoiDung_DaDoc' AND object_id = OBJECT_ID('ThongBao'))
+            CREATE NONCLUSTERED INDEX IX_ThongBao_NguoiDung_DaDoc ON ThongBao(idNguoiNhan, daDoc, ngayTao DESC)`
+    },
+
+    // LoginSession indexes
+    {
+      name: 'IX_LoginSession_NguoiDung',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LoginSession_NguoiDung' AND object_id = OBJECT_ID('LoginSession'))
+            CREATE NONCLUSTERED INDEX IX_LoginSession_NguoiDung ON LoginSession(idNguoiDung, ngayDangNhap DESC)`
+    },
+  ];
+
+  let createdCount = 0;
+  let skippedCount = 0;
+
+  for (const idx of indexes) {
+    try {
+      // Check if index exists
+      const exists = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.indexes WHERE name = @idxName AND object_id = OBJECT_ID(@tableName)`,
+        { idxName: idx.name, tableName: idx.sql.includes('DonHang') ? 'DonHang' : idx.sql.includes('LichSanXuat') ? 'LichSanXuat' : idx.sql.includes('CongNo') ? 'CongNo' : idx.sql.includes('ThanhToan') ? 'ThanhToan' : idx.sql.includes('HoaDon') ? 'HoaDon' : idx.sql.includes('NghiemThu') ? 'NghiemThu' : idx.sql.includes('NguoiDung') ? 'NguoiDung' : idx.sql.includes('Xe') ? 'Xe' : idx.sql.includes('ThongBao') ? 'ThongBao' : 'LoginSession' }
+      );
+
+      if (exists.recordset.length === 0) {
+        await db.query(idx.sql);
+        console.log(`    ✅ Đã tạo index: ${idx.name}`);
+        createdCount++;
+      } else {
+        skippedCount++;
+      }
+    } catch (error) {
+      console.log(`    ⚠️  Lỗi tạo index ${idx.name}: ${error instanceof Error ? error.message : error}`);
+    }
+  }
+
+  console.log(`  ✅ Performance indexes: ${createdCount} tạo mới, ${skippedCount} đã tồn tại`);
 }
 
 export { initDatabase };
