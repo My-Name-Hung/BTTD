@@ -464,7 +464,7 @@ export default function InHoaDonPage() {
                   {(hd.donGia || 0).toLocaleString("vi-VN")}
                 </td>
                 <td className={styles.tdRight}>
-                  {((hd.khoiLuongDat || 0) * (hd.donGia || 0)).toLocaleString("vi-VN")}
+                  {(hd.tienBeTong || 0).toLocaleString("vi-VN")}
                 </td>
               </tr>
               {(hd.buuVanChuyen || 0) > 0 && (
@@ -537,6 +537,10 @@ export default function InHoaDonPage() {
                   <span className={styles.infoLabel}>Phương thức TT:</span>
                   <span className={styles.infoValue}>{phuongThucText}</span>
                 </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Khách thanh toán kỳ này:</span>
+                  <span className={styles.infoValue}>{formatCurrency(hd.soTienThanhToan || 0)}</span>
+                </div>
               </div>
               <div className={styles.infoCol}>
                 <div className={styles.infoRow}>
@@ -550,6 +554,10 @@ export default function InHoaDonPage() {
                   >
                     {isCongNo ? "CÔNG NỢ" : "TRẢ HẾT"}
                   </span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Công nợ còn lại:</span>
+                  <span className={styles.infoValue}>{formatCurrency(hd.donHangConLai || 0)}</span>
                 </div>
               </div>
             </div>

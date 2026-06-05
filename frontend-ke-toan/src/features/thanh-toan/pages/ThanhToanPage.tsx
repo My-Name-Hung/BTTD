@@ -130,14 +130,14 @@ export default function ThanhToanPage() {
     if (dh.trangThaiDon === "tu_choi") return false;
     const nt = nghiemThus[dh.id];
     if (!nt || nt.ketQua !== "dat") return false;
-    const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
+    const conLai = Math.max(0, dh.conLai || 0);
     return conLai > 0;
   });
 
   const daTatToan = donHangs.filter((dh) => {
     const nt = nghiemThus[dh.id];
     if (!nt || nt.ketQua !== "dat") return false;
-    const conLai = Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0));
+    const conLai = Math.max(0, dh.conLai || 0);
     return conLai <= 0;
   });
 
@@ -156,7 +156,7 @@ export default function ThanhToanPage() {
   const paginatedList = displayList.slice((page - 1) * LIMIT, page * LIMIT);
 
   const tongCongNo = chuaTatToan.reduce(
-    (sum, dh) => sum + Math.max(0, (dh.thanhTien || 0) - (dh.daThanhToan || 0)),
+    (sum, dh) => sum + Math.max(0, dh.conLai || 0),
     0,
   );
   const tongDaTT = [...chuaTatToan, ...daTatToan].reduce(
@@ -350,7 +350,7 @@ export default function ThanhToanPage() {
               <tbody>
                 {paginatedList.map((dh) => {
                   const daThanhToan = dh.daThanhToan || 0;
-                  const conLai = Math.max(0, (dh.thanhTien || 0) - daThanhToan);
+                  const conLai = Math.max(0, dh.conLai || 0);
                   const hds = hoaDons[dh.id] || [];
                   const daTatToanOrder = conLai <= 0;
 
