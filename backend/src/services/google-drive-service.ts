@@ -109,28 +109,44 @@ async function resolveFolderId(drive: drive_v3.Drive): Promise<string> {
   if (cachedFolderId) return cachedFolderId;
 
   if (ROOT_FOLDER_ID) {
-    // Xác nhận folder tồn tại và accessible
     try {
-      await drive.files.get({
+      const res = await drive.files.get({
         fileId: ROOT_FOLDER_ID,
-        fields: 'id, name, mimeType',
+        fields: 'id, name, mimeType, driveId, parents, shortcutDetails',
         ...driveOpts,
       } as drive_v3.Params$Resource$Files$Get);
+
+      if (res.data.mimeType !== 'application/vnd.google-apps.folder') {
+        throw new Error(
+          `ID "${ROOT_FOLDER_ID}" không phải thư mục Google Drive hợp lệ.`
+        );
+      }
+
       cachedFolderId = ROOT_FOLDER_ID;
       return cachedFolderId;
     } catch (err: any) {
+      const lookup = await drive.files.list({
+        q: `trashed=false and '${ROOT_FOLDER_ID}' in parents`,
+        corpora: 'allDrives',
+        pageSize: 1,
+        fields: 'files(id)',
+        ...driveOpts,
+      } as drive_v3.Params$Resource$Files$List).catch(() => null);
+
       if (err?.status === 404) {
+        const extraHint = lookup?.data?.files?.length
+          ? ' Service Account nhìn thấy nội dung bên trong ID này nhưng không đọc trực tiếp được metadata folder; hãy kiểm tra đây có phải shortcut hoặc folder được chia sẻ gián tiếp không.'
+          : ' Hãy đảm bảo folder này nằm thật sự trong Shared Drive và service account đã được thêm trực tiếp vào Shared Drive đó.';
+
         throw new Error(
-          `Không tìm thấy folder với ID "${ROOT_FOLDER_ID}". ` +
-          `Hãy đảm bảo đây là SHARED DRIVE (không phải My Drive thường) ` +
-          `và Service Account đã được thêm vào Shared Drive.`
+          `Không tìm thấy folder với ID "${ROOT_FOLDER_ID}".${extraHint}`
         );
       }
+
       throw err;
     }
   }
 
-  // Không có folder ID → thông báo rõ ràng
   throw new Error(
     'Chưa cấu hình GOOGLE_DRIVE_FOLDER_ID trong .env. ' +
     'Hãy tạo một SHARED DRIVE trên Google Drive, thêm Service Account vào đó, ' +
