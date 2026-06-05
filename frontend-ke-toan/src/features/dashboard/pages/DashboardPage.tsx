@@ -214,7 +214,12 @@ export default function DashboardPage() {
           chuaNghiemThu: summary.nghiemThu.choNghiemThu,
           dangNghiemThu: 0,
         });
-        setTramTron(summary.tram);
+        // Transform tram data: backend trả tenTram/soDon, component expect tramTron/doanhThu
+        setTramTron(summary.tram.map(t => ({
+          tramTron: t.tenTram || 'N/A',
+          soDonHang: t.soDon,
+          doanhThu: 0, // API mới không trả doanhThu theo trạm
+        })));
         setCongNoThang(summary.congNo.map(c => ({ thang: c.thang, congNoCu: c.congNo })));
         setCounts({
           xe: summary.xe.length,
@@ -607,14 +612,6 @@ export default function DashboardPage() {
             <div className={styles.statCard}>
               <FiCheckCircle size={18} color="#10b981" />
               <span>Hoàn thành: <strong>{dashboard?.donDaHoanThanh || 0}</strong></span>
-            </div>
-            <div className={styles.statCard}>
-              <FiTrendingUp size={18} color="#3b82f6" />
-              <span>Đang xử lý: <strong>{dashboard?.donDangXuLy || 0}</strong></span>
-            </div>
-            <div className={styles.statCard}>
-              <FiAlertTriangle size={18} color="#ef4444" />
-              <span>Quá hạn: <strong>{dashboard?.donQuaHan || 0}</strong></span>
             </div>
             <div className={styles.statCard}>
               <FiUsers size={18} color="#8b5cf6" />

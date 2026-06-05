@@ -872,25 +872,43 @@ async function createPerformanceIndexes(db: mssql.ConnectionPool): Promise<void>
             CREATE NONCLUSTERED INDEX IX_NguoiDung_VaiTro ON NguoiDung(vaiTro)`
     },
 
-    // Xe indexes - bảng Xe có cột tramTron (NVARCHAR) không phải idTramTron
+    // Xe indexes - bảng Xe: bienSo, tenTaiXe, soDienThoaiTaiXe, taiTrong, trangThai, ngayTao, idTaiKhoan
+    // (không có tramTron - xe không liên kết trực tiếp với trạm)
     {
-      name: 'IX_Xe_TramTron',
-      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Xe_TramTron' AND object_id = OBJECT_ID('Xe'))
-            CREATE NONCLUSTERED INDEX IX_Xe_TramTron ON Xe(tramTron)`
+      name: 'IX_Xe_BienSo',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Xe_BienSo' AND object_id = OBJECT_ID('Xe'))
+            CREATE NONCLUSTERED INDEX IX_Xe_BienSo ON Xe(bienSo)`
+    },
+    {
+      name: 'IX_Xe_TrangThai',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Xe_TrangThai' AND object_id = OBJECT_ID('Xe'))
+            CREATE NONCLUSTERED INDEX IX_Xe_TrangThai ON Xe(trangThai)`
     },
 
-    // ThongBao indexes - bảng ThongBao có cột idNguoiNhan (đúng)
+    // ThongBao indexes - bảng ThongBao: tieuDe, noiDung, role, loai, idThamChieu, duongDan, isRead, ngayTao
+    // (không có idNguoiNhan - dùng role để gửi thông báo theo vai trò)
     {
-      name: 'IX_ThongBao_NguoiNhan_DaDoc',
-      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ThongBao_NguoiNhan_DaDoc' AND object_id = OBJECT_ID('ThongBao'))
-            CREATE NONCLUSTERED INDEX IX_ThongBao_NguoiNhan_DaDoc ON ThongBao(idNguoiNhan, daDoc, ngayTao DESC)`
+      name: 'IX_ThongBao_Role_Doc',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ThongBao_Role_Doc' AND object_id = OBJECT_ID('ThongBao'))
+            CREATE NONCLUSTERED INDEX IX_ThongBao_Role_Doc ON ThongBao(role, isRead, ngayTao DESC)`
+    },
+    {
+      name: 'IX_ThongBao_NgayTao',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ThongBao_NgayTao' AND object_id = OBJECT_ID('ThongBao'))
+            CREATE NONCLUSTERED INDEX IX_ThongBao_NgayTao ON ThongBao(ngayTao DESC)`
     },
 
-    // LoginSession indexes - bảng LoginSession có cột idNguoiDung và ngayDangNhap
+    // LoginSession indexes - bảng LoginSession: idNguoiDung, tokenHash, ipAddress, userAgent, thaoTac, ngayTao, ngayKetThuc
+    // (không có ngayDangNhap - dùng ngayTao)
     {
-      name: 'IX_LoginSession_NguoiDung',
-      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LoginSession_NguoiDung' AND object_id = OBJECT_ID('LoginSession'))
-            CREATE NONCLUSTERED INDEX IX_LoginSession_NguoiDung ON LoginSession(idNguoiDung, ngayDangNhap DESC)`
+      name: 'IX_LoginSession_NguoiDung_NgayTao',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LoginSession_NguoiDung_NgayTao' AND object_id = OBJECT_ID('LoginSession'))
+            CREATE NONCLUSTERED INDEX IX_LoginSession_NguoiDung_NgayTao ON LoginSession(idNguoiDung, ngayTao DESC)`
+    },
+    {
+      name: 'IX_LoginSession_ThaoTac',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LoginSession_ThaoTac' AND object_id = OBJECT_ID('LoginSession'))
+            CREATE NONCLUSTERED INDEX IX_LoginSession_ThaoTac ON LoginSession(thaoTac, ngayTao DESC)`
     },
   ];
 
