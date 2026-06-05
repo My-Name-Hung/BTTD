@@ -7,6 +7,7 @@ import {
   suaCongNoKhachHang,
   xoaCongNoKhachHang,
   taoCongNoKhachHang,
+  dongBoLaiCongNoKhachHangTuHoaDonVaThanhToan,
 } from '../services/cong-no-khach-hang-service';
 import { ghiNhatKy } from '../services/access-history-service';
 import { query } from '../config/database';
@@ -52,6 +53,20 @@ router.get('/cong-no-khach-hang/nhom/list', authMiddleware, async (_req: AuthReq
     res.json({ success: true, message: 'Lấy danh sách nhóm thành công', data });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi lấy danh sách nhóm';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+/** Đồng bộ lại công nợ khách hàng từ hóa đơn + thanh toán */
+router.post('/cong-no-khach-hang/dong-bo', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const data = await dongBoLaiCongNoKhachHangTuHoaDonVaThanhToan();
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user!.id, 'DONG_BO', 'CongNoKhachHang', undefined, undefined,
+      JSON.stringify(data), ip);
+    res.json({ success: true, message: 'Đồng bộ công nợ khách hàng thành công', data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi đồng bộ công nợ khách hàng';
     res.status(500).json({ success: false, message });
   }
 });

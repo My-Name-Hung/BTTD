@@ -170,6 +170,83 @@ export async function layDanhSachNhomCongNoKhachHang(): Promise<{ nhom: string; 
   return rows;
 }
 
+export async function dongBoLaiCongNoKhachHangTuHoaDonVaThanhToan(): Promise<{
+  soKhachHang: number;
+  tongPhatSinhNo: number;
+  tongPhatSinhCo: number;
+}> {
+  const customers = await query<{
+    tenKhachHang: string;
+    maKhachHang: string | null;
+    nhom: string | null;
+    duDauNo: number;
+    duDauCo: number;
+  }>(
+    `SELECT
+       c.id,
+       c.tenKhachHang,
+       c.maKhachHang,
+       c.nhom,
+       ISNULL(c.duDauNo, 0) as duDauNo,
+       ISNULL(c.duDauCo, 0) as duDauCo
+     FROM CongNoKhachHang c
+     WHERE c.tenKhachHang <> N'Tổng cộng'`,
+  );
+
+  let tongPhatSinhNo = 0;
+  let tongPhatSinhCo = 0;
+
+  for (const customer of customers) {
+    const tongHoaDon = await query<{ tong: number }>(
+      `SELECT ISNULL(SUM(ISNULL(hd.tongCong, 0)), 0) as tong
+       FROM HoaDon hd
+       INNER JOIN DonHang dh ON hd.idDonHang = dh.id
+       WHERE dh.tenKhachHang = @tenKhachHang`,
+      { tenKhachHang: customer.tenKhachHang },
+    );
+
+    const tongThanhToan = await query<{ tong: number }>(
+      `SELECT ISNULL(SUM(ISNULL(tt.soTien, 0)), 0) as tong
+       FROM ThanhToan tt
+       INNER JOIN DonHang dh ON tt.idDonHang = dh.id
+       WHERE dh.tenKhachHang = @tenKhachHang`,
+      { tenKhachHang: customer.tenKhachHang },
+    );
+
+    const phatSinhNo = tongHoaDon[0]?.tong || 0;
+    const phatSinhCo = tongThanhToan[0]?.tong || 0;
+    const chenhLech = (customer.duDauNo || 0) + phatSinhNo - (customer.duDauCo || 0) - phatSinhCo;
+    const duCuoiNo = Math.max(0, chenhLech);
+    const duCuoiCo = Math.max(0, -chenhLech);
+
+    tongPhatSinhNo += phatSinhNo;
+    tongPhatSinhCo += phatSinhCo;
+
+    await query(
+      `UPDATE CongNoKhachHang
+       SET phatSinhNo = @phatSinhNo,
+           phatSinhCo = @phatSinhCo,
+           duCuoiNo = @duCuoiNo,
+           duCuoiCo = @duCuoiCo,
+           ngayCapNhat = ${vnNow()}
+       WHERE tenKhachHang = @tenKhachHang`,
+      {
+        tenKhachHang: customer.tenKhachHang,
+        phatSinhNo,
+        phatSinhCo,
+        duCuoiNo,
+        duCuoiCo,
+      },
+    );
+  }
+
+  return {
+    soKhachHang: customers.length,
+    tongPhatSinhNo,
+    tongPhatSinhCo,
+  };
+}
+
 export async function suaCongNoKhachHang(
   id: number,
   data: Partial<Omit<CongNoKhachHang, 'id' | 'ngayTao' | 'ngayCapNhat'>>,

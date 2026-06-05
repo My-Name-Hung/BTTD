@@ -22,6 +22,7 @@ import {
   suaCongNoKhachHang,
   taoCongNoKhachHang,
   xoaCongNoKhachHang,
+  dongBoCongNoKhachHang,
 } from "../../../shared/services/api";
 import { CongNo, CongNoGroup, CongNoGroupExport, CongNoKhachHang, CongNoKhachHangGroup } from "../../../shared/types";
 import { exportToExcel, formatDateForExport } from "../../../shared/utils/exportData";
@@ -341,6 +342,17 @@ export default function CongNoPage() {
     }
   };
 
+  const handleDongBoCongNo = async () => {
+    try {
+      const result = await dongBoCongNoKhachHang();
+      showToast(`Đã đồng bộ ${result.soKhachHang} khách hàng`);
+      await loadGroups();
+      await loadNhomList();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi đồng bộ công nợ", "error");
+    }
+  };
+
   return (
     <div>
       {/* Header */}
@@ -352,6 +364,11 @@ export default function CongNoPage() {
           </div>
         </div>
         <div className={styles.pageHeaderActions}>
+          {canWrite && (
+            <button className="btn btn-secondary" onClick={handleDongBoCongNo}>
+              <FiCheckCircle /> Đồng bộ công nợ
+            </button>
+          )}
           <button
             className="btn btn-export"
             onClick={handleExportExcel}

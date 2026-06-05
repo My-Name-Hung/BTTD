@@ -519,6 +519,12 @@ export async function xoaCongNoKhachHang(id: number): Promise<void> {
   return request<void>(`/cong-no-khach-hang/${id}`, { method: "DELETE" });
 }
 
+export async function dongBoCongNoKhachHang(): Promise<{ soKhachHang: number; tongPhatSinhNo: number; tongPhatSinhCo: number }> {
+  return request<{ soKhachHang: number; tongPhatSinhNo: number; tongPhatSinhCo: number }>("/cong-no-khach-hang/dong-bo", {
+    method: "POST",
+  });
+}
+
 export async function importCongNoKhachHang(file: File): Promise<ImportResult> {
   const formData = new FormData();
   formData.append("file", file);
