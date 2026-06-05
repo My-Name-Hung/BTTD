@@ -3,7 +3,6 @@ import { DonHang, ThanhToan } from '../models';
 import {
   dongBoCongNoKhachHangTheoPhatSinh,
   layDuCuoiCoKhachHang,
-  capNhatSoDuCoKhachHang,
 } from './cong-no-khach-hang-service';
 
 export interface HoaDon {
@@ -255,17 +254,8 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       tenKhachHang: dh.tenKhachHang || data.khachHang || '',
       nhom: dh.nhom || null,
       phatSinhNoTang: tongNghiaVu,
-      phatSinhCoTang: soTienThuMoi,
+      phatSinhCoTang: soTienThuMoi + soTienDuSuDung,
     });
-
-    if (soTienDuSuDung > 0) {
-      await capNhatSoDuCoKhachHang({
-        idKhachHang: dh.idKhachHang || null,
-        maKhachHang: dh.maKhachHang || null,
-        tenKhachHang: dh.tenKhachHang || data.khachHang || '',
-        giamDuCo: soTienDuSuDung,
-      });
-    }
   }
 
   if (data.loaiThanhToan === 'cong_no' || data.loaiThanhToan === 'cong_no_du') {
@@ -346,17 +336,8 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       tenKhachHang: dh.tenKhachHang || data.khachHang || '',
       nhom: dh.nhom || null,
       phatSinhNoTang: data.loaiThanhToan === 'cong_no' ? tongNghiaVu : 0,
-      phatSinhCoTang: soTienThuMoi,
+      phatSinhCoTang: soTienThuMoi + soTienDuSuDung,
     });
-
-    if (soTienDuSuDung > 0) {
-      await capNhatSoDuCoKhachHang({
-        idKhachHang: dh.idKhachHang || null,
-        maKhachHang: dh.maKhachHang || null,
-        tenKhachHang: dh.tenKhachHang || data.khachHang || '',
-        giamDuCo: soTienDuSuDung,
-      });
-    }
   }
 
   return hoaDon;

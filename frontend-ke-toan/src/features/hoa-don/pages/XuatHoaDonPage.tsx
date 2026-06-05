@@ -49,6 +49,17 @@ function formatDate(d: string | null | undefined): string {
   return `${y}-${m}-${day}`;
 }
 
+function buildUniqueOrders(orders: DonHang[], currentOrder: DonHang): DonHang[] {
+  const map = new Map<number, DonHang>();
+
+  for (const order of [currentOrder, ...orders]) {
+    if (!order?.id) continue;
+    map.set(order.id, order);
+  }
+
+  return Array.from(map.values());
+}
+
 function normalizeCustomerKey(value: string | null | undefined): string {
   return (value || "")
     .normalize("NFD")
@@ -176,21 +187,22 @@ export default function XuatHoaDonPage() {
       if (dh.ngayGiao) {
         try {
           const dsNgay = await layDonHangGiaoTrongNgay(dh.ngayGiao);
-          const dsCungNgay = dsNgay.filter((d: DonHang) =>
+          const dsDonTrongNgay = buildUniqueOrders(dsNgay, dh);
+          const dsCungNgay = dsDonTrongNgay.filter((d: DonHang) =>
             isSameDeliveryDate(d.ngayGiao, dh.ngayGiao),
           );
           const dsCungKhach = dsCungNgay.filter((d: DonHang) =>
             isSameCustomer(d, dh),
           );
           const tongKL = dsCungKhach.reduce(
-            (sum: number, d: DonHang) => sum + (d.khoiLuongDat || 0),
+            (sum: number, d: DonHang) => sum + Number(d.khoiLuongDat || 0),
             0,
           );
-          setKhoiLuongNgay(tongKL);
-          setSoDonNgay(dsCungKhach.length);
+          setKhoiLuongNgay(tongKL > 0 ? tongKL : Number(dh.khoiLuongDat || 0));
+          setSoDonNgay(dsCungKhach.length > 0 ? dsCungKhach.length : 1);
           setIsDonCuoiNgay(dsCungKhach.length > 0);
         } catch {
-          setKhoiLuongNgay(dh.khoiLuongDat || 0);
+          setKhoiLuongNgay(Number(dh.khoiLuongDat || 0));
           setSoDonNgay(1);
           setIsDonCuoiNgay(true);
         }
