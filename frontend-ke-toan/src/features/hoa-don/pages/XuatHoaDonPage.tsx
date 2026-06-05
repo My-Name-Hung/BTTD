@@ -936,7 +936,7 @@ export default function XuatHoaDonPage() {
 
             {(activeTab === "tra_het_du" || activeTab === "cong_no_du") && (
               <div className={styles.formRow}>
-                <div className={styles.formGroup}>
+                {/* <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
                     Số tiền dư ghi nhận thêm (đ)
                   </label>
@@ -952,7 +952,7 @@ export default function XuatHoaDonPage() {
                   <span className={styles.formHint}>
                     Khoản tiền khách trả vượt nghĩa vụ thanh toán hiện tại
                   </span>
-                </div>
+                </div> */}
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
                     Khách thực trả kỳ này (đ)
