@@ -136,9 +136,11 @@ export default function NghiemThuPage() {
     if (!selectedDonHang || uploadFiles.length === 0) return;
     setUploadLoading(true);
     try {
+      // BƯỚC 1: Upload file trước — nếu fail thì chưa đổi trạng thái đơn hàng
+      const uploadResult = await uploadBienBanNghiemThu(selectedDonHang.id, uploadFiles);
+      // BƯỚC 2: Chỉ xác nhận nghiệm thu SAU KHI upload thành công
       await xacNhanNghiemThu(selectedDonHang.id, 'da');
-      await uploadBienBanNghiemThu(selectedDonHang.id, uploadFiles);
-      showToast(`Đã tải ${uploadFiles.length} file và xác nhận nghiệm thu thành công`);
+      showToast(`Đã tải ${uploadResult.bienBanFiles.length} file và xác nhận nghiệm thu thành công`);
       setUploadModalOpen(false);
       setUploadFiles([]);
       loadData();

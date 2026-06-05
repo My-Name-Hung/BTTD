@@ -484,6 +484,7 @@ async function initDatabase(): Promise<void> {
           nguoiKy NVARCHAR(200),
           chucVu NVARCHAR(200),
           tenNguoiNghiemThu NVARCHAR(200),
+          ngayNghiemThu DATETIME,
           daGuiKhach BIT DEFAULT 0,
           ngayGuiKhach DATETIME,
           ghiChu NVARCHAR(MAX),
@@ -494,12 +495,20 @@ async function initDatabase(): Promise<void> {
     } else {
       console.log("  ✅ Bảng NghiemThu đã tồn tại");
       // Migration: thêm cột tenNguoiNghiemThu nếu chưa có
-      const colExists = await db.query<{ name: string }[]>(
+      const colExists1 = await db.query<{ name: string }[]>(
         `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('NghiemThu') AND name = 'tenNguoiNghiemThu'`,
       );
-      if (colExists.recordset.length === 0) {
+      if (colExists1.recordset.length === 0) {
         console.log("  ➕ Thêm cột tenNguoiNghiemThu vào NghiemThu...");
         await db.query(`ALTER TABLE NghiemThu ADD tenNguoiNghiemThu NVARCHAR(200)`);
+      }
+      // Migration: thêm cột ngayNghiemThu nếu chưa có
+      const colExists2 = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('NghiemThu') AND name = 'ngayNghiemThu'`,
+      );
+      if (colExists2.recordset.length === 0) {
+        console.log("  ➕ Thêm cột ngayNghiemThu vào NghiemThu...");
+        await db.query(`ALTER TABLE NghiemThu ADD ngayNghiemThu DATETIME`);
       }
     }
 
