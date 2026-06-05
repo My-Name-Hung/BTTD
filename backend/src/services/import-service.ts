@@ -918,29 +918,38 @@ export async function importCongNoKhachHang(
       );
       success = dataRows.length;
 
-      // Auto tạo hoặc cập nhật KhachHang nếu chưa tồn tại (theo tenKhachHang)
-      const uniqueKhachHang = dataRows.filter((v, i, a) => a.findIndex(t => t.tenKhachHang === v.tenKhachHang) === i);
-      for (const row of uniqueKhachHang) {
-        try {
-          const existing = await query<{ id: number; nhom: string | null }[]>(
-            `SELECT id, nhom FROM KhachHang WHERE tenKhachHang = @tenKhachHang`,
-            { tenKhachHang: row.tenKhachHang },
-          );
-          if (existing.recordset.length === 0) {
-            // Tạo mới nếu chưa có
-            await taoKhachHang({
-              maKhachHang: row.maKhachHang || undefined,
-              tenKhachHang: row.tenKhachHang,
-              nhom: row.nhom || undefined,
-            });
-          } else if (!existing.recordset[0].nhom && row.nhom) {
-            // Cập nhật nhom nếu KH đã có nhưng chưa có nhóm
-            await query(
-              `UPDATE KhachHang SET nhom = @nhom WHERE id = @id`,
-              { nhom: row.nhom, id: existing.recordset[0].id },
-            );
-          }
-        } catch { /* Bỏ qua lỗi */ }
+      // Auto tạo hoặc cập nhật KhachHang bằng bulk MERGE — tránh lỗi per-row
+      const uniqueRows = dataRows.filter((v, i, a) => a.findIndex(t => t.tenKhachHang === v.tenKhachHang) === i);
+      if (uniqueRows.length > 0) {
+        // Bulk MERGE vào KhachHang
+        const khValues = uniqueRows
+          .map((r) => {
+            const maKH = (r.maKhachHang || "").trim() || null;
+            return `SELECT N'${(maKH || "").replace(/'/g, "''")}' as maKhachHang, N'${r.tenKhachHang.replace(/'/g, "''")}' as tenKhachHang, N'${(r.nhom || "").replace(/'/g, "''")}' as nhom`;
+          })
+          .join(" UNION ALL ");
+
+        // MERGE: cập nhật nhom nếu đã có, tạo mới nếu chưa có
+        await query(
+          `MERGE INTO KhachHang AS target
+           USING (${khValues}) AS source (maKhachHang, tenKhachHang, nhom)
+           ON (target.tenKhachHang = source.tenKhachHang)
+           WHEN MATCHED AND target.nhom IS NULL AND source.nhom IS NOT NULL AND source.nhom <> '' THEN
+             UPDATE SET target.nhom = source.nhom
+           WHEN NOT MATCHED THEN
+             INSERT (maKhachHang, tenKhachHang, nhom) VALUES (source.maKhachHang, source.tenKhachHang, source.nhom);`,
+          {}
+        );
+
+        // MERGE: đảm bảo mỗi KH có dòng CongNoKhachHang (tránh trùng)
+        await query(
+          `MERGE INTO CongNoKhachHang AS target
+           USING (${khValues}) AS source (maKhachHang, tenKhachHang, nhom)
+           ON (target.tenKhachHang = source.tenKhachHang)
+           WHEN NOT MATCHED THEN
+             INSERT (maKhachHang, tenKhachHang, nhom) VALUES (source.maKhachHang, source.tenKhachHang, source.nhom);`,
+          {}
+        );
       }
 
       // Tính tổng cộng từ dataRows
