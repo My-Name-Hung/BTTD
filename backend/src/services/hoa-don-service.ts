@@ -335,7 +335,8 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
       maKhachHang: dh.maKhachHang || null,
       tenKhachHang: dh.tenKhachHang || data.khachHang || '',
       nhom: dh.nhom || null,
-      phatSinhNoTang: data.loaiThanhToan === 'cong_no' ? tongNghiaVu : 0,
+      // phatSinhNo chỉ ghi nhận phần còn lại sau thanh toán, không phải toàn bộ tổng nghĩa vụ
+      phatSinhNoTang: conLaiMoi,
       phatSinhCoTang: soTienThuMoi + soTienDuSuDung,
     });
   }
