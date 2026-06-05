@@ -22,7 +22,7 @@ import {
 } from "../types";
 
 const BASE_URL =
-  import.meta.env.VITE_API_URL || "https://bttd.onrender.com/api";
+  import.meta.env.VITE_API_URL || "http://apibttd.ximangtaydo.vn/api";
 
 function getToken(): string | null {
   return localStorage.getItem("bttd_token");
@@ -167,7 +167,9 @@ export async function xoaDonHang(id: number): Promise<void> {
   await request(`/don-hang/${id}`, { method: "DELETE" });
 }
 
-export async function layDonHangGiaoTrongNgay(ngayGiao: string): Promise<DonHang[]> {
+export async function layDonHangGiaoTrongNgay(
+  ngayGiao: string,
+): Promise<DonHang[]> {
   const params = new URLSearchParams({ ngayGiao });
   const res = await fetch(`${BASE_URL}/don-hang/giao-trong-ngay?${params}`, {
     headers: { Authorization: `Bearer ${getToken()}` },
@@ -209,7 +211,11 @@ export async function layThongKeThanhToan(): Promise<{
   chuaThanhToan: number;
   congNo: number;
 }> {
-  return request<{ daThanhToan: number; chuaThanhToan: number; congNo: number }>("/dashboard/thanh-toan");
+  return request<{
+    daThanhToan: number;
+    chuaThanhToan: number;
+    congNo: number;
+  }>("/dashboard/thanh-toan");
 }
 
 export async function layThongKeNghiemThu(): Promise<{
@@ -217,21 +223,31 @@ export async function layThongKeNghiemThu(): Promise<{
   chuaNghiemThu: number;
   dangNghiemThu: number;
 }> {
-  return request<{ daNghiemThu: number; chuaNghiemThu: number; dangNghiemThu: number }>("/dashboard/nghiem-thu");
+  return request<{
+    daNghiemThu: number;
+    chuaNghiemThu: number;
+    dangNghiemThu: number;
+  }>("/dashboard/nghiem-thu");
 }
 
-export async function layThongKeTheoTramTron(): Promise<{
-  tramTron: string;
-  soDonHang: number;
-  doanhThu: number;
-}[]> {
-  return request<{ tramTron: string; soDonHang: number; doanhThu: number }[]>("/dashboard/tram-tron");
+export async function layThongKeTheoTramTron(): Promise<
+  {
+    tramTron: string;
+    soDonHang: number;
+    doanhThu: number;
+  }[]
+> {
+  return request<{ tramTron: string; soDonHang: number; doanhThu: number }[]>(
+    "/dashboard/tram-tron",
+  );
 }
 
-export async function layCongNoTheoThang(): Promise<{
-  thang: string;
-  congNoCu: number;
-}[]> {
+export async function layCongNoTheoThang(): Promise<
+  {
+    thang: string;
+    congNoCu: number;
+  }[]
+> {
   return request<{ thang: string; congNoCu: number }[]>("/dashboard/cong-no");
 }
 
@@ -307,8 +323,12 @@ export async function layDanhSachXe(trangThai?: string): Promise<Xe[]> {
   return res ?? [];
 }
 
-export async function layDanhSachTaiXe(): Promise<{ id: number; hoTen: string; soDienThoai: string | null }[]> {
-  return request<{ id: number; hoTen: string; soDienThoai: string | null }[]>("/tham-so/tai-xe");
+export async function layDanhSachTaiXe(): Promise<
+  { id: number; hoTen: string; soDienThoai: string | null }[]
+> {
+  return request<{ id: number; hoTen: string; soDienThoai: string | null }[]>(
+    "/tham-so/tai-xe",
+  );
 }
 
 export async function taoXe(data: Partial<Xe>): Promise<Xe> {
@@ -377,8 +397,11 @@ export async function layNghiemThu(
   return request<NghiemThu | null>(`/nghiem-thu/don-hang/${idDonHang}`);
 }
 
-export async function xacNhanNghiemThu(idDonHang: number, loai: 'da' | 'chua' = 'da'): Promise<DonHang> {
-  const params = loai === 'chua' ? '?loai=chua' : '';
+export async function xacNhanNghiemThu(
+  idDonHang: number,
+  loai: "da" | "chua" = "da",
+): Promise<DonHang> {
+  const params = loai === "chua" ? "?loai=chua" : "";
   return request<DonHang>(`/nghiem-thu/xac-nhan/${idDonHang}${params}`, {
     method: "PUT",
   });
@@ -417,14 +440,11 @@ export async function uploadBienBanNghiemThu(
   const formData = new FormData();
   files.forEach((file) => formData.append("files", file));
 
-  const response = await fetch(
-    `${BASE_URL}/nghiem-thu/upload/${idDonHang}`,
-    {
-      method: "POST",
-      headers: { Authorization: token ? `Bearer ${token}` : "" },
-      body: formData,
-    },
-  );
+  const response = await fetch(`${BASE_URL}/nghiem-thu/upload/${idDonHang}`, {
+    method: "POST",
+    headers: { Authorization: token ? `Bearer ${token}` : "" },
+    body: formData,
+  });
 
   const result = await response.json();
   if (!response.ok) {
@@ -453,7 +473,10 @@ export async function layDanhSachCongNo(
   return json as ApiResponseWithPagination<CongNo[]>;
 }
 
-export async function layCongNoGrouped(search?: string, nhom?: string): Promise<CongNoGroup[]> {
+export async function layCongNoGrouped(
+  search?: string,
+  nhom?: string,
+): Promise<CongNoGroup[]> {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
   if (nhom) params.append("nhom", nhom);
@@ -466,7 +489,10 @@ export async function layCongNoGrouped(search?: string, nhom?: string): Promise<
 }
 
 // CongNoKhachHang (Bravo)
-export async function layCongNoKhachHangGrouped(search?: string, nhom?: string): Promise<CongNoKhachHangGroup[]> {
+export async function layCongNoKhachHangGrouped(
+  search?: string,
+  nhom?: string,
+): Promise<CongNoKhachHangGroup[]> {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
   if (nhom) params.append("nhom", nhom);
@@ -478,7 +504,9 @@ export async function layCongNoKhachHangGrouped(search?: string, nhom?: string):
   return json.data as CongNoKhachHangGroup[];
 }
 
-export async function layDanhSachNhomCongNoKhachHang(): Promise<{ nhom: string; soLuong: number }[]> {
+export async function layDanhSachNhomCongNoKhachHang(): Promise<
+  { nhom: string; soLuong: number }[]
+> {
   const res = await fetch(`${BASE_URL}/cong-no-khach-hang/nhom/list`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
@@ -487,17 +515,20 @@ export async function layDanhSachNhomCongNoKhachHang(): Promise<{ nhom: string; 
   return json.data as { nhom: string; soLuong: number }[];
 }
 
-export async function suaCongNoKhachHang(id: number, data: {
-  maKhachHang?: string;
-  tenKhachHang?: string;
-  duDauNo?: number;
-  duDauCo?: number;
-  phatSinhNo?: number;
-  phatSinhCo?: number;
-  duCuoiNo?: number;
-  duCuoiCo?: number;
-  nhom?: string;
-}): Promise<CongNoKhachHang> {
+export async function suaCongNoKhachHang(
+  id: number,
+  data: {
+    maKhachHang?: string;
+    tenKhachHang?: string;
+    duDauNo?: number;
+    duDauCo?: number;
+    phatSinhNo?: number;
+    phatSinhCo?: number;
+    duCuoiNo?: number;
+    duCuoiCo?: number;
+    nhom?: string;
+  },
+): Promise<CongNoKhachHang> {
   return request<CongNoKhachHang>(`/cong-no-khach-hang/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
@@ -519,8 +550,16 @@ export async function xoaCongNoKhachHang(id: number): Promise<void> {
   return request<void>(`/cong-no-khach-hang/${id}`, { method: "DELETE" });
 }
 
-export async function dongBoCongNoKhachHang(): Promise<{ soKhachHang: number; tongPhatSinhNo: number; tongPhatSinhCo: number }> {
-  return request<{ soKhachHang: number; tongPhatSinhNo: number; tongPhatSinhCo: number }>("/cong-no-khach-hang/dong-bo", {
+export async function dongBoCongNoKhachHang(): Promise<{
+  soKhachHang: number;
+  tongPhatSinhNo: number;
+  tongPhatSinhCo: number;
+}> {
+  return request<{
+    soKhachHang: number;
+    tongPhatSinhNo: number;
+    tongPhatSinhCo: number;
+  }>("/cong-no-khach-hang/dong-bo", {
     method: "POST",
   });
 }
@@ -538,7 +577,9 @@ export async function importCongNoKhachHang(file: File): Promise<ImportResult> {
   return json.data as ImportResult;
 }
 
-export async function layDanhSachNhomCongNo(): Promise<{ nhom: string; soLuong: number }[]> {
+export async function layDanhSachNhomCongNo(): Promise<
+  { nhom: string; soLuong: number }[]
+> {
   const res = await fetch(`${BASE_URL}/thanh-toan/cong-no/nhom/list`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
@@ -558,16 +599,19 @@ export async function taoCongNo(
   });
 }
 
-export async function suaCongNo(id: number, data: {
-  tongTien?: number;
-  daThanhToan?: number;
-  conLai?: number;
-  ngayBatDau?: string | null;
-  hanThanhToan?: string | null;
-  trangThai?: string;
-  ghiChu?: string | null;
-  nhom?: string | null;
-}): Promise<CongNo> {
+export async function suaCongNo(
+  id: number,
+  data: {
+    tongTien?: number;
+    daThanhToan?: number;
+    conLai?: number;
+    ngayBatDau?: string | null;
+    hanThanhToan?: string | null;
+    trangThai?: string;
+    ghiChu?: string | null;
+    nhom?: string | null;
+  },
+): Promise<CongNo> {
   return request<CongNo>(`/thanh-toan/cong-no/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
@@ -724,8 +768,11 @@ export async function layDanhSachThongBao(
   page = 1,
   limit = 20,
   isRead?: boolean,
-): Promise<{ data: import('../types').ThongBao[]; total: number }> {
-  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+): Promise<{ data: import("../types").ThongBao[]; total: number }> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
   if (isRead !== undefined) params.append("isRead", String(isRead));
   const res = await fetch(`${BASE_URL}/notifications?${params}`, {
     headers: { Authorization: `Bearer ${getToken()}` },
@@ -748,7 +795,10 @@ export async function xoaThongBao(id: number): Promise<void> {
 }
 
 export async function resetThongBaoNgayCu(): Promise<{ deleted: number }> {
-  const res = await request<{ data: { deleted: number } }>('/notifications/reset', { method: 'POST' });
+  const res = await request<{ data: { deleted: number } }>(
+    "/notifications/reset",
+    { method: "POST" },
+  );
   return res.data;
 }
 
@@ -778,10 +828,22 @@ export async function layLichSuImport(
   limit = 20,
   tuNgay?: string,
   denNgay?: string,
-): Promise<{ data: ImportHistory[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
-  const params = new URLSearchParams({ loai, page: String(page), limit: String(limit) });
-  if (tuNgay) params.append('tuNgay', tuNgay);
-  if (denNgay) params.append('denNgay', denNgay);
+): Promise<{
+  data: ImportHistory[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}> {
+  const params = new URLSearchParams({
+    loai,
+    page: String(page),
+    limit: String(limit),
+  });
+  if (tuNgay) params.append("tuNgay", tuNgay);
+  if (denNgay) params.append("denNgay", denNgay);
   const res = await fetch(`${BASE_URL}/import/lich-su?${params}`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
@@ -790,14 +852,11 @@ export async function layLichSuImport(
   return { data: json.data || [], pagination: json.pagination };
 }
 
-async function importFile(
-  endpoint: string,
-  file: File,
-): Promise<ImportResult> {
+async function importFile(endpoint: string, file: File): Promise<ImportResult> {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
   const res = await fetch(`${BASE_URL}${endpoint}`, {
-    method: 'POST',
+    method: "POST",
     headers: { Authorization: `Bearer ${getToken()}` },
     body: formData,
   });
@@ -806,17 +865,24 @@ async function importFile(
   return json.data as ImportResult;
 }
 
-export const importDonHang = (file: File) => importFile('/import/don-hang', file);
-export const importKhachHang = (file: File) => importFile('/import/khach-hang', file);
-export const importNguoiDung = (file: File) => importFile('/import/nguoi-dung', file);
-export const importPhuongTien = (file: File) => importFile('/import/phuong-tien', file);
-export const importMacBeTong = (file: File) => importFile('/import/mac-be-tong', file);
+export const importDonHang = (file: File) =>
+  importFile("/import/don-hang", file);
+export const importKhachHang = (file: File) =>
+  importFile("/import/khach-hang", file);
+export const importNguoiDung = (file: File) =>
+  importFile("/import/nguoi-dung", file);
+export const importPhuongTien = (file: File) =>
+  importFile("/import/phuong-tien", file);
+export const importMacBeTong = (file: File) =>
+  importFile("/import/mac-be-tong", file);
 
 // ===== CẤU HÌNH HỆ THỐNG =====
-export async function layTrangThaiBaoTri(): Promise<import('../types').MaintenanceStatus> {
+export async function layTrangThaiBaoTri(): Promise<
+  import("../types").MaintenanceStatus
+> {
   const res = await fetch(`${BASE_URL}/cau-hinh/trang-thai`);
   const json = await res.json();
-  return json.data as import('../types').MaintenanceStatus;
+  return json.data as import("../types").MaintenanceStatus;
 }
 
 export async function batBaoTri(payload: {
@@ -826,8 +892,11 @@ export async function batBaoTri(payload: {
 }): Promise<void> {
   const token = getToken();
   const res = await fetch(`${BASE_URL}/cau-hinh/bat-bao-tri`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(payload),
   });
   const json = await res.json();
@@ -837,7 +906,7 @@ export async function batBaoTri(payload: {
 export async function tatBaoTri(): Promise<void> {
   const token = getToken();
   const res = await fetch(`${BASE_URL}/cau-hinh/tat-bao-tri`, {
-    method: 'POST',
+    method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
   const json = await res.json();
@@ -856,13 +925,21 @@ export async function layLichSanXuatTramTron(): Promise<any[]> {
 }
 
 // Lấy chi tiết đơn hàng cho tram_tron (kèm lịch sx)
-export async function layDonHangTramTron(idDonHang: number): Promise<{ donHang: any; lichSanXuat: any | null }> {
-  return request<{ donHang: any; lichSanXuat: any | null }>(`/tram-tron/don-hang/${idDonHang}`);
+export async function layDonHangTramTron(
+  idDonHang: number,
+): Promise<{ donHang: any; lichSanXuat: any | null }> {
+  return request<{ donHang: any; lichSanXuat: any | null }>(
+    `/tram-tron/don-hang/${idDonHang}`,
+  );
 }
 
 // Lấy chi tiết đơn hàng cho kho (kèm lịch sx)
-export async function layDonHangKho(idDonHang: number): Promise<{ donHang: any; lichSanXuat: any | null }> {
-  return request<{ donHang: any; lichSanXuat: any | null }>(`/kho/don-hang/${idDonHang}`);
+export async function layDonHangKho(
+  idDonHang: number,
+): Promise<{ donHang: any; lichSanXuat: any | null }> {
+  return request<{ donHang: any; lichSanXuat: any | null }>(
+    `/kho/don-hang/${idDonHang}`,
+  );
 }
 
 // Kho xác nhận bắt đầu giao (dang_san_xuat -> dang_giao)
@@ -889,7 +966,10 @@ export async function layDonHangCuaToi(
   limit = 20,
   trangThai?: string,
 ): Promise<ApiResponseWithPagination<DonHang[]>> {
-  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
   if (trangThai) params.append("trangThai", trangThai);
   const res = await fetch(`${BASE_URL}/don-hang/cua-toi?${params}`, {
     headers: { Authorization: `Bearer ${getToken()}` },
@@ -906,7 +986,10 @@ export async function layDonHangTheoTram(
   trangThai?: string,
   idTram?: number | null,
 ): Promise<ApiResponseWithPagination<DonHang[]>> {
-  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
   if (trangThai) params.append("trangThai", trangThai);
   if (idTram) params.append("idTram", String(idTram));
   const res = await fetch(`${BASE_URL}/don-hang/theo-tram?${params}`, {
@@ -940,7 +1023,7 @@ export async function layDonHangDaGiao(): Promise<any[]> {
 // Tài xế cập nhật trạng thái giao
 export async function taiXeCapNhatTrangThaiGiao(
   idDonHang: number,
-  trangThai: 'dang_giao' | 'da_giao',
+  trangThai: "dang_giao" | "da_giao",
   khoiLuongThucTe?: number,
 ): Promise<DonHang> {
   return request<DonHang>(`/tai-xe/cap-nhat-giao/${idDonHang}`, {
@@ -950,7 +1033,11 @@ export async function taiXeCapNhatTrangThaiGiao(
 }
 
 // Tài xế thống kê đơn hàng
-export async function layThongKeTaiXe(): Promise<{ tongDon: number; chuaGiao: number; daGiao: number }> {
+export async function layThongKeTaiXe(): Promise<{
+  tongDon: number;
+  chuaGiao: number;
+  daGiao: number;
+}> {
   const res = await fetch(`${BASE_URL}/tai-xe/thong-ke`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
@@ -980,19 +1067,25 @@ export async function layDonHangChoNghiemThu(): Promise<DonHang[]> {
 }
 
 // ===== ACCESS HISTORY — Lịch sử truy cập =====
-export async function layDanhSachNguoiDungAccess(): Promise<{ id: number; hoTen: string; vaiTro: string }[]> {
+export async function layDanhSachNguoiDungAccess(): Promise<
+  { id: number; hoTen: string; vaiTro: string }[]
+> {
   return request(`/access-history/users`);
 }
 
 export async function layLichSuTruyCap(opts?: {
-  idNguoiDung?: number; tuNgay?: string; denNgay?: string; page?: number; limit?: number;
+  idNguoiDung?: number;
+  tuNgay?: string;
+  denNgay?: string;
+  page?: number;
+  limit?: number;
 }): Promise<ApiResponseWithPagination<AccessSession[]>> {
   const params = new URLSearchParams();
-  if (opts?.page) params.set('page', String(opts.page));
-  if (opts?.limit) params.set('limit', String(opts.limit));
-  if (opts?.idNguoiDung) params.set('idNguoiDung', String(opts.idNguoiDung));
-  if (opts?.tuNgay) params.set('tuNgay', opts.tuNgay);
-  if (opts?.denNgay) params.set('denNgay', opts.denNgay);
+  if (opts?.page) params.set("page", String(opts.page));
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  if (opts?.idNguoiDung) params.set("idNguoiDung", String(opts.idNguoiDung));
+  if (opts?.tuNgay) params.set("tuNgay", opts.tuNgay);
+  if (opts?.denNgay) params.set("denNgay", opts.denNgay);
   const res = await fetch(`${BASE_URL}/access-history/sessions?${params}`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
@@ -1001,30 +1094,40 @@ export async function layLichSuTruyCap(opts?: {
   return json;
 }
 
-export async function layChiTietAccessSession(sessionId: number): Promise<AccessSessionDetail> {
+export async function layChiTietAccessSession(
+  sessionId: number,
+): Promise<AccessSessionDetail> {
   return request(`/access-history/sessions/${sessionId}`);
 }
 
 export async function batBuocDangXuatSession(sessionId: number): Promise<void> {
-  return request(`/access-history/sessions/${sessionId}/logout`, { method: 'POST' });
+  return request(`/access-history/sessions/${sessionId}/logout`, {
+    method: "POST",
+  });
 }
 
-export async function resetMatKhauUser(userId: number, matKhauMoi: string): Promise<void> {
+export async function resetMatKhauUser(
+  userId: number,
+  matKhauMoi: string,
+): Promise<void> {
   return request(`/access-history/users/${userId}/reset-password`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({ matKhauMoi }),
   });
 }
 
-export async function capNhatBannedIp(userId: number, bannedIp: string | null): Promise<void> {
+export async function capNhatBannedIp(
+  userId: number,
+  bannedIp: string | null,
+): Promise<void> {
   return request(`/access-history/users/${userId}/banned-ip`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({ bannedIp }),
   });
 }
 
 export async function logout(): Promise<void> {
-  await request('/auth/logout', { method: 'POST' });
+  await request("/auth/logout", { method: "POST" });
 }
 
 // ===== EXPORT APIs =====
@@ -1135,10 +1238,13 @@ export interface ExportCongNo {
   duCuoiCo: number;
 }
 
-export async function exportDonHang(trangThai?: string, tuKhoa?: string): Promise<ExportDonHang[]> {
+export async function exportDonHang(
+  trangThai?: string,
+  tuKhoa?: string,
+): Promise<ExportDonHang[]> {
   const params = new URLSearchParams();
-  if (trangThai) params.set('trangThai', trangThai);
-  if (tuKhoa) params.set('tuKhoa', tuKhoa);
+  if (trangThai) params.set("trangThai", trangThai);
+  if (tuKhoa) params.set("tuKhoa", tuKhoa);
   const res = await fetch(`${BASE_URL}/export/don-hang?${params}`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
@@ -1192,9 +1298,11 @@ export async function exportNguoiDung(): Promise<ExportNguoiDung[]> {
   return json.data || [];
 }
 
-export async function exportLichSanXuat(trangThai?: string): Promise<ExportLichSanXuat[]> {
+export async function exportLichSanXuat(
+  trangThai?: string,
+): Promise<ExportLichSanXuat[]> {
   const params = new URLSearchParams();
-  if (trangThai) params.set('trangThai', trangThai);
+  if (trangThai) params.set("trangThai", trangThai);
   const res = await fetch(`${BASE_URL}/export/lich-san-xuat?${params}`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
@@ -1224,7 +1332,7 @@ export async function exportCongNo(): Promise<ExportCongNo[]> {
 // ===== HÓA ĐƠN =====
 export async function taoHoaDon(data: {
   idDonHang: number;
-  loaiThanhToan: 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du';
+  loaiThanhToan: "tra_het" | "tra_het_du" | "cong_no" | "cong_no_du";
   buuVanChuyen?: number;
   phiPhatSinh?: number;
   giamTru?: number;
@@ -1239,8 +1347,8 @@ export async function taoHoaDon(data: {
   soTienDu?: number;
   soTienDuSuDung?: number;
 }): Promise<any> {
-  return request('/hoa-don', {
-    method: 'POST',
+  return request("/hoa-don", {
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
@@ -1311,7 +1419,9 @@ export interface BatchNghiemThuResponse {
  * Lấy lịch sản xuất cho nhiều đơn hàng cùng lúc
  * Thay thế N+1 queries bằng 1 query
  */
-export async function layLichSanXuatBatch(ids: number[]): Promise<BatchLichSanXuatResponse> {
+export async function layLichSanXuatBatch(
+  ids: number[],
+): Promise<BatchLichSanXuatResponse> {
   if (!ids || ids.length === 0) return {};
   return request<BatchLichSanXuatResponse>("/batch/lich-san-xuat", {
     method: "POST",
@@ -1323,7 +1433,9 @@ export async function layLichSanXuatBatch(ids: number[]): Promise<BatchLichSanXu
  * Lấy lịch sử thanh toán cho nhiều đơn hàng cùng lúc
  * Thay thế N+1 queries bằng 1 query
  */
-export async function layThanhToanBatch(ids: number[]): Promise<BatchThanhToanResponse> {
+export async function layThanhToanBatch(
+  ids: number[],
+): Promise<BatchThanhToanResponse> {
   if (!ids || ids.length === 0) return {};
   return request<BatchThanhToanResponse>("/batch/thanh-toan", {
     method: "POST",
@@ -1335,7 +1447,9 @@ export async function layThanhToanBatch(ids: number[]): Promise<BatchThanhToanRe
  * Lấy hóa đơn cho nhiều đơn hàng cùng lúc
  * Thay thế N+1 queries bằng 1 query
  */
-export async function layHoaDonBatch(ids: number[]): Promise<BatchHoaDonResponse> {
+export async function layHoaDonBatch(
+  ids: number[],
+): Promise<BatchHoaDonResponse> {
   if (!ids || ids.length === 0) return {};
   return request<BatchHoaDonResponse>("/batch/hoa-don", {
     method: "POST",
@@ -1347,11 +1461,12 @@ export async function layHoaDonBatch(ids: number[]): Promise<BatchHoaDonResponse
  * Lấy nghiệm thu cho nhiều đơn hàng cùng lúc
  * Thay thế N+1 queries bằng 1 query
  */
-export async function layNghiemThuBatch(ids: number[]): Promise<BatchNghiemThuResponse> {
+export async function layNghiemThuBatch(
+  ids: number[],
+): Promise<BatchNghiemThuResponse> {
   if (!ids || ids.length === 0) return {};
   return request<BatchNghiemThuResponse>("/batch/nghiem-thu", {
     method: "POST",
     body: JSON.stringify({ ids }),
   });
 }
-

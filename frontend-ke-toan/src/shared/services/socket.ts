@@ -1,19 +1,27 @@
-import { io, Socket } from 'socket.io-client';
-import { PopupNotification } from '../components/notifications/NotificationPopup';
+import { io, Socket } from "socket.io-client";
+import { PopupNotification } from "../components/notifications/NotificationPopup";
 
 let socket: Socket | null = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 
 function getToken(): string | null {
-  return localStorage.getItem('bttd_token');
+  return localStorage.getItem("bttd_token");
 }
 
 export function initSocket(vaiTro: string, userId?: number): Socket {
   const token = getToken();
-  const wsUrl =
-    import.meta.env.VITE_API_WS_URL || "https://bttd.onrender.com";
-  console.log('[Socket] Init — URL:', wsUrl, 'vaiTro:', vaiTro, 'token exists:', !!token, 'userId:', userId);
+  const wsUrl = import.meta.env.VITE_API_WS_URL || "http://apibttd.ximangtaydo.vn";
+  console.log(
+    "[Socket] Init — URL:",
+    wsUrl,
+    "vaiTro:",
+    vaiTro,
+    "token exists:",
+    !!token,
+    "userId:",
+    userId,
+  );
 
   if (socket?.connected) {
     socket.disconnect();
@@ -22,56 +30,60 @@ export function initSocket(vaiTro: string, userId?: number): Socket {
   socket = io(wsUrl, {
     auth: { token },
     query: { vaiTro, userId: userId?.toString() },
-    transports: ['websocket', 'polling'],
+    transports: ["websocket", "polling"],
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
   });
 
-  socket.on('connect', () => {
-    console.log('[Socket] Connected:', socket?.id);
+  socket.on("connect", () => {
+    console.log("[Socket] Connected:", socket?.id);
     reconnectAttempts = 0;
   });
 
-  socket.on('disconnect', (reason) => {
-    console.log('[Socket] Disconnected:', reason);
+  socket.on("disconnect", (reason) => {
+    console.log("[Socket] Disconnected:", reason);
   });
 
-  socket.on('force_logout', (data: { message?: string; reason?: string }) => {
-    console.log('[Socket] Force logout received:', data);
-    localStorage.removeItem('bttd_token');
-    localStorage.removeItem('bttd_user');
-    localStorage.removeItem('bttd_sessionId');
-    localStorage.removeItem('bttd_redirect_after_login');
+  socket.on("force_logout", (data: { message?: string; reason?: string }) => {
+    console.log("[Socket] Force logout received:", data);
+    localStorage.removeItem("bttd_token");
+    localStorage.removeItem("bttd_user");
+    localStorage.removeItem("bttd_sessionId");
+    localStorage.removeItem("bttd_redirect_after_login");
     if (socket) {
       socket.disconnect();
       socket = null;
     }
-    const msg = data.message || 'Bạn đã bị đăng xuất khỏi hệ thống.';
+    const msg = data.message || "Bạn đã bị đăng xuất khỏi hệ thống.";
     window.location.href = `/login?reason=${encodeURIComponent(msg)}`;
   });
 
-  socket.on('connect_error', (error) => {
+  socket.on("connect_error", (error) => {
     reconnectAttempts++;
-    console.error(`[Socket] Connection error (attempt ${reconnectAttempts}):`, error.message, error);
+    console.error(
+      `[Socket] Connection error (attempt ${reconnectAttempts}):`,
+      error.message,
+      error,
+    );
     if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      console.error('[Socket] Max reconnect attempts reached');
+      console.error("[Socket] Max reconnect attempts reached");
     }
   });
 
-  socket.on('error', (error) => {
-    console.error('[Socket] Error:', error);
+  socket.on("error", (error) => {
+    console.error("[Socket] Error:", error);
   });
 
   // Keep-alive ping
   const pingInterval = setInterval(() => {
     if (socket?.connected) {
-      socket.emit('ping');
+      socket.emit("ping");
     }
   }, 30000);
 
-  socket.on('disconnect', () => {
+  socket.on("disconnect", () => {
     clearInterval(pingInterval);
   });
 
@@ -93,10 +105,10 @@ export function emitTestNotification(): void {
   if (socket?.connected) {
     const mock: PopupNotification = {
       id: Date.now(),
-      tieuDe: 'Thông báo test',
-      noiDung: 'Kết nối Socket.IO hoạt động tốt!',
-      loai: 'NEW_ORDER',
+      tieuDe: "Thông báo test",
+      noiDung: "Kết nối Socket.IO hoạt động tốt!",
+      loai: "NEW_ORDER",
     };
-    socket.emit('notification', mock);
+    socket.emit("notification", mock);
   }
 }

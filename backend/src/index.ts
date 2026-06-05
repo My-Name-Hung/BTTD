@@ -44,6 +44,8 @@ app.use(
       "https://bttd.netlify.app",
       "https://quanlybetong.netlify.app",
       "https://quanlybetong.ximangtaydo.vn",
+      "http://apibttd.ximangtaydo.vn",
+      "https://apibttd.ximangtaydo.vn",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],

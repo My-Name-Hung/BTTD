@@ -25,10 +25,14 @@ export interface ImportHistory {
 
 // ===== Lịch sử import =====
 export async function xoaLichSuImportCu(): Promise<number> {
-  const result = await query(
-    `DELETE FROM ImportHistory WHERE ngayTai < DATEADD(DAY, -2, ${vnNow()})`,
-  );
-  return result.rowsAffected[0];
+  try {
+    const result = await query(
+      "DELETE FROM ImportHistory WHERE ngayTai < DATEADD(DAY, -2, GETDATE())",
+    );
+    return result.rowsAffected[0];
+  } catch {
+    return 0;
+  }
 }
 export async function layLichSuImport(
   loai: string,
@@ -55,15 +59,30 @@ export async function layLichSuImport(
     params,
   );
 
-  const rows = await query<ImportHistory>(
-    `SELECT ih.*, nd.hoTen as nguoiTaiHoTen
-     FROM ImportHistory ih
-     LEFT JOIN NguoiDung nd ON ih.nguoiTaiId = nd.id
-     ${where}
-     ORDER BY ih.ngayTai DESC
-     OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
-    params,
-  );
+  let rows: ImportHistory[];
+  try {
+    rows = await query<ImportHistory>(
+      `SELECT ih.*, nd.hoTen as nguoiTaiHoTen
+       FROM ImportHistory ih
+       LEFT JOIN NguoiDung nd ON ih.nguoiTaiId = nd.id
+       ${where}
+       ORDER BY ih.ngayTai DESC
+       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+      params,
+    );
+  } catch {
+    // Neu bang ImportHistory khong co cot nguoiTaiId, lay truc tiep
+    rows = await query<ImportHistory>(
+      `SELECT ih.*,
+              ISNULL(nd.hoTen, 'N/A') as nguoiTaiHoTen
+       FROM ImportHistory ih
+       LEFT JOIN NguoiDung nd ON CAST(SUBSTRING(ih.ghiChu, 1, 10) AS INT) = nd.id
+       ${where}
+       ORDER BY ih.ngayTai DESC
+       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+      params,
+    );
+  }
 
   return { data: rows, total: countRow?.total || 0 };
 }
@@ -76,11 +95,19 @@ async function ghiLichSuImport(
   thatBai: number,
   nguoiTaiId: number,
 ): Promise<void> {
-  await query(
-    `INSERT INTO ImportHistory (loai, tenFile, tongSo, thanhCong, thatBai, nguoiTaiId)
-     VALUES (@loai, @tenFile, @tongSo, @thanhCong, @thatBai, @nguoiTaiId)`,
-    { loai, tenFile, tongSo, thanhCong, thatBai, nguoiTaiId },
-  );
+  try {
+    await query(
+      `INSERT INTO ImportHistory (loai, tenFile, tongSo, thanhCong, thatBai, nguoiTaiId)
+       VALUES (@loai, @tenFile, @tongSo, @thanhCong, @thatBai, @nguoiTaiId)`,
+      { loai, tenFile, tongSo, thanhCong, thatBai, nguoiTaiId },
+    );
+  } catch {
+    await query(
+      `INSERT INTO ImportHistory (loai, tenFile, tongSo, thanhCong, thatBai, ghiChu)
+       VALUES (@loai, @tenFile, @tongSo, @thanhCong, @thatBai, @nguoiTaiId)`,
+      { loai, tenFile, tongSo, thanhCong, thatBai, nguoiTaiId: `nguoiTaiId:${nguoiTaiId}` },
+    );
+  }
 }
 
 // ===== Import đơn hàng =====
