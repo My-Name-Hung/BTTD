@@ -17,7 +17,7 @@ import {
   ThongKeDashboard,
 } from "../types";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://apibttd.ximangtaydo.vn/api";
+const BASE_URL = import.meta.env.VITE_API_URL || "https://apibttd.ximangtaydo.vn/api";
 
 // ============================================================
 // Helpers

@@ -18,9 +18,22 @@ export interface ImportHistory {
   tongSo: number;
   thanhCong: number;
   thatBai: number;
-  nguoiTaiId: number;
+  nguoiTaiId: number | null;
   nguoiTaiHoTen: string;
   ngayTai: Date;
+}
+
+async function cotTonTai(
+  tableName: string,
+  columnName: string,
+): Promise<boolean> {
+  const rows = await query<{ total: number }>(
+    `SELECT COUNT(*) as total
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_NAME = @tableName AND COLUMN_NAME = @columnName`,
+    { tableName, columnName },
+  );
+  return (rows[0]?.total ?? 0) > 0;
 }
 
 // ===== Lịch sử import =====
@@ -29,7 +42,7 @@ export async function xoaLichSuImportCu(): Promise<number> {
     const result = await query(
       "DELETE FROM ImportHistory WHERE ngayTai < DATEADD(DAY, -2, GETDATE())",
     );
-    return result.rowsAffected[0];
+    return result.length;
   } catch {
     return 0;
   }
@@ -59,30 +72,28 @@ export async function layLichSuImport(
     params,
   );
 
-  let rows: ImportHistory[];
-  try {
-    rows = await query<ImportHistory>(
-      `SELECT ih.*, nd.hoTen as nguoiTaiHoTen
-       FROM ImportHistory ih
-       LEFT JOIN NguoiDung nd ON ih.nguoiTaiId = nd.id
-       ${where}
-       ORDER BY ih.ngayTai DESC
-       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
-      params,
-    );
-  } catch {
-    // Neu bang ImportHistory khong co cot nguoiTaiId, lay truc tiep
-    rows = await query<ImportHistory>(
-      `SELECT ih.*,
-              ISNULL(nd.hoTen, 'N/A') as nguoiTaiHoTen
-       FROM ImportHistory ih
-       LEFT JOIN NguoiDung nd ON CAST(SUBSTRING(ih.ghiChu, 1, 10) AS INT) = nd.id
-       ${where}
-       ORDER BY ih.ngayTai DESC
-       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
-      params,
-    );
-  }
+  const hasNguoiTaiId = await cotTonTai("ImportHistory", "nguoiTaiId");
+
+  const rows = hasNguoiTaiId
+    ? await query<ImportHistory>(
+        `SELECT ih.*, nd.hoTen as nguoiTaiHoTen
+         FROM ImportHistory ih
+         LEFT JOIN NguoiDung nd ON ih.nguoiTaiId = nd.id
+         ${where}
+         ORDER BY ih.ngayTai DESC
+         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+        params,
+      )
+    : await query<ImportHistory>(
+        `SELECT ih.*,
+                CAST(NULL AS INT) as nguoiTaiId,
+                N'Hệ thống' as nguoiTaiHoTen
+         FROM ImportHistory ih
+         ${where}
+         ORDER BY ih.ngayTai DESC
+         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+        params,
+      );
 
   return { data: rows, total: countRow?.total || 0 };
 }
@@ -95,19 +106,22 @@ async function ghiLichSuImport(
   thatBai: number,
   nguoiTaiId: number,
 ): Promise<void> {
-  try {
+  const hasNguoiTaiId = await cotTonTai("ImportHistory", "nguoiTaiId");
+
+  if (hasNguoiTaiId) {
     await query(
       `INSERT INTO ImportHistory (loai, tenFile, tongSo, thanhCong, thatBai, nguoiTaiId)
        VALUES (@loai, @tenFile, @tongSo, @thanhCong, @thatBai, @nguoiTaiId)`,
       { loai, tenFile, tongSo, thanhCong, thatBai, nguoiTaiId },
     );
-  } catch {
-    await query(
-      `INSERT INTO ImportHistory (loai, tenFile, tongSo, thanhCong, thatBai, ghiChu)
-       VALUES (@loai, @tenFile, @tongSo, @thanhCong, @thatBai, @nguoiTaiId)`,
-      { loai, tenFile, tongSo, thanhCong, thatBai, nguoiTaiId: `nguoiTaiId:${nguoiTaiId}` },
-    );
+    return;
   }
+
+  await query(
+    `INSERT INTO ImportHistory (loai, tenFile, tongSo, thanhCong, thatBai)
+     VALUES (@loai, @tenFile, @tongSo, @thanhCong, @thatBai)`,
+    { loai, tenFile, tongSo, thanhCong, thatBai },
+  );
 }
 
 // ===== Import đơn hàng =====
@@ -208,7 +222,7 @@ export async function importDonHang(
       // Lookup idTramTron theo tên (case-insensitive)
       let idTramTron: number | null = null;
       if (tramTronTen) {
-        const tramRows = await query<{ id: number }[]>(
+        const tramRows = await query<{ id: number }>(
           `SELECT TOP 1 id FROM TramTron WHERE LOWER(tenTram) = LOWER(@tenTram)`,
           { tenTram: tramTronTen },
         );
@@ -600,7 +614,7 @@ export async function importMacBeTong(
       }
 
       // Upsert: update nếu đã tồn tại, insert nếu chưa
-      const existing = await query<{ id: number }[]>(
+      const existing = await query<{ id: number }>(
         `SELECT id FROM MacBeTong WHERE LOWER(tenMac) = LOWER(@tenMac)`,
         { tenMac },
       );
@@ -740,7 +754,7 @@ export async function importCongNo(
       // Tìm đơn hàng
       let idDonHang: number | null = null;
       if (maKhachHang) {
-        const dhRows = await query<{ id: number }[]>(
+        const dhRows = await query<{ id: number }>(
           `SELECT TOP 1 id FROM DonHang WHERE maDonHang LIKE @ma OR tenKhachHang LIKE @ma ORDER BY ngayTao DESC`,
           { ma: `%${maKhachHang.trim()}%` },
         );
@@ -748,7 +762,7 @@ export async function importCongNo(
       }
 
       if (!idDonHang && tenKhachHang) {
-        const dhByName = await query<{ id: number }[]>(
+        const dhByName = await query<{ id: number }>(
           `SELECT TOP 1 id FROM DonHang WHERE LOWER(tenKhachHang) LIKE @name ORDER BY ngayTao DESC`,
           { name: `%${tenKhachHang.toLowerCase()}%` },
         );

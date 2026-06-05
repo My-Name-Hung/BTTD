@@ -11,7 +11,7 @@ function getToken(): string | null {
 
 export function initSocket(vaiTro: string, userId?: number): Socket {
   const token = getToken();
-  const wsUrl = import.meta.env.VITE_API_WS_URL || "http://apibttd.ximangtaydo.vn";
+  const wsUrl = import.meta.env.VITE_API_WS_URL || "https://apibttd.ximangtaydo.vn";
   console.log(
     "[Socket] Init — URL:",
     wsUrl,
@@ -30,7 +30,6 @@ export function initSocket(vaiTro: string, userId?: number): Socket {
   socket = io(wsUrl, {
     auth: { token },
     query: { vaiTro, userId: userId?.toString() },
-    transports: ["websocket", "polling"],
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,

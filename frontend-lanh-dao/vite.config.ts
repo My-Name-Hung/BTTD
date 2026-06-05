@@ -13,7 +13,7 @@ export default defineConfig({
     port: 5174,
     proxy: {
       "/api": {
-        target: "http://apibttd.ximangtaydo.vn",
+        target: "https://apibttd.ximangtaydo.vn",
         changeOrigin: true,
       },
     },

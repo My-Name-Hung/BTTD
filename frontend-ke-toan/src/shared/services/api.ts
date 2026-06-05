@@ -22,7 +22,7 @@ import {
 } from "../types";
 
 const BASE_URL =
-  import.meta.env.VITE_API_URL || "http://apibttd.ximangtaydo.vn/api";
+  import.meta.env.VITE_API_URL || "https://apibttd.ximangtaydo.vn/api";
 
 function getToken(): string | null {
   return localStorage.getItem("bttd_token");

@@ -16,7 +16,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://apibttd.ximangtaydo.vn",
+        target: "https://apibttd.ximangtaydo.vn",
         changeOrigin: true,
         secure: true,
         onProxyReq: (proxyReq, req) => {

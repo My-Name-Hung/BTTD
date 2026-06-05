@@ -9,6 +9,9 @@ import {
 } from "../services/api";
 import { disconnectSocket, initSocket } from "../services/socket";
 
+const NOTIFICATIONS_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://apibttd.ximangtaydo.vn/api";
+
 // ─── Âm thanh thông báo ───
 function playNotificationSound() {
   try {
@@ -67,7 +70,7 @@ export function useNotifications(
   const fetchUnreadCount = useCallback(async () => {
     try {
       const token = localStorage.getItem("bttd_token");
-      const res = await fetch("/api/notifications/unread-count", {
+      const res = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/unread-count`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
