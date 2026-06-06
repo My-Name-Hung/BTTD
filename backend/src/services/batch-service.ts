@@ -144,16 +144,19 @@ export async function layThanhToanBatch(idDonHangs: number[]): Promise<BatchThan
 // ============================================================
 // BATCH: Hóa đơn theo nhiều đơn hàng
 // ============================================================
+export interface HoaDonBatchItem {
+  id: number;
+  idDonHang: number;
+  soHoaDon: string | null;
+  tongCong: number;
+  giamTru: number | null;
+  loaiThanhToan: string | null;
+  ngayTao: string;
+  tenNguoiTao: string | null;
+}
+
 export interface BatchHoaDonResult {
-  [idDonHang: number]: {
-    id: number;
-    idDonHang: number;
-    soHoaDon: string | null;
-    tongCong: number;
-    giamTru: number | null;
-    ngayTao: string;
-    tenNguoiTao: string | null;
-  } | null;
+  [idDonHang: number]: HoaDonBatchItem[] | null;
 }
 
 export async function layHoaDonBatch(idDonHangs: number[]): Promise<BatchHoaDonResult> {
@@ -167,45 +170,41 @@ export async function layHoaDonBatch(idDonHangs: number[]): Promise<BatchHoaDonR
     params[`id${i}`] = id;
   });
 
-  const results = await query<{
-    idDonHang: number;
-    id: number;
-    soHoaDon: string | null;
-    tongCong: number;
-    giamTru: number | null;
-    ngayTao: string;
-    tenNguoiTao: string | null;
-  }>(
-    `SELECT 
+  const results = await query<HoaDonBatchItem>(
+    `SELECT
        hd.idDonHang,
        hd.id,
        hd.soHoaDon,
        hd.tongCong,
        hd.giamTru,
+       hd.loaiThanhToan,
        CONVERT(varchar, hd.ngayTao, 120) as ngayTao,
        nd.hoTen as tenNguoiTao
      FROM HoaDon hd
      LEFT JOIN NguoiDung nd ON hd.nguoiTaoId = nd.id
-     WHERE hd.idDonHang IN (${placeholders})`,
+     WHERE hd.idDonHang IN (${placeholders})
+     ORDER BY hd.idDonHang, hd.ngayTao ASC`,
     params
   );
 
   const result: BatchHoaDonResult = {};
   idDonHangs.forEach(id => {
-    result[id] = null;
+    result[id] = [];
   });
   results.forEach(r => {
     if (!result[r.idDonHang]) {
-      result[r.idDonHang] = {
-        id: r.id,
-        idDonHang: r.idDonHang,
-        soHoaDon: r.soHoaDon,
-        tongCong: r.tongCong,
-        giamTru: r.giamTru,
-        ngayTao: r.ngayTao,
-        tenNguoiTao: r.tenNguoiTao,
-      };
+      result[r.idDonHang] = [];
     }
+    result[r.idDonHang]!.push({
+      id: r.id,
+      idDonHang: r.idDonHang,
+      soHoaDon: r.soHoaDon,
+      tongCong: r.tongCong,
+      giamTru: r.giamTru,
+      loaiThanhToan: r.loaiThanhToan,
+      ngayTao: r.ngayTao,
+      tenNguoiTao: r.tenNguoiTao,
+    });
   });
 
   return result;

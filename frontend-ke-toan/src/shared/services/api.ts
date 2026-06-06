@@ -1398,9 +1398,10 @@ export interface BatchHoaDonResponse {
     soHoaDon: string | null;
     tongCong: number;
     giamTru: number | null;
+    loaiThanhToan: string | null;
     ngayTao: string;
     tenNguoiTao: string | null;
-  } | null;
+  }[] | null;
 }
 
 export interface BatchNghiemThuResponse {

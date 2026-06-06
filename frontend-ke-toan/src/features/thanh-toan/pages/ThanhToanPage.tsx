@@ -62,6 +62,8 @@ export default function ThanhToanPage() {
   const [tuKhoa, setTuKhoa] = useState("");
   const [activeTab, setActiveTab] = useState<TabFilter>("chua_tat_toan");
   const [exporting, setExporting] = useState(false);
+  // Lưu trữ hóa đơn đang chọn cho mỗi đơn hàng
+  const [selectedHoaDonIds, setSelectedHoaDonIds] = useState<Record<number, number>>({});
 
   const canCreate = hasPermission("thanhtoan.create");
 
@@ -91,18 +93,20 @@ export default function ThanhToanPage() {
         const mapHD: Record<number, HoaDonItem[]> = {};
         dhs.forEach((dh: DonHang) => {
           mapTT[dh.id] = batchTT[dh.id] || [];
-          mapHD[dh.id] = (batchHD[dh.id] ? [batchHD[dh.id]] : []).map(
+          // Chuyển đổi mảng hóa đơn từ batch API
+          const hoaDonList = batchHD[dh.id] || [];
+          mapHD[dh.id] = hoaDonList.map(
             (h: any) => ({
               id: h.id,
               maHoaDon: h.soHoaDon,
               ngayLap: h.ngayTao,
               khachHang: dh.tenKhachHang,
-              tienBeTong: h.tongTien,
+              tienBeTong: (h.tongCong || 0) - (h.giamTru || 0),
               buuVanChuyen: 0,
               phiPhatSinh: 0,
               giamTru: h.giamTru || 0,
-              tongCong: (h.tongCong || 0) - (h.giamTru || 0),
-              loaiThanhToan: "tra_het",
+              tongCong: (h.tongCong || 0),
+              loaiThanhToan: h.loaiThanhToan || "tra_het",
             }),
           );
         });
@@ -123,6 +127,15 @@ export default function ThanhToanPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setSelectedHoaDonIds({});
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   // Lọc theo tab — chỉ dựa vào tiền, không dựa vào trạng thái đơn hàng
   // Chỉ hiện đơn chưa từ chối, đơn đã từ chối không cho thanh toán
@@ -417,26 +430,80 @@ export default function ThanhToanPage() {
                               </span>
                             )}
 
-                          {/* Nếu đã có hóa đơn (công nợ đã xuất HĐ trước đó): hiện nút xem HĐ */}
+                          {/* Nếu đã có hóa đơn (công nợ đã xuất HĐ trước đó): hiện dropdown chọn HĐ */}
                           {!daTatToanOrder && hds.length > 0 && (
-                            <button
-                              className={styles.btnHoaDon}
-                              onClick={() => handlePrintHD(hds[0].id)}
-                              title="Xem hóa đơn đã xuất"
-                            >
-                              <FiPrinter size={13} /> Xem HĐ
-                            </button>
+                            <div className={styles.hoaDonDropdown}>
+                              <button
+                                className={styles.btnHoaDon}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedHoaDonIds(prev => ({
+                                    ...prev,
+                                    [dh.id]: prev[dh.id] ? undefined : true
+                                  }));
+                                }}
+                                title="Xem hóa đơn đã xuất"
+                              >
+                                <FiPrinter size={13} /> Xem HĐ {hds.length > 1 && `(${hds.length})`}
+                              </button>
+                              {selectedHoaDonIds[dh.id] && hds.length > 1 && (
+                                <div className={styles.dropdownMenu} onClick={(e) => e.stopPropagation()}>
+                                  {hds.map((hd) => (
+                                    <button
+                                      key={hd.id}
+                                      className={styles.dropdownItem}
+                                      onClick={() => {
+                                        handlePrintHD(hd.id);
+                                        setSelectedHoaDonIds(prev => ({ ...prev, [dh.id]: undefined }));
+                                      }}
+                                    >
+                                      <span>{hd.maHoaDon}</span>
+                                      <span className={styles.dropdownAmount}>
+                                        {formatCurrency(hd.tongCong)}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           )}
 
-                          {/* Đã tất toán: nút xem hóa đơn */}
+                          {/* Đã tất toán: hiện dropdown chọn hóa đơn */}
                           {daTatToanOrder && hds.length > 0 && (
-                            <button
-                              className={styles.btnHoaDon}
-                              onClick={() => handlePrintHD(hds[0].id)}
-                              title="Xem hóa đơn"
-                            >
-                              <FiPrinter size={13} /> Xem HĐ
-                            </button>
+                            <div className={styles.hoaDonDropdown}>
+                              <button
+                                className={styles.btnHoaDon}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedHoaDonIds(prev => ({
+                                    ...prev,
+                                    [dh.id]: prev[dh.id] ? undefined : true
+                                  }));
+                                }}
+                                title="Xem hóa đơn"
+                              >
+                                <FiPrinter size={13} /> Xem HĐ {hds.length > 1 && `(${hds.length})`}
+                              </button>
+                              {selectedHoaDonIds[dh.id] && hds.length > 1 && (
+                                <div className={styles.dropdownMenu} onClick={(e) => e.stopPropagation()}>
+                                  {hds.map((hd) => (
+                                    <button
+                                      key={hd.id}
+                                      className={styles.dropdownItem}
+                                      onClick={() => {
+                                        handlePrintHD(hd.id);
+                                        setSelectedHoaDonIds(prev => ({ ...prev, [dh.id]: undefined }));
+                                      }}
+                                    >
+                                      <span>{hd.maHoaDon}</span>
+                                      <span className={styles.dropdownAmount}>
+                                        {formatCurrency(hd.tongCong)}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                       </td>
