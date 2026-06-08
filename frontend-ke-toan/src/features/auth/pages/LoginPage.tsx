@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../shared/hooks";
 import { dangNhap } from "../../../shared/services/api";
 import styles from "./LoginPage.module.css";
-import logo from "../../../assets/logo.png";
+import logo from "../../../assets/Logo.png";
 
   const REMEMBER_PASSWORD_KEY = "bttd_remember";
 const SAVED_USERNAME_KEY = "bttd_saved_user";
