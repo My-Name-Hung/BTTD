@@ -6,6 +6,7 @@ import { guiThongBao } from "./thong-bao-service";
 // Map trạng thái đơn hàng sang nhãn hiển thị
 export const TRANG_THAI_LABELS: Record<string, string> = {
   cho_duyet: "Chờ duyệt",
+  cho_ke_toan_duyet: "Chờ kế toán duyệt",
   da_duyet: "Đã duyệt",
   dang_san_xuat: "Đang sản xuất",
   dang_giao: "Đang giao",
@@ -161,7 +162,7 @@ export async function suaDonHang(
   const existing = await layDonHangTheoId(id);
 
   if (existing.trangThaiDon !== "cho_duyet") {
-    throw new Error("Chỉ có thể sửa đơn hàng đang chờ duyệt");
+    throw new Error("Chỉ có thể sửa đơn hàng đang chờ giám đốc kinh doanh duyệt");
   }
 
   const cu: Partial<DonHang> = {
@@ -241,35 +242,80 @@ export async function suaDonHang(
 export async function duyetDonHang(
   id: number,
   nguoiDuyetId: number,
+  vaiTro: string,
 ): Promise<DonHang> {
-  await query(
-    `UPDATE DonHang SET
-      trangThaiDon = N'da_duyet',
-      ngayDuyet = ${vnNow()},
-      nguoiDuyetId = @nguoiDuyetId,
-      ngayCapNhat = ${vnNow()}
-     WHERE id = @id`,
-    { id, nguoiDuyetId },
-  );
+  const donHangHienTai = await layDonHangTheoId(id);
 
-  const donHang = (
-    await query<DonHang>(
-      `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
-      { id },
-    )
-  )[0];
+  // Bước 1: Giám đốc kinh doanh duyệt - chuyển sang chờ kế toán duyệt
+  if (vaiTro === 'giam_doc_kinh_doanh') {
+    if (donHangHienTai.trangThaiDon !== 'cho_duyet') {
+      throw new Error('Đơn hàng không ở trạng thái chờ duyệt');
+    }
+    await query(
+      `UPDATE DonHang SET
+        trangThaiDon = N'cho_ke_toan_duyet',
+        nguoiDuyetGDKDId = @nguoiDuyetId,
+        ngayCapNhat = ${vnNow()}
+       WHERE id = @id`,
+      { id, nguoiDuyetId },
+    );
 
-  guiThongBao("ORDER_APPROVED", { id, maDonHang: donHang.maDonHang });
+    const donHang = (
+      await query<DonHang>(
+        `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
+        { id },
+      )
+    )[0];
 
-  // Thông báo ORDER_STATUS_CHANGED - Đã duyệt
-  guiThongBao("ORDER_STATUS_CHANGED", {
-    id,
-    maDonHang: donHang.maDonHang,
-    trangThai: "da_duyet",
-    trangThaiLabel: "Đã duyệt",
-  });
+    guiThongBao("ORDER_APPROVED_BY_GDKD", { id, maDonHang: donHang.maDonHang });
 
-  return donHang;
+    // Thông báo ORDER_STATUS_CHANGED - Chờ kế toán duyệt
+    guiThongBao("ORDER_STATUS_CHANGED", {
+      id,
+      maDonHang: donHang.maDonHang,
+      trangThai: "cho_ke_toan_duyet",
+      trangThaiLabel: "Chờ kế toán duyệt",
+    });
+
+    return donHang;
+  }
+
+  // Bước 2: Kế toán duyệt - chuyển sang đã duyệt
+  if (vaiTro === 'ke_toan' || vaiTro === 'admin') {
+    if (donHangHienTai.trangThaiDon !== 'cho_ke_toan_duyet') {
+      throw new Error('Đơn hàng chưa được giám đốc kinh doanh duyệt');
+    }
+    await query(
+      `UPDATE DonHang SET
+        trangThaiDon = N'da_duyet',
+        ngayDuyet = ${vnNow()},
+        nguoiDuyetId = @nguoiDuyetId,
+        ngayCapNhat = ${vnNow()}
+       WHERE id = @id`,
+      { id, nguoiDuyetId },
+    );
+
+    const donHang = (
+      await query<DonHang>(
+        `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
+        { id },
+      )
+    )[0];
+
+    guiThongBao("ORDER_APPROVED", { id, maDonHang: donHang.maDonHang });
+
+    // Thông báo ORDER_STATUS_CHANGED - Đã duyệt
+    guiThongBao("ORDER_STATUS_CHANGED", {
+      id,
+      maDonHang: donHang.maDonHang,
+      trangThai: "da_duyet",
+      trangThaiLabel: "Đã duyệt",
+    });
+
+    return donHang;
+  }
+
+  throw new Error('Vai trò không có quyền duyệt đơn');
 }
 
 export async function tuChoiDonHang(

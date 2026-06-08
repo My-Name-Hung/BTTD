@@ -91,13 +91,18 @@ export default function QuanLyDonHangPage() {
   const isAdmin = userVaiTro === "admin";
   const isSale = userVaiTro === "sale";
   const isKeToan = userVaiTro === "ke_toan";
+  const isGDKD = userVaiTro === "giam_doc_kinh_doanh";
   const isDieuPhoi = userVaiTro === "dieu_phoi";
-  const isKeToanOrAdmin = isKeToan || userVaiTro === "admin";
+  const isKeToanOrAdmin = isKeToan || isAdmin;
+  const isGDKDOrAdmin = isGDKD || isAdmin;
   const canCreate = ["admin", "dieu_phoi", "sale"].includes(userVaiTro);
-  const canCreateOrder = ["admin", "sale"].includes(userVaiTro);
+  const canCreateOrder = ["admin", "sale", "dieu_phoi"].includes(userVaiTro);
   const canEdit = ["admin"].includes(userVaiTro);
   const canDelete = ["admin"].includes(userVaiTro);
-  const canApprove = ["admin", "ke_toan"].includes(userVaiTro);
+  // GDKD duyệt bước 1 (cho_duyet), Kế toán duyệt bước 2 (cho_ke_toan_duyet)
+  const canApprove = isGDKDOrAdmin || isKeToan;
+  const canApproveStep1 = isGDKDOrAdmin; // GDKD duyệt đơn chờ duyệt
+  const canApproveStep2 = isKeToanOrAdmin; // Kế toán duyệt đơn chờ kế toán
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -131,6 +136,9 @@ export default function QuanLyDonHangPage() {
   const kpiChoDuyet = thongKe && !trangThai && !tuKhoa
     ? thongKe.choDuyet
     : (data.data?.filter((d) => d.trangThaiDon === "cho_duyet").length || 0);
+  const kpiChoKeToanDuyet = thongKe && !trangThai && !tuKhoa
+    ? (thongKe as any)?.choKeToanDuyet || 0
+    : (data.data?.filter((d) => d.trangThaiDon === "cho_ke_toan_duyet").length || 0);
   const kpiDangXL = thongKe && !trangThai && !tuKhoa
     ? (thongKe.daDuyet + thongKe.dangSanXuat + thongKe.dangGiao + thongKe.daGiao + thongKe.nghiemThu)
     : (data.data?.filter((d) =>
@@ -146,7 +154,11 @@ export default function QuanLyDonHangPage() {
     setApprovingId(id);
     try {
       await duyetDonHang(id);
-      showToast("Duyệt đơn hàng thành công");
+      if (isGDKD) {
+        showToast("Đã duyệt lần 1. Đơn hàng chuyển sang kế toán duyệt.");
+      } else {
+        showToast("Duyệt đơn hàng thành công");
+      }
       loadData();
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi", "error");
@@ -294,23 +306,49 @@ export default function QuanLyDonHangPage() {
         </div>
       </div>
 
-      {/* KPI Row - Sale/Kế toán/Điều phối role uses simplified 2-column grid */}
-      <div className={isSale || isKeToan || isDieuPhoi ? styles.kpiRowSale : styles.kpiRow}>
-        {isSale || isKeToan || isDieuPhoi ? (
+      {/* KPI Row - Sale/Kế toán/Điều phối/GDKD role uses simplified 2-column grid */}
+      <div className={isSale || isKeToan || isDieuPhoi || isGDKD ? styles.kpiRowSale : styles.kpiRow}>
+        {isSale || isKeToan || isDieuPhoi || isGDKD ? (
           <>
             <div className={styles.kpiItem}>
               <div className={styles.kpiLabel}>Tổng đơn</div>
               <div className={styles.kpiValue}>{kpiTotal}</div>
             </div>
-            <div className={styles.kpiItem}>
-              <div className={styles.kpiLabel}>Chờ duyệt</div>
-              <div
-                className={styles.kpiValue}
-                style={{ color: "var(--color-warning)" }}
-              >
-                {kpiChoDuyet}
+            {isGDKD ? (
+              <>
+                <div className={styles.kpiItem}>
+                  <div className={styles.kpiLabel}>Chờ GDKD duyệt</div>
+                  <div
+                    className={styles.kpiValue}
+                    style={{ color: "var(--color-warning)" }}
+                  >
+                    {kpiChoDuyet}
+                  </div>
+                </div>
+              </>
+            ) : isKeToan ? (
+              <>
+                <div className={styles.kpiItem}>
+                  <div className={styles.kpiLabel}>Chờ Kế toán duyệt</div>
+                  <div
+                    className={styles.kpiValue}
+                    style={{ color: "var(--color-orange)" }}
+                  >
+                    {kpiChoKeToanDuyet}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className={styles.kpiItem}>
+                <div className={styles.kpiLabel}>Chờ duyệt</div>
+                <div
+                  className={styles.kpiValue}
+                  style={{ color: "var(--color-warning)" }}
+                >
+                  {kpiChoDuyet}
+                </div>
               </div>
-            </div>
+            )}
           </>
         ) : (
           <>
@@ -390,8 +428,8 @@ export default function QuanLyDonHangPage() {
         </div>
       </div>
 
-      {/* Table - Sale/Kế toán/Điều phối uses simplified table with actions */}
-      {isSale || isKeToan || isDieuPhoi ? (
+      {/* Table - Sale/Kế toán/Điều phối/GDKD uses simplified table with actions */}
+      {isSale || isKeToan || isDieuPhoi || isGDKD ? (
         <div className={styles.card}>
           <div className={styles.saleCardHeader}>
             <span className={styles.saleCardTitle}>Danh sách đơn hàng</span>
@@ -419,8 +457,8 @@ export default function QuanLyDonHangPage() {
                     >
                       KL (m3)
                     </th>
-                    <th style={{ minWidth: 80 }}>Trạng thái</th>
-                    <th style={{ minWidth: isKeToan ? 80 : 50 }}>Thao tác</th>
+                    <th style={{ minWidth: 100 }}>Trạng thái</th>
+                    <th style={{ minWidth: (isKeToan || isGDKD) ? 100 : 50 }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -455,25 +493,47 @@ export default function QuanLyDonHangPage() {
                       </td>
                       <td>
                         <div className={styles.rowActions}>
-                          {dh.trangThaiDon === "cho_duyet" && canApprove && (
-                            <button
-                              className={`${styles.actionBtn} ${styles.actionBtnSuccess} ${styles.actionBtnSm}`}
-                              onClick={() => handleDuyet(dh.id)}
-                              disabled={approvingId === dh.id}
-                              title="Duyệt"
-                            >
-                              {approvingId === dh.id ? "..." : <FiCheck size={12} />}
-                            </button>
+                          {/* GDKD duyệt bước 1: đơn chờ duyệt */}
+                          {dh.trangThaiDon === "cho_duyet" && canApproveStep1 && (
+                            <>
+                              <button
+                                className={`${styles.actionBtn} ${styles.actionBtnSuccess} ${styles.actionBtnSm}`}
+                                onClick={() => handleDuyet(dh.id)}
+                                disabled={approvingId === dh.id}
+                                title="Duyệt (GDKD)"
+                              >
+                                {approvingId === dh.id ? "..." : <FiCheck size={12} />}
+                              </button>
+                              <button
+                                className={`${styles.actionBtn} ${styles.actionBtnDanger} ${styles.actionBtnSm}`}
+                                onClick={() => setTuChoiModal(dh.id)}
+                                disabled={rejectingId === dh.id}
+                                title="Từ chối"
+                              >
+                                {rejectingId === dh.id ? "..." : <FiX size={12} />}
+                              </button>
+                            </>
                           )}
-                          {dh.trangThaiDon === "cho_duyet" && canApprove && (
-                            <button
-                              className={`${styles.actionBtn} ${styles.actionBtnDanger} ${styles.actionBtnSm}`}
-                              onClick={() => setTuChoiModal(dh.id)}
-                              disabled={rejectingId === dh.id}
-                              title="Từ chối"
-                            >
-                              {rejectingId === dh.id ? "..." : <FiX size={12} />}
-                            </button>
+                          {/* Kế toán duyệt bước 2: đơn chờ kế toán duyệt */}
+                          {dh.trangThaiDon === "cho_ke_toan_duyet" && canApproveStep2 && (
+                            <>
+                              <button
+                                className={`${styles.actionBtn} ${styles.actionBtnSuccess} ${styles.actionBtnSm}`}
+                                onClick={() => handleDuyet(dh.id)}
+                                disabled={approvingId === dh.id}
+                                title="Duyệt (Kế toán)"
+                              >
+                                {approvingId === dh.id ? "..." : <FiCheck size={12} />}
+                              </button>
+                              <button
+                                className={`${styles.actionBtn} ${styles.actionBtnDanger} ${styles.actionBtnSm}`}
+                                onClick={() => setTuChoiModal(dh.id)}
+                                disabled={rejectingId === dh.id}
+                                title="Từ chối"
+                              >
+                                {rejectingId === dh.id ? "..." : <FiX size={12} />}
+                              </button>
+                            </>
                           )}
                           <button
                             className={`${styles.actionBtn} ${styles.actionBtnView} ${styles.actionBtnSm}`}
@@ -607,19 +667,16 @@ export default function QuanLyDonHangPage() {
                             <FiEye size={14} />
                           </button>
 
-                          {dh.trangThaiDon === "cho_duyet" && canApprove && (
+                          {/* Bước 1: GDKD duyệt đơn chờ duyệt */}
+                          {dh.trangThaiDon === "cho_duyet" && (isAdmin || isGDKD) && (
                             <>
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
                                 onClick={() => handleDuyet(dh.id)}
                                 disabled={approvingId === dh.id}
-                                title="Duyệt"
+                                title="Duyệt (GDKD)"
                               >
-                                {approvingId === dh.id ? (
-                                  "..."
-                                ) : (
-                                  <FiCheck size={14} />
-                                )}
+                                {approvingId === dh.id ? "..." : <FiCheck size={14} />}
                               </button>
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
@@ -627,17 +684,35 @@ export default function QuanLyDonHangPage() {
                                 disabled={rejectingId === dh.id}
                                 title="Từ chối"
                               >
-                                {rejectingId === dh.id ? (
-                                  "..."
-                                ) : (
-                                  <FiX size={14} />
-                                )}
+                                {rejectingId === dh.id ? "..." : <FiX size={14} />}
+                              </button>
+                            </>
+                          )}
+
+                          {/* Bước 2: Kế toán duyệt đơn chờ kế toán */}
+                          {dh.trangThaiDon === "cho_ke_toan_duyet" && (isAdmin || isKeToan) && (
+                            <>
+                              <button
+                                className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
+                                onClick={() => handleDuyet(dh.id)}
+                                disabled={approvingId === dh.id}
+                                title="Duyệt (Kế toán)"
+                              >
+                                {approvingId === dh.id ? "..." : <FiCheck size={14} />}
+                              </button>
+                              <button
+                                className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+                                onClick={() => setTuChoiModal(dh.id)}
+                                disabled={rejectingId === dh.id}
+                                title="Từ chối"
+                              >
+                                {rejectingId === dh.id ? "..." : <FiX size={14} />}
                               </button>
                             </>
                           )}
 
                           {canEdit &&
-                            ["cho_duyet", "da_duyet"].includes(
+                            ["cho_duyet"].includes(
                               dh.trangThaiDon,
                             ) && (
                               <button

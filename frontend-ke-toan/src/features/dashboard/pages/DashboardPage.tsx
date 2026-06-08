@@ -105,6 +105,13 @@ const TABS_BY_ROLE: Record<string, { key: TabKey; label: string; icon: React.Rea
     { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
     { key: "nghiemthu", label: "Nghiệm thu", icon: <FiFileText size={16} /> },
   ],
+  giam_doc_kinh_doanh: [
+    { key: "tongquan", label: "Tổng quan", icon: <FiGrid size={16} /> },
+    // { key: "doanhthu", label: "Doanh thu", icon: <FiTrendingUp size={16} /> },
+    { key: "trangthai", label: "Trạng thái", icon: <FiBarChart2 size={16} /> },
+    { key: "thanhtoan", label: "Thanh toán", icon: <FiDollarSign size={16} /> },
+    { key: "nghiemthu", label: "Nghiệm thu", icon: <FiFileText size={16} /> },
+  ],
 };
 
 const FILTER_LABELS: Record<FilterPeriod, string> = {

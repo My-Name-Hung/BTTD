@@ -49,6 +49,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdDashboard size={20} />,
     roles: [
       "admin",
+      "giam_doc_kinh_doanh",
       "ke_toan",
       "dieu_phoi",
       "lanh_dao",
@@ -66,6 +67,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <FiShoppingBag size={20} />,
     roles: [
       "admin",
+      "giam_doc_kinh_doanh",
       "ke_toan",
       "dieu_phoi",
       "sale",
@@ -87,7 +89,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Khách hàng",
     icon: <MdPeople size={20} />,
     iconActive: <MdPeople size={20} />,
-    roles: ["admin", "ke_toan", "dieu_phoi", "sale"],
+    roles: ["admin", "giam_doc_kinh_doanh", "ke_toan", "dieu_phoi", "sale"],
   },
   // Sản xuất - Trạm trộn
   {
@@ -126,7 +128,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Nghiệm thu",
     icon: <MdAssignment size={20} />,
     iconActive: <MdAssignment size={20} />,
-    roles: ["admin", "ky_thuat", "ke_toan"],
+    roles: ["admin", "giam_doc_kinh_doanh", "ky_thuat", "ke_toan"],
   },
   // Thanh toán
   {
@@ -134,7 +136,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Thanh toán",
     icon: <MdPayments size={20} />,
     iconActive: <MdPayments size={20} />,
-    roles: ["admin", "ke_toan"],
+    roles: ["admin", "giam_doc_kinh_doanh", "ke_toan"],
   },
   // Công nợ
   {
@@ -142,7 +144,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Công nợ",
     icon: <MdPayments size={20} />,
     iconActive: <MdPayments size={20} />,
-    roles: ["admin", "ke_toan", "lanh_dao"],
+    roles: ["admin", "giam_doc_kinh_doanh", "ke_toan", "lanh_dao"],
   },
   // Quản trị (admin only)
   {
@@ -267,6 +269,7 @@ const BOTTOM_TABS = [
     iconActive: <MdDashboard size={22} />,
     roles: [
       "admin",
+      "giam_doc_kinh_doanh",
       "ke_toan",
       "dieu_phoi",
       "lanh_dao",
@@ -283,6 +286,7 @@ const BOTTOM_TABS = [
     iconActive: <FiShoppingBag size={22} />,
     roles: [
       "admin",
+      "giam_doc_kinh_doanh",
       "ke_toan",
       "dieu_phoi",
       "sale",
@@ -327,6 +331,7 @@ const BOTTOM_TABS = [
     iconActive: <FiBell size={22} />,
     roles: [
       "admin",
+      "giam_doc_kinh_doanh",
       "ke_toan",
       "dieu_phoi",
       "lanh_dao",

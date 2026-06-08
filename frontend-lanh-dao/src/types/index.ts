@@ -26,7 +26,7 @@ export interface NguoiDung {
   hoTen: string;
   email: string | null;
   soDienThoai: string | null;
-  vaiTro: 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao';
+  vaiTro: 'admin' | 'giam_doc_kinh_doanh' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao';
   trangThai: 'hoat_dong' | 'khong_hoat_dong';
 }
 
@@ -51,6 +51,7 @@ export interface DonHang {
   ngayNghiemThu: string | null;
   trangThaiDon:
     | 'cho_duyet'
+    | 'cho_ke_toan_duyet'
     | 'da_duyet'
     | 'dang_san_xuat'
     | 'dang_giao'
@@ -162,6 +163,7 @@ export interface CanhBaoDonHang {
 
 export const TRANG_THAI_DON_LABELS: Record<string, string> = {
   cho_duyet: 'Chờ duyệt',
+  cho_ke_toan_duyet: 'Chờ kế toán duyệt',
   da_duyet: 'Đã duyệt',
   dang_san_xuat: 'Đang sản xuất',
   dang_giao: 'Đang giao',
@@ -173,6 +175,7 @@ export const TRANG_THAI_DON_LABELS: Record<string, string> = {
 
 export const TRANG_THAI_DON_COLORS: Record<string, string> = {
   cho_duyet: '#f59e0b',
+  cho_ke_toan_duyet: '#f97316',
   da_duyet: '#3b82f6',
   dang_san_xuat: '#8b5cf6',
   dang_giao: '#f97316',

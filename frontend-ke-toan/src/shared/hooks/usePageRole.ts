@@ -1,9 +1,10 @@
 import { useAuth } from './useAuth';
 
-export type VaiTro = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'tram_tron' | 'sale' | 'tai_xe' | 'ky_thuat';
+export type VaiTro = 'admin' | 'giam_doc_kinh_doanh' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'tram_tron' | 'sale' | 'tai_xe' | 'ky_thuat';
 
 export const ROLE_LABELS: Record<VaiTro, string> = {
   admin: 'Quản trị viên',
+  giam_doc_kinh_doanh: 'Giám đốc kinh doanh',
   ke_toan: 'Kế toán',
   dieu_phoi: 'Điều phối',
   lanh_dao: 'Lãnh đạo',
@@ -18,36 +19,38 @@ export const PERMISSIONS = {
   'role': ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'tram_tron', 'sale', 'tai_xe', 'ky_thuat'],
 
   // === DON HANG ===
-  'donhang.create': ['admin', 'sale'],
+  'donhang.create': ['admin', 'sale', 'dieu_phoi'],
   'donhang.edit': ['admin'],
   'donhang.delete': ['admin'],
-  'donhang.approve': ['admin', 'ke_toan'],
-  'donhang.reject': ['admin', 'ke_toan'],
-  'donhang.view': ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'sale', 'tai_xe', 'ky_thuat'],
+  'donhang.approve': ['admin', 'giam_doc_kinh_doanh', 'ke_toan'],
+  'donhang.reject': ['admin', 'giam_doc_kinh_doanh', 'ke_toan'],
+  'donhang.approve_gdkd': ['admin', 'giam_doc_kinh_doanh'],
+  'donhang.approve_ke_toan': ['admin', 'ke_toan'],
+  'donhang.view': ['admin', 'giam_doc_kinh_doanh', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'sale', 'tai_xe', 'ky_thuat'],
   'donhang.view_own': ['sale', 'tai_xe', 'ky_thuat'],
 
   // === DIEU PHOI ===
   'dieuphoi.access': ['admin', 'dieu_phoi'],
   'dieuphoi.create': ['admin', 'dieu_phoi'],
   'dieuphoi.edit': ['admin', 'dieu_phoi'],
-  'dieuphoi.confirm': ['admin', 'dieu_phoi', 'ke_toan'],
+  'dieuphoi.confirm': ['admin', 'dieu_phoi', 'giam_doc_kinh_doanh', 'ke_toan'],
 
   // === NGHIEM THU ===
-  'nghiemthu.access': ['admin', 'ke_toan', 'ky_thuat'],
-  'nghiemthu.confirm': ['admin', 'ke_toan', 'ky_thuat'],
+  'nghiemthu.access': ['admin', 'giam_doc_kinh_doanh', 'ke_toan', 'ky_thuat'],
+  'nghiemthu.confirm': ['admin', 'giam_doc_kinh_doanh', 'ke_toan', 'ky_thuat'],
 
   // === THANH TOAN ===
-  'thanhtoan.access': ['admin', 'ke_toan'],
-  'thanhtoan.create': ['admin', 'ke_toan'],
+  'thanhtoan.access': ['admin', 'giam_doc_kinh_doanh', 'ke_toan'],
+  'thanhtoan.create': ['admin', 'giam_doc_kinh_doanh', 'ke_toan'],
 
   // === CONG NO ===
-  'congno.access': ['admin', 'ke_toan', 'lanh_dao'],
-  'congno.view_detail': ['admin', 'ke_toan', 'lanh_dao'],
+  'congno.access': ['admin', 'giam_doc_kinh_doanh', 'ke_toan', 'lanh_dao'],
+  'congno.view_detail': ['admin', 'giam_doc_kinh_doanh', 'ke_toan', 'lanh_dao'],
 
   // === KHACH HANG ===
-  'khachhang.access': ['admin', 'ke_toan', 'dieu_phoi', 'sale'],
+  'khachhang.access': ['admin', 'giam_doc_kinh_doanh', 'ke_toan', 'dieu_phoi', 'sale'],
   'khachhang.create': ['admin', 'sale'],
-  'khachhang.edit': ['admin', 'ke_toan'],
+  'khachhang.edit': ['admin', 'giam_doc_kinh_doanh', 'ke_toan'],
   'khachhang.delete': ['admin'],
 
   // === TRAM TRON ===

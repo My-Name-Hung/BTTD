@@ -46,7 +46,8 @@ export function guiThongBao(
   const { tieuDe, noiDung } = NOTIFICATION_MESSAGES[type](data);
 
   const roleMap: Record<NotificationType, string[]> = {
-    NEW_ORDER: ['admin', 'ke_toan', 'lanh_dao'],
+    NEW_ORDER: ['admin', 'giam_doc_kinh_doanh', 'ke_toan', 'lanh_dao'],
+    ORDER_APPROVED_BY_GDKD: ['ke_toan', 'admin', 'lanh_dao'],
     ORDER_APPROVED: ['dieu_phoi', 'admin', 'lanh_dao'],
     ORDER_REJECTED: ['dieu_phoi', 'sale', 'admin', 'lanh_dao'],
     PAYMENT_RECEIVED: ['admin', 'ke_toan', 'lanh_dao'],

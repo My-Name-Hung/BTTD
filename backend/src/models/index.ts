@@ -16,6 +16,7 @@ export interface NguoiDung {
   soDienThoai: string | null;
   vaiTro:
     | "admin"
+    | "giam_doc_kinh_doanh"
     | "ke_toan"
     | "dieu_phoi"
     | "lanh_dao"
@@ -100,16 +101,19 @@ export interface DonHang {
 
   trangThaiDon:
     | "cho_duyet"
+    | "cho_ke_toan_duyet"
     | "da_duyet"
     | "dang_san_xuat"
     | "dang_giao"
     | "da_giao"
     | "nghiem_thu"
-    | "da_thanh_toan";
+    | "da_thanh_toan"
+    | "da_hoan_thanh";
   trangThaiHoanThanh: "chua_hoan_thanh" | "dang_hoan_thanh" | "da_hoan_thanh";
 
   nguoiTaoId: number | null;
   nguoiDuyetId: number | null;
+  nguoiDuyetGDKDId: number | null;
   ghiChu: string | null;
   lyDoTuChoi: string | null;
 

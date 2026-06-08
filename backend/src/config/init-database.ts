@@ -749,7 +749,18 @@ async function initDatabase(): Promise<void> {
         console.log("  ✅ Cột giamTru đã tồn tại trong DonHang");
       }
 
-      // 3. NghiemThu: đảm bảo bienBanFile là NVARCHAR(MAX)
+      // 3. DonHang: thêm cột nguoiDuyetGDKDId (cho Giám đốc kinh doanh duyệt bước 1)
+      const colNguoiDuyetGDKD = await migReq.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('DonHang') AND name = 'nguoiDuyetGDKDId'`
+      );
+      if (colNguoiDuyetGDKD.recordset.length === 0) {
+        await migReq.query(`ALTER TABLE DonHang ADD nguoiDuyetGDKDId INT NULL`);
+        console.log("  ➕ Đã thêm cột nguoiDuyetGDKDId vào DonHang");
+      } else {
+        console.log("  ✅ Cột nguoiDuyetGDKDId đã tồn tại trong DonHang");
+      }
+
+      // 4. NghiemThu: đảm bảo bienBanFile là NVARCHAR(MAX)
       const colBienBanFile = await migReq.query<{ name: string; system_type_id: number }[]>(
         `SELECT name, system_type_id FROM sys.columns WHERE object_id = OBJECT_ID('NghiemThu') AND name = 'bienBanFile'`
       );

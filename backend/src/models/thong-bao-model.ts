@@ -24,6 +24,7 @@ export interface ThongBaoPayload {
 export type NotificationType =
   | 'NEW_ORDER'
   | 'ORDER_APPROVED'
+  | 'ORDER_APPROVED_BY_GDKD'
   | 'ORDER_REJECTED'
   | 'PAYMENT_RECEIVED'
   | 'SCHEDULE_UPDATED'
@@ -39,7 +40,7 @@ export type NotificationType =
   | 'DELIVERY_COMPLETED'
   | 'ORDER_STATUS_CHANGED';
 
-export type UserRole = 'admin' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho' | 'sale' | 'tai_xe' | 'ky_thuat';
+export type UserRole = 'admin' | 'giam_doc_kinh_doanh' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho' | 'sale' | 'tai_xe' | 'ky_thuat';
 
 export const NOTIFICATION_MESSAGES: Record<NotificationType, (data: Record<string, unknown>) => { tieuDe: string; noiDung: string }> = {
   NEW_ORDER: (d) => ({
@@ -49,6 +50,10 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, (data: Record<strin
   ORDER_APPROVED: (d) => ({
     tieuDe: 'Đơn hàng đã được duyệt',
     noiDung: `Đơn hàng ${d.maDonHang || ''} đã được kế toán duyệt.`,
+  }),
+  ORDER_APPROVED_BY_GDKD: (d) => ({
+    tieuDe: 'Đơn hàng đã được giám đốc kinh doanh duyệt',
+    noiDung: `Đơn hàng ${d.maDonHang || ''} đã được giám đốc kinh doanh duyệt lần 1. Đang chờ kế toán duyệt.`,
   }),
   ORDER_REJECTED: (d) => ({
     tieuDe: 'Đơn hàng bị từ chối',

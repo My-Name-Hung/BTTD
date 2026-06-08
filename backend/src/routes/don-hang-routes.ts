@@ -149,7 +149,7 @@ router.get('/thong-ke', authMiddleware, async (req: AuthRequest, res: Response<A
 
     const dbModule = await import('../config/database');
 
-    const statuses = ['cho_duyet', 'da_duyet', 'dang_san_xuat', 'dang_giao', 'da_giao', 'nghiem_thu', 'da_thanh_toan', 'hoan_thanh', 'tu_choi'];
+    const statuses = ['cho_duyet', 'cho_ke_toan_duyet', 'da_duyet', 'dang_san_xuat', 'dang_giao', 'da_giao', 'nghiem_thu', 'da_thanh_toan', 'hoan_thanh', 'tu_choi'];
     const stats: Record<string, number> = {};
     for (const status of statuses) {
       const where = whereClause
@@ -173,6 +173,7 @@ router.get('/thong-ke', authMiddleware, async (req: AuthRequest, res: Response<A
       data: {
         tongDon: tongRes[0]?.cnt || 0,
         choDuyet: stats['cho_duyet'] || 0,
+        choKeToanDuyet: stats['cho_ke_toan_duyet'] || 0,
         daDuyet: stats['da_duyet'] || 0,
         dangSanXuat: stats['dang_san_xuat'] || 0,
         dangGiao: stats['dang_giao'] || 0,
@@ -390,15 +391,19 @@ router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req
   }
 });
 
-router.put('/:id/duyet', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.put('/:id/duyet', authMiddleware, requireRole('admin', 'giam_doc_kinh_doanh', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     if (!req.user) { res.status(401).json({ success: false, message: 'Chưa đăng nhập' }); return; }
     const id = parseInt(req.params.id, 10);
-    const donHang = await duyetDonHang(id, req.user.id);
+    const donHang = await duyetDonHang(id, req.user.id, req.user.vaiTro);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+
+    const tuTrangThai = req.user.vaiTro === 'giam_doc_kinh_doanh' ? 'cho_duyet' : 'cho_ke_toan_duyet';
+    const denTrangThai = req.user.vaiTro === 'giam_doc_kinh_doanh' ? 'cho_ke_toan_duyet' : 'da_duyet';
+
     await ghiNhatKy(req.user.id, 'DUYET', 'DonHang', id,
-      JSON.stringify({ trangThaiDon: 'cho_duyet' }),
-      JSON.stringify({ trangThaiDon: 'da_duyet' }),
+      JSON.stringify({ trangThaiDon: tuTrangThai }),
+      JSON.stringify({ trangThaiDon: denTrangThai }),
       ip);
     res.json({ success: true, message: 'Duyệt đơn hàng thành công', data: donHang });
   } catch (error) {
@@ -407,16 +412,29 @@ router.put('/:id/duyet', authMiddleware, requireRole('admin', 'ke_toan'), async 
   }
 });
 
-router.put('/:id/tu-choi', authMiddleware, requireRole('admin', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.put('/:id/tu-choi', authMiddleware, requireRole('admin', 'giam_doc_kinh_doanh', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     if (!req.user) { res.status(401).json({ success: false, message: 'Chưa đăng nhập' }); return; }
     const id = parseInt(req.params.id, 10);
     const { lyDo } = req.body;
     if (!lyDo) { res.status(400).json({ success: false, message: 'Lý do từ chối là bắt buộc' }); return; }
+
+    // Kiểm tra trạng thái phù hợp với vai trò
+    const donHangHienTai = await layDonHangTheoId(id);
+    if (req.user.vaiTro === 'giam_doc_kinh_doanh' && donHangHienTai.trangThaiDon !== 'cho_duyet') {
+      res.status(400).json({ success: false, message: 'Bạn chỉ có thể từ chối đơn đang chờ bạn duyệt' });
+      return;
+    }
+    if (req.user.vaiTro === 'ke_toan' && donHangHienTai.trangThaiDon !== 'cho_ke_toan_duyet') {
+      res.status(400).json({ success: false, message: 'Bạn chỉ có thể từ chối đơn đang chờ kế toán duyệt' });
+      return;
+    }
+
     const donHang = await tuChoiDonHang(id, lyDo);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    const tuTrangThai = req.user.vaiTro === 'giam_doc_kinh_doanh' ? 'cho_duyet' : 'cho_ke_toan_duyet';
     await ghiNhatKy(req.user.id, 'TU_CHOI', 'DonHang', id,
-      JSON.stringify({ trangThaiDon: 'cho_duyet' }),
+      JSON.stringify({ trangThaiDon: tuTrangThai }),
       JSON.stringify({ trangThaiDon: 'tu_choi', lyDo }),
       ip);
     res.json({ success: true, message: 'Từ chối đơn hàng thành công', data: donHang });

@@ -113,6 +113,7 @@ export async function layDonHang(id: number): Promise<DonHang> {
 export interface ThongKeDonHang {
   tongDon: number;
   choDuyet: number;
+  choKeToanDuyet: number;
   daDuyet: number;
   dangSanXuat: number;
   dangGiao: number;

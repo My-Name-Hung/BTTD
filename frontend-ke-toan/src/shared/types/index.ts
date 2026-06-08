@@ -22,7 +22,7 @@ export interface NguoiDung {
   hoTen: string;
   email: string | null;
   soDienThoai: string | null;
-  vaiTro: "admin" | "ke_toan" | "dieu_phoi" | "lanh_dao" | "tram_tron" | "sale" | "tai_xe" | "ky_thuat";
+  vaiTro: "admin" | "giam_doc_kinh_doanh" | "ke_toan" | "dieu_phoi" | "lanh_dao" | "tram_tron" | "sale" | "tai_xe" | "ky_thuat";
   idTramTron?: number | null;
   trangThai: "hoat_dong" | "khong_hoat_dong";
   ngayTao?: string | Date;
@@ -99,6 +99,7 @@ export interface DonHang {
   ngayNghiemThu: string | null;
   trangThaiDon:
     | "cho_duyet"
+    | "cho_ke_toan_duyet"
     | "da_duyet"
     | "tu_choi"
     | "dang_san_xuat"
@@ -111,6 +112,7 @@ export interface DonHang {
   trangThaiHoanThanh: "chua_hoan_thanh" | "dang_hoan_thanh" | "da_hoan_thanh";
   nguoiTaoId: number | null;
   nguoiDuyetId: number | null;
+  nguoiDuyetGDKDId: number | null;
   ghiChu: string | null;
   lyDoTuChoi: string | null;
   daThanhToan: number;
@@ -337,6 +339,7 @@ export const NOTIFICATION_TYPE_ICONS: Record<string, string> = {
 
 export const TRANG_THAI_DON_LABELS: Record<string, string> = {
   cho_duyet: "Chờ duyệt",
+  cho_ke_toan_duyet: "Chờ kế toán duyệt",
   da_duyet: "Đã duyệt",
   tu_choi: "Từ chối",
   dang_san_xuat: "Đang sản xuất",
@@ -351,6 +354,7 @@ export const TRANG_THAI_DON_LABELS: Record<string, string> = {
 
 export const TRANG_THAI_DON_COLORS: Record<string, string> = {
   cho_duyet: "#f59e0b",
+  cho_ke_toan_duyet: "#f97316",
   da_duyet: "#3b82f6",
   tu_choi: "#ef4444",
   dang_san_xuat: "#8b5cf6",
