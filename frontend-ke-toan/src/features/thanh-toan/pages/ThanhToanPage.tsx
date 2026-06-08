@@ -63,7 +63,7 @@ export default function ThanhToanPage() {
   const [activeTab, setActiveTab] = useState<TabFilter>("chua_tat_toan");
   const [exporting, setExporting] = useState(false);
   // Lưu trữ hóa đơn đang chọn cho mỗi đơn hàng
-  const [selectedHoaDonIds, setSelectedHoaDonIds] = useState<Record<number, number>>({});
+  const [selectedHoaDonIds, setSelectedHoaDonIds] = useState<Record<number, boolean>>({});
 
   const canCreate = hasPermission("thanhtoan.create");
 
@@ -439,7 +439,7 @@ export default function ThanhToanPage() {
                                   e.stopPropagation();
                                   setSelectedHoaDonIds(prev => ({
                                     ...prev,
-                                    [dh.id]: prev[dh.id] ? undefined : true
+                                    [dh.id]: prev[dh.id] ? false : true
                                   }));
                                 }}
                                 title="Xem hóa đơn đã xuất"
@@ -454,7 +454,7 @@ export default function ThanhToanPage() {
                                       className={styles.dropdownItem}
                                       onClick={() => {
                                         handlePrintHD(hd.id);
-                                        setSelectedHoaDonIds(prev => ({ ...prev, [dh.id]: undefined }));
+                                        setSelectedHoaDonIds(prev => ({ ...prev, [dh.id]: false }));
                                       }}
                                     >
                                       <span>{hd.maHoaDon}</span>
@@ -477,7 +477,7 @@ export default function ThanhToanPage() {
                                   e.stopPropagation();
                                   setSelectedHoaDonIds(prev => ({
                                     ...prev,
-                                    [dh.id]: prev[dh.id] ? undefined : true
+                                    [dh.id]: prev[dh.id] ? false : true
                                   }));
                                 }}
                                 title="Xem hóa đơn"
@@ -492,7 +492,7 @@ export default function ThanhToanPage() {
                                       className={styles.dropdownItem}
                                       onClick={() => {
                                         handlePrintHD(hd.id);
-                                        setSelectedHoaDonIds(prev => ({ ...prev, [dh.id]: undefined }));
+                                        setSelectedHoaDonIds(prev => ({ ...prev, [dh.id]: false }));
                                       }}
                                     >
                                       <span>{hd.maHoaDon}</span>
