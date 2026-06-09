@@ -398,8 +398,19 @@ router.put('/:id/duyet', authMiddleware, requireRole('admin', 'giam_doc_kinh_doa
     const donHang = await duyetDonHang(id, req.user.id, req.user.vaiTro);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
 
-    const tuTrangThai = req.user.vaiTro === 'giam_doc_kinh_doanh' ? 'cho_duyet' : 'cho_ke_toan_duyet';
-    const denTrangThai = req.user.vaiTro === 'giam_doc_kinh_doanh' ? 'cho_ke_toan_duyet' : 'da_duyet';
+    let tuTrangThai: string;
+    let denTrangThai: string;
+    if (req.user.vaiTro === 'admin') {
+      // Admin xác định bước dựa trên trạng thái hiện tại
+      tuTrangThai = donHang.trangThaiDon === 'cho_duyet' ? 'cho_duyet' : 'cho_ke_toan_duyet';
+      denTrangThai = donHang.trangThaiDon === 'cho_duyet' ? 'cho_ke_toan_duyet' : 'da_duyet';
+    } else if (req.user.vaiTro === 'giam_doc_kinh_doanh') {
+      tuTrangThai = 'cho_duyet';
+      denTrangThai = 'cho_ke_toan_duyet';
+    } else {
+      tuTrangThai = 'cho_ke_toan_duyet';
+      denTrangThai = 'da_duyet';
+    }
 
     await ghiNhatKy(req.user.id, 'DUYET', 'DonHang', id,
       JSON.stringify({ trangThaiDon: tuTrangThai }),

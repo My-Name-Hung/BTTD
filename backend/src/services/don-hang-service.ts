@@ -246,6 +246,70 @@ export async function duyetDonHang(
 ): Promise<DonHang> {
   const donHangHienTai = await layDonHangTheoId(id);
 
+  // Admin có toàn quyền - xử lý cả bước 1 và bước 2
+  if (vaiTro === 'admin') {
+    if (donHangHienTai.trangThaiDon === 'cho_duyet') {
+      // Admin duyệt bước 1: cho_duyet → cho_ke_toan_duyet
+      await query(
+        `UPDATE DonHang SET
+          trangThaiDon = N'cho_ke_toan_duyet',
+          nguoiDuyetGDKDId = @nguoiDuyetId,
+          ngayCapNhat = ${vnNow()}
+         WHERE id = @id`,
+        { id, nguoiDuyetId },
+      );
+
+      const donHang = (
+        await query<DonHang>(
+          `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
+          { id },
+        )
+      )[0];
+
+      guiThongBao("ORDER_APPROVED_BY_GDKD", { id, maDonHang: donHang.maDonHang });
+      guiThongBao("ORDER_STATUS_CHANGED", {
+        id,
+        maDonHang: donHang.maDonHang,
+        trangThai: "cho_ke_toan_duyet",
+        trangThaiLabel: "Chờ kế toán duyệt",
+      });
+
+      return donHang;
+    }
+
+    if (donHangHienTai.trangThaiDon === 'cho_ke_toan_duyet') {
+      // Admin duyệt bước 2: cho_ke_toan_duyet → da_duyet
+      await query(
+        `UPDATE DonHang SET
+          trangThaiDon = N'da_duyet',
+          ngayDuyet = ${vnNow()},
+          nguoiDuyetId = @nguoiDuyetId,
+          ngayCapNhat = ${vnNow()}
+         WHERE id = @id`,
+        { id, nguoiDuyetId },
+      );
+
+      const donHang = (
+        await query<DonHang>(
+          `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
+          { id },
+        )
+      )[0];
+
+      guiThongBao("ORDER_APPROVED", { id, maDonHang: donHang.maDonHang });
+      guiThongBao("ORDER_STATUS_CHANGED", {
+        id,
+        maDonHang: donHang.maDonHang,
+        trangThai: "da_duyet",
+        trangThaiLabel: "Đã duyệt",
+      });
+
+      return donHang;
+    }
+
+    throw new Error('Đơn hàng không ở trạng thái chờ duyệt');
+  }
+
   // Bước 1: Giám đốc kinh doanh duyệt - chuyển sang chờ kế toán duyệt
   if (vaiTro === 'giam_doc_kinh_doanh') {
     if (donHangHienTai.trangThaiDon !== 'cho_duyet') {
@@ -281,7 +345,7 @@ export async function duyetDonHang(
   }
 
   // Bước 2: Kế toán duyệt - chuyển sang đã duyệt
-  if (vaiTro === 'ke_toan' || vaiTro === 'admin') {
+  if (vaiTro === 'ke_toan') {
     if (donHangHienTai.trangThaiDon !== 'cho_ke_toan_duyet') {
       throw new Error('Đơn hàng chưa được giám đốc kinh doanh duyệt');
     }
