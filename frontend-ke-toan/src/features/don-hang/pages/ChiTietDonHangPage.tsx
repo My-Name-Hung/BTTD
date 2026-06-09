@@ -175,9 +175,15 @@ export default function ChiTietDonHangPage() {
   const userVaiTro = JSON.parse(
     localStorage.getItem("bttd_user") || "{}",
   )?.vaiTro;
-  const canApproveReject = ["admin", "ke_toan"].includes(userVaiTro);
+  const isAdmin = userVaiTro === "admin";
+  const canApproveReject = ["admin", "giam_doc_kinh_doanh", "ke_toan"].includes(userVaiTro);
   const canEdit = ["admin", "dieu_phoi"].includes(userVaiTro);
   const canDelete = ["admin"].includes(userVaiTro);
+  const isStep1 = donHang?.trangThaiDon === "cho_duyet";
+  const isStep2 = donHang?.trangThaiDon === "cho_ke_toan_duyet";
+  const approveLabel = isAdmin
+    ? (isStep1 ? "Duyệt lần 1" : isStep2 ? "Duyệt lần 2" : "Duyệt đơn")
+    : "Duyệt đơn";
 
   const loadAll = useCallback(async () => {
     if (!id) return;
@@ -292,7 +298,13 @@ export default function ChiTietDonHangPage() {
           <div>
             <div className={styles.pageTitle}>{donHang.maDonHang}</div>
             <div className={styles.pageSubtitle}>
-              Ngày tạo: {formatDate(donHang.ngayTaoDon)} ·{" "}
+              Ngày tạo: {formatDate(donHang.ngayTaoDon)}
+              {(isStep1 || isStep2) && isAdmin && (
+                <span style={{ marginLeft: 8, fontWeight: 600, color: "#073ceb" }}>
+                  · {isStep1 ? "Chờ duyệt lần 1" : "Chờ duyệt lần 2"}
+                </span>
+              )}
+              ·{" "}
               <span
                 style={{
                   color: statusColor(donHang.trangThaiDon),
@@ -309,14 +321,14 @@ export default function ChiTietDonHangPage() {
 
         {/* Action buttons */}
         <div className={styles.pageActions}>
-          {donHang.trangThaiDon === "cho_duyet" && canApproveReject && (
+          {(donHang.trangThaiDon === "cho_duyet" || (donHang.trangThaiDon === "cho_ke_toan_duyet" && isAdmin)) && canApproveReject && (
             <>
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
                 onClick={handleDuyet}
                 disabled={approveLoading}
               >
-                <FiCheck /> {approveLoading ? "Đang duyệt..." : "Duyệt đơn"}
+                <FiCheck /> {approveLoading ? "Đang duyệt..." : approveLabel}
               </button>
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnWarning}`}

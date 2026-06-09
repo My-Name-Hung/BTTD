@@ -150,12 +150,14 @@ export default function QuanLyDonHangPage() {
         ["hoan_thanh", "da_thanh_toan"].includes(d.trangThaiDon)
       ).length || 0);
 
-  const handleDuyet = async (id: number) => {
+  const handleDuyet = async (id: number, trangThaiDon: string) => {
     setApprovingId(id);
     try {
       await duyetDonHang(id);
-      if (isGDKD) {
+      if (trangThaiDon === "cho_duyet") {
         showToast("Đã duyệt lần 1. Đơn hàng chuyển sang kế toán duyệt.");
+      } else if (trangThaiDon === "cho_ke_toan_duyet") {
+        showToast("Đã duyệt lần 2. Đơn hàng chuyển sang điều phối.");
       } else {
         showToast("Duyệt đơn hàng thành công");
       }
@@ -498,9 +500,9 @@ export default function QuanLyDonHangPage() {
                             <>
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnSuccess} ${styles.actionBtnSm}`}
-                                onClick={() => handleDuyet(dh.id)}
+                                onClick={() => handleDuyet(dh.id, dh.trangThaiDon)}
                                 disabled={approvingId === dh.id}
-                                title="Duyệt (GDKD)"
+                                title={canApproveStep1 ? "Duyệt lần 1 (GDKD)" : "Duyệt lần 1"}
                               >
                                 {approvingId === dh.id ? "..." : <FiCheck size={12} />}
                               </button>
@@ -519,9 +521,9 @@ export default function QuanLyDonHangPage() {
                             <>
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnSuccess} ${styles.actionBtnSm}`}
-                                onClick={() => handleDuyet(dh.id)}
+                                onClick={() => handleDuyet(dh.id, dh.trangThaiDon)}
                                 disabled={approvingId === dh.id}
-                                title="Duyệt (Kế toán)"
+                                title={isAdmin ? "Duyệt lần 2" : "Duyệt (Kế toán)"}
                               >
                                 {approvingId === dh.id ? "..." : <FiCheck size={12} />}
                               </button>
@@ -672,9 +674,9 @@ export default function QuanLyDonHangPage() {
                             <>
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
-                                onClick={() => handleDuyet(dh.id)}
+                                onClick={() => handleDuyet(dh.id, dh.trangThaiDon)}
                                 disabled={approvingId === dh.id}
-                                title="Duyệt (GDKD)"
+                                title={isAdmin ? "Duyệt lần 1" : "Duyệt lần 1 (GDKD)"}
                               >
                                 {approvingId === dh.id ? "..." : <FiCheck size={14} />}
                               </button>
@@ -694,9 +696,9 @@ export default function QuanLyDonHangPage() {
                             <>
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
-                                onClick={() => handleDuyet(dh.id)}
+                                onClick={() => handleDuyet(dh.id, dh.trangThaiDon)}
                                 disabled={approvingId === dh.id}
-                                title="Duyệt (Kế toán)"
+                                title={isAdmin ? "Duyệt lần 2" : "Duyệt (Kế toán)"}
                               >
                                 {approvingId === dh.id ? "..." : <FiCheck size={14} />}
                               </button>
