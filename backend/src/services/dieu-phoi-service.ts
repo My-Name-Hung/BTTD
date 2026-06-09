@@ -15,8 +15,16 @@ export async function taoLichSanXuat(
     throw new Error('Không tìm thấy đơn hàng');
   }
 
-  // Lấy idTramTron từ đơn hàng
-  const idTramTron = donHang[0].idTramTron || null;
+  // Lấy idTramTron từ form (do người dùng chọn khi lên lịch SX)
+  const idTramTron = data.idTramTron || null;
+
+  // Cập nhật trạm trộn vào đơn hàng
+  if (idTramTron) {
+    await query(
+      `UPDATE DonHang SET idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @id`,
+      { id: data.idDonHang, idTramTron }
+    );
+  }
 
   await query(
     `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
@@ -139,9 +147,18 @@ export async function capNhatLichSanXuat(
     }
   }
 
+  // Cập nhật tram trộn vào đơn hàng nếu được chọn
+  if (data.idTramTron) {
+    const [ls] = await query<{ idDonHang: number }>(`SELECT idDonHang FROM LichSanXuat WHERE id = @id`, { id });
+    await query(
+      `UPDATE DonHang SET idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @id`,
+      { id: ls.idDonHang, idTramTron: data.idTramTron }
+    );
+  }
+
   await query(
     `UPDATE LichSanXuat SET
-      idXe = @idXe, idTaiXe = @idTaiXe, kyThuatCongTrinh = @kyThuatCongTrinh,
+      idXe = @idXe, idTaiXe = @idTaiXe, idTramTron = @idTramTron, kyThuatCongTrinh = @kyThuatCongTrinh,
       nguoiOmOng = @nguoiOmOng, nguoiBatOng = @nguoiBatOng,
       phuongAnDo = @phuongAnDo, bienSoXe = @bienSoXe,
       thoiGianTron = @thoiGianTron, thoiGianXuatBen = @thoiGianXuatBen,
@@ -154,6 +171,7 @@ export async function capNhatLichSanXuat(
       id,
       idXe: data.idXe ?? null,
       idTaiXe: idTaiXe ?? data.idTaiXe ?? null,
+      idTramTron: data.idTramTron ?? null,
       kyThuatCongTrinh: data.kyThuatCongTrinh ?? null,
       nguoiOmOng: data.nguoiOmOng ?? null,
       nguoiBatOng: data.nguoiBatOng ?? null,

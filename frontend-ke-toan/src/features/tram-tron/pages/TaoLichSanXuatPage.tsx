@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft } from 'react-icons/fi';
+import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome } from 'react-icons/fi';
 import {
-  layDanhSachXe, layDanhSachDonHang,
+  layDanhSachXe, layDanhSachDonHang, layDanhSachTramTron,
   layLichSanXuat, taoLichSanXuat, capNhatLichSanXuat,
 } from '../../../shared/services/api';
-import { Xe, DonHang, LichSanXuat } from '../../../shared/types';
+import { Xe, DonHang, LichSanXuat, TramTron } from '../../../shared/types';
 import { useToast } from '../../../shared/hooks';
 import { ConfirmModal } from '../../../shared/components/Common';
 import styles from './TaoLichSanXuatPage.module.css';
@@ -20,6 +20,7 @@ export default function TaoLichSanXuatPage() {
   const { toasts, showToast } = useToast();
 
   const [xes, setXes] = useState<Xe[]>([]);
+  const [tramTrons, setTramTrons] = useState<TramTron[]>([]);
   const [donHang, setDonHang] = useState<DonHang | null>(null);
   const [existingLich, setExistingLich] = useState<LichSanXuat | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +30,7 @@ export default function TaoLichSanXuatPage() {
 
   const [form, setForm] = useState({
     idXe: '', bienSoXe: '',
+    idTramTron: '', tenTramTron: '',
     kyThuatCongTrinh: '', nguoiOmOng: '', nguoiBatOng: '',
     phuongAnDo: '', ghiChu: '',
   });
@@ -40,13 +42,15 @@ export default function TaoLichSanXuatPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const [xeRes, dhRes] = await Promise.all([
+        const [xeRes, tramRes] = await Promise.all([
           layDanhSachXe(),
-          idDonHang ? layDanhSachDonHang(1, 100, 'da_duyet') : Promise.resolve({ data: [] as DonHang[] }),
+          layDanhSachTramTron(),
         ]);
         setXes(xeRes);
+        setTramTrons(tramRes);
 
         if (idDonHang) {
+          const dhRes = await layDanhSachDonHang(1, 100, 'da_duyet');
           const found = dhRes.data?.find((d: DonHang) => d.id === idDonHang);
           if (found) setDonHang(found);
 
@@ -55,9 +59,12 @@ export default function TaoLichSanXuatPage() {
             const lich = lichs[0];
             setExistingLich(lich);
             const xe = xeRes.find((x: Xe) => x.id === lich.idXe);
+            const tram = tramRes.find((t: TramTron) => t.id === lich.idTramTron);
             setForm({
               idXe: lich.idXe ? String(lich.idXe) : '',
               bienSoXe: lich.bienSoXe || '',
+              idTramTron: lich.idTramTron ? String(lich.idTramTron) : '',
+              tenTramTron: tram?.tenTram || '',
               kyThuatCongTrinh: lich.kyThuatCongTrinh || '',
               nguoiOmOng: lich.nguoiOmOng || '',
               nguoiBatOng: lich.nguoiBatOng || '',
@@ -67,6 +74,8 @@ export default function TaoLichSanXuatPage() {
             setInitialForm({
               idXe: lich.idXe ? String(lich.idXe) : '',
               bienSoXe: lich.bienSoXe || '',
+              idTramTron: lich.idTramTron ? String(lich.idTramTron) : '',
+              tenTramTron: tram?.tenTram || '',
               kyThuatCongTrinh: lich.kyThuatCongTrinh || '',
               nguoiOmOng: lich.nguoiOmOng || '',
               nguoiBatOng: lich.nguoiBatOng || '',
@@ -89,9 +98,15 @@ export default function TaoLichSanXuatPage() {
     setForm({ ...form, idXe: xeId, bienSoXe: xe?.bienSo || '' });
   };
 
+  const handleTramChange = (tramId: string) => {
+    const tram = tramTrons.find((t) => t.id === parseInt(tramId));
+    setForm({ ...form, idTramTron: tramId, tenTramTron: tram?.tenTram || '' });
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!idDonHang) return;
+    if (!form.idTramTron) { showToast('Vui lòng chọn trạm trộn', 'error'); return; }
 
     setSubmitting(true);
     try {
@@ -99,6 +114,7 @@ export default function TaoLichSanXuatPage() {
       const payload: Partial<LichSanXuat> = {
         idDonHang,
         idXe: form.idXe ? parseInt(form.idXe) : null,
+        idTramTron: form.idTramTron ? parseInt(form.idTramTron) : null,
         bienSoXe: xe?.bienSo || form.bienSoXe || null,
         kyThuatCongTrinh: form.kyThuatCongTrinh || null,
         nguoiOmOng: form.nguoiOmOng || null,
@@ -214,6 +230,26 @@ export default function TaoLichSanXuatPage() {
                 placeholder="VD: 59C1-12345"
               />
             </div>
+          </div>
+
+          <div className={styles.formDivider} />
+          <div className={styles.sectionTitle}>
+            <FiHome size={15} /> Thông tin trạm trộn
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Trạm trộn *</label>
+            <select
+              className={styles.formSelect}
+              value={form.idTramTron}
+              onChange={(e) => handleTramChange(e.target.value)}
+            >
+              <option value="">— Chọn trạm trộn —</option>
+              {tramTrons.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.tenTram} {t.diaChi ? `— ${t.diaChi}` : ''}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className={styles.formDivider} />

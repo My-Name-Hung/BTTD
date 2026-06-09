@@ -5,10 +5,10 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
   taoDonHang, suaDonHang, layDonHang,
-  layDanhSachKhachHang, layDanhSachMacBeTong, layDanhSachTramTron,
+  layDanhSachKhachHang, layDanhSachMacBeTong,
   taoKhachHang,
 } from '../../../shared/services/api';
-import { DonHang, KhachHang, MacBeTong, TramTron } from "../../../shared/types";
+import { DonHang, KhachHang, MacBeTong } from "../../../shared/types";
 import { useToast } from "../../../shared/hooks";
 import { ConfirmModal, Modal } from "../../../shared/components/Common";
 import styles from './TaoDonHangPage.module.css';
@@ -40,7 +40,7 @@ function parseLocalDatetime(s: string | null | undefined): Date | null {
 const EMPTY_FORM = {
   tenKhachHang: '', diaChiNhan: '', soDienThoai: '',
   tenMacBeTong: '', khoiLuongDat: '', donGia: '',
-  ghiChu: '', idKhachHang: '', idMacBeTong: '', idTramTron: '',
+  ghiChu: '', idKhachHang: '', idMacBeTong: '',
 };
 
 export default function TaoDonHangPage() {
@@ -53,7 +53,6 @@ export default function TaoDonHangPage() {
 
   const [khachHangs, setKhachHangs] = useState<KhachHang[]>([]);
   const [macBeTongs, setMacBeTongs] = useState<MacBeTong[]>([]);
-  const [tramTrons, setTramTrons] = useState<TramTron[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -106,11 +105,9 @@ export default function TaoDonHangPage() {
   useEffect(() => {
     Promise.all([
       layDanhSachMacBeTong(),
-      layDanhSachTramTron(),
       layDanhSachKhachHang(1, 20),
-    ]).then(([mac, tram, kh]) => {
+    ]).then(([mac, kh]) => {
       setMacBeTongs(mac || []);
-      setTramTrons(tram);
       setKhachHangs(kh.data || []);
       setLoading(false);
     });
@@ -128,7 +125,6 @@ export default function TaoDonHangPage() {
             ghiChu: dh.ghiChu || '',
             idKhachHang: String(dh.idKhachHang || ''),
             idMacBeTong: String(dh.idMacBeTong || ''),
-            idTramTron: String(dh.idTramTron || ''),
           };
           const t = parseLocalDatetime(dh.thoiGianGiaoDuKien);
           setForm(f);
@@ -249,7 +245,6 @@ export default function TaoDonHangPage() {
         ghiChu: form.ghiChu || null,
         idKhachHang: form.idKhachHang ? parseInt(form.idKhachHang) : null,
         idMacBeTong: form.idMacBeTong ? parseInt(form.idMacBeTong) : null,
-        idTramTron: form.idTramTron ? parseInt(form.idTramTron) : null,
       };
 
       if (editingId) {
@@ -362,7 +357,7 @@ export default function TaoDonHangPage() {
           <div className={styles.sectionTitle}>Thông tin sản phẩm</div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Mác bê tông</label>
+              <label className={styles.formLabel}>Khối lượng (m³) *</label>
               <div className={styles.searchDropdownWrap} ref={macDropdownRef}>
                 <div
                   className={styles.searchDropdownDisplay}
@@ -414,25 +409,6 @@ export default function TaoDonHangPage() {
                   </div>
                 )}
               </div>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Trạm trộn</label>
-              <select
-                className={styles.formSelect}
-                value={form.idTramTron}
-                onChange={(e) => setForm({ ...form, idTramTron: e.target.value })}
-              >
-                <option value="">— Chọn trạm trộn —</option>
-                {(() => {
-                  const selectedTram = tramTrons.find(t => String(t.id) === form.idTramTron);
-                  if (form.idTramTron && !selectedTram) {
-                    return <option value={form.idTramTron}>{form.idTramTron} (đã nhập)</option>;
-                  }
-                  return tramTrons.map((t) => (
-                    <option key={t.id} value={String(t.id)}>{t.tenTram}</option>
-                  ));
-                })()}
-              </select>
             </div>
           </div>
           <div className={styles.formRow}>
