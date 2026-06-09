@@ -9,6 +9,7 @@ import styles from "./TaoNguoiDungPage.module.css";
 const VAI_TRO_OPTIONS = [
   { value: "admin", label: "Quản trị", desc: "Toàn quyền hệ thống", color: "#073ceb" },
   { value: "lanh_dao", label: "Lãnh đạo", desc: "Xem KPI & báo cáo", color: "#7c3aed" },
+  { value: "giam_doc_kinh_doanh", label: "Giám đốc kinh doanh", desc: "Duyệt đơn & phê duyệt", color: "#b45309" },
   { value: "ke_toan", label: "Kế toán", desc: "Duyệt đơn & thanh toán", color: "#047857" },
   { value: "dieu_phoi", label: "Điều phối", desc: "Lên lịch & điều xe", color: "#ea6b00" },
   { value: "tram_tron", label: "Trạm trộn", desc: "Xác nhận sản xuất", color: "#0369a1" },

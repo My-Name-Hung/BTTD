@@ -24,12 +24,13 @@ import styles from "./QuanLyNguoiDungPage.module.css";
 const VAI_TRO_SORT_ORDER: Record<string, number> = {
   admin: 1,
   lanh_dao: 2,
-  ke_toan: 3,
-  dieu_phoi: 4,
-  tram_tron: 5,
-  sale: 6,
-  tai_xe: 7,
-  ky_thuat: 8,
+  giam_doc_kinh_doanh: 3,
+  ke_toan: 4,
+  dieu_phoi: 5,
+  tram_tron: 6,
+  sale: 7,
+  tai_xe: 8,
+  ky_thuat: 9,
 };
 
 const VAI_TRO_LABELS: Record<string, string> = {
@@ -37,6 +38,7 @@ const VAI_TRO_LABELS: Record<string, string> = {
   ke_toan: "Kế toán",
   dieu_phoi: "Điều phối",
   lanh_dao: "Lãnh đạo",
+  giam_doc_kinh_doanh: "Giám đốc kinh doanh",
   tram_tron: "Trạm trộn",
   sale: "Sales",
   tai_xe: "Tài xế",
@@ -48,6 +50,7 @@ const VAI_TRO_CLASS: Record<string, string> = {
   ke_toan: styles.roleBadgeKeToan,
   dieu_phoi: styles.roleBadgeDieuPhoi,
   lanh_dao: styles.roleBadgeLanhDao,
+  giam_doc_kinh_doanh: styles.roleBadgeGDKD,
   tram_tron: styles.roleBadgeTramTron,
   sale: styles.roleBadgeSale,
   tai_xe: styles.roleBadgeTaiXe,
@@ -59,6 +62,7 @@ const VAI_TRO_COLORS: Record<string, string> = {
   ke_toan: "#047857",
   dieu_phoi: "#ea6b00",
   lanh_dao: "#7c3aed",
+  giam_doc_kinh_doanh: "#b45309",
   tram_tron: "#0369a1",
   sale: "#dc2626",
   tai_xe: "#0d9488",
@@ -230,6 +234,7 @@ export default function QuanLyNguoiDungPage() {
         ky_thuat: "Kỹ thuật",
         tram_tron: "Trạm trộn",
         lanh_dao: "Lãnh đạo",
+        giam_doc_kinh_doanh: "Giám đốc kinh doanh",
       };
 
       const headers: { key: string; label: string; width: number }[] = [
@@ -310,9 +315,10 @@ export default function QuanLyNguoiDungPage() {
             placeholder="Tất cả vai trò"
             options={[
               { id: "admin", label: "Quản trị" },
+              { id: "lanh_dao", label: "Lãnh đạo" },
+              { id: "giam_doc_kinh_doanh", label: "Giám đốc kinh doanh" },
               { id: "ke_toan", label: "Kế toán" },
               { id: "dieu_phoi", label: "Điều phối" },
-              { id: "lanh_dao", label: "Lãnh đạo" },
               { id: "tram_tron", label: "Trạm trộn" },
               { id: "sale", label: "Sales" },
               { id: "tai_xe", label: "Tài xế" },
@@ -524,6 +530,7 @@ export default function QuanLyNguoiDungPage() {
             options={[
               { id: "admin", label: "Quản trị", subLabel: "Toàn quyền hệ thống" },
               { id: "lanh_dao", label: "Lãnh đạo", subLabel: "Xem KPI & báo cáo" },
+              { id: "giam_doc_kinh_doanh", label: "Giám đốc kinh doanh", subLabel: "Duyệt đơn & phê duyệt" },
               { id: "ke_toan", label: "Kế toán", subLabel: "Duyệt đơn & thanh toán" },
               { id: "dieu_phoi", label: "Điều phối", subLabel: "Lên lịch & điều xe" },
               { id: "tram_tron", label: "Trạm trộn", subLabel: "Xác nhận sản xuất" },

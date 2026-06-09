@@ -26,7 +26,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { ROLE_LABELS, useAuth, useNotifications } from "../../shared/hooks";
 import "../../shared/styles/layout.css";
-import logo from "../../assets/logo.png";
+import logo from "../../assets/Logo.png";
 
 interface LayoutProps {
   children: ReactNode;

@@ -319,6 +319,11 @@
   color: #7c3aed;
 }
 
+.roleBadgeGDKD {
+  background: rgba(180, 83, 9, 0.08);
+  color: #b45309;
+}
+
 .roleBadgeTramTron {
   background: rgba(3, 105, 161, 0.08);
   color: #0369a1;
