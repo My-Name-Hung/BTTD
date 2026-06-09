@@ -357,7 +357,7 @@ export default function TaoDonHangPage() {
           <div className={styles.sectionTitle}>Thông tin sản phẩm</div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Khối lượng (m³) *</label>
+              <label className={styles.formLabel}>Mác bê tông</label>
               <div className={styles.searchDropdownWrap} ref={macDropdownRef}>
                 <div
                   className={styles.searchDropdownDisplay}
@@ -410,8 +410,6 @@ export default function TaoDonHangPage() {
                 )}
               </div>
             </div>
-          </div>
-          <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Khối lượng (m³) *</label>
               <input
