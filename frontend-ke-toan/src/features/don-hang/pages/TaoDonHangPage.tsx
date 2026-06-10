@@ -38,7 +38,7 @@ function parseLocalDatetime(s: string | null | undefined): Date | null {
 }
 
 const EMPTY_FORM = {
-  tenKhachHang: '', diaChiNhan: '', soDienThoai: '',
+  tenKhachHang: '', diaChiNhan: '', soDienThoai: '', mstCccd: '',
   tenMacBeTong: '', khoiLuongDat: '', donGia: '',
   ghiChu: '', idKhachHang: '', idMacBeTong: '',
 };
@@ -63,7 +63,7 @@ export default function TaoDonHangPage() {
   const [khachSearchQuery, setKhachSearchQuery] = useState('');
   const [khachSearchLoading, setKhachSearchLoading] = useState(false);
   const [showKhachHangModal, setShowKhachHangModal] = useState(false);
-  const [newKhachHang, setNewKhachHang] = useState({ tenKhachHang: '', soDienThoai: '', diaChi: '' });
+  const [newKhachHang, setNewKhachHang] = useState({ tenKhachHang: '', soDienThoai: '', diaChi: '', mstCccd: '' });
   const [newKhachLoading, setNewKhachLoading] = useState(false);
   const khachDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -119,6 +119,7 @@ export default function TaoDonHangPage() {
             tenKhachHang: dh.tenKhachHang,
             diaChiNhan: dh.diaChiNhan,
             soDienThoai: dh.soDienThoai,
+            mstCccd: (dh as any).mstCccdKh || (dh as any).mstCccd || '',
             tenMacBeTong: dh.tenMacBeTong || '',
             khoiLuongDat: String(dh.khoiLuongDat),
             donGia: '',
@@ -181,6 +182,7 @@ export default function TaoDonHangPage() {
       tenKhachHang: kh.tenKhachHang || '',
       soDienThoai: kh.soDienThoai || '',
       diaChiNhan: kh.diaChi || '',
+      mstCccd: kh.mstCccd || '',
     }));
     setKhachSearchOpen(false);
     setKhachSearchQuery('');
@@ -197,11 +199,12 @@ export default function TaoDonHangPage() {
         tenKhachHang: newKhachHang.tenKhachHang,
         soDienThoai: newKhachHang.soDienThoai,
         diaChi: newKhachHang.diaChi,
+        mstCccd: newKhachHang.mstCccd,
       });
       setKhachHangs((prev) => [created, ...prev]);
       handleKhachHangChange(created);
       setShowKhachHangModal(false);
-      setNewKhachHang({ tenKhachHang: '', soDienThoai: '', diaChi: '' });
+      setNewKhachHang({ tenKhachHang: '', soDienThoai: '', diaChi: '', mstCccd: '' });
       showToast('Thêm khách hàng thành công');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Lỗi thêm khách hàng', 'error');
@@ -342,15 +345,26 @@ export default function TaoDonHangPage() {
               <input className={styles.formInput} value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} placeholder="VD: 0901 234 567" required />
             </div>
           </div>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Địa chỉ nhận hàng *</label>
-            <input
-              className={styles.formInput}
-              value={form.diaChiNhan}
-              onChange={(e) => setForm({ ...form, diaChiNhan: e.target.value })}
-              placeholder="VD: Số 123, Đường Nguyễn Huệ, P.Thới Bình, Q.Ninh Kiều, TP.Cần Thơ"
-              required
-            />
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Địa chỉ nhận hàng *</label>
+              <input
+                className={styles.formInput}
+                value={form.diaChiNhan}
+                onChange={(e) => setForm({ ...form, diaChiNhan: e.target.value })}
+                placeholder="VD: Số 123, Đường Nguyễn Huệ, P.Thới Bình, Q.Ninh Kiều, TP.Cần Thơ"
+                required
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>MST/CCCD</label>
+              <input
+                className={styles.formInput}
+                value={form.mstCccd}
+                onChange={(e) => setForm({ ...form, mstCccd: e.target.value })}
+                placeholder="VD: 012345678901"
+              />
+            </div>
           </div>
 
           <div className={styles.formDivider} />
@@ -540,6 +554,11 @@ export default function TaoDonHangPage() {
           <label className={styles.formLabel}>Số điện thoại</label>
           <input className={styles.formInput} value={newKhachHang.soDienThoai}
             onChange={(e) => setNewKhachHang({ ...newKhachHang, soDienThoai: e.target.value })} placeholder="VD: 0901 234 567" />
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>MST/CCCD</label>
+          <input className={styles.formInput} value={newKhachHang.mstCccd}
+            onChange={(e) => setNewKhachHang({ ...newKhachHang, mstCccd: e.target.value })} placeholder="VD: 012345678901 hoặc 079123456789" />
         </div>
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Địa chỉ</label>

@@ -180,6 +180,14 @@ async function initDatabase(): Promise<void> {
         await db.query(`ALTER TABLE KhachHang ADD nhom NVARCHAR(200)`);
         console.log("  + Cột nhom đã thêm vào KhachHang");
       }
+      // Migration: thêm cột mstCccd nếu chưa có
+      const colMstCccd = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('KhachHang') AND name = 'mstCccd'`,
+      );
+      if (colMstCccd.recordset.length === 0) {
+        await db.query(`ALTER TABLE KhachHang ADD mstCccd NVARCHAR(50)`);
+        console.log("  + Cột mstCccd đã thêm vào KhachHang");
+      }
     }
 
     // Tạo bảng CauHinh (key/value store cho cấu hình hệ thống)

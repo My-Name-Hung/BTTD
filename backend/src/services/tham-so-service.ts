@@ -51,8 +51,8 @@ export async function taoKhachHang(data: Partial<KhachHang>): Promise<KhachHang>
   }
 
   const result = await query<KhachHang>(
-    `INSERT INTO KhachHang (maKhachHang, tenKhachHang, diaChi, soDienThoai, email, ghiChu, nhom)
-     VALUES (@maKhachHang, @tenKhachHang, @diaChi, @soDienThoai, @email, @ghiChu, @nhom);
+    `INSERT INTO KhachHang (maKhachHang, tenKhachHang, diaChi, soDienThoai, email, ghiChu, nhom, mstCccd)
+     VALUES (@maKhachHang, @tenKhachHang, @diaChi, @soDienThoai, @email, @ghiChu, @nhom, @mstCccd);
      SELECT * FROM KhachHang WHERE id = SCOPE_IDENTITY();`,
     {
       maKhachHang: maKH,
@@ -62,6 +62,7 @@ export async function taoKhachHang(data: Partial<KhachHang>): Promise<KhachHang>
       email: data.email || null,
       ghiChu: data.ghiChu || null,
       nhom: data.nhom || null,
+      mstCccd: data.mstCccd || null,
     }
   );
   const kh = result[0];
@@ -106,6 +107,7 @@ export async function suaKhachHang(id: number, data: Partial<KhachHang>): Promis
     'ghiChu = @ghiChu',
     'maKhachHang = @maKhachHang',
     'nhom = @nhom',
+    'mstCccd = @mstCccd',
     `ngayCapNhat = ${vnNow()}`,
   ];
   await query(
@@ -119,6 +121,7 @@ export async function suaKhachHang(id: number, data: Partial<KhachHang>): Promis
       ghiChu: data.ghiChu ?? null,
       maKhachHang: data.maKhachHang ?? null,
       nhom: data.nhom ?? null,
+      mstCccd: data.mstCccd ?? null,
     }
   );
 

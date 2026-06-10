@@ -44,7 +44,7 @@ export default function KhachHangPage() {
   const [nhomDropdownOpen, setNhomDropdownOpen] = useState(false);
   const nhomDropdownRef = useRef<HTMLDivElement>(null);
 
-  const formInit = { maKhachHang: '', tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '', nhom: '' };
+  const formInit = { maKhachHang: '', tenKhachHang: '', diaChi: '', soDienThoai: '', email: '', ghiChu: '', nhom: '', mstCccd: '' };
   const [form, setForm] = useState(formInit);
   const [initialForm, setInitialForm] = useState(formInit);
 
@@ -91,6 +91,7 @@ export default function KhachHangPage() {
         email: form.email || null,
         ghiChu: form.ghiChu || null,
         nhom: form.nhom || null,
+        mstCccd: form.mstCccd || null,
       };
       // Chỉ gửi mã khách hàng nếu người dùng nhập tay
       if (editingId && form.maKhachHang) {
@@ -131,6 +132,7 @@ export default function KhachHangPage() {
       email: kh.email || '',
       ghiChu: kh.ghiChu || '',
       nhom: kh.nhom || '',
+      mstCccd: kh.mstCccd || '',
     };
     setForm(f);
     setInitialForm(f);
@@ -406,6 +408,10 @@ export default function KhachHangPage() {
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Số điện thoại</label>
             <input className={styles.formInput} value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} />
+          </div>
+          <div className={`${styles.formGroup} ${styles.formGridFull}`}>
+            <label className={styles.formLabel}>MST/CCCD</label>
+            <input className={styles.formInput} value={form.mstCccd} onChange={(e) => setForm({ ...form, mstCccd: e.target.value })} placeholder="VD: 012345678901" />
           </div>
           <div className={`${styles.formGroup} ${styles.formGridFull}`}>
             <label className={styles.formLabel}>Email</label>

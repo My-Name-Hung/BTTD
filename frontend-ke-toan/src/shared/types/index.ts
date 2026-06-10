@@ -38,6 +38,7 @@ export interface KhachHang {
   email: string | null;
   ghiChu: string | null;
   nhom: string | null;
+  mstCccd: string | null;
 }
 
 export interface MacBeTong {
@@ -83,6 +84,7 @@ export interface DonHang {
   tenKhachHang: string;
   diaChiNhan: string;
   soDienThoai: string;
+  mstCccdKh?: string | null;
   tenMacBeTong: string | null;
   khoiLuongDat: number;
   khoiLuongThucTe: number | null;

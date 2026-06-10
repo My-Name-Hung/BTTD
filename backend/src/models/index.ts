@@ -39,6 +39,7 @@ export interface KhachHang {
   email: string | null;
   ghiChu: string | null;
   nhom: string | null;
+  mstCccd: string | null;
   ngayTao: Date;
   ngayCapNhat: Date;
 }
