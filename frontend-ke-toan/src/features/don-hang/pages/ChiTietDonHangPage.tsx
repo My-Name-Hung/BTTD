@@ -290,12 +290,15 @@ export default function ChiTietDonHangPage() {
   const currentStepIdx = TRANG_THAI_STEPS.findIndex(
     (s) => s.key === donHang.trangThaiDon,
   );
-  // Đơn đã thanh toán hoặc hoàn thành → hiển thị bước cuối "Hoàn thành"
+  // Map trạng thái thực tế → step hiển thị:
+  // da_nghiem_thu → "Nghiệm thu" (step 5), da_thanh_toan/hoan_thanh → "Hoàn thành" (step 6)
   const displayTrangThai =
-    donHang.trangThaiDon === "da_thanh_toan" ||
-    donHang.trangThaiDon === "hoan_thanh"
-      ? "hoan_thanh"
-      : donHang.trangThaiDon;
+    donHang.trangThaiDon === "da_nghiem_thu"
+      ? "nghiem_thu"
+      : donHang.trangThaiDon === "da_thanh_toan" ||
+        donHang.trangThaiDon === "hoan_thanh"
+        ? "hoan_thanh"
+        : donHang.trangThaiDon;
   const currentDisplayIdx = TRANG_THAI_STEPS.findIndex(
     (s) => s.key === displayTrangThai,
   );
