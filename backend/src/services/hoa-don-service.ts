@@ -360,18 +360,19 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
   return hoaDon;
 }
 
-export async function layHoaDonTheoDonHang(idDonHang: number): Promise<HoaDon[]> {
-  return await query<HoaDon[]>(
+export async function layHoaDonTheoDonHang(idDonHang: number): Promise<any[]> {
+  return await query(
     `SELECT * FROM HoaDon WHERE idDonHang = @idDonHang ORDER BY id DESC`,
     { idDonHang }
-  );
+  ) as any[];
 }
 
 export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
-  const rows = await query<any[]>(
+  const rows = await query(
     `SELECT hd.*,
             dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong,
             dh.khoiLuongDat, dh.donGia, dh.thanhTien, dh.ngayGiao, dh.conLai as donHangConLai,
+            dh.hangMuc, dh.phuongPhapDo, dh.loaiBom, dh.chieuDaiBom, dh.kieuNoi, dh.chieuDaiNoi,
             ISNULL(tt.tenTram, '') as tenTramTron,
             ISNULL(tt.diaChi, '') as diaChiTramTron,
             ls.bienSoXe,
@@ -385,7 +386,7 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
      LEFT JOIN NghiemThu nt ON dh.id = nt.idDonHang
      WHERE hd.id = @id`,
     { id }
-  );
+  ) as any[];
   if (!rows[0]) return null;
   const r = rows[0];
   return {
@@ -426,6 +427,13 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
     kyThuatCongTrinh: r.kyThuatCongTrinh,
     ngayNghiemThu: r.ngayNghiemThu,
     donHangConLai: r.donHangConLai,
+    // Hạng mục / phương pháp đổ
+    hangMuc: r.hangMuc,
+    phuongPhapDo: r.phuongPhapDo,
+    loaiBom: r.loaiBom,
+    chieuDaiBom: r.chieuDaiBom,
+    kieuNoi: r.kieuNoi,
+    chieuDaiNoi: r.chieuDaiNoi,
   };
 }
 

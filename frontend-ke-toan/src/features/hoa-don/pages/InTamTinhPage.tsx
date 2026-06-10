@@ -262,7 +262,7 @@ export default function InTamTinhPage() {
               </tr>
               {donHang.hangMuc && (
                 <tr>
-                  <td className={styles.customerLabel}>Hạng mục:</td>
+                  <td className={styles.customerLabel}>Hạng mục / Cấu kiện:</td>
                   <td className={styles.customerValue}>{donHang.hangMuc}</td>
                 </tr>
               )}
@@ -275,6 +275,20 @@ export default function InTamTinhPage() {
                       : donHang.phuongPhapDo === "do_bom"
                         ? "Đổ bơm"
                         : donHang.phuongPhapDo}
+                    {donHang.phuongPhapDo === "do_bom" && donHang.loaiBom && (
+                      <span>
+                        {donHang.loaiBom === "bom_ngang" ? " – Bơm ngang" : " – Bơm cần"}
+                        {donHang.chieuDaiBom ? ` (${donHang.chieuDaiBom}m)` : ""}
+                      </span>
+                    )}
+                    {donHang.phuongPhapDo === "do_xa" && donHang.kieuNoi && (
+                      <span>
+                        {donHang.kieuNoi === "khong_dau" ? " – Không đầu" :
+                         donHang.kieuNoi === "noi_dau" ? " – Nối đầu" :
+                         donHang.kieuNoi === "noi_dit" ? " – Nối đít" : ""}
+                        {donHang.chieuDaiNoi ? ` (${donHang.chieuDaiNoi}m)` : ""}
+                      </span>
+                    )}
                   </td>
                 </tr>
               )}

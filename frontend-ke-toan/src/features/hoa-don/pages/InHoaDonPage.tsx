@@ -128,6 +128,13 @@ interface HoaDonData {
   nguoiBatOng?: string | null;
   kyThuatCongTrinh?: string | null;
   ngayNghiemThu?: string | null;
+  // Hạng mục / phương pháp đổ
+  hangMuc?: string | null;
+  phuongPhapDo?: "do_xa" | "do_bom" | null;
+  loaiBom?: "bom_ngang" | "bom_can" | null;
+  chieuDaiBom?: number | null;
+  kieuNoi?: "khong_dau" | "noi_dau" | "noi_dit" | null;
+  chieuDaiNoi?: number | null;
   [key: string]: any;
 }
 
@@ -463,6 +470,38 @@ export default function InHoaDonPage() {
                     {hd.loaiXiMang || "PCB40"}
                   </span>
                 </div>
+                {(hd.hangMuc) && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Hạng mục / Cấu kiện:</span>
+                    <span className={styles.infoValue}>{hd.hangMuc}</span>
+                  </div>
+                )}
+                {hd.phuongPhapDo && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Phương pháp đổ:</span>
+                    <span className={styles.infoValue}>
+                      {hd.phuongPhapDo === "do_xa"
+                        ? "Đổ xã"
+                        : hd.phuongPhapDo === "do_bom"
+                          ? "Đổ bơm"
+                          : hd.phuongPhapDo}
+                      {hd.phuongPhapDo === "do_bom" && hd.loaiBom && (
+                        <span>
+                          {hd.loaiBom === "bom_ngang" ? " – Bơm ngang" : " – Bơm cần"}
+                          {hd.chieuDaiBom ? ` (${hd.chieuDaiBom}m)` : ""}
+                        </span>
+                      )}
+                      {hd.phuongPhapDo === "do_xa" && hd.kieuNoi && (
+                        <span>
+                          {hd.kieuNoi === "khong_dau" ? " – Không đầu" :
+                           hd.kieuNoi === "noi_dau" ? " – Nối đầu" :
+                           hd.kieuNoi === "noi_dit" ? " – Nối đít" : ""}
+                          {hd.chieuDaiNoi ? ` (${hd.chieuDaiNoi}m)` : ""}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className={styles.infoCol}>
                 <div className={styles.infoRow}>
