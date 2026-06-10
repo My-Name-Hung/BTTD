@@ -2,7 +2,6 @@ backend/node_modules/
 frontend-ke-toan/node_modules/
 frontend-lanh-dao/node_modules/
 .cursor/
-frontend-lanh-dao/.env
 backend/dist/
 frontend-ke-toan/dist/
 frontend-lanh-dao/dist/

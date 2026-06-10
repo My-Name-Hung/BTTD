@@ -287,11 +287,7 @@ export default function ChiTietDonHangPage() {
     );
   }
 
-  const currentStepIdx = TRANG_THAI_STEPS.findIndex(
-    (s) => s.key === donHang.trangThaiDon,
-  );
-  // Map trạng thái thực tế → step hiển thị:
-  // da_nghiem_thu → "Nghiệm thu" (step 5), da_thanh_toan/hoan_thanh → "Hoàn thành" (step 6)
+  // Map trạng thái thực tế → step hiển thị trên thanh progress
   const displayTrangThai =
     donHang.trangThaiDon === "da_nghiem_thu"
       ? "nghiem_thu"
@@ -397,7 +393,7 @@ export default function ChiTietDonHangPage() {
               </button>
             )}
           {canApproveReject &&
-            ["nghiem_thu", "da_giao"].includes(donHang.trangThaiDon) && (
+            ["nghiem_thu", "da_nghiem_thu", "da_giao"].includes(donHang.trangThaiDon) && (
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
                 onClick={() => navigate(`/thanh-toan/xuat/${donHang.id}`)}

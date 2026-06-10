@@ -144,7 +144,7 @@ export default function QuanLyDonHangPage() {
   const kpiDangXL = thongKe && !trangThai && !tuKhoa
     ? (thongKe.daDuyet + thongKe.dangSanXuat + thongKe.dangGiao + thongKe.daGiao + thongKe.nghiemThu)
     : (data.data?.filter((d) =>
-        ["da_duyet", "dang_san_xuat", "dang_giao", "da_giao", "nghiem_thu"].includes(d.trangThaiDon),
+        ["da_duyet", "dang_san_xuat", "dang_giao", "da_giao", "nghiem_thu", "da_nghiem_thu"].includes(d.trangThaiDon),
       ).length || 0);
   const kpiHoanThanh = thongKe && !trangThai && !tuKhoa
     ? (thongKe.hoanThanh + thongKe.daThanhToan)
