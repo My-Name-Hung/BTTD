@@ -16,22 +16,24 @@ interface NotificationPopupProps {
   notification: PopupNotification;
   onClose: () => void;
   onViewDetails: () => void;
+  onSkipAll?: () => void;
 }
 
 export function NotificationPopup({
   notification,
   onClose,
   onViewDetails,
+  onSkipAll,
 }: NotificationPopupProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onSkipAll ? onSkipAll() : onClose();
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [onClose, onSkipAll]);
 
   const icon = NOTIFICATION_TYPE_ICONS[notification.loai] || '🔔';
   const timeAgo = formatTimeAgo(notification.ngayTao);
@@ -59,7 +61,7 @@ export function NotificationPopup({
           </div>
           <button
             className="notif-modal__close"
-            onClick={onClose}
+            onClick={onSkipAll ? onSkipAll : onClose}
             aria-label="Đóng thông báo"
           >
             <FiX size={18} />
@@ -78,7 +80,7 @@ export function NotificationPopup({
         <div className="notif-modal__footer">
           <button
             className="btn btn-cancel"
-            onClick={onClose}
+            onClick={onSkipAll ? onSkipAll : onClose}
           >
             Đóng
           </button>

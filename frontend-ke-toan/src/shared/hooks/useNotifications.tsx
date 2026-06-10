@@ -50,6 +50,7 @@ interface UseNotificationsReturn {
   PopupContainer: () => JSX.Element | null;
   currentPopupId: number | null;
   dismissAndMarkRead: (notif: PopupNotification) => void;
+  skipAll: () => void;
 }
 
 export function useNotifications(
@@ -121,6 +122,14 @@ export function useNotifications(
   );
 
   const refreshUnreadCount = fetchUnreadCount;
+
+  // ─── Skip all: đóng popup hiện tại + xóa hàng đợi ───
+  const skipAll = useCallback(() => {
+    pendingRef.current = [];
+    currentRef.current = null;
+    setCurrent(null);
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
 
   // ─── Socket handler — xử lý notification mới ───
   const handleSocketNotification = useCallback(
@@ -237,10 +246,11 @@ export function useNotifications(
           notification={current}
           onClose={handleClose}
           onViewDetails={() => dismissAndMarkRead(current)}
+          onSkipAll={skipAll}
         />
       </div>
     );
-  }, [current, handleClose, dismissAndMarkRead]);
+  }, [current, handleClose, dismissAndMarkRead, skipAll]);
 
   // ─── Expose currentPopupId lên window ───
   useEffect(() => {
@@ -254,5 +264,6 @@ export function useNotifications(
     PopupContainer,
     currentPopupId: current?.id ?? null,
     dismissAndMarkRead,
+    skipAll,
   };
 }

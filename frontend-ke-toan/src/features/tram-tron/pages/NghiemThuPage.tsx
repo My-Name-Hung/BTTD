@@ -179,6 +179,31 @@ export default function NghiemThuPage() {
     }
   }, [cameraModalOpen]);
 
+  // Bật camera khi modal mở và video element đã mount
+  useEffect(() => {
+    if (!cameraModalOpen || !videoRef.current) return;
+
+    let stream: MediaStream | null = null;
+
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment" } })
+      .then((s) => {
+        stream = s;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+      })
+      .catch(() => {
+        showToast("Không thể truy cập camera", "error");
+        setCameraModalOpen(false);
+      });
+
+    return () => {
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+    };
+  }, [cameraModalOpen, capturedImage, showToast]);
+
   const canNghiemThu = donHangs.filter((dh) => {
     const nt = nghiemThus[dh.id];
     return !nt || dh.trangThaiDon === "da_giao";
@@ -221,21 +246,6 @@ export default function NghiemThuPage() {
     setOptionModalOpen(false);
     setCapturedImage(null);
     setCameraModalOpen(true);
-    // Start camera
-    if (videoRef.current) {
-      navigator.mediaDevices
-        .getUserMedia({ video: { facingMode: "environment" } })
-        .then((stream) => {
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            videoRef.current.play();
-          }
-        })
-        .catch(() => {
-          showToast("Không thể truy cập camera", "error");
-          setCameraModalOpen(false);
-        });
-    }
   };
 
   // Chụp ảnh
@@ -258,19 +268,6 @@ export default function NghiemThuPage() {
   // Chụp lại
   const handleRetake = () => {
     setCapturedImage(null);
-    if (videoRef.current) {
-      navigator.mediaDevices
-        .getUserMedia({ video: { facingMode: "environment" } })
-        .then((stream) => {
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            videoRef.current.play();
-          }
-        })
-        .catch(() => {
-          showToast("Không thể truy cập camera", "error");
-        });
-    }
   };
 
   // Bước 3: Xác nhận nghiệm thu + mở modal thông tin
@@ -341,11 +338,20 @@ export default function NghiemThuPage() {
     }
   };
 
-  // Lưu thông tin nghiệm thu (3 trường) vào DB
+  // Lưu thông tin nghiệm thu (3 trường) + upload ảnh nếu có + xác nhận nghiệm thu
   const handleLuuThongTin = async () => {
     if (!pendingDonHang) return;
     setInfoLoading(true);
     try {
+      // Upload ảnh chụp nếu có
+      if (capturedImage) {
+        const res = await fetch(capturedImage);
+        const blob = await res.blob();
+        const fileName = `nghiemthu_${pendingDonHang.id}_${Date.now()}.jpg`;
+        const file = new File([blob], fileName, { type: "image/jpeg" });
+        await uploadAnhNghiemThu(pendingDonHang.id, file);
+      }
+
       // Update thông tin kỹ thuật vào LichSanXuat (chỉ khi có nhập)
       const hasInfo =
         infoKyThuat.trim() || infoOmOng.trim() || infoBatOng.trim();
@@ -356,7 +362,11 @@ export default function NghiemThuPage() {
           nguoiBatOng: infoBatOng.trim() || undefined,
         });
       }
-      showToast("Lưu thông tin nghiệm thu thành công");
+
+      // Xác nhận nghiệm thu
+      await xacNhanNghiemThu(pendingDonHang.id, "da");
+
+      showToast("Xác nhận nghiệm thu thành công");
       resetAll();
       loadData();
     } catch (err) {
@@ -785,10 +795,9 @@ export default function NghiemThuPage() {
                 </button>
                 <button
                   className="btn btn-save"
-                  onClick={handleCaptureAndFinish}
-                  disabled={cameraLoading}
+                  onClick={() => hoanTatNghiemThu(selectedDonHang!)}
                 >
-                  {cameraLoading ? "Đang xử lý..." : "Xác nhận nghiệm thu"}
+                  Tiếp tục
                 </button>
               </>
             ) : (
