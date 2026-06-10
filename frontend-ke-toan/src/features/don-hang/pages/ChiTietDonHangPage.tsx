@@ -55,6 +55,18 @@ function parseBienBanFiles(raw: string | string[] | null | undefined): string[] 
   }
 }
 
+function getBaseUrl() {
+  return (
+    import.meta.env.VITE_API_URL?.replace("/api", "") ||
+    "http://apibttd.ximangtaydo.vn"
+  );
+}
+
+function buildFileUrl(fileUrl: string): string {
+  if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
+  return `${getBaseUrl()}${fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`}`;
+}
+
 /** Kiểm tra URL có phải là Google Drive link */
 function isDriveLink(url: string): boolean {
   return url.includes("drive.google.com") || url.includes("drive.google.com/file");
@@ -748,7 +760,7 @@ export default function ChiTietDonHangPage() {
                 const url = files[0];
                 return (
                   <a
-                    href={url}
+                    href={buildFileUrl(url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
@@ -778,7 +790,7 @@ export default function ChiTietDonHangPage() {
                     {files.map((url, idx) => (
                       <a
                         key={idx}
-                        href={url}
+                        href={buildFileUrl(url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{

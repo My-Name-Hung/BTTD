@@ -103,6 +103,8 @@ export default function NghiemThuPage() {
   const [infoKyThuat, setInfoKyThuat] = useState("");
   const [infoOmOng, setInfoOmOng] = useState("");
   const [infoBatOng, setInfoBatOng] = useState("");
+  // Track files đã upload từ modal upload file (trước khi mở info modal)
+  const [uploadedFilesData, setUploadedFilesData] = useState<{ idDonHang: number; files: File[] } | null>(null);
 
   const canConfirm = hasPermission("nghiemthu.confirm");
 
@@ -122,6 +124,7 @@ export default function NghiemThuPage() {
     setInfoKyThuat("");
     setInfoOmOng("");
     setInfoBatOng("");
+    setUploadedFilesData(null);
   };
 
   const loadData = useCallback(async () => {
@@ -290,18 +293,22 @@ export default function NghiemThuPage() {
     setInfoModalOpen(true);
   };
 
-  // Lưu thông tin nghiệm thu + xác nhận nghiệm thu (upload file)
-  const handleUploadAndFinish = async () => {
+  // Upload file xong → mở modal nhập 3 trường thông tin
+  const handleUploadAndOpenInfo = async () => {
     if (!selectedDonHang || uploadFiles.length === 0) return;
     setUploadLoading(true);
     try {
       await uploadBienBanNghiemThu(selectedDonHang.id, uploadFiles);
-      await xacNhanNghiemThu(selectedDonHang.id, "da");
-      showToast(
-        `Đã tải ${uploadFiles.length} file và xác nhận nghiệm thu thành công`,
-      );
-      resetAll();
-      loadData();
+      // Lưu lại files đã upload + đơn hàng, mở modal thông tin
+      setUploadedFilesData({ idDonHang: selectedDonHang.id, files: uploadFiles });
+      setPendingDonHang(selectedDonHang);
+      setInfoKyThuat("");
+      setInfoOmOng("");
+      setInfoBatOng("");
+      setUploadModalOpen(false);
+      setOptionModalOpen(false);
+      setInfoModalOpen(true);
+      showToast(`Đã tải ${uploadFiles.length} file. Vui lòng nhập thông tin nghiệm thu.`);
     } catch (err) {
       showToast(
         err instanceof Error ? err.message : "Lỗi tải file",
@@ -338,12 +345,14 @@ export default function NghiemThuPage() {
     }
   };
 
-  // Lưu thông tin nghiệm thu (3 trường) + upload ảnh nếu có + xác nhận nghiệm thu
+  // Lưu thông tin nghiệm thu (3 trường) + xác nhận nghiệm thu
+  // - Nếu có uploadedFilesData → đã upload file ở bước trước → chỉ xác nhận
+  // - Nếu có capturedImage → flow camera → cần upload ảnh + xác nhận
   const handleLuuThongTin = async () => {
     if (!pendingDonHang) return;
     setInfoLoading(true);
     try {
-      // Upload ảnh chụp nếu có
+      // Upload ảnh chụp nếu có (flow camera)
       if (capturedImage) {
         const res = await fetch(capturedImage);
         const blob = await res.blob();
@@ -683,11 +692,11 @@ export default function NghiemThuPage() {
                   showToast("Vui lòng chọn ít nhất 1 file", "error");
                   return;
                 }
-                await handleUploadAndFinish();
+                await handleUploadAndOpenInfo();
               }}
               disabled={uploadFiles.length === 0 || uploadLoading}
             >
-              {uploadLoading ? "Đang tải..." : "Xác nhận nghiệm thu"}
+              {uploadLoading ? "Đang tải..." : "Tiếp tục nhập thông tin"}
             </button>
           </>
         }

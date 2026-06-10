@@ -101,10 +101,13 @@ export async function taoDonHang(
   const maDonHang = `DH${Date.now().toString().slice(-8)}-${uuidv4().slice(0, 4).toUpperCase()}`;
   const chiPhiPhatSinh = data.chiPhiPhatSinh || 0;
   const buVanChuyen = data.buVanChuyen || 0;
+  // Ưu tiên dùng thanhTien từ frontend (giá tự nhập), không tự tính lại
   const thanhTien =
-    (data.khoiLuongDat || 0) * (data.donGia || 0) +
-    chiPhiPhatSinh +
-    buVanChuyen;
+    data.thanhTien != null && data.thanhTien > 0
+      ? data.thanhTien
+      : (data.khoiLuongDat || 0) * (data.donGia || 0) +
+        chiPhiPhatSinh +
+        buVanChuyen;
   const conLai = thanhTien;
 
   const result = await query<DonHang>(
@@ -202,7 +205,11 @@ export async function suaDonHang(
   const donGia = data.donGia ?? existing.donGia;
   const chiPhiPhatSinh = data.chiPhiPhatSinh ?? existing.chiPhiPhatSinh ?? 0;
   const buVanChuyen = data.buVanChuyen ?? existing.buVanChuyen ?? 0;
-  const thanhTien = khoiLuong * donGia + chiPhiPhatSinh + buVanChuyen;
+  // Ưu tiên dùng thanhTien từ frontend (giá tự nhập), không tự tính lại
+  const thanhTien =
+    data.thanhTien != null && data.thanhTien > 0
+      ? data.thanhTien
+      : khoiLuong * donGia + chiPhiPhatSinh + buVanChuyen;
 
   await query(
     `UPDATE DonHang SET
