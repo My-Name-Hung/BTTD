@@ -5,6 +5,7 @@
   min-height: 100vh;
   background: #e8ecf0;
   padding-bottom: 40px;
+  position: relative;
 }
 
 /* ── Toolbar ── */

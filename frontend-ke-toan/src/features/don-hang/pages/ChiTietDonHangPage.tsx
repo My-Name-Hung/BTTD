@@ -526,17 +526,12 @@ export default function ChiTietDonHangPage() {
 
           {/* Tính từ hóa đơn - đồng bộ với phần hóa đơn bên dưới */}
           {(() => {
-            // tongCong đã là giá trị cuối cùng (đã bao gồm phân bổ), lấy trực tiếp không cộng thêm giamTru
-            const tongTienHoaDon = hoaDons.reduce((sum, hd) => sum + (hd.tongCong || 0), 0);
-            const daThanhToanTuHD = hoaDons.reduce((sum, hd) => sum + (hd.soTienThanhToan || 0), 0);
-            const tongPhatSinh = hoaDons.reduce((sum, hd) => sum + (hd.phiPhatSinh || 0), 0);
-            const tongBuVC = hoaDons.reduce((sum, hd) => sum + (hd.buuVanChuyen || 0), 0);
-            const tongGiamTru = hoaDons.reduce((sum, hd) => sum + (hd.giamTru || 0), 0);
-            const conLaiTuHD = tongTienHoaDon - daThanhToanTuHD;
-
-            const hienThiPhatSinh = tongPhatSinh > 0;
-            const hienThiBuVC = tongBuVC > 0;
-            const hienThiGiamTru = tongGiamTru > 0;
+            const hienThiTongTien = donHang.thanhTien || 0;
+            const hienThiPhatSinh = (donHang.chiPhiPhatSinh ?? 0) > 0;
+            const hienThiBuVC = (donHang.buVanChuyen ?? 0) > 0;
+            const hienThiGiamTru = (donHang.giamTru ?? 0) > 0;
+            const daThanhToan = hoaDons.reduce((sum, hd) => sum + (hd.soTienThanhToan || 0), 0);
+            const conLai = hienThiTongTien - daThanhToan;
 
             return (
               <>
@@ -545,14 +540,14 @@ export default function ChiTietDonHangPage() {
                     <div className={`${styles.chiTietRow}`}>
                       <span className={styles.infoLabel}>Tiền bê tông</span>
                       <span className={styles.infoValue}>
-                        {formatCurrency(donHang.thanhTien || 0)}
+                        {formatCurrency(hienThiTongTien)}
                       </span>
                     </div>
                     {hienThiPhatSinh && (
                       <div className={`${styles.chiTietRow}`}>
                         <span className={styles.infoLabel}>Chi phí phát sinh</span>
                         <span className={styles.infoValue}>
-                          {formatCurrency(tongPhatSinh)}
+                          {formatCurrency(donHang.chiPhiPhatSinh ?? 0)}
                         </span>
                       </div>
                     )}
@@ -562,7 +557,7 @@ export default function ChiTietDonHangPage() {
                       <div className={`${styles.chiTietRow}`}>
                         <span className={styles.infoLabel}>Phí bù vận chuyển</span>
                         <span className={styles.infoValue}>
-                          {formatCurrency(tongBuVC)}
+                          {formatCurrency(donHang.buVanChuyen ?? 0)}
                         </span>
                       </div>
                     )}
@@ -570,7 +565,7 @@ export default function ChiTietDonHangPage() {
                       <div className={`${styles.chiTietRow}`}>
                         <span className={styles.infoLabel}>Giảm trừ</span>
                         <span className={styles.infoValue}>
-                          -{formatCurrency(tongGiamTru)}
+                          -{formatCurrency(donHang.giamTru ?? 0)}
                         </span>
                       </div>
                     )}
@@ -580,27 +575,21 @@ export default function ChiTietDonHangPage() {
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Tổng tiền</span>
                   <span className={`${styles.infoValue} ${styles.infoValuePrimary}`}>
-                    {hoaDons.length > 0
-                      ? formatCurrency(tongTienHoaDon)
-                      : formatCurrency(donHang.thanhTien || 0)}
+                    {formatCurrency(hienThiTongTien)}
                   </span>
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Đã thanh toán</span>
                   <span className={`${styles.infoValue} ${styles.infoValueSuccess}`}>
-                    {hoaDons.length > 0
-                      ? formatCurrency(daThanhToanTuHD)
-                      : formatCurrency(donHang.daThanhToan || 0)}
+                    {formatCurrency(daThanhToan)}
                   </span>
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Còn lại</span>
                   <span
-                    className={`${styles.infoValue} ${(hoaDons.length > 0 ? conLaiTuHD : connLai) > 0 ? styles.infoValueDanger : styles.infoValueSuccess}`}
+                    className={`${styles.infoValue} ${conLai > 0 ? styles.infoValueDanger : styles.infoValueSuccess}`}
                   >
-                    {hoaDons.length > 0
-                      ? formatCurrency(Math.max(0, conLaiTuHD))
-                      : formatCurrency(connLai)}
+                    {formatCurrency(Math.max(0, conLai))}
                   </span>
                 </div>
               </>

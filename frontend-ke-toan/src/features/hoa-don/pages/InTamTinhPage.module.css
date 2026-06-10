@@ -1,0 +1,465 @@
+/* InTamTinhPage – Phiếu tạm tính A4 Layout */
+
+.wrapper {
+  min-height: 100vh;
+  background: #e8ecf0;
+  padding-bottom: 40px;
+  position: relative;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.toolbarTitle {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s;
+  color: var(--color-text-secondary);
+}
+
+.backBtn:hover {
+  border-color: var(--color-text);
+  color: var(--color-text);
+}
+
+.printBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.printBtn:hover {
+  background: #062fa8;
+  box-shadow: 0 4px 12px rgba(7, 60, 235, 0.3);
+  transform: translateY(-1px);
+}
+
+.downloadBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.downloadBtn:hover:not(:disabled) {
+  background: rgba(7, 60, 235, 0.06);
+  box-shadow: 0 4px 12px rgba(7, 60, 235, 0.15);
+  transform: translateY(-1px);
+}
+
+.downloadBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Invoice A4 Page ── */
+.invoiceContainer {
+  width: 210mm;
+  min-height: 297mm;
+  background: #fff;
+  margin: 20px auto;
+  padding: 40px 36px;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ── Invoice Header ── */
+.invoiceHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+}
+
+.companyLogo {
+  height: 52px;
+  object-fit: contain;
+}
+
+.companyName {
+  font-size: 10px;
+  color: #666;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.headerRight {
+  text-align: right;
+}
+
+.invoiceBadge {
+  display: inline-block;
+  background: #e53935;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+
+.invoiceMetaText {
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.invoiceMetaText strong {
+  color: var(--color-text);
+}
+
+/* ── Invoice Title Bar ── */
+.titleBar {
+  border-top: 2px solid var(--color-primary);
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 0;
+  margin-bottom: 16px;
+}
+
+.titleBarText {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-align: center;
+}
+
+/* ── Customer Info Section ── */
+.customerSection {
+  margin-bottom: 16px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.customerTable {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+
+.customerTable td {
+  padding-bottom: 4px;
+}
+
+.customerLabel {
+  color: #666;
+  width: 40%;
+}
+
+.customerValue {
+  font-weight: 500;
+}
+
+/* ── Details Table ── */
+.detailsSection {
+  margin-bottom: 16px;
+}
+
+.detailsTable {
+  width: 100%;
+  font-size: 11px;
+  border-collapse: collapse;
+  border: 1px solid var(--color-border);
+}
+
+.detailsTable thead tr {
+  background: var(--color-primary);
+}
+
+.detailsTable thead th {
+  color: #fff;
+  padding: 7px 8px;
+  text-align: left;
+  font-weight: 700;
+}
+
+.thRight {
+  text-align: right !important;
+}
+
+.detailsTable tbody td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detailsTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.productName {
+  font-weight: 500;
+}
+
+.productSub {
+  font-size: 10px;
+  color: #666;
+}
+
+.detailsTable tfoot td {
+  padding: 8px;
+  background: #f0f4ff;
+}
+
+.totalLabel {
+  text-align: right;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.totalValue {
+  text-align: right;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-primary);
+}
+
+/* ── Additional Info Section ── */
+.additionalSection {
+  margin-bottom: 20px;
+}
+
+.additionalTable {
+  width: 100%;
+  font-size: 11px;
+  border-collapse: collapse;
+}
+
+.additionalTable td {
+  padding-bottom: 4px;
+}
+
+/* ── Notice Box ── */
+.noticeBox {
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #92400e;
+  margin-bottom: 24px;
+}
+
+/* ── Signatures ── */
+.signatures {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #666;
+  margin-top: 32px;
+}
+
+.sigCol {
+  text-align: center;
+  flex: 1;
+}
+
+.sigTitle {
+  font-weight: 700;
+  margin-bottom: 40px;
+}
+
+.sigNote {
+  font-size: 10px;
+}
+
+/* ── Footer ── */
+.invoiceFooter {
+  text-align: center;
+  font-size: 10px;
+  color: #999;
+  margin-top: 24px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+/* ── Error Box ── */
+.errorBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.errorBox p {
+  font-size: 16px;
+  margin: 0;
+}
+
+.retryBtn {
+  padding: 10px 24px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.retryBtn:hover {
+  background: rgba(7, 60, 235, 0.06);
+}
+
+/* ── Print Styles ── */
+@media print {
+  .toolbar,
+  .toolbar * {
+    display: none !important;
+  }
+
+  .wrapper {
+    background: #e8ecf0 !important;
+    padding-bottom: 40px !important;
+  }
+
+  .invoiceContainer {
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+  }
+
+  .invoiceBadge {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .detailsTable thead tr {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .noticeBox {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .invoiceContainer {
+    width: 100%;
+    min-height: auto;
+    margin: 10px 0;
+    padding: 20px 16px;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .toolbarTitle {
+    width: 100%;
+    margin-left: 0;
+    order: -1;
+    text-align: center;
+  }
+
+  .backBtn,
+  .printBtn,
+  .downloadBtn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .invoiceHeader {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .headerRight {
+    text-align: left;
+  }
+
+  .customerLabel {
+    width: 35%;
+  }
+
+  .detailsTable {
+    font-size: 10px;
+  }
+
+  .detailsTable thead th,
+  .detailsTable tbody td {
+    padding: 5px 4px;
+  }
+
+  .signatures {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .sigCol:not(:last-child) {
+    border-bottom: 1px dashed #e0e0e0;
+    padding-bottom: 20px;
+  }
+}
