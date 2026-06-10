@@ -454,6 +454,39 @@ export async function uploadBienBanNghiemThu(
   return result.data;
 }
 
+// Cập nhật thông tin nghiệm thu (kỹ thuật, ôm ống, bắt ống) vào LichSanXuat
+export async function capNhatThongTinNghiemThu(
+  idDonHang: number,
+  opts?: { kyThuatCongTrinh?: string; nguoiOmOng?: string; nguoiBatOng?: string },
+): Promise<void> {
+  return request(`/nghiem-thu/thong-tin/${idDonHang}`, {
+    method: "PUT",
+    body: JSON.stringify(opts || {}),
+  });
+}
+
+// Upload ảnh chụp nghiệm thu trực tiếp (1 ảnh)
+export async function uploadAnhNghiemThu(
+  idDonHang: number,
+  file: File,
+): Promise<{ bienBanFiles: string[] }> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("files", file);
+
+  const response = await fetch(`${BASE_URL}/nghiem-thu/upload/${idDonHang}`, {
+    method: "POST",
+    headers: { Authorization: token ? `Bearer ${token}` : "" },
+    body: formData,
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || "Lỗi tải ảnh nghiệm thu");
+  }
+  return result.data;
+}
+
 export async function layDanhSachCongNo(
   page = 1,
   limit = 20,

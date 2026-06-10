@@ -195,4 +195,55 @@ router.delete('/:id', authMiddleware, requireRole('admin', 'ke_toan'), async (re
   }
 });
 
+// Cập nhật thông tin nghiệm thu (kỹ thuật, ôm ống, bắt ống) vào LichSanXuat
+router.put('/thong-tin/:idDonHang', authMiddleware, requireRole('admin', 'ke_toan', 'ky_thuat'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const idDonHang = parseInt(req.params.idDonHang, 10);
+    const { kyThuatCongTrinh, nguoiOmOng, nguoiBatOng } = req.body;
+
+    // Cập nhật vào bảng LichSanXuat (lấy record đầu tiên của đơn hàng)
+    const rows = await query<{ id: number }>(`SELECT id FROM LichSanXuat WHERE idDonHang = @idDonHang`, { idDonHang });
+    const lichSXId = rows[0]?.id;
+    if (!lichSXId) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy lịch sản xuất cho đơn hàng này' });
+      return;
+    }
+
+    const updates: string[] = [];
+    const params: Record<string, unknown> = { idDonHang };
+
+    if (kyThuatCongTrinh !== undefined) {
+      updates.push('kyThuatCongTrinh = @kyThuatCongTrinh');
+      params.kyThuatCongTrinh = kyThuatCongTrinh || null;
+    }
+    if (nguoiOmOng !== undefined) {
+      updates.push('nguoiOmOng = @nguoiOmOng');
+      params.nguoiOmOng = nguoiOmOng || null;
+    }
+    if (nguoiBatOng !== undefined) {
+      updates.push('nguoiBatOng = @nguoiBatOng');
+      params.nguoiBatOng = nguoiBatOng || null;
+    }
+
+    if (updates.length > 0) {
+      updates.push('ngayCapNhat = GETDATE()');
+      await query(
+        `UPDATE LichSanXuat SET ${updates.join(', ')} WHERE idDonHang = @idDonHang`,
+        params
+      );
+    }
+
+    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    await ghiNhatKy(req.user?.id ?? null, 'SUA', 'LichSanXuat', lichSXId,
+      undefined,
+      JSON.stringify({ kyThuatCongTrinh, nguoiOmOng, nguoiBatOng }),
+      ip);
+
+    res.json({ success: true, message: 'Cập nhật thông tin nghiệm thu thành công', data: { kyThuatCongTrinh, nguoiOmOng, nguoiBatOng } });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi cập nhật thông tin nghiệm thu';
+    res.status(500).json({ success: false, message });
+  }
+});
+
 export default router;

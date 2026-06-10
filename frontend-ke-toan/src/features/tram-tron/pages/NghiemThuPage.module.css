@@ -249,3 +249,82 @@
   .tabs { overflow-x: auto; }
   .kpiBar { flex-direction: column; }
 }
+
+/* Option button (upload vs camera) */
+.optionBtn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  color: var(--color-text);
+}
+.optionBtn:hover {
+  border-color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.04);
+  box-shadow: 0 2px 12px rgba(7, 60, 235, 0.1);
+}
+.optionBtnIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: rgba(7, 60, 235, 0.08);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.optionBtnTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+.optionBtnDesc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* Form */
+.formGroup { display: flex; flex-direction: column; gap: 6px; }
+.formLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.formInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.formInput::placeholder { color: var(--color-text-secondary); }
+.formInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.1);
+}
+
+/* Mobile responsive for option modal */
+@media (max-width: 480px) {
+  .optionBtn { gap: 12px; padding: 12px; }
+  .optionBtnIcon { width: 48px; height: 48px; }
+  .optionBtnTitle { font-size: 14px; }
+  .optionBtnDesc { font-size: 11px; }
+}
