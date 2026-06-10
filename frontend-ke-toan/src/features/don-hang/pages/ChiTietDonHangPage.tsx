@@ -31,6 +31,7 @@ import {
   tuChoiDonHang,
   xoaDonHang,
 } from "../../../shared/services/api";
+import { buildFileUrl } from "../../../shared/utils";
 import {
   DonHang,
   HoaDon,
@@ -53,18 +54,6 @@ function parseBienBanFiles(raw: string | string[] | null | undefined): string[] 
   } catch {
     return [raw as string];
   }
-}
-
-function getBaseUrl() {
-  return (
-    import.meta.env.VITE_API_URL?.replace("/api", "") ||
-    "http://apibttd.ximangtaydo.vn"
-  );
-}
-
-function buildFileUrl(fileUrl: string): string {
-  if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
-  return `${getBaseUrl()}${fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`}`;
 }
 
 /** Kiểm tra URL có phải là Google Drive link */

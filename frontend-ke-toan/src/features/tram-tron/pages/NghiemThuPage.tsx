@@ -24,6 +24,7 @@ import {
   BatchNghiemThuResponse,
   BatchThanhToanResponse,
 } from "../../../shared/services/api";
+import { buildFileUrl } from "../../../shared/utils";
 import { DonHang } from "../../../shared/types";
 import styles from "./NghiemThuPage.module.css";
 
@@ -50,18 +51,6 @@ function parseBienBanFiles(
     return [bienBanFile];
   }
   return [];
-}
-
-function getBaseUrl() {
-  return (
-    import.meta.env.VITE_API_URL?.replace("/api", "") ||
-    "http://apibttd.ximangtaydo.vn"
-  );
-}
-
-function buildFileUrl(fileUrl: string): string {
-  if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
-  return `${getBaseUrl()}${fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`}`;
 }
 
 export default function NghiemThuPage() {
