@@ -127,6 +127,9 @@ export interface DonHang {
   chieuDaiBom: number | null;
   kieuNoi: "khong_dau" | "noi_dau" | "noi_dit" | null;
   chieuDaiNoi: number | null;
+  // Thông tin giao hàng
+  nguoiNhanHang: string | null;
+  giaTienTamTinh: number | null;
   // Thông tin user (để export Excel)
   maNguoiTao?: string | null;
   tenNguoiTao?: string | null;

@@ -42,6 +42,7 @@ const KyThuatNghiemThuPage = lazy(() => import("./features/ky-thuat/pages/KyThua
 const ThanhToanPage = lazy(() => import("./features/thanh-toan/pages/ThanhToanPage"));
 const XuatHoaDonPage = lazy(() => import("./features/hoa-don/pages/XuatHoaDonPage"));
 const InHoaDonPage = lazy(() => import("./features/hoa-don/pages/InHoaDonPage"));
+const InTamTinhPage = lazy(() => import("./features/hoa-don/pages/InTamTinhPage"));
 
 // Công nợ
 const CongNoPage = lazy(() => import("./features/cong-no/pages/CongNoPage"));
@@ -215,6 +216,7 @@ function App() {
                     <Route path="/thanh-toan" element={<ThanhToanPage />} />
                     <Route path="/thanh-toan/xuat/:id" element={<XuatHoaDonPage />} />
                     <Route path="/in-hoa-don/:id" element={<InHoaDonPage />} />
+                    <Route path="/in-tam-tinh/:id" element={<InTamTinhPage />} />
                     <Route path="/cong-no" element={<CongNoPage />} />
 
                     {/* Thông báo */}

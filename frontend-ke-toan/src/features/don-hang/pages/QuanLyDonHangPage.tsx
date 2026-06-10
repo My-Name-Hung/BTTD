@@ -97,7 +97,9 @@ export default function QuanLyDonHangPage() {
   const isGDKDOrAdmin = isGDKD || isAdmin;
   const canCreate = ["admin", "dieu_phoi", "sale"].includes(userVaiTro);
   const canCreateOrder = ["admin", "sale", "dieu_phoi"].includes(userVaiTro);
-  const canEdit = ["admin"].includes(userVaiTro);
+  // Sửa: admin/GDKD/kế toán sửa tất cả đơn đến trước nghiệm thu; sales chỉ sửa đơn của mình
+  const canEditAll = ["admin", "giam_doc_kinh_doanh", "ke_toan"].includes(userVaiTro);
+  const canEdit = canEditAll || isSale;
   const canDelete = ["admin"].includes(userVaiTro);
   // GDKD duyệt bước 1 (cho_duyet), Kế toán duyệt bước 2 (cho_ke_toan_duyet)
   const canApprove = isGDKDOrAdmin || isKeToan;
@@ -713,10 +715,7 @@ export default function QuanLyDonHangPage() {
                             </>
                           )}
 
-                          {canEdit &&
-                            ["cho_duyet"].includes(
-                              dh.trangThaiDon,
-                            ) && (
+                          {canEdit && !["nghiem_thu", "da_nghiem_thu", "da_thanh_toan", "hoan_thanh", "tu_choi"].includes(dh.trangThaiDon) && (canEditAll || dh.nguoiTaoId === userId) && (
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
                                 onClick={() =>

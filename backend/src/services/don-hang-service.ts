@@ -114,14 +114,16 @@ export async function taoDonHang(
       tenMacBeTong, khoiLuongDat, donGia, chiPhiPhatSinh, buVanChuyen, thanhTien, conLai,
       thoiGianGiaoDuKien, trangThaiDon, trangThaiHoanThanh,
       nguoiTaoId, ghiChu,
-      hangMuc, phuongPhapDo, loaiBom, chieuDaiBom, kieuNoi, chieuDaiNoi
+      hangMuc, phuongPhapDo, loaiBom, chieuDaiBom, kieuNoi, chieuDaiNoi,
+      nguoiNhanHang, giaTienTamTinh
     ) VALUES (
       @maDonHang, @idKhachHang, @idMacBeTong, @idTramTron,
       @tenKhachHang, @diaChiNhan, @soDienThoai,
       @tenMacBeTong, @khoiLuongDat, @donGia, @chiPhiPhatSinh, @buVanChuyen, @thanhTien, @conLai,
       @thoiGianGiaoDuKien, N'cho_duyet', N'chua_hoan_thanh',
       @nguoiTaoId, @ghiChu,
-      @hangMuc, @phuongPhapDo, @loaiBom, @chieuDaiBom, @kieuNoi, @chieuDaiNoi
+      @hangMuc, @phuongPhapDo, @loaiBom, @chieuDaiBom, @kieuNoi, @chieuDaiNoi,
+      @nguoiNhanHang, @giaTienTamTinh
     );
     SELECT * FROM DonHang WHERE id = SCOPE_IDENTITY();`,
     {
@@ -148,6 +150,8 @@ export async function taoDonHang(
       chieuDaiBom: data.chieuDaiBom || null,
       kieuNoi: data.kieuNoi || null,
       chieuDaiNoi: data.chieuDaiNoi || null,
+      nguoiNhanHang: data.nguoiNhanHang || null,
+      giaTienTamTinh: data.giaTienTamTinh || null,
     },
   );
 
@@ -190,6 +194,8 @@ export async function suaDonHang(
     chieuDaiBom: existing.chieuDaiBom,
     kieuNoi: existing.kieuNoi,
     chieuDaiNoi: existing.chieuDaiNoi,
+    nguoiNhanHang: existing.nguoiNhanHang,
+    giaTienTamTinh: existing.giaTienTamTinh,
   };
 
   const khoiLuong = data.khoiLuongDat ?? existing.khoiLuongDat;
@@ -208,6 +214,7 @@ export async function suaDonHang(
       ghiChu = @ghiChu,
       hangMuc = @hangMuc, phuongPhapDo = @phuongPhapDo, loaiBom = @loaiBom,
       chieuDaiBom = @chieuDaiBom, kieuNoi = @kieuNoi, chieuDaiNoi = @chieuDaiNoi,
+      nguoiNhanHang = @nguoiNhanHang, giaTienTamTinh = @giaTienTamTinh,
       ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     {
@@ -234,6 +241,8 @@ export async function suaDonHang(
       chieuDaiBom: data.chieuDaiBom ?? existing.chieuDaiBom ?? null,
       kieuNoi: data.kieuNoi ?? existing.kieuNoi ?? null,
       chieuDaiNoi: data.chieuDaiNoi ?? existing.chieuDaiNoi ?? null,
+      nguoiNhanHang: data.nguoiNhanHang ?? existing.nguoiNhanHang ?? null,
+      giaTienTamTinh: data.giaTienTamTinh ?? existing.giaTienTamTinh ?? null,
     },
   );
 
@@ -256,6 +265,8 @@ export async function suaDonHang(
     chieuDaiBom: data.chieuDaiBom ?? existing.chieuDaiBom ?? null,
     kieuNoi: data.kieuNoi ?? existing.kieuNoi ?? null,
     chieuDaiNoi: data.chieuDaiNoi ?? existing.chieuDaiNoi ?? null,
+    nguoiNhanHang: data.nguoiNhanHang ?? existing.nguoiNhanHang ?? null,
+    giaTienTamTinh: data.giaTienTamTinh ?? existing.giaTienTamTinh ?? null,
   };
 
   const updated = (

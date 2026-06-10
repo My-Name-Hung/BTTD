@@ -47,6 +47,8 @@ const EMPTY_FORM = {
   chieuDaiBom: '',
   kieuNoi: '' as '' | 'khong_dau' | 'noi_dau' | 'noi_dit',
   chieuDaiNoi: '',
+  nguoiNhanHang: '',
+  giaTienTamTinh: '',
 };
 
 export default function TaoDonHangPage() {
@@ -54,6 +56,9 @@ export default function TaoDonHangPage() {
   const { id } = useParams<{ id: string }>();
   const editingId = id ? parseInt(id) : null;
   const isEdit = !!editingId;
+
+  const userVaiTro = JSON.parse(localStorage.getItem("bttd_user") || "{}")?.vaiTro;
+  const userId = JSON.parse(localStorage.getItem("bttd_user") || "{}")?.id;
 
   const { toasts, showToast } = useToast();
 
@@ -72,15 +77,15 @@ export default function TaoDonHangPage() {
   const [newKhachHang, setNewKhachHang] = useState({ tenKhachHang: '', soDienThoai: '', diaChi: '', mstCccd: '' });
   const [newKhachLoading, setNewKhachLoading] = useState(false);
   const khachDropdownRef = useRef<HTMLDivElement>(null);
+  const giaTienRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [thoiGianGiaoDuKien, setThoiGianGiaoDuKien] = useState<Date | null>(null);
+  const [loadedDonHang, setLoadedDonHang] = useState<DonHang | null>(null);
 
   const thanhTien = (() => {
-    const khoiLuong = parseFloat(form.khoiLuongDat) || 0;
-    const mac = macBeTongs.find(m => m.id === parseInt(form.idMacBeTong));
-    const donGia = mac?.donGia || 0;
-    return khoiLuong * donGia;
+    const raw = form.giaTienTamTinh.replace(/[^\d]/g, '');
+    return parseInt(raw) || 0;
   })();
 
   // Track initial state for change detection
@@ -138,12 +143,15 @@ export default function TaoDonHangPage() {
             chieuDaiBom: dh.chieuDaiBom != null ? String(dh.chieuDaiBom) : '',
             kieuNoi: dh.kieuNoi || '',
             chieuDaiNoi: dh.chieuDaiNoi != null ? String(dh.chieuDaiNoi) : '',
+            nguoiNhanHang: (dh as any).nguoiNhanHang || '',
+            giaTienTamTinh: (dh as any).giaTienTamTinh != null ? String((dh as any).giaTienTamTinh) : '',
           };
           const t = parseLocalDatetime(dh.thoiGianGiaoDuKien);
           setForm(f);
           setThoiGianGiaoDuKien(t);
           setInitialForm(f);
           setInitialThoiGian(t);
+          setLoadedDonHang(dh);
         })
         .catch(() => showToast('Không tải được đơn hàng', 'error'));
     } else {
@@ -240,22 +248,30 @@ export default function TaoDonHangPage() {
       showToast('Vui lòng chọn mác bê tông', 'error');
       return;
     }
+    // Kiểm tra quyền sửa: không cho sửa nếu đơn đã qua nghiệm thu
+    const isSale = userVaiTro === "sale";
+    if (editingId && loadedDonHang) {
+      const isPastNghiemThu = ["nghiem_thu", "da_nghiem_thu", "da_thanh_toan", "hoan_thanh", "tu_choi"].includes(loadedDonHang.trangThaiDon);
+      const notOwner = isSale && loadedDonHang.nguoiTaoId !== userId;
+      if (isPastNghiemThu || notOwner) {
+        showToast('Không có quyền sửa đơn hàng này', 'error');
+        return;
+      }
+    }
 
     setSubmitting(true);
     try {
-      const khoiLuong = parseFloat(form.khoiLuongDat);
-      const mac = macBeTongs.find(m => m.id === parseInt(form.idMacBeTong));
-      const donGiaMac = mac?.donGia || 0;
-      const tongThanhTien = khoiLuong * donGiaMac;
+      const rawGia = form.giaTienTamTinh.replace(/[^\d]/g, '');
+      const giaTamTinh = parseInt(rawGia) || 0;
 
       const payload: Partial<DonHang> = {
         tenKhachHang: form.tenKhachHang,
         diaChiNhan: form.diaChiNhan,
         soDienThoai: form.soDienThoai,
         tenMacBeTong: form.tenMacBeTong,
-        khoiLuongDat: khoiLuong,
+        khoiLuongDat: parseFloat(form.khoiLuongDat) || 0,
         donGia: donGiaMac,
-        thanhTien: tongThanhTien,
+        thanhTien: giaTamTinh,
         thoiGianGiaoDuKien: thoiGianGiaoDuKien ? toLocalDatetimeInput(thoiGianGiaoDuKien) : null,
         ghiChu: form.ghiChu || null,
         idKhachHang: form.idKhachHang ? parseInt(form.idKhachHang) : null,
@@ -266,6 +282,8 @@ export default function TaoDonHangPage() {
         chieuDaiBom: form.chieuDaiBom ? parseFloat(form.chieuDaiBom) : null,
         kieuNoi: (form.kieuNoi || null) as "khong_dau" | "noi_dau" | "noi_dit" | null,
         chieuDaiNoi: form.chieuDaiNoi ? parseFloat(form.chieuDaiNoi) : null,
+        nguoiNhanHang: form.nguoiNhanHang || null,
+        giaTienTamTinh: giaTamTinh || null,
       };
 
       if (editingId) {
@@ -646,32 +664,70 @@ export default function TaoDonHangPage() {
 
           <div className={styles.formDivider} />
           <div className={styles.sectionTitle}>Thông tin giao hàng</div>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Thời gian giao dự kiến</label>
-            <div className={styles.datePickerWrap}>
-              <FiCalendar className={styles.datePickerIcon} />
-              <DatePicker
-                className={styles.datePickerInput}
-                selected={thoiGianGiaoDuKien}
-                onChange={(date: Date | null) => setThoiGianGiaoDuKien(date)}
-                showTimeSelect
-                timeIntervals={15}
-                timeFormat="HH:mm"
-                dateFormat="dd/MM/yyyy HH:mm"
-                minDate={minDate}
-                placeholderText="Chọn ngày và giờ giao hàng"
-                todayButton="Hôm nay"
-                autoComplete="off"
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Thời gian giao dự kiến</label>
+              <div className={styles.datePickerWrap}>
+                <FiCalendar className={styles.datePickerIcon} />
+                <DatePicker
+                  className={styles.datePickerInput}
+                  selected={thoiGianGiaoDuKien}
+                  onChange={(date: Date | null) => setThoiGianGiaoDuKien(date)}
+                  showTimeSelect
+                  timeIntervals={15}
+                  timeFormat="HH:mm"
+                  dateFormat="dd/MM/yyyy HH:mm"
+                  minDate={minDate}
+                  placeholderText="Chọn ngày và giờ giao hàng"
+                  todayButton="Hôm nay"
+                  autoComplete="off"
+                />
+                {thoiGianGiaoDuKien && (
+                  <button
+                    type="button"
+                    className={styles.datePickerClear}
+                    onClick={() => setThoiGianGiaoDuKien(null)}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Người nhận hàng</label>
+              <input
+                className={styles.formInput}
+                value={form.nguoiNhanHang}
+                onChange={(e) => setForm({ ...form, nguoiNhanHang: e.target.value })}
+                placeholder="VD: Trần Văn B"
               />
-              {thoiGianGiaoDuKien && (
-                <button
-                  type="button"
-                  className={styles.datePickerClear}
-                  onClick={() => setThoiGianGiaoDuKien(null)}
-                >
-                  ✕
-                </button>
-              )}
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Giá tiền tạm tính</label>
+              <input
+                ref={giaTienRef}
+                className={styles.formInput}
+                value={form.giaTienTamTinh}
+                onChange={(e) => {
+                  const input = giaTienRef.current;
+                  const raw = e.target.value.replace(/[^\d]/g, '');
+                  const formatted = raw ? parseInt(raw).toLocaleString('vi-VN') : '';
+                  setForm({ ...form, giaTienTamTinh: formatted });
+                  setTimeout(() => {
+                    if (input) {
+                      const pos = raw.length - (e.target.value.length - (e.nativeEvent as InputEvent).inputType.length);
+                      const dotCount = (formatted.match(/,/g) || []).length;
+                      input.setSelectionRange(
+                        Math.min(pos + dotCount, formatted.length),
+                        Math.min(pos + dotCount, formatted.length),
+                      );
+                    }
+                  }, 0);
+                }}
+                placeholder="VD: 50.000.000"
+              />
             </div>
           </div>
           <div className={styles.formGroup}>

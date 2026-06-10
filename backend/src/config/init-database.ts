@@ -433,6 +433,14 @@ async function initDatabase(): Promise<void> {
         await db.query(`ALTER TABLE DonHang ADD chieuDaiNoi DECIMAL(10,2)`);
         console.log("  ➕ Thêm cột chieuDaiNoi vào DonHang");
       }
+      if (!colNamesDh.includes("nguoinhanhang")) {
+        await db.query(`ALTER TABLE DonHang ADD nguoiNhanHang NVARCHAR(200)`);
+        console.log("  ➕ Thêm cột nguoiNhanHang vào DonHang");
+      }
+      if (!colNamesDh.includes("giatientamtinh")) {
+        await db.query(`ALTER TABLE DonHang ADD giaTienTamTinh DECIMAL(18,2)`);
+        console.log("  ➕ Thêm cột giaTienTamTinh vào DonHang");
+      }
     }
 
     // Tạo bảng LichSanXuat

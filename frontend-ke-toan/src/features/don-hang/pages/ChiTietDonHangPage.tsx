@@ -175,12 +175,18 @@ export default function ChiTietDonHangPage() {
   const userVaiTro = JSON.parse(
     localStorage.getItem("bttd_user") || "{}",
   )?.vaiTro;
+  const userId = JSON.parse(localStorage.getItem("bttd_user") || "{}")?.id;
   const isAdmin = userVaiTro === "admin";
+  const isSale = userVaiTro === "sale";
   const canApproveReject = ["admin", "giam_doc_kinh_doanh", "ke_toan"].includes(userVaiTro);
-  const canEdit = ["admin", "dieu_phoi"].includes(userVaiTro);
+  // Sửa: admin/GDKD/kế toán sửa tất cả đơn đến trước nghiệm thu; sales chỉ sửa đơn của mình
+  const canEditAll = ["admin", "giam_doc_kinh_doanh", "ke_toan"].includes(userVaiTro);
+  const canEdit = canEditAll || isSale;
   const canDelete = ["admin"].includes(userVaiTro);
   const isStep1 = donHang?.trangThaiDon === "cho_duyet";
   const isStep2 = donHang?.trangThaiDon === "cho_ke_toan_duyet";
+  // Hiện hóa đơn tạm tính khi đơn đã qua 2 lần duyệt (không còn chờ duyệt)
+  const showTamTinh = !isStep1 && !isStep2 && donHang?.trangThaiDon != null;
   const approveLabel = isAdmin
     ? (isStep1 ? "Duyệt lần 1" : isStep2 ? "Duyệt lần 2" : "Duyệt đơn")
     : "Duyệt đơn";
@@ -338,8 +344,7 @@ export default function ChiTietDonHangPage() {
               </button>
             </>
           )}
-          {canEdit &&
-            ["cho_duyet", "da_duyet"].includes(donHang.trangThaiDon) && (
+          {canEdit && !["nghiem_thu", "da_nghiem_thu", "da_thanh_toan", "hoan_thanh", "tu_choi"].includes(donHang.trangThaiDon) && (canEditAll || donHang.nguoiTaoId === userId) && (
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
                 onClick={() => navigate(`/quan-ly/don-hang/sua/${donHang.id}`)}
@@ -359,7 +364,7 @@ export default function ChiTietDonHangPage() {
           {canEdit &&
             ["dang_san_xuat", "dang_giao", "da_giao"].includes(
               donHang.trangThaiDon,
-            ) && (
+            ) && (canEditAll || donHang.nguoiTaoId === userId) && (
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
                 onClick={() => navigate("/dieu-phoi")}
@@ -368,7 +373,7 @@ export default function ChiTietDonHangPage() {
               </button>
             )}
           {canEdit &&
-            ["da_giao", "nghiem_thu"].includes(donHang.trangThaiDon) && (
+            ["da_giao", "nghiem_thu"].includes(donHang.trangThaiDon) && (canEditAll || donHang.nguoiTaoId === userId) && (
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
                 onClick={() => navigate("/nghiem-thu")}
@@ -839,6 +844,325 @@ export default function ChiTietDonHangPage() {
           </div>
         </div>
         <div style={{ padding: "8px 0" }}>
+          {/* Hóa đơn tạm tính — hiện sau khi duyệt 2 lần, chưa có hóa đơn thật */}
+          {showTamTinh && hoaDons.length === 0 && (
+            <div
+              style={{
+                border: "2px dashed var(--color-primary)",
+                borderRadius: 10,
+                overflow: "hidden",
+                marginBottom: 12,
+              }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  padding: "10px 14px",
+                  background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+                  borderBottom: "1px solid var(--color-border)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span
+                    style={{
+                      padding: "3px 10px",
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      background: "var(--color-primary)",
+                      color: "white",
+                    }}
+                  >
+                    HÓA ĐƠN TẠM TÍNH
+                  </span>
+                  <strong style={{ fontSize: 13 }}>{donHang.maDonHang}</strong>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
+                    {new Date().toLocaleDateString("vi-VN")}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    onClick={() => navigate(`/in-tam-tinh/${donHang.id}`)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "5px 10px",
+                      border: "1.5px solid var(--color-primary)",
+                      borderRadius: 7,
+                      background: "transparent",
+                      color: "var(--color-primary)",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <FiPrinter size={12} /> In tạm tính
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({
+                          title: "Hóa đơn tạm tính",
+                          text: `Hóa đơn tạm tính ${donHang.maDonHang} - ${formatCurrency(donHang.thanhTien || 0)}`,
+                        });
+                      } else {
+                        navigator.clipboard.writeText(
+                          `Hóa đơn tạm tính ${donHang.maDonHang}: ${formatCurrency(donHang.thanhTien || 0)}`,
+                        );
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "5px 10px",
+                      border: "1.5px solid var(--color-border)",
+                      borderRadius: 7,
+                      background: "transparent",
+                      color: "var(--color-text-secondary)",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <FiDownload size={12} /> Gửi khách
+                  </button>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div style={{ padding: "12px 14px" }}>
+                {/* Thông tin cơ bản */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    gap: 8,
+                    marginBottom: 12,
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "var(--color-primary)",
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Khách hàng
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>
+                      {donHang.tenKhachHang}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "var(--color-primary)",
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Địa chỉ công trình
+                    </div>
+                    <div style={{ fontSize: 13 }}>{donHang.diaChiNhan}</div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "var(--color-primary)",
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Mác bê tông
+                    </div>
+                    <div style={{ fontSize: 13 }}>{donHang.tenMacBeTong}</div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "var(--color-primary)",
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Ngày duyệt
+                    </div>
+                    <div style={{ fontSize: 13 }}>
+                      {donHang.ngayDuyet
+                        ? new Date(donHang.ngayDuyet).toLocaleDateString("vi-VN")
+                        : "—"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bảng chi tiết tạm tính */}
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: 12,
+                    marginBottom: 8,
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid var(--color-border)",
+                  }}
+                >
+                  <thead>
+                    <tr
+                      style={{
+                        background: "var(--color-primary)",
+                        color: "white",
+                      }}
+                    >
+                      <th
+                        style={{
+                          padding: "6px 8px",
+                          textAlign: "left",
+                          fontWeight: 700,
+                          fontSize: 11,
+                        }}
+                      >
+                        Nội dung
+                      </th>
+                      <th
+                        style={{
+                          padding: "6px 8px",
+                          textAlign: "right",
+                          fontWeight: 700,
+                          fontSize: 11,
+                        }}
+                      >
+                        Khối lượng
+                      </th>
+                      <th
+                        style={{
+                          padding: "6px 8px",
+                          textAlign: "right",
+                          fontWeight: 700,
+                          fontSize: 11,
+                        }}
+                      >
+                        Đơn giá
+                      </th>
+                      <th
+                        style={{
+                          padding: "6px 8px",
+                          textAlign: "right",
+                          fontWeight: 700,
+                          fontSize: 11,
+                        }}
+                      >
+                        Thành tiền
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      style={{
+                        borderBottom: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <td style={{ padding: "6px 8px" }}>
+                        Bê tông thương phẩm
+                      </td>
+                      <td
+                        style={{
+                          padding: "6px 8px",
+                          textAlign: "right",
+                        }}
+                      >
+                        {donHang.khoiLuongDat?.toLocaleString("vi-VN")} m³
+                      </td>
+                      <td
+                        style={{
+                          padding: "6px 8px",
+                          textAlign: "right",
+                        }}
+                      >
+                        {formatCurrency(donHang.donGia || 0)}
+                      </td>
+                      <td
+                        style={{
+                          padding: "6px 8px",
+                          textAlign: "right",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {formatCurrency(donHang.thanhTien || 0)}
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: "#f0f4ff" }}>
+                      <td
+                        colSpan={3}
+                        style={{
+                          padding: "7px 8px",
+                          textAlign: "right",
+                          fontWeight: 700,
+                          fontSize: 13,
+                        }}
+                      >
+                        TỔNG CỘNG (TẠM TÍNH)
+                      </td>
+                      <td
+                        style={{
+                          padding: "7px 8px",
+                          textAlign: "right",
+                          fontWeight: 700,
+                          fontSize: 14,
+                          color: "var(--color-primary)",
+                        }}
+                      >
+                        {formatCurrency(donHang.thanhTien || 0)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+
+                {/* Ghi chú */}
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#92400e",
+                    background: "#fffbeb",
+                    border: "1px solid #f59e0b",
+                    borderRadius: 6,
+                    padding: "6px 10px",
+                  }}
+                >
+                  Đây là hóa đơn tạm tính. Hóa đơn chính thức sẽ được xuất sau khi thanh toán.
+                </div>
+              </div>
+            </div>
+          )}
           {hoaDons.length === 0 ? (
             <div
               style={{
