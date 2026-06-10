@@ -119,6 +119,14 @@ export interface DonHang {
   lyDoTuChoi: string | null;
   daThanhToan: number;
   conLai: number | null;
+  // Hạng mục / cấu kiện
+  hangMuc: string | null;
+  // Phương pháp đổ
+  phuongPhapDo: "do_xa" | "do_bom" | null;
+  loaiBom: "bom_ngang" | "bom_can" | null;
+  chieuDaiBom: number | null;
+  kieuNoi: "khong_dau" | "noi_dau" | "noi_dit" | null;
+  chieuDaiNoi: number | null;
   // Thông tin user (để export Excel)
   maNguoiTao?: string | null;
   tenNguoiTao?: string | null;

@@ -408,6 +408,31 @@ async function initDatabase(): Promise<void> {
         );
         console.log("  ➕ Thêm cột buVanChuyen vào DonHang");
       }
+      // Migration: thêm cột hạng mục và phương pháp đổ
+      if (!colNamesDh.includes("hangmuc")) {
+        await db.query(`ALTER TABLE DonHang ADD hangMuc NVARCHAR(500)`);
+        console.log("  ➕ Thêm cột hangMuc vào DonHang");
+      }
+      if (!colNamesDh.includes("phuongphapdo")) {
+        await db.query(`ALTER TABLE DonHang ADD phuongPhapDo NVARCHAR(50)`);
+        console.log("  ➕ Thêm cột phuongPhapDo vào DonHang");
+      }
+      if (!colNamesDh.includes("loaibom")) {
+        await db.query(`ALTER TABLE DonHang ADD loaiBom NVARCHAR(50)`);
+        console.log("  ➕ Thêm cột loaiBom vào DonHang");
+      }
+      if (!colNamesDh.includes("chieudaibom")) {
+        await db.query(`ALTER TABLE DonHang ADD chieuDaiBom DECIMAL(10,2)`);
+        console.log("  ➕ Thêm cột chieuDaiBom vào DonHang");
+      }
+      if (!colNamesDh.includes("kieunoi")) {
+        await db.query(`ALTER TABLE DonHang ADD kieuNoi NVARCHAR(50)`);
+        console.log("  ➕ Thêm cột kieuNoi vào DonHang");
+      }
+      if (!colNamesDh.includes("chieudainoi")) {
+        await db.query(`ALTER TABLE DonHang ADD chieuDaiNoi DECIMAL(10,2)`);
+        console.log("  ➕ Thêm cột chieuDaiNoi vào DonHang");
+      }
     }
 
     // Tạo bảng LichSanXuat

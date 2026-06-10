@@ -121,6 +121,15 @@ export interface DonHang {
   daThanhToan: number;
   conLai: number | null;
 
+  // Hạng mục / cấu kiện
+  hangMuc: string | null;
+  // Phương pháp đổ
+  phuongPhapDo: "do_xa" | "do_bom" | null;
+  loaiBom: "bom_ngang" | "bom_can" | null;
+  chieuDaiBom: number | null;
+  kieuNoi: "khong_dau" | "noi_dau" | "noi_dit" | null;
+  chieuDaiNoi: number | null;
+
   ngayTao: Date | string;
   ngayCapNhat: Date | string;
 

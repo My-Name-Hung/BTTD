@@ -32,7 +32,7 @@ export default function TaoLichSanXuatPage() {
     idXe: '', bienSoXe: '',
     idTramTron: '', tenTramTron: '',
     kyThuatCongTrinh: '', nguoiOmOng: '', nguoiBatOng: '',
-    phuongAnDo: '', ghiChu: '',
+    ghiChu: '',
   });
 
   const [initialForm, setInitialForm] = useState(form);
@@ -68,7 +68,6 @@ export default function TaoLichSanXuatPage() {
               kyThuatCongTrinh: lich.kyThuatCongTrinh || '',
               nguoiOmOng: lich.nguoiOmOng || '',
               nguoiBatOng: lich.nguoiBatOng || '',
-              phuongAnDo: lich.phuongAnDo || '',
               ghiChu: lich.ghiChu || '',
             });
             setInitialForm({
@@ -79,7 +78,6 @@ export default function TaoLichSanXuatPage() {
               kyThuatCongTrinh: lich.kyThuatCongTrinh || '',
               nguoiOmOng: lich.nguoiOmOng || '',
               nguoiBatOng: lich.nguoiBatOng || '',
-              phuongAnDo: lich.phuongAnDo || '',
               ghiChu: lich.ghiChu || '',
             });
           }
@@ -119,7 +117,6 @@ export default function TaoLichSanXuatPage() {
         kyThuatCongTrinh: form.kyThuatCongTrinh || null,
         nguoiOmOng: form.nguoiOmOng || null,
         nguoiBatOng: form.nguoiBatOng || null,
-        phuongAnDo: form.phuongAnDo || null,
         ghiChu: form.ghiChu || null,
       };
 
@@ -264,15 +261,6 @@ export default function TaoLichSanXuatPage() {
                 value={form.kyThuatCongTrinh}
                 onChange={(e) => setForm({ ...form, kyThuatCongTrinh: e.target.value })}
                 placeholder="VD: Nguyễn Văn A"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Phương án đổ</label>
-              <input
-                className={styles.formInput}
-                value={form.phuongAnDo}
-                onChange={(e) => setForm({ ...form, phuongAnDo: e.target.value })}
-                placeholder="VD: Đổ tay, đổ bơm"
               />
             </div>
           </div>

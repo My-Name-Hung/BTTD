@@ -470,3 +470,80 @@
   font-weight: 700;
   color: var(--color-warning);
 }
+
+/* ── Radio buttons — Phương pháp đổ ──────────────────────── */
+.radioGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 8px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  user-select: none;
+  background: var(--color-white);
+  min-width: 90px;
+  justify-content: center;
+}
+
+.radioLabel:hover {
+  border-color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.04);
+}
+
+.radioLabel:has(input:checked) {
+  border-color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.08);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.radioLabel input[type="radio"] {
+  display: none;
+}
+
+.radioCustom {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.radioLabel:has(input:checked) .radioCustom {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  box-shadow: inset 0 0 0 3px white;
+}
+
+/* Sub-panel for bơm options */
+.phuongPhapDoSub {
+  padding: 14px 16px;
+  background: #f8f9ff;
+  border: 1px solid rgba(7, 60, 235, 0.12);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  margin-top: -8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .radioGroup { gap: 8px; }
+  .radioLabel { min-width: 80px; padding: 7px 10px; font-size: 13px; }
+}

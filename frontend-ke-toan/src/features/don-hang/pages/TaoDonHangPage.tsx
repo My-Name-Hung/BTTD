@@ -41,6 +41,12 @@ const EMPTY_FORM = {
   tenKhachHang: '', diaChiNhan: '', soDienThoai: '', mstCccd: '',
   tenMacBeTong: '', khoiLuongDat: '', donGia: '',
   ghiChu: '', idKhachHang: '', idMacBeTong: '',
+  hangMuc: '',
+  phuongPhapDo: '' as '' | 'do_xa' | 'do_bom',
+  loaiBom: '' as '' | 'bom_ngang' | 'bom_can',
+  chieuDaiBom: '',
+  kieuNoi: '' as '' | 'khong_dau' | 'noi_dau' | 'noi_dit',
+  chieuDaiNoi: '',
 };
 
 export default function TaoDonHangPage() {
@@ -126,6 +132,12 @@ export default function TaoDonHangPage() {
             ghiChu: dh.ghiChu || '',
             idKhachHang: String(dh.idKhachHang || ''),
             idMacBeTong: String(dh.idMacBeTong || ''),
+            hangMuc: dh.hangMuc || '',
+            phuongPhapDo: dh.phuongPhapDo || '',
+            loaiBom: dh.loaiBom || '',
+            chieuDaiBom: dh.chieuDaiBom != null ? String(dh.chieuDaiBom) : '',
+            kieuNoi: dh.kieuNoi || '',
+            chieuDaiNoi: dh.chieuDaiNoi != null ? String(dh.chieuDaiNoi) : '',
           };
           const t = parseLocalDatetime(dh.thoiGianGiaoDuKien);
           setForm(f);
@@ -248,6 +260,12 @@ export default function TaoDonHangPage() {
         ghiChu: form.ghiChu || null,
         idKhachHang: form.idKhachHang ? parseInt(form.idKhachHang) : null,
         idMacBeTong: form.idMacBeTong ? parseInt(form.idMacBeTong) : null,
+        hangMuc: form.hangMuc || null,
+        phuongPhapDo: (form.phuongPhapDo || null) as "do_xa" | "do_bom" | null,
+        loaiBom: (form.loaiBom || null) as "bom_ngang" | "bom_can" | null,
+        chieuDaiBom: form.chieuDaiBom ? parseFloat(form.chieuDaiBom) : null,
+        kieuNoi: (form.kieuNoi || null) as "khong_dau" | "noi_dau" | "noi_dit" | null,
+        chieuDaiNoi: form.chieuDaiNoi ? parseFloat(form.chieuDaiNoi) : null,
       };
 
       if (editingId) {
@@ -438,6 +456,193 @@ export default function TaoDonHangPage() {
               />
             </div>
           </div>
+
+          <div className={styles.formDivider} />
+          <div className={styles.sectionTitle}>Hạng mục &amp; Phương pháp đổ</div>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Hạng mục / Cấu kiện</label>
+              <input
+                className={styles.formInput}
+                value={form.hangMuc}
+                onChange={(e) => setForm({ ...form, hangMuc: e.target.value })}
+                placeholder="VD: Móng, cột, sàn..."
+              />
+            </div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Phương pháp đổ</label>
+            <div className={styles.radioGroup}>
+              <label className={styles.radioLabel}>
+                <input
+                  type="radio"
+                  name="phuongPhapDo"
+                  value="do_xa"
+                  checked={form.phuongPhapDo === 'do_xa'}
+                  onChange={() => setForm({
+                    ...form,
+                    phuongPhapDo: 'do_xa',
+                    loaiBom: '',
+                    chieuDaiBom: '',
+                    kieuNoi: '',
+                    chieuDaiNoi: '',
+                  })}
+                />
+                <span className={styles.radioCustom} />
+                Đổ xả
+              </label>
+              <label className={styles.radioLabel}>
+                <input
+                  type="radio"
+                  name="phuongPhapDo"
+                  value="do_bom"
+                  checked={form.phuongPhapDo === 'do_bom'}
+                  onChange={() => setForm({
+                    ...form,
+                    phuongPhapDo: 'do_bom',
+                    loaiBom: '',
+                    chieuDaiBom: '',
+                    kieuNoi: '',
+                    chieuDaiNoi: '',
+                  })}
+                />
+                <span className={styles.radioCustom} />
+                Đổ bơm
+              </label>
+            </div>
+          </div>
+
+          {form.phuongPhapDo === 'do_bom' && (
+            <div className={styles.phuongPhapDoSub}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Loại bơm</label>
+                <div className={styles.radioGroup}>
+                  <label className={styles.radioLabel}>
+                    <input
+                      type="radio"
+                      name="loaiBom"
+                      value="bom_ngang"
+                      checked={form.loaiBom === 'bom_ngang'}
+                      onChange={() => setForm({
+                        ...form,
+                        loaiBom: 'bom_ngang',
+                        chieuDaiBom: '',
+                        kieuNoi: '',
+                        chieuDaiNoi: '',
+                      })}
+                    />
+                    <span className={styles.radioCustom} />
+                    Bơm ngang (ống)
+                  </label>
+                  <label className={styles.radioLabel}>
+                    <input
+                      type="radio"
+                      name="loaiBom"
+                      value="bom_can"
+                      checked={form.loaiBom === 'bom_can'}
+                      onChange={() => setForm({
+                        ...form,
+                        loaiBom: 'bom_can',
+                        chieuDaiBom: '',
+                        kieuNoi: '',
+                        chieuDaiNoi: '',
+                      })}
+                    />
+                    <span className={styles.radioCustom} />
+                    Bơm cần
+                  </label>
+                </div>
+              </div>
+
+              {form.loaiBom === 'bom_ngang' && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Chiều dài ống (m)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    className={styles.formInput}
+                    value={form.chieuDaiBom}
+                    onChange={(e) => setForm({ ...form, chieuDaiBom: e.target.value })}
+                    placeholder="VD: 30"
+                  />
+                </div>
+              )}
+
+              {form.loaiBom === 'bom_can' && (
+                <>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Nối cần</label>
+                    <div className={styles.radioGroup}>
+                      <label className={styles.radioLabel}>
+                        <input
+                          type="radio"
+                          name="kieuNoi"
+                          value="khong_dau"
+                          checked={form.kieuNoi === 'khong_dau'}
+                          onChange={() => setForm({
+                            ...form,
+                            kieuNoi: 'khong_dau',
+                            chieuDaiNoi: '',
+                          })}
+                        />
+                        <span className={styles.radioCustom} />
+                        Không đầu
+                      </label>
+                      <label className={styles.radioLabel}>
+                        <input
+                          type="radio"
+                          name="kieuNoi"
+                          value="noi_dau"
+                          checked={form.kieuNoi === 'noi_dau'}
+                          onChange={() => setForm({
+                            ...form,
+                            kieuNoi: 'noi_dau',
+                            chieuDaiNoi: '',
+                          })}
+                        />
+                        <span className={styles.radioCustom} />
+                        Nối đầu
+                      </label>
+                      <label className={styles.radioLabel}>
+                        <input
+                          type="radio"
+                          name="kieuNoi"
+                          value="noi_dit"
+                          checked={form.kieuNoi === 'noi_dit'}
+                          onChange={() => setForm({
+                            ...form,
+                            kieuNoi: 'noi_dit',
+                            chieuDaiNoi: '',
+                          })}
+                        />
+                        <span className={styles.radioCustom} />
+                        Nối đít
+                      </label>
+                    </div>
+                  </div>
+
+                  {(form.kieuNoi === 'noi_dau' || form.kieuNoi === 'noi_dit') && (
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>
+                        Chiều dài nối {form.kieuNoi === 'noi_dau' ? 'đầu' : 'đít'} (m)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        className={styles.formInput}
+                        value={form.chieuDaiNoi}
+                        onChange={(e) => setForm({ ...form, chieuDaiNoi: e.target.value })}
+                        placeholder="VD: 6"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div className={styles.formDivider} />
           <div className={styles.sectionTitle}>Thông tin giao hàng</div>
