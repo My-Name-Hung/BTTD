@@ -727,6 +727,29 @@ async function initDatabase(): Promise<void> {
       await colCheck("duCuoiCo", "DECIMAL(18,2) DEFAULT 0");
     }
 
+    // Tạo bảng BangChungDonHang - lưu bằng chứng đơn hàng sau thanh toán
+    const bangChungExists = await db.query<{ name: string }[]>(
+      `SELECT name FROM sys.tables WHERE name = 'BangChungDonHang'`,
+    );
+    if (bangChungExists.recordset.length === 0) {
+      console.log("  ➕ Tạo bảng BangChungDonHang...");
+      await db.query(`
+        CREATE TABLE BangChungDonHang (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          idDonHang INT NOT NULL,
+          loai NVARCHAR(50) NOT NULL DEFAULT 'file',
+          fileUrl NVARCHAR(500),
+          moTa NVARCHAR(255),
+          nguoiTaoId INT,
+          ngayTao DATETIME DEFAULT GETDATE(),
+          ngayCapNhat DATETIME DEFAULT GETDATE()
+        )
+      `);
+      console.log("  ✅ Bảng BangChungDonHang đã tạo");
+    } else {
+      console.log("  ✅ Bảng BangChungDonHang đã tồn tại");
+    }
+
     // Tạo bảng ThongBao
     const thongBaoExists = await db.query<{ name: string }[]>(
       `SELECT name FROM sys.tables WHERE name = 'ThongBao'`,

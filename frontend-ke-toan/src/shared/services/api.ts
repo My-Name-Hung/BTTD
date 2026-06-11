@@ -501,6 +501,78 @@ export async function uploadAnhNghiemThu(
   return result.data;
 }
 
+// ===== BẰNG CHỨNG ĐƠN HÀNG =====
+
+export interface BangChungDonHang {
+  id: number;
+  idDonHang: number;
+  loai: string;
+  fileUrl: string;
+  moTa: string | null;
+  nguoiTaoId: number | null;
+  ngayTao: string | null;
+  ngayCapNhat: string | null;
+}
+
+// Lấy danh sách bằng chứng theo đơn hàng
+export async function layBangChungDonHang(idDonHang: number): Promise<BangChungDonHang[]> {
+  const res = await fetch(`${BASE_URL}/bang-chung/don-hang/${idDonHang}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data as BangChungDonHang[];
+}
+
+// Upload bằng chứng (file)
+export async function uploadBangChungDonHang(idDonHang: number, files: File[]): Promise<BangChungDonHang[]> {
+  const token = getToken();
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
+
+  const response = await fetch(`${BASE_URL}/bang-chung/upload/${idDonHang}`, {
+    method: "POST",
+    headers: { Authorization: token ? `Bearer ${token}` : "" },
+    body: formData,
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || "Lỗi tải bằng chứng");
+  }
+  return result.data as BangChungDonHang[];
+}
+
+// Upload bằng chứng từ camera (base64)
+export async function uploadBangChungCamera(idDonHang: number, imageData: string): Promise<BangChungDonHang> {
+  const response = await fetch(`${BASE_URL}/bang-chung/camera/${idDonHang}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken()}`,
+    },
+    body: JSON.stringify({ imageData }),
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || "Lỗi tải ảnh camera");
+  }
+  return result.data as BangChungDonHang;
+}
+
+// Xóa bằng chứng
+export async function xoaBangChungDonHang(id: number): Promise<void> {
+  const response = await fetch(`${BASE_URL}/bang-chung/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || "Lỗi xóa bằng chứng");
+  }
+}
+
 export async function layDanhSachCongNo(
   page = 1,
   limit = 20,

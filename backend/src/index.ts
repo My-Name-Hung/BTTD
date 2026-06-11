@@ -30,6 +30,7 @@ import congNoKhachHangRoutes from "./routes/cong-no-khach-hang-routes";
 import accessHistoryRoutes from "./routes/access-history-routes";
 import exportRoutes from "./routes/export-routes";
 import batchRoutes from "./routes/batch-routes";
+import bangChungRoutes from "./routes/bang-chung-routes";
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -88,6 +89,7 @@ app.use("/api", authMiddleware, maintenanceMiddleware, congNoKhachHangRoutes);
 app.use("/api/access-history", authMiddleware, maintenanceMiddleware, accessHistoryRoutes);
 app.use("/api/export", authMiddleware, maintenanceMiddleware, exportRoutes);
 app.use("/api/batch", authMiddleware, maintenanceMiddleware, batchRoutes);
+app.use("/api/bang-chung", authMiddleware, maintenanceMiddleware, bangChungRoutes);
 
 // Error handler
 app.use(

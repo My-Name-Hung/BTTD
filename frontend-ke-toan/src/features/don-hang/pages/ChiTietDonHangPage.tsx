@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FiAlertCircle,
   FiArrowLeft,
+  FiCamera,
   FiCheck,
   FiCheckCircle,
   FiCheckSquare,
@@ -10,17 +11,19 @@ import {
   FiDownload,
   FiEdit2,
   FiExternalLink,
+  FiFile,
   FiFileText,
   FiPackage,
   FiPrinter,
   FiTrash2,
   FiTruck,
+  FiUpload,
   FiUser,
   FiX,
   FiImage,
 } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
-import { ConfirmModal, Loading } from "../../../shared/components/Common";
+import { ConfirmModal, Loading, Modal } from "../../../shared/components/Common";
 import { usePageRole, useToast } from "../../../shared/hooks";
 import {
   duyetDonHang,
@@ -30,6 +33,11 @@ import {
   layNghiemThu,
   tuChoiDonHang,
   xoaDonHang,
+  BangChungDonHang,
+  layBangChungDonHang,
+  uploadBangChungDonHang,
+  uploadBangChungCamera,
+  xoaBangChungDonHang,
 } from "../../../shared/services/api";
 import { buildFileUrl } from "../../../shared/utils";
 import {
@@ -165,6 +173,7 @@ export default function ChiTietDonHangPage() {
   const [lichSX, setLichSX] = useState<LichSanXuat | null>(null);
   const [nghiemThu, setNghiemThu] = useState<NghiemThu | null>(null);
   const [hoaDons, setHoaDons] = useState<HoaDon[]>([]);
+  const [bangChungs, setBangChungs] = useState<BangChungDonHang[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejectLoading, setRejectLoading] = useState(false);
   const [approveLoading, setApproveLoading] = useState(false);
@@ -172,6 +181,18 @@ export default function ChiTietDonHangPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [lyDoTuChoi, setLyDoTuChoi] = useState("");
+
+  // Bằng chứng đơn hàng - modal states
+  const [bangChungModalOpen, setBangChungModalOpen] = useState(false);
+  const [bangChungOptionModalOpen, setBangChungOptionModalOpen] = useState(false);
+  const [bangChungUploadModalOpen, setBangChungUploadModalOpen] = useState(false);
+  const [bangChungCameraModalOpen, setBangChungCameraModalOpen] = useState(false);
+  const [bangChungFiles, setBangChungFiles] = useState<File[]>([]);
+  const [bangChungUploadLoading, setBangChungUploadLoading] = useState(false);
+  const [bangChungCameraLoading, setBangChungCameraLoading] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const userVaiTro = JSON.parse(
     localStorage.getItem("bttd_user") || "{}",
@@ -192,20 +213,25 @@ export default function ChiTietDonHangPage() {
     ? (isStep1 ? "Duyệt lần 1" : isStep2 ? "Duyệt lần 2" : "Duyệt đơn")
     : "Duyệt đơn";
 
+  const isDonHangHoanThanh = donHang?.trangThaiDon === "hoan_thanh" || donHang?.trangThaiDon === "da_thanh_toan";
+  const canUploadBangChung = isDonHangHoanThanh && (isAdmin || isSale);
+
   const loadAll = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [dh, lsArr, ntArr, hdArr] = await Promise.all([
+      const [dh, lsArr, ntArr, hdArr, bcArr] = await Promise.all([
         layDonHang(parseInt(id)),
         layLichSanXuat(parseInt(id)),
         layNghiemThu(parseInt(id)),
         layHoaDonTheoDonHang(parseInt(id)),
+        layBangChungDonHang(parseInt(id)),
       ]);
       setDonHang(dh);
       setLichSX(lsArr[0] || null);
       setNghiemThu(ntArr || null);
       setHoaDons(hdArr || []);
+      setBangChungs(bcArr || []);
     } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
     } finally {
@@ -262,6 +288,107 @@ export default function ChiTietDonHangPage() {
     } finally {
       setDeleteLoading(false);
       setShowDeleteModal(false);
+    }
+  };
+
+  // === Bằng chứng đơn hàng handlers ===
+
+  const handleOpenBangChungOption = () => {
+    setBangChungOptionModalOpen(true);
+  };
+
+  const handleChonUploadFileBangChung = () => {
+    setBangChungOptionModalOpen(false);
+    setBangChungFiles([]);
+    setBangChungUploadModalOpen(true);
+  };
+
+  const handleChonCameraBangChung = () => {
+    setBangChungOptionModalOpen(false);
+    setCapturedImage(null);
+    setBangChungCameraModalOpen(true);
+  };
+
+  // Camera: bật camera khi modal mở
+  useEffect(() => {
+    if (!bangChungCameraModalOpen || !videoRef.current) return;
+    let stream: MediaStream | null = null;
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment" } })
+      .then((s) => {
+        stream = s;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+      })
+      .catch(() => {
+        showToast("Không thể truy cập camera", "error");
+        setBangChungCameraModalOpen(false);
+      });
+    return () => {
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+    };
+  }, [bangChungCameraModalOpen, showToast]);
+
+  const handleCaptureBangChung = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    setCapturedImage(dataUrl);
+    const stream = video.srcObject as MediaStream;
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+  };
+
+  const handleRetakeBangChung = () => {
+    setCapturedImage(null);
+  };
+
+  const handleUploadBangChung = async () => {
+    if (!donHang || bangChungFiles.length === 0) return;
+    setBangChungUploadLoading(true);
+    try {
+      await uploadBangChungDonHang(donHang.id, bangChungFiles);
+      showToast(`Đã tải lên ${bangChungFiles.length} file bằng chứng thành công!`);
+      setBangChungUploadModalOpen(false);
+      setBangChungFiles([]);
+      loadAll();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi tải bằng chứng", "error");
+    } finally {
+      setBangChungUploadLoading(false);
+    }
+  };
+
+  const handleCaptureAndSaveBangChung = async () => {
+    if (!donHang || !capturedImage) return;
+    setBangChungCameraLoading(true);
+    try {
+      await uploadBangChungCamera(donHang.id, capturedImage);
+      showToast("Đã chụp ảnh và lưu bằng chứng thành công!");
+      setBangChungCameraModalOpen(false);
+      setCapturedImage(null);
+      loadAll();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi lưu ảnh", "error");
+    } finally {
+      setBangChungCameraLoading(false);
+    }
+  };
+
+  const handleXoaBangChung = async (bangChungId: number) => {
+    try {
+      await xoaBangChungDonHang(bangChungId);
+      showToast("Đã xóa bằng chứng");
+      loadAll();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi xóa bằng chứng", "error");
     }
   };
 
@@ -390,6 +517,16 @@ export default function ChiTietDonHangPage() {
                 <FiDollarSign /> Xuất hóa đơn
               </button>
             )}
+          {/* Nút tải lên bằng chứng - chỉ hiện khi đơn hoàn thành + role admin/sale */}
+          {canUploadBangChung && (
+            <button
+              className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
+              onClick={handleOpenBangChungOption}
+              title="Tải lên bằng chứng đơn hàng"
+            >
+              <FiUpload /> Bằng chứng
+            </button>
+          )}
         </div>
       </div>
 
@@ -885,6 +1022,119 @@ export default function ChiTietDonHangPage() {
           </div>
         </div>
       )}
+
+      {/* Bằng chứng đơn hàng */}
+      <div className={styles.sectionCard}>
+        <div className={styles.sectionHeader}>
+          <div className={styles.sectionTitle}>
+            <div
+              className={`${styles.sectionAccent} ${styles.sectionAccentBlue}`}
+            />
+            <FiImage size={16} style={{ color: "var(--color-primary)" }} />
+            Bằng chứng đơn hàng
+            {bangChungs.length > 0 && (
+              <span style={{ fontSize: 12, fontWeight: 400, color: "var(--color-text-secondary)", marginLeft: 4 }}>
+                ({bangChungs.length} tệp)
+              </span>
+            )}
+          </div>
+        </div>
+        <div style={{ padding: "8px 0" }}>
+          {bangChungs.length === 0 ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                color: "var(--color-text-secondary)",
+                fontSize: 14,
+              }}
+            >
+              <FiAlertCircle size={16} />
+              Chưa có bằng chứng đơn hàng
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {bangChungs.map((bc) => {
+                const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(bc.fileUrl);
+                return (
+                  <div
+                    key={bc.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "8px 12px",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: 8,
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                      <span style={{ color: bc.loai === "camera" ? "var(--color-success)" : "var(--color-primary)" }}>
+                        {isImage ? <FiImage size={16} /> : <FiFile size={16} />}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {isImage ? "Hình ảnh" : getFileNameFromUrl(bc.fileUrl)}
+                        </div>
+                        {bc.ngayTao && (
+                          <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
+                            {new Date(bc.ngayTao).toLocaleString("vi-VN")}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <a
+                        href={buildFileUrl(bc.fileUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "5px 10px",
+                          border: "1.5px solid var(--color-primary)",
+                          borderRadius: 7,
+                          background: "transparent",
+                          color: "var(--color-primary)",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          textDecoration: "none",
+                        }}
+                      >
+                        <FiExternalLink size={12} /> Xem
+                      </a>
+                      {canUploadBangChung && (
+                        <button
+                          onClick={() => handleXoaBangChung(bc.id)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "5px 10px",
+                            border: "1.5px solid var(--color-danger)",
+                            borderRadius: 7,
+                            background: "transparent",
+                            color: "var(--color-danger)",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <FiTrash2 size={12} /> Xóa
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Hóa đơn */}
       <div className={styles.sectionCard}>
@@ -1769,6 +2019,189 @@ export default function ChiTietDonHangPage() {
         type="danger"
         loading={deleteLoading}
       />
+
+      {/* ========== MODAL: Chọn tùy chọn bằng chứng ========== */}
+      <Modal
+        isOpen={bangChungOptionModalOpen}
+        onClose={() => setBangChungOptionModalOpen(false)}
+        title={`Bằng chứng đơn hàng - ${donHang.maDonHang}`}
+      >
+        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 20, textAlign: "center" }}>
+          Chọn hình thức ghi nhận bằng chứng cho đơn hàng này
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <button
+            className={styles.optionBtn}
+            onClick={handleChonUploadFileBangChung}
+          >
+            <div className={styles.optionBtnIcon}>
+              <FiUpload size={28} />
+            </div>
+            <div>
+              <div className={styles.optionBtnTitle}>Upload file</div>
+              <div className={styles.optionBtnDesc}>
+                Tải lên file hình ảnh, PDF, DOCX
+              </div>
+            </div>
+          </button>
+          <button
+            className={styles.optionBtn}
+            onClick={handleChonCameraBangChung}
+          >
+            <div className={styles.optionBtnIcon}>
+              <FiCamera size={28} />
+            </div>
+            <div>
+              <div className={styles.optionBtnTitle}>Ghi nhận trực tiếp</div>
+              <div className={styles.optionBtnDesc}>
+                Chụp ảnh tại công trình
+              </div>
+            </div>
+          </button>
+        </div>
+      </Modal>
+
+      {/* ========== MODAL: Upload file bằng chứng ========== */}
+      <Modal
+        isOpen={bangChungUploadModalOpen}
+        onClose={() => { setBangChungUploadModalOpen(false); setBangChungFiles([]); }}
+        title={`Upload bằng chứng - ${donHang.maDonHang}`}
+        footer={
+          <>
+            <button className="btn btn-cancel" onClick={() => { setBangChungUploadModalOpen(false); setBangChungFiles([]); }}>
+              Hủy
+            </button>
+            <button
+              className="btn btn-save"
+              onClick={handleUploadBangChung}
+              disabled={bangChungFiles.length === 0 || bangChungUploadLoading}
+            >
+              {bangChungUploadLoading ? "Đang tải..." : `Tải lên (${bangChungFiles.length})`}
+            </button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 16 }}>
+          Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .jpeg, .png</strong>
+        </p>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Chọn file (có thể chọn nhiều file)</label>
+          <input
+            type="file"
+            className={styles.formInput}
+            accept=".doc,.docx,.pdf,.jpg,.jpeg,.png"
+            multiple
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              setBangChungFiles((prev) => [...prev, ...files]);
+            }}
+          />
+        </div>
+        {bangChungFiles.length > 0 && (
+          <div className={styles.uploadFileList}>
+            <div className={styles.uploadFileListHeader}>
+              <span>Đã chọn {bangChungFiles.length} file</span>
+              <button className={styles.clearAllBtn} onClick={() => setBangChungFiles([])}>
+                <FiX size={12} /> Xóa tất cả
+              </button>
+            </div>
+            {bangChungFiles.map((file, idx) => {
+              const isImage = file.type.startsWith("image/");
+              return (
+                <div key={idx} className={styles.uploadFileItem}>
+                  <div className={styles.uploadFileIcon}>
+                    {isImage ? <FiImage size={16} /> : <FiFile size={16} />}
+                  </div>
+                  <div className={styles.uploadFileInfo}>
+                    <span className={styles.uploadFileName}>{file.name}</span>
+                    <span className={styles.uploadFileSize}>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                  </div>
+                  <button
+                    className={styles.removeFileBtn}
+                    onClick={() => setBangChungFiles((prev) => prev.filter((_, i) => i !== idx))}
+                  >
+                    <FiX size={14} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Modal>
+
+      {/* ========== MODAL: Camera bằng chứng ========== */}
+      <Modal
+        isOpen={bangChungCameraModalOpen}
+        onClose={() => {
+          setBangChungCameraModalOpen(false);
+          setCapturedImage(null);
+          if (videoRef.current) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            if (stream) stream.getTracks().forEach((t) => t.stop());
+          }
+        }}
+        title={`Chụp ảnh bằng chứng - ${donHang.maDonHang}`}
+        footer={
+          <>
+            <button
+              className="btn btn-cancel"
+              onClick={() => {
+                setBangChungCameraModalOpen(false);
+                setCapturedImage(null);
+                if (videoRef.current) {
+                  const stream = videoRef.current.srcObject as MediaStream;
+                  if (stream) stream.getTracks().forEach((t) => t.stop());
+                }
+              }}
+            >
+              Hủy
+            </button>
+            {capturedImage ? (
+              <>
+                <button className="btn btn-cancel" onClick={handleRetakeBangChung}>
+                  Chụp lại
+                </button>
+                <button className="btn btn-save" onClick={handleCaptureAndSaveBangChung} disabled={bangChungCameraLoading}>
+                  {bangChungCameraLoading ? "Đang lưu..." : "Lưu ảnh"}
+                </button>
+              </>
+            ) : (
+              <button className="btn btn-save" onClick={handleCaptureBangChung}>
+                <FiCamera size={16} /> Chụp ảnh
+              </button>
+            )}
+          </>
+        }
+      >
+        <div style={{ textAlign: "center" }}>
+          {!capturedImage ? (
+            <>
+              <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 12 }}>
+                Hướng camera về phía công trình và bấm <strong>Chụp ảnh</strong>
+              </p>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ width: "100%", maxWidth: 400, borderRadius: 12, background: "#000", display: "block", margin: "0 auto" }}
+              />
+              <canvas ref={canvasRef} style={{ display: "none" }} />
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 12 }}>
+                Ảnh đã chụp. Bấm <strong>Chụp lại</strong> để chụp lại hoặc <strong>Lưu ảnh</strong> để xác nhận.
+              </p>
+              <img
+                src={capturedImage}
+                alt="Ảnh bằng chứng"
+                style={{ width: "100%", maxWidth: 400, borderRadius: 12, border: "2px solid var(--color-success)", display: "block", margin: "0 auto" }}
+              />
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
