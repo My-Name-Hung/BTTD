@@ -6,6 +6,7 @@ export async function taoLichSanXuat(
   data: Partial<LichSanXuat>,
   nguoiTaoId: number
 ): Promise<LichSanXuat> {
+  // Kiểm tra đơn hàng tồn tại
   const donHang = await query<DonHang>(
     `SELECT * FROM DonHang WHERE id = @idDonHang`,
     { idDonHang: data.idDonHang }
@@ -13,6 +14,15 @@ export async function taoLichSanXuat(
 
   if (donHang.length === 0) {
     throw new Error('Không tìm thấy đơn hàng');
+  }
+
+  // Kiểm tra đã có lịch sản xuất chưa (tránh trùng lặp)
+  const existingLich = await query<{ id: number }>(
+    `SELECT id FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai != N'da_xong'`,
+    { idDonHang: data.idDonHang }
+  );
+  if (existingLich.length > 0) {
+    throw new Error('Đơn hàng này đã có lịch sản xuất. Vui lòng cập nhật lịch hiện có hoặc hoàn thành lịch cũ trước khi tạo mới.');
   }
 
   // Lấy idTramTron từ form (do người dùng chọn khi lên lịch SX)
