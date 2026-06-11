@@ -104,7 +104,7 @@ export default function DieuPhoiLichSanXuatPage() {
     setLoading(true);
     try {
       const res = await layTatCaLichSanXuat();
-      setData(res || []);
+      setData((res || []) as unknown as LichSanXuatItem[]);
     } catch (err) {
       console.error("Lỗi tải lịch sản xuất:", err);
       showToast("Không tải được dữ liệu lịch sản xuất", "error");

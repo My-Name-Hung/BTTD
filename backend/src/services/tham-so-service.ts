@@ -173,10 +173,38 @@ export async function taoMacBeTong(data: Partial<MacBeTong>): Promise<MacBeTong>
 }
 
 export async function suaMacBeTong(id: number, data: Partial<MacBeTong>): Promise<MacBeTong> {
-  await query(
-    `UPDATE MacBeTong SET tenMac = @tenMac, donGia = @donGia, chiPhiPhatSinh = @chiPhiPhatSinh, buVanChuyen = @buVanChuyen, moTa = @moTa WHERE id = @id`,
-    { id, tenMac: data.tenMac, donGia: data.donGia || 0, chiPhiPhatSinh: data.chiPhiPhatSinh, buVanChuyen: data.buVanChuyen, moTa: data.moTa || null }
-  );
+  // Build dynamic UPDATE query - only update fields that are provided
+  const updates: string[] = [];
+  const params: Record<string, unknown> = { id };
+
+  if (data.tenMac !== undefined) {
+    updates.push("tenMac = @tenMac");
+    params.tenMac = data.tenMac;
+  }
+  if (data.donGia !== undefined) {
+    updates.push("donGia = @donGia");
+    params.donGia = data.donGia;
+  }
+  if (data.chiPhiPhatSinh !== undefined) {
+    updates.push("chiPhiPhatSinh = @chiPhiPhatSinh");
+    params.chiPhiPhatSinh = data.chiPhiPhatSinh;
+  }
+  if (data.buVanChuyen !== undefined) {
+    updates.push("buVanChuyen = @buVanChuyen");
+    params.buVanChuyen = data.buVanChuyen;
+  }
+  if (data.moTa !== undefined) {
+    updates.push("moTa = @moTa");
+    params.moTa = data.moTa || null;
+  }
+
+  if (updates.length > 0) {
+    await query(
+      `UPDATE MacBeTong SET ${updates.join(", ")} WHERE id = @id`,
+      params
+    );
+  }
+
   return (await query<MacBeTong>(`SELECT * FROM MacBeTong WHERE id = @id`, { id }))[0];
 }
 
