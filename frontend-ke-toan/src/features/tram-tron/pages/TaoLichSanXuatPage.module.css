@@ -296,3 +296,139 @@
 @media (max-width: 480px) {
   .orderInfoGrid { grid-template-columns: 1fr; }
 }
+
+/* ── Multi-trạm mode ── */
+.multiTramToggle {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: rgba(7, 60, 235, 0.04);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(7, 60, 235, 0.15);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.checkboxInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.checkboxCustom {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border: 2px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.checkboxInput:checked + .checkboxCustom {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.checkboxInput:checked + .checkboxCustom::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkboxInput:focus + .checkboxCustom {
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.15);
+}
+
+.tramChecklist {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tramChecklistHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tramSelectAll {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.tramSelectedCount {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.tramList {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.tramItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tramItem:last-child {
+  border-bottom: none;
+}
+
+.tramItem:hover {
+  background: rgba(7, 60, 235, 0.04);
+}
+
+.tramItem .checkboxCustom {
+  margin-top: 2px;
+}
+
+.tramItemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.tramItemName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tramItemAddress {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}

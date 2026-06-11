@@ -95,7 +95,7 @@ router.get('/mac-be-tong', authMiddleware, async (_req: AuthRequest, res: Respon
   }
 });
 
-router.post('/mac-be-tong', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.post('/mac-be-tong', authMiddleware, requireRole('admin', 'dieu_phoi', 'sale'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const mac = await taoMacBeTong(req.body);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
@@ -108,7 +108,7 @@ router.post('/mac-be-tong', authMiddleware, requireRole('admin', 'dieu_phoi'), a
   }
 });
 
-router.put('/mac-be-tong/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.put('/mac-be-tong/:id', authMiddleware, requireRole('admin', 'dieu_phoi', 'sale'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const id = parseInt(req.params.id, 10);
     const macCu = (await query<any[]>(`SELECT * FROM MacBeTong WHERE id = @id`, { id }))[0];

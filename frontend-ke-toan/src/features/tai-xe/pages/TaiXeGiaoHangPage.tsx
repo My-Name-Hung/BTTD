@@ -12,7 +12,7 @@ import {
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { ConfirmModal, Loading } from "../../../shared/components/Common";
-import { useAuth, useToast } from "../../../shared/hooks";
+import { useAuth, useToast, usePageRole } from "../../../shared/hooks";
 import {
   layDonHangDaGiao,
   layDonHangGiaoCuaToi,
@@ -35,7 +35,9 @@ type TabType = "dang_giao" | "da_giao";
 export default function TaiXeGiaoHangPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { hasAnyRole } = usePageRole();
   const { toasts, showToast } = useToast();
+  const isKyThuat = hasAnyRole(["ky_thuat"]);
 
   const [allDangGiao, setAllDangGiao] = useState<DonHang[]>([]);
   const [allDaGiao, setAllDaGiao] = useState<DonHang[]>([]);
@@ -153,6 +155,11 @@ export default function TaiXeGiaoHangPage() {
           <span>Giao hàng</span>
         </div>
         <div className={styles.pageSubtitle}>Xin chào, {user?.hoTen}</div>
+        {isKyThuat && (
+          <div className={styles.pageSubtitle} style={{ fontSize: 12, color: '#f59e0b', marginTop: 4 }}>
+            Kỹ thuật công trình - Xác nhận giao hàng
+          </div>
+        )}
       </div>
 
       {/* Tabs */}

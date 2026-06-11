@@ -99,6 +99,14 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdFactory size={20} />,
     roles: ["admin", "tram_tron"],
   },
+  // Điều phối - Lịch sản xuất
+  {
+    path: "/dieu-phoi/lich-san-xuat",
+    label: "Lịch sản xuất",
+    icon: <MdFactory size={20} />,
+    iconActive: <MdFactory size={20} />,
+    roles: ["admin", "dieu_phoi"],
+  },
   // Điều phối
   {
     path: "/dieu-phoi",
@@ -120,7 +128,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Giao hàng",
     icon: <MdDeliveryDining size={20} />,
     iconActive: <MdDeliveryDining size={20} />,
-    roles: ["admin", "tai_xe"],
+    roles: ["admin", "tai_xe", "ky_thuat"],
   },
   // Nghiệm thu
   {
@@ -222,7 +230,7 @@ export const SIDEBAR_GROUPS: MenuGroup[] = [
   {
     title: "Điều phối",
     items: SIDEBAR_ITEMS.filter((m) =>
-      ["/dieu-phoi", "/dieu-phoi/mac-be-tong"].includes(m.path),
+      ["/dieu-phoi", "/dieu-phoi/mac-be-tong", "/dieu-phoi/lich-san-xuat"].includes(m.path),
     ),
   },
   // === GIAO HÀNG ===
@@ -301,7 +309,14 @@ const BOTTOM_TABS = [
     label: "Trạm trộn",
     icon: <MdFactory size={22} />,
     iconActive: <MdFactory size={22} />,
-    roles: ["admin", "tram_tron", "dieu_phoi", "sale"],
+    roles: ["admin", "tram_tron"],
+  },
+  {
+    path: "/dieu-phoi/lich-san-xuat",
+    label: "Lịch SX",
+    icon: <MdFactory size={22} />,
+    iconActive: <MdFactory size={22} />,
+    roles: ["admin", "dieu_phoi"],
   },
   {
     path: "/dieu-phoi",
@@ -315,7 +330,7 @@ const BOTTOM_TABS = [
     label: "Giao hàng",
     icon: <MdDeliveryDining size={22} />,
     iconActive: <MdDeliveryDining size={22} />,
-    roles: ["admin", "tai_xe"],
+    roles: ["admin", "tai_xe", "ky_thuat"],
   },
   {
     path: "/nghiem-thu",

@@ -102,7 +102,7 @@ export async function layTatCaLichSanXuat(
   page: number = 1,
   limit: number = 50,
   trangThai?: string
-): Promise<{ data: LichSanXuat[]; total: number }> {
+): Promise<{ data: any[]; total: number }> {
   const offset = (page - 1) * limit;
   let whereClause = 'WHERE 1=1';
   const params: Record<string, unknown> = { offset, limit };
@@ -118,10 +118,15 @@ export async function layTatCaLichSanXuat(
   );
   const total = countResult?.total || 0;
 
-  const data = await query<LichSanXuat>(
-    `SELECT ls.*, dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat
+  const data = await query<any>(
+    `SELECT ls.*,
+            dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon,
+            ISNULL(tt.tenTram, N'Không xác định') as tenTram,
+            nd.hoTen as tenTaiXe
      FROM LichSanXuat ls
      LEFT JOIN DonHang dh ON ls.idDonHang = dh.id
+     LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
+     LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
      ${whereClause}
      ORDER BY ls.ngayTao DESC
      OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,

@@ -20,10 +20,11 @@ router.get(
       }
 
       const isAdmin = req.user.vaiTro === 'admin';
+      const isKyThuat = req.user.vaiTro === 'ky_thuat';
       let data;
 
-      if (isAdmin) {
-        // Admin xem tất cả đơn đang giao
+      if (isAdmin || isKyThuat) {
+        // Admin và Kỹ thuật xem tất cả đơn đang giao
         data = await query<any>(
           `SELECT dh.* FROM DonHang dh
            WHERE dh.trangThaiDon = N'dang_giao'
@@ -65,9 +66,10 @@ router.get(
       }
 
       const isAdmin = req.user.vaiTro === 'admin';
+      const isKyThuat = req.user.vaiTro === 'ky_thuat';
 
-      if (isAdmin) {
-        // Admin xem tất cả thống kê
+      if (isAdmin || isKyThuat) {
+        // Admin và Kỹ thuật xem tất cả thống kê
         const [tongRes, chuaGiaoRes, daGiaoRes] = await Promise.all([
           query<any>(`SELECT COUNT(*) as cnt FROM DonHang dh`, {}),
           query<any>(
@@ -143,10 +145,11 @@ router.get(
       }
 
       const isAdmin = req.user.vaiTro === 'admin';
+      const isKyThuat = req.user.vaiTro === 'ky_thuat';
       let data;
 
-      if (isAdmin) {
-        // Admin xem tất cả đơn đã giao
+      if (isAdmin || isKyThuat) {
+        // Admin và Kỹ thuật xem tất cả đơn đã giao
         data = await query<any>(
           `SELECT dh.* FROM DonHang dh
            WHERE dh.trangThaiDon = N'da_giao'
@@ -250,9 +253,10 @@ router.put(
         return;
       }
 
-      // Kiểm tra tài xế có phải người được giao đơn này không (admin được phép tất cả)
+      // Kiểm tra tài xế có phải người được giao đơn này không (admin và kỹ thuật được phép tất cả)
       const isAdmin = req.user.vaiTro === 'admin';
-      if (!isAdmin) {
+      const isKyThuat = req.user.vaiTro === 'ky_thuat';
+      if (!isAdmin && !isKyThuat) {
         const ls = await query<any>(
           `SELECT ls.*, xe.idTaiKhoan FROM LichSanXuat ls
            INNER JOIN Xe xe ON ls.idXe = xe.id

@@ -59,8 +59,8 @@ export const PERMISSIONS = {
   'tramtron.confirm_complete': ['admin', 'tram_tron'],
 
   // === TAI XE ===
-  'taixe.access': ['admin', 'tai_xe'],
-  'taixe.update_giao': ['admin', 'tai_xe'],
+  'taixe.access': ['admin', 'tai_xe', 'ky_thuat'],
+  'taixe.update_giao': ['admin', 'tai_xe', 'ky_thuat'],
 
   // === KY THUAT ===
   'kythuat.access': ['admin', 'ky_thuat'],
@@ -68,8 +68,8 @@ export const PERMISSIONS = {
 
   // === THAM SO ===
   'thamso.access': ['admin'],
-  'thamso.mac.create': ['admin'],
-  'thamso.mac.edit': ['admin'],
+  'thamso.mac.create': ['admin', 'dieu_phoi', 'sale'],
+  'thamso.mac.edit': ['admin', 'dieu_phoi', 'sale'],
   'thamso.xe.create': ['admin'],
   'thamso.xe.edit': ['admin', 'dieu_phoi'],
 } as const;

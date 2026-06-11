@@ -28,6 +28,7 @@ const KhoLichSanXuatPage = lazy(() => import("./features/kho/pages/KhoLichSanXua
 const QuanLyTramTronPage = lazy(() => import("./features/tram-tron/pages/QuanLyTramTronPage"));
 const DieuPhoiPage = lazy(() => import("./features/tram-tron/pages/DieuPhoiPage"));
 const TaoLichSanXuatPage = lazy(() => import("./features/tram-tron/pages/TaoLichSanXuatPage"));
+const DieuPhoiLichSanXuatPage = lazy(() => import("./features/tram-tron/pages/DieuPhoiLichSanXuatPage"));
 const NghiemThuPage = lazy(() => import("./features/tram-tron/pages/NghiemThuPage"));
 const ThamSoPage = lazy(() => import("./features/tram-tron/pages/ThamSoPage"));
 
@@ -174,6 +175,12 @@ function App() {
                     <Route
                       path="/tram-tron/don-hang-list"
                       element={<DonHangTheoTramPage />}
+                    />
+
+                    {/* Điều phối - Lịch sản xuất */}
+                    <Route
+                      path="/dieu-phoi/lich-san-xuat"
+                      element={<DieuPhoiLichSanXuatPage />}
                     />
 
                     {/* Quản lý trạm trộn - đơn hàng theo trạm */}

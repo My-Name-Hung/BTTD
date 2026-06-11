@@ -38,6 +38,9 @@ export default function TaoLichSanXuatPage() {
   const [initialForm, setInitialForm] = useState(form);
   const hasChanges = JSON.stringify(form) !== JSON.stringify(initialForm);
 
+  const [multiTramMode, setMultiTramMode] = useState(false);
+  const [selectedTramIds, setSelectedTramIds] = useState<number[]>([]);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -101,30 +104,85 @@ export default function TaoLichSanXuatPage() {
     setForm({ ...form, idTramTron: tramId, tenTramTron: tram?.tenTram || '' });
   };
 
+  const handleMultiTramToggle = (tramId: number) => {
+    setSelectedTramIds((prev) => {
+      if (prev.includes(tramId)) {
+        return prev.filter((id) => id !== tramId);
+      }
+      return [...prev, tramId];
+    });
+  };
+
+  const handleSelectAllTram = () => {
+    if (selectedTramIds.length === tramTrons.length) {
+      setSelectedTramIds([]);
+    } else {
+      setSelectedTramIds(tramTrons.map((t) => t.id));
+    }
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!idDonHang) return;
-    if (!form.idTramTron) { showToast('Vui lòng chọn trạm trộn', 'error'); return; }
+
+    if (multiTramMode) {
+      if (selectedTramIds.length === 0) {
+        showToast('Vui lòng chọn ít nhất một trạm trộn', 'error');
+        return;
+      }
+    } else {
+      if (!form.idTramTron) {
+        showToast('Vui lòng chọn trạm trộn', 'error');
+        return;
+      }
+    }
 
     setSubmitting(true);
     try {
       const xe = xes.find((x) => x.id === parseInt(form.idXe));
-      const payload: Partial<LichSanXuat> = {
-        idDonHang,
-        idXe: form.idXe ? parseInt(form.idXe) : null,
-        idTramTron: form.idTramTron ? parseInt(form.idTramTron) : null,
-        bienSoXe: xe?.bienSo || form.bienSoXe || null,
-        kyThuatCongTrinh: form.kyThuatCongTrinh || null,
-        nguoiOmOng: form.nguoiOmOng || null,
-        nguoiBatOng: form.nguoiBatOng || null,
-        ghiChu: form.ghiChu || null,
-      };
 
-      if (existingLich) {
-        await capNhatLichSanXuat(existingLich.id, payload);
+      if (multiTramMode) {
+        const payloadBase: Partial<LichSanXuat> = {
+          idDonHang,
+          idXe: form.idXe ? parseInt(form.idXe) : null,
+          bienSoXe: xe?.bienSo || form.bienSoXe || null,
+          kyThuatCongTrinh: form.kyThuatCongTrinh || null,
+          nguoiOmOng: form.nguoiOmOng || null,
+          nguoiBatOng: form.nguoiBatOng || null,
+          ghiChu: form.ghiChu || null,
+        };
+
+        for (const tramId of selectedTramIds) {
+          const payload: Partial<LichSanXuat> = {
+            ...payloadBase,
+            idTramTron: tramId,
+          };
+
+          if (existingLich) {
+            await capNhatLichSanXuat(existingLich.id, payload);
+          } else {
+            await taoLichSanXuat(payload);
+          }
+        }
       } else {
-        await taoLichSanXuat(payload);
+        const payload: Partial<LichSanXuat> = {
+          idDonHang,
+          idXe: form.idXe ? parseInt(form.idXe) : null,
+          idTramTron: form.idTramTron ? parseInt(form.idTramTron) : null,
+          bienSoXe: xe?.bienSo || form.bienSoXe || null,
+          kyThuatCongTrinh: form.kyThuatCongTrinh || null,
+          nguoiOmOng: form.nguoiOmOng || null,
+          nguoiBatOng: form.nguoiBatOng || null,
+          ghiChu: form.ghiChu || null,
+        };
+
+        if (existingLich) {
+          await capNhatLichSanXuat(existingLich.id, payload);
+        } else {
+          await taoLichSanXuat(payload);
+        }
       }
+
       setShowSuccess(true);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Lỗi', 'error');
@@ -233,21 +291,78 @@ export default function TaoLichSanXuatPage() {
           <div className={styles.sectionTitle}>
             <FiHome size={15} /> Thông tin trạm trộn
           </div>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Trạm trộn *</label>
-            <select
-              className={styles.formSelect}
-              value={form.idTramTron}
-              onChange={(e) => handleTramChange(e.target.value)}
-            >
-              <option value="">— Chọn trạm trộn —</option>
-              {tramTrons.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.tenTram} {t.diaChi ? `— ${t.diaChi}` : ''}
-                </option>
-              ))}
-            </select>
+          <div className={styles.multiTramToggle}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={multiTramMode}
+                onChange={(e) => {
+                  setMultiTramMode(e.target.checked);
+                  if (!e.target.checked) {
+                    setSelectedTramIds([]);
+                  }
+                }}
+                className={styles.checkboxInput}
+              />
+              <span className={styles.checkboxCustom} />
+              <span>Điều phối nhiều trạm trộn cho đơn này</span>
+            </label>
           </div>
+
+          {!multiTramMode ? (
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Trạm trộn *</label>
+              <select
+                className={styles.formSelect}
+                value={form.idTramTron}
+                onChange={(e) => handleTramChange(e.target.value)}
+              >
+                <option value="">— Chọn trạm trộn —</option>
+                {tramTrons.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.tenTram} {t.diaChi ? `— ${t.diaChi}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className={styles.tramChecklist}>
+              <div className={styles.tramChecklistHeader}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={selectedTramIds.length === tramTrons.length && tramTrons.length > 0}
+                    onChange={handleSelectAllTram}
+                    className={styles.checkboxInput}
+                  />
+                  <span className={styles.checkboxCustom} />
+                  <span className={styles.tramSelectAll}>Chọn tất cả</span>
+                </label>
+                <span className={styles.tramSelectedCount}>
+                  {selectedTramIds.length}/{tramTrons.length} trạm được chọn
+                </span>
+              </div>
+              <div className={styles.tramList}>
+                {tramTrons.map((tram) => (
+                  <label key={tram.id} className={styles.tramItem}>
+                    <input
+                      type="checkbox"
+                      checked={selectedTramIds.includes(tram.id)}
+                      onChange={() => handleMultiTramToggle(tram.id)}
+                      className={styles.checkboxInput}
+                    />
+                    <span className={styles.checkboxCustom} />
+                    <div className={styles.tramItemInfo}>
+                      <span className={styles.tramItemName}>{tram.tenTram}</span>
+                      {tram.diaChi && (
+                        <span className={styles.tramItemAddress}>{tram.diaChi}</span>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className={styles.formDivider} />
           <div className={styles.sectionTitle}>

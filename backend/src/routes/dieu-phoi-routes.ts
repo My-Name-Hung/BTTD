@@ -10,6 +10,7 @@ import {
   xacNhanDaGiao,
 } from '../services/dieu-phoi-service';
 import { ghiNhatKy } from '../services/access-history-service';
+import { query } from '../config/database';
 
 const router = Router();
 
