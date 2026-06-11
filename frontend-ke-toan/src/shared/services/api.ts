@@ -70,13 +70,27 @@ export async function dangNhap(
   tenDangNhap: string,
   matKhau: string,
 ): Promise<{ token: string; user: NguoiDung }> {
-  const result = await request<{ token: string; user: NguoiDung }>(
-    "/auth/login",
-    {
-      method: "POST",
-      body: JSON.stringify({ tenDangNhap, matKhau }),
-    },
-  );
+  const response = await fetch(`${BASE_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tenDangNhap, matKhau }),
+  });
+
+  const data: ApiResponse<{ token: string; user: NguoiDung }> = await response.json();
+
+  if (!response.ok) {
+    // Nếu server trả 401 hoặc lỗi tài khoản/mật khẩu
+    if (response.status === 401 || !data.success) {
+      throw new Error(data.message || "Tài khoản hoặc mật khẩu không đúng");
+    }
+    throw new Error(data.message || "Đăng nhập thất bại");
+  }
+
+  if (!data.success) {
+    throw new Error(data.message || "Tài khoản hoặc mật khẩu không đúng");
+  }
+
+  const result = data.data as { token: string; user: NguoiDung };
   localStorage.setItem("bttd_token", result.token);
   localStorage.setItem("bttd_user", JSON.stringify(result.user));
   return result;

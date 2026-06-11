@@ -155,10 +155,12 @@ export async function capNhatLichSanXuat(
   // Cập nhật tram trộn vào đơn hàng nếu được chọn
   if (data.idTramTron) {
     const [ls] = await query<{ idDonHang: number }>(`SELECT idDonHang FROM LichSanXuat WHERE id = @id`, { id });
-    await query(
-      `UPDATE DonHang SET idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @id`,
-      { id: ls.idDonHang, idTramTron: data.idTramTron }
-    );
+    if (ls) {
+      await query(
+        `UPDATE DonHang SET idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @idDonHang`,
+        { idDonHang: ls.idDonHang, idTramTron: data.idTramTron }
+      );
+    }
   }
 
   await query(
@@ -194,6 +196,9 @@ export async function capNhatLichSanXuat(
   );
 
   const [updated] = await query<LichSanXuat>(`SELECT * FROM LichSanXuat WHERE id = @id`, { id });
+  if (!updated) {
+    throw new Error('Không tìm thấy lịch sản xuất');
+  }
 
   if (data.trangThai === 'da_xong') {
     await query(

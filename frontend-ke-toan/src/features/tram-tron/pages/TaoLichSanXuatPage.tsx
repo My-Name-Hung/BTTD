@@ -143,7 +143,6 @@ export default function TaoLichSanXuatPage() {
 
       if (multiTramMode) {
         const payloadBase: Partial<LichSanXuat> = {
-          idDonHang,
           idXe: form.idXe ? parseInt(form.idXe) : null,
           bienSoXe: xe?.bienSo || form.bienSoXe || null,
           kyThuatCongTrinh: form.kyThuatCongTrinh || null,
@@ -166,7 +165,6 @@ export default function TaoLichSanXuatPage() {
         }
       } else {
         const payload: Partial<LichSanXuat> = {
-          idDonHang,
           idXe: form.idXe ? parseInt(form.idXe) : null,
           idTramTron: form.idTramTron ? parseInt(form.idTramTron) : null,
           bienSoXe: xe?.bienSo || form.bienSoXe || null,

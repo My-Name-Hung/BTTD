@@ -91,10 +91,10 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     iconActive: <MdPeople size={20} />,
     roles: ["admin", "giam_doc_kinh_doanh", "ke_toan", "dieu_phoi", "sale"],
   },
-  // Sản xuất - Trạm trộn
+  // Sản xuất - Trạm trộn (Trạm trộn)
   {
     path: "/tram-tron/lich-san-xuat",
-    label: "Lịch sản xuất",
+    label: "Lịch sản xuất (Trạm trộn)",
     icon: <MdFactory size={20} />,
     iconActive: <MdFactory size={20} />,
     roles: ["admin", "tram_tron"],
@@ -102,7 +102,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
   // Điều phối - Lịch sản xuất
   {
     path: "/dieu-phoi/lich-san-xuat",
-    label: "Lịch sản xuất",
+    label: "Lịch sản xuất (Điều phối)",
     icon: <MdFactory size={20} />,
     iconActive: <MdFactory size={20} />,
     roles: ["admin", "dieu_phoi"],
@@ -313,7 +313,7 @@ const BOTTOM_TABS = [
   },
   {
     path: "/dieu-phoi/lich-san-xuat",
-    label: "Lịch SX",
+    label: "Điều phối",
     icon: <MdFactory size={22} />,
     iconActive: <MdFactory size={22} />,
     roles: ["admin", "dieu_phoi"],

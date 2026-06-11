@@ -461,6 +461,12 @@ export default function ChiTietDonHangPage() {
               {donHang.diaChiNhan}
             </span>
           </div>
+          {donHang.nguoiNhanHang && (
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Người nhận hàng</span>
+              <span className={styles.infoValue}>{donHang.nguoiNhanHang}</span>
+            </div>
+          )}
         </div>
 
         {/* Card: Sản phẩm */}
@@ -517,6 +523,77 @@ export default function ChiTietDonHangPage() {
             </span>
           </div>
         </div>
+
+        {/* Card: Hạng mục & Phương pháp đổ */}
+        {(donHang.hangMuc || donHang.phuongPhapDo) && (
+          <div className={styles.infoCard}>
+            <div className={styles.infoCardTitle}>
+              <FiPackage size={14} /> Hạng mục & Phương pháp đổ
+            </div>
+            {donHang.hangMuc && (
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Hạng mục / Cấu kiện</span>
+                <span className={styles.infoValue}>{donHang.hangMuc}</span>
+              </div>
+            )}
+            {donHang.phuongPhapDo && (
+              <>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Phương pháp đổ</span>
+                  <span className={`${styles.infoValue} ${styles.infoValuePrimary}`}>
+                    {donHang.phuongPhapDo === "do_xa"
+                      ? "Đổ xả"
+                      : donHang.phuongPhapDo === "do_bom"
+                        ? "Đổ bơm"
+                        : donHang.phuongPhapDo}
+                  </span>
+                </div>
+                {donHang.phuongPhapDo === "do_bom" && donHang.chieuDaiBom && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Chiều dài bơm</span>
+                    <span className={styles.infoValue}>
+                      {donHang.chieuDaiBom} m
+                    </span>
+                  </div>
+                )}
+                {donHang.chieuDaiNoi && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Chiều dài nội</span>
+                    <span className={styles.infoValue}>
+                      {donHang.chieuDaiNoi} m
+                    </span>
+                  </div>
+                )}
+                {donHang.loaiBom && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Loại bơm</span>
+                    <span className={styles.infoValue}>
+                      {donHang.loaiBom === "bom_ngang"
+                        ? "Bơm ngang"
+                        : donHang.loaiBom === "bom_can"
+                          ? "Bơm cần"
+                          : donHang.loaiBom}
+                    </span>
+                  </div>
+                )}
+                {donHang.kieuNoi && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Kiểu nối</span>
+                    <span className={styles.infoValue}>
+                      {donHang.kieuNoi === "khong_dau"
+                        ? "Không đầu"
+                        : donHang.kieuNoi === "noi_dau"
+                          ? "Nối đầu"
+                          : donHang.kieuNoi === "noi_dit"
+                            ? "Nối đít"
+                            : donHang.kieuNoi}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Card: Thanh toán */}
         <div className={styles.infoCard}>
