@@ -6,7 +6,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import {
   taoDonHang, suaDonHang, layDonHang,
   layDanhSachKhachHang, layDanhSachMacBeTong,
-  taoKhachHang,
+  taoKhachHang, taoMacBeTong,
 } from '../../../shared/services/api';
 import { DonHang, KhachHang, MacBeTong } from "../../../shared/types";
 import { useToast } from "../../../shared/hooks";
@@ -76,6 +76,12 @@ export default function TaoDonHangPage() {
   const [showKhachHangModal, setShowKhachHangModal] = useState(false);
   const [newKhachHang, setNewKhachHang] = useState({ tenKhachHang: '', soDienThoai: '', diaChi: '', mstCccd: '' });
   const [newKhachLoading, setNewKhachLoading] = useState(false);
+
+  // Modal thêm mác bê tông nhanh
+  const [showMacBeTongModal, setShowMacBeTongModal] = useState(false);
+  const [newMacBeTong, setNewMacBeTong] = useState({ tenMac: '', donGia: '', moTa: '' });
+  const [newMacLoading, setNewMacLoading] = useState(false);
+
   const khachDropdownRef = useRef<HTMLDivElement>(null);
   const giaTienRef = useRef<HTMLInputElement>(null);
 
@@ -231,6 +237,38 @@ export default function TaoDonHangPage() {
     } finally {
       setNewKhachLoading(false);
     }
+  };
+
+  // Thêm mác bê tông nhanh
+  const handleAddMacBeTong = async () => {
+    if (!newMacBeTong.tenMac.trim()) {
+      showToast('Vui lòng nhập tên mác bê tông', 'error');
+      return;
+    }
+    const donGia = parseFloat(newMacBeTong.donGia.replace(/[^\d]/g, '') || '0');
+    setNewMacLoading(true);
+    try {
+      const created = await taoMacBeTong({
+        tenMac: newMacBeTong.tenMac.trim(),
+        donGia: donGia,
+        moTa: newMacBeTong.moTa.trim() || null,
+      });
+      setMacBeTongs((prev) => [created, ...prev]);
+      // Tự động chọn mác vừa tạo
+      handleMacChange(String(created.id));
+      setShowMacBeTongModal(false);
+      setNewMacBeTong({ tenMac: '', donGia: '', moTa: '' });
+      showToast('Thêm mác bê tông thành công');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Lỗi thêm mác bê tông', 'error');
+    } finally {
+      setNewMacLoading(false);
+    }
+  };
+
+  const formatInputCurrency = (v: string) => {
+    const raw = v.replace(/[^\d]/g, '');
+    return raw ? Number(raw).toLocaleString('vi-VN') : '';
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -426,9 +464,14 @@ export default function TaoDonHangPage() {
                   ) : (
                     <span className={styles.searchDropdownPlaceholder}>— Chọn mác bê tông —</span>
                   )}
-                  <svg className={`${styles.searchDropdownArrow} ${macSearchOpen ? styles.searchDropdownArrowOpen : ''}`} width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <button type="button" className={styles.iconBtnSmall} onClick={(e) => { e.stopPropagation(); setMacSearchOpen(false); setMacSearchQuery(''); setShowMacBeTongModal(true); }} title="Thêm mác bê tông mới">
+                      <FiPlus size={14} />
+                    </button>
+                    <svg className={`${styles.searchDropdownArrow} ${macSearchOpen ? styles.searchDropdownArrowOpen : ''}`} width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                 </div>
                 {macSearchOpen && (
                   <div className={styles.searchDropdownPanel}>
@@ -822,9 +865,40 @@ export default function TaoDonHangPage() {
             onChange={(e) => setNewKhachHang({ ...newKhachHang, mstCccd: e.target.value })} placeholder="VD: 012345678901 hoặc 079123456789" />
         </div>
         <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Địa chỉ</label>
+          <label className={styles.formLabel}>�ịa chỉ</label>
           <input className={styles.formInput} value={newKhachHang.diaChi}
             onChange={(e) => setNewKhachHang({ ...newKhachHang, diaChi: e.target.value })} placeholder="VD: Số 123, Đường Nguyễn Huệ, TP.Cần Thơ" />
+        </div>
+      </Modal>
+
+      {/* Modal thêm mác bê tông nhanh */}
+      <Modal
+        isOpen={showMacBeTongModal}
+        onClose={() => setShowMacBeTongModal(false)}
+        title="Thêm mác bê tông mới"
+        footer={
+          <>
+            <button className="btn btn-cancel" onClick={() => setShowMacBeTongModal(false)} disabled={newMacLoading}>Hủy</button>
+            <button className="btn btn-save" onClick={handleAddMacBeTong} disabled={newMacLoading}>
+              {newMacLoading ? 'Đang lưu...' : 'Thêm mới'}
+            </button>
+          </>
+        }
+      >
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Tên mác *</label>
+          <input className={styles.formInput} value={newMacBeTong.tenMac}
+            onChange={(e) => setNewMacBeTong({ ...newMacBeTong, tenMac: e.target.value })} placeholder="VD: M300" autoFocus />
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Đơn giá (VNĐ)</label>
+          <input className={styles.formInput} value={newMacBeTong.donGia}
+            onChange={(e) => setNewMacBeTong({ ...newMacBeTong, donGia: formatInputCurrency(e.target.value) })} placeholder="VD: 1.500.000" />
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Mô tả</label>
+          <input className={styles.formInput} value={newMacBeTong.moTa}
+            onChange={(e) => setNewMacBeTong({ ...newMacBeTong, moTa: e.target.value })} placeholder="Mô tả mác bê tông (tùy chọn)" />
         </div>
       </Modal>
 

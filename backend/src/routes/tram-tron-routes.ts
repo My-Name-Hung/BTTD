@@ -136,18 +136,19 @@ router.get(
   },
 );
 
-// Lấy chi tiết đơn hàng - đơn có lịch sản xuất (chỉ trạm của user, admin xem tất cả)
+// Lấy chi tiết đơn hàng - đơn có lịch sản xuất (tram_tron, dieu_phoi, admin)
 router.get(
   "/don-hang/:id",
   authMiddleware,
-  requireRole("tram_tron", "admin"),
+  requireRole("tram_tron", "admin", "dieu_phoi"),
   async (req: AuthRequest, res: Response) => {
     try {
       const idDonHang = parseInt(req.params.id, 10);
       const isAdmin = req.user?.vaiTro?.replace(/_/g, '').toLowerCase() === 'admin';
+      const isDieuPhoi = req.user?.vaiTro === 'dieu_phoi';
 
-      // Nếu không phải admin, kiểm tra quyền trạm
-      if (!isAdmin) {
+      // Nếu không phải admin hoặc dieu_phoi, kiểm tra quyền trạm
+      if (!isAdmin && !isDieuPhoi) {
         const idTram = req.user?.idTramTron ?? null;
 
         if (!idTram) {
@@ -189,7 +190,7 @@ router.get(
         return;
       }
 
-      // Admin: xem đơn hàng bất kỳ
+      // Admin và dieu_phoi: xem đơn hàng bất kỳ
       const lichSanXuatList = await query<any[]>(
         `SELECT ls.*,
               nd.hoTen as tenTaiXe
