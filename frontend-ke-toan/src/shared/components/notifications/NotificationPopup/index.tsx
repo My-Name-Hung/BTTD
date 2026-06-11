@@ -29,11 +29,11 @@ export function NotificationPopup({
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onSkipAll ? onSkipAll() : onClose();
+      if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose, onSkipAll]);
+  }, [onClose]);
 
   const icon = NOTIFICATION_TYPE_ICONS[notification.loai] || '🔔';
   const timeAgo = formatTimeAgo(notification.ngayTao);
@@ -61,8 +61,8 @@ export function NotificationPopup({
           </div>
           <button
             className="notif-modal__close"
-            onClick={onSkipAll ? onSkipAll : onClose}
-            aria-label="Đóng thông báo"
+            onClick={onSkipAll}
+            aria-label="Bỏ qua tất cả thông báo"
           >
             <FiX size={18} />
           </button>
@@ -80,7 +80,7 @@ export function NotificationPopup({
         <div className="notif-modal__footer">
           <button
             className="btn btn-cancel"
-            onClick={onSkipAll ? onSkipAll : onClose}
+            onClick={onClose}
           >
             Đóng
           </button>
