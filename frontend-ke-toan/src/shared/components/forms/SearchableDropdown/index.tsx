@@ -32,7 +32,8 @@ export function SearchableDropdown({
   const selected = options.find((o) => String(o.id) === String(value));
 
   const filtered = options.filter((o) =>
-    o.label.toLowerCase().includes(search.toLowerCase())
+    o.label.toLowerCase().includes(search.toLowerCase()) ||
+    (o.subLabel && o.subLabel.toLowerCase().includes(search.toLowerCase()))
   );
 
   useEffect(() => {

@@ -131,8 +131,8 @@
 }
 
 .filterDropdown {
-  min-width: 180px;
-  max-width: 200px;
+  min-width: 200px;
+  max-width: 240px;
   flex-shrink: 0;
 }
 
@@ -540,8 +540,8 @@
     display: none;
   }
   .filterDropdown {
-    min-width: 120px;
-    max-width: 120px;
+    min-width: 150px;
+    max-width: 150px;
   }
   .filterClearBtn {
     flex-shrink: 0;

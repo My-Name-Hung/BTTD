@@ -97,7 +97,7 @@ router.get(
 
         const data = await dbModule.query<any>(
           `SELECT dh.*, t.tenTram as tenTramTron,
-                  nd.maNhanVien as maNguoiTao, nd.hoTen as tenNguoiTao
+                  nd.tenDangNhap as maNguoiTao, nd.hoTen as tenNguoiTao
            FROM DonHang dh
            LEFT JOIN TramTron t ON dh.idTramTron = t.id
            LEFT JOIN NguoiDung nd ON dh.nguoiTaoId = nd.id
@@ -137,7 +137,7 @@ router.get(
 
         const data = await dbModule.query<any>(
           `SELECT dh.*, t.tenTram as tenTramTron,
-                  nd.maNhanVien as maNguoiTao, nd.hoTen as tenNguoiTao
+                  nd.tenDangNhap as maNguoiTao, nd.hoTen as tenNguoiTao
            FROM DonHang dh
            LEFT JOIN TramTron t ON dh.idTramTron = t.id
            LEFT JOIN NguoiDung nd ON dh.nguoiTaoId = nd.id
