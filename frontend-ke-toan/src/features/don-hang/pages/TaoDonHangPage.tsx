@@ -865,7 +865,7 @@ export default function TaoDonHangPage() {
             onChange={(e) => setNewKhachHang({ ...newKhachHang, mstCccd: e.target.value })} placeholder="VD: 012345678901 hoặc 079123456789" />
         </div>
         <div className={styles.formGroup}>
-          <label className={styles.formLabel}>�ịa chỉ</label>
+          <label className={styles.formLabel}>Địa chỉ</label>
           <input className={styles.formInput} value={newKhachHang.diaChi}
             onChange={(e) => setNewKhachHang({ ...newKhachHang, diaChi: e.target.value })} placeholder="VD: Số 123, Đường Nguyễn Huệ, TP.Cần Thơ" />
         </div>
