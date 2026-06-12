@@ -26,15 +26,17 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron', '
     const limit = parseInt(String(req.query.limit || '50'), 10);
     const offset = (page - 1) * limit;
 
-    const countResult = await query<{ total: number }>(
-      `SELECT COUNT(DISTINCT dh.id) as total FROM LichSanXuat ls
-       INNER JOIN DonHang dh ON ls.idDonHang = dh.id
-       WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')`,
-      {}
-    );
-    const total = countResult[0]?.total || 0;
+    // Lấy danh sách idDonHang có trạng thái phù hợp
+    const donHangQuery = `
+      SELECT DISTINCT dh.id as idDonHang
+      FROM DonHang dh
+      INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
+      WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
+    `;
+    const donHangIds = await query<{ idDonHang: number }>(donHangQuery, {});
+    const total = donHangIds.length;
 
-    // Lấy dữ liệu với tổng số khối đã trộn
+    // Lấy chi tiết từng dòng LichSanXuat (mỗi trạm trộn 1 dòng)
     const data = await query<any>(
       `SELECT 
         dh.id as idDonHang,
@@ -49,7 +51,7 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron', '
        LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
        LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
        WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
-       ORDER BY ls.ngayCapNhat DESC`,
+       ORDER BY dh.ngayTao DESC`,
       {}
     );
 
