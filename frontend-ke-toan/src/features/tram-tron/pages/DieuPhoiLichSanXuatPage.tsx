@@ -32,14 +32,75 @@ interface LichSanXuatItem {
   ghiChu?: string;
 }
 
+// Group nhiều trạm trộn vào 1 dòng theo idDonHang
+interface GroupedLichSanXuat {
+  idDonHang: number;
+  maDonHang?: string;
+  tenKhachHang?: string;
+  diaChiNhan?: string;
+  tenMacBeTong?: string;
+  khoiLuongDat?: number;
+  trangThaiDon?: string;
+  bienSoXe?: string;
+  tenTaiXe?: string;
+  ngayTao?: string;
+  tramTrons: {
+    id: number;
+    tenTram: string;
+    idLichSanXuat: number;
+    thoiGianTron?: string;
+    trangThai?: string;
+  }[];
+}
+
 type FilterMode = "ngay" | "thang" | "nam";
 
 function formatDate(d: string) {
   return d ? formatDateVN(d) : "";
 }
 
-function getFilterSourceDate(item: LichSanXuatItem) {
-  return item.thoiGianTron || item.thoiGianBatDauDo || item.thoiGianKetThucDo || item.ngayTao || "";
+function getFilterSourceDate(item: GroupedLichSanXuat) {
+  const firstTram = item.tramTrons[0];
+  return firstTram?.thoiGianTron || item.ngayTao || "";
+}
+
+// Group dữ liệu theo idDonHang - mỗi đơn hàng 1 dòng
+function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
+  const map = new Map<number, GroupedLichSanXuat>();
+
+  for (const item of items) {
+    if (!map.has(item.idDonHang)) {
+      map.set(item.idDonHang, {
+        idDonHang: item.idDonHang,
+        maDonHang: item.maDonHang,
+        tenKhachHang: item.tenKhachHang,
+        diaChiNhan: item.diaChiNhan,
+        tenMacBeTong: item.tenMacBeTong,
+        khoiLuongDat: item.khoiLuongDat,
+        trangThaiDon: item.trangThaiDon,
+        bienSoXe: item.bienSoXe,
+        tenTaiXe: item.tenTaiXe,
+        ngayTao: item.ngayTao,
+        tramTrons: [],
+      });
+    }
+
+    const group = map.get(item.idDonHang)!;
+
+    if (item.idTramTron && item.tenTram) {
+      if (!group.tramTrons.find(t => t.id === item.idTramTron)) {
+        group.tramTrons.push({
+          id: item.idTramTron,
+          tenTram: item.tenTram,
+          idLichSanXuat: item.id,
+          thoiGianTron: item.thoiGianTron,
+          trangThai: item.trangThai,
+        });
+      }
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 function parseLocalDateParts(d: string) {
@@ -122,8 +183,13 @@ export default function DieuPhoiLichSanXuatPage() {
     loadData();
   }, [navigate, loadData]);
 
+  // Group dữ liệu theo đơn hàng - mỗi đơn 1 dòng
+  const groupedData = useMemo(() => {
+    return groupByDonHang(data);
+  }, [data]);
+
   const filteredData = useMemo(() => {
-    let items = [...data];
+    let items = [...groupedData];
 
     if (filterMode === "ngay") {
       items = items.filter(
@@ -166,7 +232,7 @@ export default function DieuPhoiLichSanXuatPage() {
     });
 
     return items;
-  }, [data, filterMode, filterValue, maDonFilter, tenKhachFilter]);
+  }, [groupedData, filterMode, filterValue, maDonFilter, tenKhachFilter]);
 
   const stats = useMemo(() => {
     const choSanXuat = filteredData.filter(
@@ -427,7 +493,7 @@ export default function DieuPhoiLichSanXuatPage() {
                   const trangThai = item.trangThaiDon || "cho_duyet";
                   const canEdit = isEditable(item);
                   return (
-                    <tr key={item.id}>
+                    <tr key={item.idDonHang}>
                       <td>
                         <span className={styles.tableCode}>
                           {item.maDonHang || `#${item.idDonHang}`}
@@ -465,9 +531,13 @@ export default function DieuPhoiLichSanXuatPage() {
                         </span>
                       </td>
                       <td className={styles.hideOnMobile}>
-                        <span className={styles.tableXe}>
-                          {item.tenTram || "—"}
-                        </span>
+                        <div className={styles.tramTagsWrap}>
+                          {item.tramTrons.map((tram) => (
+                            <span key={tram.id} className={styles.tramTag}>
+                              {tram.tenTram}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className={styles.hideOnMobile}>
                         <span className={styles.tableXe}>

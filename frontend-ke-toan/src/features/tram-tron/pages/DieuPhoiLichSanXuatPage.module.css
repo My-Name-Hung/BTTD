@@ -125,6 +125,26 @@
   white-space: nowrap;
 }
 
+/* Trạm trộn tags - hiển thị nhiều trạm trên 1 dòng */
+.tramTagsWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.tramTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(7, 60, 235, 0.08);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
 /* ── Row Actions ── */
 .rowActions {
   display: flex;
