@@ -94,7 +94,7 @@ router.get(
         `SELECT COUNT(*) as total FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
        WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
-         AND (ls.idTramTron = @idTram OR dh.idTramTron = @idTram)`,
+         AND ls.idTramTron = @idTram`,
         { idTram },
       );
       const total = countResult[0]?.total || 0;
@@ -109,7 +109,7 @@ router.get(
        LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
        LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
        WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
-         AND (ls.idTramTron = @idTram OR dh.idTramTron = @idTram)
+         AND ls.idTramTron = @idTram
        ORDER BY ls.ngayCapNhat DESC
        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
         { offset, limit, idTram },

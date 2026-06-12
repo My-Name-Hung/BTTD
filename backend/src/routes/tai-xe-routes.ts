@@ -297,7 +297,7 @@ router.put(
       } else if (req.body.trangThai === "da_giao") {
         // Tài xế xác nhận đã giao: dang_giao -> da_giao
         if (donHang[0].trangThaiDon !== "dang_giao") {
-          res.status(400).json({ success: false, message: "Đơn hàng không ở trạng thái đang giao" });
+          res.status(400).json({ success: false, message: "�ơn hàng không ở trạng thái đang giao" });
           return;
         }
         const updated = await xacNhanGiaoThanhCong(idDonHang, khoiLuongThucTe);
@@ -322,6 +322,142 @@ router.put(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Lỗi cập nhật trạng thái giao";
+      res.status(500).json({ success: false, message });
+    }
+  },
+);
+
+/** Tài xế hoặc kỹ thuật báo trộn lại - đơn về bước tạo lịch sản xuất */
+router.post(
+  "/tron-lai/:idDonHang",
+  authMiddleware,
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Chưa đăng nhập" });
+        return;
+      }
+
+      const idDonHang = parseInt(req.params.idDonHang, 10);
+      const { lyDo } = req.body;
+
+      if (!lyDo || lyDo.trim() === "") {
+        res.status(400).json({ success: false, message: "Vui lòng nhập lý do trộn lại" });
+        return;
+      }
+
+      const donHang = await query<any>(`SELECT * FROM DonHang WHERE id = @id`, {
+        id: idDonHang,
+      });
+
+      if (donHang.length === 0) {
+        res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
+        return;
+      }
+
+      // Kiểm tra đơn đang ở trạng thái đang giao
+      if (donHang[0].trangThaiDon !== "dang_giao") {
+        res.status(400).json({ success: false, message: "Chỉ có thể trộn lại khi đơn đang ở trạng thái đang giao" });
+        return;
+      }
+
+      // Kiểm tra quyền: admin, ky_thuat, hoặc tài xế được giao đơn này
+      const isAdmin = req.user.vaiTro === 'admin';
+      const isKyThuat = req.user.vaiTro === 'ky_thuat';
+      if (!isAdmin && !isKyThuat) {
+        const ls = await query<any>(
+          `SELECT ls.*, xe.idTaiKhoan FROM LichSanXuat ls
+           INNER JOIN Xe xe ON ls.idXe = xe.id
+           WHERE ls.idDonHang = @idDonHang`,
+          { idDonHang }
+        );
+        if (ls.length === 0 || ls[0].idTaiKhoan !== req.user.id) {
+          res.status(403).json({ success: false, message: "Bạn không có quyền thực hiện thao tác này" });
+          return;
+        }
+      }
+
+      // Lưu lịch sử trả lại
+      await query(
+        `INSERT INTO LichSuTraLai (idDonHang, lyDo, idNguoiTra, hoTen, vaiTro)
+         VALUES (@idDonHang, @lyDo, @idNguoiTra, @hoTen, @vaiTro)`,
+        {
+          idDonHang,
+          lyDo: lyDo.trim(),
+          idNguoiTra: req.user.id,
+          hoTen: req.user.hoTen,
+          vaiTro: req.user.vaiTro,
+        }
+      );
+
+      // Cập nhật trạng thái đơn về dang_san_xuat (quay về bước tạo lịch sản xuất)
+      await query(
+        `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
+        { id: idDonHang }
+      );
+
+      // Ghi nhật ký
+      const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+      await ghiNhatKy(req.user.id, 'TRON_LAI', 'DonHang', idDonHang,
+        JSON.stringify({ trangThaiDon: 'dang_giao' }),
+        JSON.stringify({ trangThaiDon: 'dang_san_xuat', lyDo }),
+        ip);
+
+      // Thông báo cho điều phối
+      guiThongBao("ORDER_RETURNED", {
+        id: idDonHang,
+        maDonHang: donHang[0].maDonHang,
+        lyDo,
+        nguoiTra: req.user.hoTen,
+      });
+
+      const updated = (
+        await query<any>(`SELECT * FROM DonHang WHERE id = @id`, {
+          id: idDonHang,
+        })
+      )[0];
+
+      res.json({
+        success: true,
+        message: "Đã ghi nhận trộn lại. Đơn hàng quay về bước tạo lịch sản xuất.",
+        data: updated,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Lỗi trộn lại đơn hàng";
+      res.status(500).json({ success: false, message });
+    }
+  },
+);
+
+/** Lấy lịch sử trả lại của một đơn hàng */
+router.get(
+  "/lich-su-tra-lai/:idDonHang",
+  authMiddleware,
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Chưa đăng nhập" });
+        return;
+      }
+
+      const idDonHang = parseInt(req.params.idDonHang, 10);
+
+      const lichSu = await query<any>(
+        `SELECT * FROM LichSuTraLai
+         WHERE idDonHang = @idDonHang
+         ORDER BY ngayTra DESC`,
+        { idDonHang }
+      );
+
+      res.json({
+        success: true,
+        message: "Lấy lịch sử trả lại thành công",
+        data: lichSu,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Lỗi lấy lịch sử trả lại";
       res.status(500).json({ success: false, message });
     }
   },

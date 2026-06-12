@@ -6,17 +6,19 @@ import {
   FiNavigation,
   FiPackage,
   FiPhone,
+  FiRefreshCw,
   FiSearch,
   FiTruck,
   FiX,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { ConfirmModal, Loading } from "../../../shared/components/Common";
+import { ConfirmModal, Loading, Modal } from "../../../shared/components/Common";
 import { useAuth, useToast, usePageRole } from "../../../shared/hooks";
 import {
   layDonHangDaGiao,
   layDonHangGiaoCuaToi,
   taiXeCapNhatTrangThaiGiao,
+  taiXeTronLai,
   layThongKeTaiXe,
 } from "../../../shared/services/api";
 import { DonHang } from "../../../shared/types";
@@ -53,6 +55,12 @@ export default function TaiXeGiaoHangPage() {
   // Confirm state
   const [updating, setUpdating] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<DonHang | null>(null);
+
+  // Trộn lại modal state
+  const [tronLaiModalOpen, setTronLaiModalOpen] = useState(false);
+  const [tronLaiTarget, setTronLaiTarget] = useState<DonHang | null>(null);
+  const [lyDoTronLai, setLyDoTronLai] = useState("");
+  const [tronLaiLoading, setTronLaiLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -132,6 +140,29 @@ export default function TaiXeGiaoHangPage() {
       showToast(err instanceof Error ? err.message : "Lỗi xác nhận giao", "error");
     } finally {
       setUpdating(null);
+    }
+  };
+
+  // Mở modal trộn lại
+  const handleOpenTronLai = (dh: DonHang) => {
+    setTronLaiTarget(dh);
+    setLyDoTronLai("");
+    setTronLaiModalOpen(true);
+  };
+
+  // Xác nhận trộn lại
+  const handleTronLai = async () => {
+    if (!tronLaiTarget || !lyDoTronLai.trim()) return;
+    setTronLaiLoading(true);
+    try {
+      await taiXeTronLai(tronLaiTarget.id, lyDoTronLai.trim());
+      showToast("Đã ghi nhận trộn lại. Đơn quay về bước tạo lịch sản xuất.");
+      setTronLaiModalOpen(false);
+      loadData();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Lỗi trộn lại", "error");
+    } finally {
+      setTronLaiLoading(false);
     }
   };
 
@@ -344,19 +375,28 @@ export default function TaiXeGiaoHangPage() {
                     Chi tiết
                   </button>
                   {isDangGiao && dh.trangThaiDon === "dang_giao" && (
-                    <button
-                      className={styles.btnDaGiao}
-                      onClick={() => setConfirmTarget(dh)}
-                      disabled={updating === dh.id}
-                    >
-                      {updating === dh.id ? (
-                        "..."
-                      ) : (
-                        <>
-                          <FiCheck size={14} /> Đã giao
-                        </>
-                      )}
-                    </button>
+                    <>
+                      <button
+                        className={`${styles.btnDaGiao} ${styles.btnTronLai}`}
+                        onClick={() => handleOpenTronLai(dh)}
+                        disabled={updating === dh.id}
+                      >
+                        <FiRefreshCw size={14} /> Trộn lại
+                      </button>
+                      <button
+                        className={styles.btnDaGiao}
+                        onClick={() => setConfirmTarget(dh)}
+                        disabled={updating === dh.id}
+                      >
+                        {updating === dh.id ? (
+                          "..."
+                        ) : (
+                          <>
+                            <FiCheck size={14} /> Đã giao
+                          </>
+                        )}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -376,6 +416,71 @@ export default function TaiXeGiaoHangPage() {
         onClose={() => setConfirmTarget(null)}
         loading={updating !== null}
       />
+
+      {/* Modal Trộn lại */}
+      <Modal
+        isOpen={tronLaiModalOpen}
+        onClose={() => setTronLaiModalOpen(false)}
+        title={`Trộn lại - ${tronLaiTarget?.maDonHang}`}
+        footer={
+          <>
+            <button
+              className="btn btn-cancel"
+              onClick={() => setTronLaiModalOpen(false)}
+              disabled={tronLaiLoading}
+            >
+              Hủy
+            </button>
+            <button
+              className="btn btn-save"
+              onClick={handleTronLai}
+              disabled={!lyDoTronLai.trim() || tronLaiLoading}
+            >
+              {tronLaiLoading ? "Đang xử lý..." : "Xác nhận trộn lại"}
+            </button>
+          </>
+        }
+      >
+        <div style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 16 }}>
+            Đơn hàng sẽ được trả về bước <strong>tạo lịch sản xuất</strong>. Vui lòng nhập lý do trộn lại.
+          </p>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>
+              Lý do trộn lại <span style={{ color: "var(--color-danger)" }}>*</span>
+            </label>
+            <textarea
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid var(--color-border)",
+                borderRadius: 8,
+                fontSize: 14,
+                fontFamily: "inherit",
+                resize: "vertical",
+                minHeight: 100,
+                boxSizing: "border-box",
+              }}
+              value={lyDoTronLai}
+              onChange={(e) => setLyDoTronLai(e.target.value)}
+              placeholder="VD: Bê tông bị lỗi, cần trộn lại đơn mới..."
+              autoFocus
+            />
+          </div>
+          <div
+            style={{
+              padding: "10px 12px",
+              background: "rgba(234, 88, 12, 0.08)",
+              border: "1px solid rgba(234, 88, 12, 0.3)",
+              borderRadius: 8,
+              fontSize: 12,
+              color: "#ea580c",
+            }}
+          >
+            <strong>Lưu ý:</strong> Sau khi trộn lại, đơn hàng sẽ quay về bước điều phối để tạo lịch sản xuất mới.
+          </div>
+        </div>
+      </Modal>
 
       <div className={styles.toastContainer}>
         {toasts.map((t) => (

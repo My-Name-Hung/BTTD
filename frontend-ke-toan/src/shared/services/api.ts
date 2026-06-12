@@ -1169,6 +1169,33 @@ export async function taiXeCapNhatTrangThaiGiao(
   });
 }
 
+// Tài xế/kỹ thuật báo trộn lại - đơn quay về bước tạo lịch sản xuất
+export async function taiXeTronLai(
+  idDonHang: number,
+  lyDo: string,
+): Promise<DonHang> {
+  return request<DonHang>(`/tai-xe/tron-lai/${idDonHang}`, {
+    method: "POST",
+    body: JSON.stringify({ lyDo }),
+  });
+}
+
+// Lấy lịch sử trả lại của đơn hàng
+export async function layLichSuTraLai(
+  idDonHang: number,
+): Promise<Array<{
+  id: number;
+  idDonHang: number;
+  lyDo: string;
+  idNguoiTra: number;
+  hoTen: string;
+  vaiTro: string;
+  ngayTra: string;
+  daXuLy: boolean;
+}>> {
+  return request<any>(`/tai-xe/lich-su-tra-lai/${idDonHang}`);
+}
+
 // Tài xế thống kê đơn hàng
 export async function layThongKeTaiXe(): Promise<{
   tongDon: number;

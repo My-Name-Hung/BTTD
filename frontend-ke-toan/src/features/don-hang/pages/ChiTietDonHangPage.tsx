@@ -15,6 +15,7 @@ import {
   FiFileText,
   FiPackage,
   FiPrinter,
+  FiRefreshCw,
   FiTrash2,
   FiTruck,
   FiUpload,
@@ -38,6 +39,7 @@ import {
   uploadBangChungDonHang,
   uploadBangChungCamera,
   xoaBangChungDonHang,
+  layLichSuTraLai,
 } from "../../../shared/services/api";
 import { buildFileUrl } from "../../../shared/utils";
 import {
@@ -174,6 +176,16 @@ export default function ChiTietDonHangPage() {
   const [nghiemThu, setNghiemThu] = useState<NghiemThu | null>(null);
   const [hoaDons, setHoaDons] = useState<HoaDon[]>([]);
   const [bangChungs, setBangChungs] = useState<BangChungDonHang[]>([]);
+  const [lichSuTraLai, setLichSuTraLai] = useState<Array<{
+    id: number;
+    idDonHang: number;
+    lyDo: string;
+    idNguoiTra: number;
+    hoTen: string;
+    vaiTro: string;
+    ngayTra: string;
+    daXuLy: boolean;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [rejectLoading, setRejectLoading] = useState(false);
   const [approveLoading, setApproveLoading] = useState(false);
@@ -220,18 +232,20 @@ export default function ChiTietDonHangPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const [dh, lsArr, ntArr, hdArr, bcArr] = await Promise.all([
+      const [dh, lsArr, ntArr, hdArr, bcArr, lsTraLaiArr] = await Promise.all([
         layDonHang(parseInt(id)),
         layLichSanXuat(parseInt(id)),
         layNghiemThu(parseInt(id)),
         layHoaDonTheoDonHang(parseInt(id)),
         layBangChungDonHang(parseInt(id)),
+        layLichSuTraLai(parseInt(id)),
       ]);
       setDonHang(dh);
       setLichSX(lsArr[0] || null);
       setNghiemThu(ntArr || null);
       setHoaDons(hdArr || []);
       setBangChungs(bcArr || []);
+      setLichSuTraLai(lsTraLaiArr || []);
     } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
     } finally {
@@ -921,6 +935,89 @@ export default function ChiTietDonHangPage() {
           </div>
         )}
       </div>
+
+      {/* Lịch sử trả lại (trộn lại) */}
+      {lichSuTraLai.length > 0 && (
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitle}>
+              <div
+                className={`${styles.sectionAccent} ${styles.sectionAccentOrange}`}
+              />
+              <FiRefreshCw
+                size={16}
+                style={{ color: "#ea580c" }}
+              />
+              Lịch sử trả lại (Trộn lại)
+            </div>
+          </div>
+          <div style={{ padding: "8px 0" }}>
+            {lichSuTraLai.map((item, idx) => (
+              <div
+                key={item.id}
+                style={{
+                  padding: "12px",
+                  background: "rgba(234, 88, 12, 0.04)",
+                  border: "1px solid rgba(234, 88, 12, 0.15)",
+                  borderRadius: 8,
+                  marginBottom: idx < lichSuTraLai.length - 1 ? 8 : 0,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <div>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "3px 10px",
+                        borderRadius: 20,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        background: "rgba(234, 88, 12, 0.12)",
+                        color: "#ea580c",
+                      }}
+                    >
+                      Lần trả {lichSuTraLai.length - idx}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+                    {item.ngayTra ? new Date(item.ngayTra).toLocaleString("vi-VN") : ""}
+                  </span>
+                </div>
+                <div style={{ marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>
+                    Người trả lại:
+                  </span>{" "}
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>
+                    {item.hoTen || "—"}
+                  </span>
+                  <span style={{ fontSize: 11, color: "var(--color-text-secondary)", marginLeft: 8 }}>
+                    ({item.vaiTro === 'ky_thuat' ? 'Kỹ thuật' : item.vaiTro === 'tai_xe' ? 'Tài xế' : item.vaiTro || "—"})
+                  </span>
+                </div>
+                <div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>
+                    Lý do:
+                  </span>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      padding: "8px 10px",
+                      background: "white",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: 6,
+                      fontSize: 13,
+                    }}
+                  >
+                    {item.lyDo}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Nghiệm thu — chỉ hiện khi đã có record nghiệm thu */}
       {nghiemThu && (

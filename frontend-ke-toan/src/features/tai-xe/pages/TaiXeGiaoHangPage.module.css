@@ -411,6 +411,18 @@
 .btnDaGiao:hover:not(:disabled) { background: #062db8; }
 .btnDaGiao:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Nút trộn lại */
+.btnTronLai {
+  background: rgba(234, 88, 12, 0.08);
+  color: #ea580c;
+  border: 1.5px solid rgba(234, 88, 12, 0.3);
+  flex: 1;
+}
+
+.btnTronLai:hover:not(:disabled) {
+  background: rgba(234, 88, 12, 0.15);
+}
+
 /* Empty state */
 .emptyState {
   display: flex;

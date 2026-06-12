@@ -17,6 +17,9 @@ export async function runMigrations(): Promise<void> {
     // 3. Thêm cột giaNiemYet vào DonHang nếu chưa có
     await migrateDonHangGiaNiemYet();
 
+    // 4. Tạo bảng LichSuTraLai nếu chưa có
+    await migrateLichSuTraLai();
+
     console.log('[Migration] Hoàn tất migrations.');
   } catch (error) {
     console.error('[Migration] Lỗi khi chạy migrations:', error);
@@ -93,5 +96,42 @@ async function migrateDonHangGiaNiemYet(): Promise<void> {
     }
   } catch (error) {
     console.error('[Migration] Lỗi migrate DonHang.giaNiemYet:', error);
+  }
+}
+
+/**
+ * Tạo bảng LichSuTraLai nếu chưa có
+ */
+async function migrateLichSuTraLai(): Promise<void> {
+  try {
+    const tables = await query<{ TABLE_NAME: string }>(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+       WHERE TABLE_NAME = 'LichSuTraLai'`
+    );
+
+    if (tables.length === 0) {
+      console.log('[Migration] Tạo bảng LichSuTraLai...');
+      await query(`
+        CREATE TABLE LichSuTraLai (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          idDonHang INT NOT NULL,
+          lyDo NVARCHAR(500) NOT NULL,
+          idNguoiTra INT,
+          hoTen NVARCHAR(100),
+          vaiTro NVARCHAR(50),
+          ngayTra DATETIME DEFAULT GETDATE(),
+          daXuLy BIT DEFAULT 0,
+          ngayXuLy DATETIME,
+          ghiChu NVARCHAR(MAX),
+          createdAt DATETIME DEFAULT GETDATE(),
+          updatedAt DATETIME
+        )
+      `);
+      console.log('[Migration] Đã tạo bảng LichSuTraLai.');
+    } else {
+      console.log('[Migration] Bảng LichSuTraLai đã tồn tại.');
+    }
+  } catch (error) {
+    console.error('[Migration] Lỗi migrate LichSuTraLai:', error);
   }
 }
