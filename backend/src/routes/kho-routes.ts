@@ -20,7 +20,7 @@ interface LichSanXuatWithDonHang extends LichSanXuat {
 }
 
 // Lấy danh sách lịch sản xuất - tất cả đơn có lịch sản xuất (dang_san_xuat, dang_giao, da_giao)
-router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponseWithPagination<LichSanXuatWithDonHang>>) => {
+router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron', 'dieu_phoi', 'kho'), async (req: AuthRequest, res: Response<ApiResponseWithPagination<LichSanXuatWithDonHang>>) => {
   try {
     const page = parseInt(String(req.query.page || '1'), 10);
     const limit = parseInt(String(req.query.limit || '50'), 10);
@@ -66,7 +66,7 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron', '
 });
 
 // Lấy chi tiết đơn hàng - đơn có lịch sản xuất (bất kỳ trạng thái nào)
-router.get('/don-hang/:id', authMiddleware, requireRole('admin', 'tram_tron'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.get('/don-hang/:id', authMiddleware, requireRole('admin', 'tram_tron', 'kho', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.id, 10);
 
@@ -95,7 +95,7 @@ router.get('/don-hang/:id', authMiddleware, requireRole('admin', 'tram_tron'), a
 });
 
 // Xác nhận sản xuất xong - kho xác nhận đã sản xuất xong (dang_san_xuat -> dang_giao hoặc giữ nguyên nếu còn khối lại)
-router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('admin', 'tram_tron', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('admin', 'tram_tron', 'dieu_phoi', 'kho'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const { khoiLuongDaTron, ngayGioDo, idXe, bienSoXe, ghiChuXe } = req.body;
@@ -217,7 +217,7 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
 });
 
 // Xác nhận giao hàng thành công - kho xác nhận đã giao xong (dang_giao -> da_giao)
-router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('admin', 'tram_tron'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('admin', 'tram_tron', 'kho'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const { khoiLuongThucTe } = req.body;

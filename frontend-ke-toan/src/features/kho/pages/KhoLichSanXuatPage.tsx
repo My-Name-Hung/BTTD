@@ -3,7 +3,7 @@ import { FiCheck, FiClock, FiDownload, FiEye, FiPackage, FiTruck } from "react-i
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
-import { exportLichSanXuat, layLichSanXuatTramTron } from "../../../shared/services/api";
+import { exportLichSanXuat, layLichSanXuatKho } from "../../../shared/services/api";
 import { TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../../../shared/types";
 import styles from "./KhoLichSanXuatPage.module.css";
 import { formatDateVN } from "../../../shared/utils/dateUtils";
@@ -174,7 +174,7 @@ export default function KhoLichSanXuatPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await layLichSanXuatTramTron();
+      const res = await layLichSanXuatKho();
       // Lưu raw data để dùng cho filter dropdown
       setData(res || []);
     } catch (err) {
