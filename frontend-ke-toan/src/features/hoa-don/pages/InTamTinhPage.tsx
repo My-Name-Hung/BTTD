@@ -160,9 +160,9 @@ export default function InTamTinhPage() {
               className={styles.companyLogo}
             />
             <div className={styles.companyName}>
-              CÔNG TY CP BÊ TÔNG TÂY ĐÔ
+              CÔNG TY CP BÊ TÔNG TÂY ĐÔ - MST: 1801286137
               <br />
-              Bến Tre, Việt Nam
+              Km 14, Quốc lộ 91, Phường Phước Thới, Tp. Cần Thơ, Việt Nam
             </div>
           </div>
           <div className={styles.headerRight}>
@@ -315,7 +315,9 @@ export default function InTamTinhPage() {
         </div>
 
         <div className={styles.invoiceFooter}>
-          Công ty CP Bê Tông Tây Đô · Bến Tre · Hotline: 1900 xxxx
+          Công ty CP Bê Tông Tây Đô
+          <br />
+          Km 14, Quốc lộ 91, Phường Phước Thới, Tp. Cần Thơ, Việt Nam
         </div>
       </div>
     </div>
