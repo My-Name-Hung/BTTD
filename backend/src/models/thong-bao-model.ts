@@ -96,7 +96,7 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, (data: Record<strin
     noiDung: `Xe ${d.bienSoXe || ''} đã giao xong đơn hàng ${d.maDonHang || ''}.`,
   }),
   PRODUCTION_SCHEDULED: (d) => ({
-    tieuDe: 'Có đơn hàng cần giao',
+    tieuDe: 'Có đơn hàng cần sản xuất',
     noiDung: `Điều phối đã tạo lịch sản xuất cho đơn hàng ${d.maDonHang || ''} (${d.tenKhachHang || ''}). Khối lượng: ${d.khoiLuong || 0}m³.`,
   }),
   DELIVERY_STARTED: (d) => ({
