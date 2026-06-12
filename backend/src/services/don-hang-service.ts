@@ -176,8 +176,17 @@ export async function suaDonHang(
 ): Promise<{ updated: DonHang; cu: Partial<DonHang> }> {
   const existing = await layDonHangTheoId(id);
 
-  if (existing.trangThaiDon !== "cho_duyet") {
-    throw new Error("Chỉ có thể sửa đơn hàng đang chờ giám đốc kinh doanh duyệt");
+  // Cho phép sửa ở mọi trạng thái trước khi nghiệm thu
+  const trangThaiChoPhepSua = [
+    "cho_duyet",
+    "cho_ke_toan_duyet",
+    "da_duyet",
+    "dang_san_xuat",
+    "dang_giao",
+    "da_giao",
+  ];
+  if (!trangThaiChoPhepSua.includes(existing.trangThaiDon)) {
+    throw new Error("Đơn hàng đã nghiệm thu hoặc thanh toán không thể sửa");
   }
 
   const cu: Partial<DonHang> = {

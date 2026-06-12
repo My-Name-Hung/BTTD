@@ -50,7 +50,11 @@ export default function TaoLichSanXuatPage() {
           layDanhSachTramTron(),
         ]);
         setXes(xeRes);
-        setTramTrons(tramRes);
+        // Loại bỏ trạm trùng lặp theo id
+        const uniqueTrams = tramRes.filter((t, idx, arr) =>
+          arr.findIndex((x) => x.id === t.id) === idx
+        );
+        setTramTrons(uniqueTrams);
 
         if (idDonHang) {
           const dhRes = await layDanhSachDonHang(1, 100, 'da_duyet');
@@ -143,6 +147,7 @@ export default function TaoLichSanXuatPage() {
 
       if (multiTramMode) {
         const payloadBase: Partial<LichSanXuat> = {
+          idDonHang: idDonHang!,
           idXe: form.idXe ? parseInt(form.idXe) : null,
           bienSoXe: xe?.bienSo || form.bienSoXe || null,
           kyThuatCongTrinh: form.kyThuatCongTrinh || null,
@@ -165,6 +170,7 @@ export default function TaoLichSanXuatPage() {
         }
       } else {
         const payload: Partial<LichSanXuat> = {
+          idDonHang: idDonHang!,
           idXe: form.idXe ? parseInt(form.idXe) : null,
           idTramTron: form.idTramTron ? parseInt(form.idTramTron) : null,
           bienSoXe: xe?.bienSo || form.bienSoXe || null,
@@ -296,7 +302,10 @@ export default function TaoLichSanXuatPage() {
                 checked={multiTramMode}
                 onChange={(e) => {
                   setMultiTramMode(e.target.checked);
-                  if (!e.target.checked) {
+                  if (e.target.checked) {
+                    // Mặc định chọn tất cả trạm khi bật chế độ nhiều trạm
+                    setSelectedTramIds(tramTrons.map((t) => t.id));
+                  } else {
                     setSelectedTramIds([]);
                   }
                 }}
