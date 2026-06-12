@@ -84,7 +84,7 @@ export default function KhoDonHangPage() {
   const { toasts, showToast } = useToast();
 
   const [donHang, setDonHang] = useState<DonHangData | null>(null);
-  const [lichSanXuat, setLichSanXuat] = useState<LichSanXuatData | null>(null);
+  const [lichSanXuatList, setLichSanXuatList] = useState<LichSanXuatData[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
@@ -94,7 +94,7 @@ export default function KhoDonHangPage() {
     try {
       const res = await layDonHangTramTron(parseInt(id));
       setDonHang(res.donHang);
-      setLichSanXuat(res.lichSanXuat);
+      setLichSanXuatList(Array.isArray(res.lichSanXuat) ? res.lichSanXuat : []);
     } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
     } finally {
@@ -179,7 +179,7 @@ export default function KhoDonHangPage() {
           {(trangThai === "dang_giao") && (
             <span className={styles.completedBadge}>
               <FiTruck size={16} />
-              {lichSanXuat?.tenTaiXe ? `Tài xế ${lichSanXuat.tenTaiXe} đang giao` : "Đang giao hàng"}
+              {lichSanXuatList[0]?.tenTaiXe ? `Tài xế ${lichSanXuatList[0].tenTaiXe} đang giao` : "Đang giao hàng"}
             </span>
           )}
           {trangThai === "da_giao" && (
@@ -357,13 +357,13 @@ export default function KhoDonHangPage() {
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Biển số xe</span>
             <span className={styles.infoValue}>
-              {lichSanXuat?.bienSoXe || "—"}
+              {lichSanXuatList[0]?.bienSoXe || "—"}
             </span>
           </div>
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Tài xế</span>
             <span className={styles.infoValue}>
-              {lichSanXuat?.tenTaiXe || "—"}
+              {lichSanXuatList[0]?.tenTaiXe || "—"}
             </span>
           </div>
         </div>

@@ -1047,8 +1047,8 @@ export async function layLichSanXuatTramTron(): Promise<any[]> {
 // Lấy chi tiết đơn hàng cho tram_tron (kèm lịch sx)
 export async function layDonHangTramTron(
   idDonHang: number,
-): Promise<{ donHang: any; lichSanXuat: any | null }> {
-  return request<{ donHang: any; lichSanXuat: any | null }>(
+): Promise<{ donHang: any; lichSanXuat: any[] }> {
+  return request<{ donHang: any; lichSanXuat: any[] }>(
     `/tram-tron/don-hang/${idDonHang}`,
   );
 }

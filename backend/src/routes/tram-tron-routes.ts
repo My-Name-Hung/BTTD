@@ -161,13 +161,13 @@ router.get(
           return;
         }
 
+        // Lấy tất cả lịch sản xuất của đơn hàng thuộc trạm này
         const lichSanXuatList = await query<any[]>(
           `SELECT ls.*,
                 nd.hoTen as tenTaiXe
          FROM LichSanXuat ls
-         INNER JOIN TramTron tt ON ls.idTramTron = tt.id
          LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
-         WHERE ls.idDonHang = @idDonHang AND tt.id = @idTram`,
+         WHERE ls.idDonHang = @idDonHang AND ls.idTramTron = @idTram`,
           { idDonHang, idTram },
         );
 
@@ -182,15 +182,16 @@ router.get(
         }
 
         const donHang = await layDonHangTheoId(idDonHang);
+        // Trả về tất cả lịch sản xuất của trạm này cho đơn hàng
         res.json({
           success: true,
           message: "Lấy chi tiết đơn hàng thành công",
-          data: { donHang, lichSanXuat: lichSanXuatList[0] },
+          data: { donHang, lichSanXuat: lichSanXuatList },
         });
         return;
       }
 
-      // Admin và dieu_phoi: xem đơn hàng bất kỳ
+      // Admin và dieu_phoi: xem đơn hàng bất kỳ - lấy tất cả lịch sản xuất
       const lichSanXuatList = await query<any[]>(
         `SELECT ls.*,
               nd.hoTen as tenTaiXe
@@ -212,7 +213,7 @@ router.get(
       res.json({
         success: true,
         message: "Lấy chi tiết đơn hàng thành công",
-        data: { donHang, lichSanXuat: lichSanXuatList[0] },
+        data: { donHang, lichSanXuat: lichSanXuatList },
       });
     } catch (error) {
       const message =
@@ -242,11 +243,11 @@ router.put(
         return;
       }
 
+      // Kiểm tra đơn hàng có lịch sản xuất thuộc trạm này
       const donHang = await query<{ trangThaiDon: string }>(
         `SELECT dh.trangThaiDon FROM DonHang dh
        INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-       INNER JOIN TramTron tt ON ls.idTramTron = tt.id
-       WHERE dh.id = @id AND tt.id = @idTram`,
+       WHERE dh.id = @id AND ls.idTramTron = @idTram`,
         { id: idDonHang, idTram },
       );
 
@@ -272,8 +273,8 @@ router.put(
       }
 
       const lichSanXuat = await query<LichSanXuat[]>(
-        `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang`,
-        { idDonHang },
+        `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron = @idTram`,
+        { idDonHang, idTram },
       );
 
       if (lichSanXuat.length === 0) {
@@ -281,7 +282,7 @@ router.put(
           .status(403)
           .json({
             success: false,
-            message: "Đơn hàng này không có lịch sản xuất",
+            message: "Đơn hàng này không có lịch sản xuất cho trạm của bạn",
           });
         return;
       }
@@ -345,11 +346,11 @@ router.put(
         return;
       }
 
+      // Kiểm tra đơn hàng có lịch sản xuất thuộc trạm này
       const donHang = await query<{ trangThaiDon: string }>(
         `SELECT dh.trangThaiDon FROM DonHang dh
        INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
-       INNER JOIN TramTron tt ON ls.idTramTron = tt.id
-       WHERE dh.id = @id AND tt.id = @idTram`,
+       WHERE dh.id = @id AND ls.idTramTron = @idTram`,
         { id: idDonHang, idTram },
       );
 
@@ -376,8 +377,8 @@ router.put(
       }
 
       const lichSanXuat = await query<LichSanXuat[]>(
-        `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang`,
-        { idDonHang },
+        `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron = @idTram`,
+        { idDonHang, idTram },
       );
 
       if (lichSanXuat.length === 0) {
@@ -385,7 +386,7 @@ router.put(
           .status(403)
           .json({
             success: false,
-            message: "Đơn hàng này không có lịch sản xuất",
+            message: "Đơn hàng này không có lịch sản xuất cho trạm của bạn",
           });
         return;
       }
