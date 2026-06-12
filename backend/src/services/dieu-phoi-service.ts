@@ -16,13 +16,13 @@ export async function taoLichSanXuat(
     throw new Error('Không tìm thấy đơn hàng');
   }
 
-  // Kiểm tra đã có lịch sản xuất chưa (tránh trùng lặp)
+  // Kiểm tra đã có lịch sản xuất cho TRẠM NÀY chưa (tránh trùng lặp)
   const existingLich = await query<{ id: number }>(
-    `SELECT id FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai != N'da_xong'`,
-    { idDonHang: data.idDonHang }
+    `SELECT id FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron = @idTramTron AND trangThai != N'da_xong'`,
+    { idDonHang: data.idDonHang, idTramTron: data.idTramTron }
   );
   if (existingLich.length > 0) {
-    throw new Error('Đơn hàng này đã có lịch sản xuất. Vui lòng cập nhật lịch hiện có hoặc hoàn thành lịch cũ trước khi tạo mới.');
+    throw new Error('Đơn hàng này đã có lịch sản xuất cho trạm trộn này. Vui lòng cập nhật lịch hiện có hoặc hoàn thành lịch cũ trước khi tạo mới.');
   }
 
   // Lấy idTramTron từ form (do người dùng chọn khi lên lịch SX)

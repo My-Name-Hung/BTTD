@@ -66,6 +66,11 @@ export default function TaoLichSanXuatPage() {
             setExistingLich(lich);
             const xe = xeRes.find((x: Xe) => x.id === lich.idXe);
             const tram = tramRes.find((t: TramTron) => t.id === lich.idTramTron);
+            // Set ALL trạm đã được chọn từ tất cả các lịch sản xuất
+            const allTramIds = lichs
+              .map((l: LichSanXuat) => l.idTramTron)
+              .filter((id: number) => id != null) as number[];
+            setSelectedTramIds([...new Set(allTramIds)]);
             setForm({
               idXe: lich.idXe ? String(lich.idXe) : '',
               bienSoXe: lich.bienSoXe || '',

@@ -533,9 +533,7 @@ export default function QuanLyDonHangPage() {
                       </td>
                       <td>
                         <span style={getBadgeStyle(dh.trangThaiDon)}>
-                          {dh.trangThaiDon === 'da_thanh_toan'
-                            ? 'Hoàn thành'
-                            : TRANG_THAI_DON_LABELS[dh.trangThaiDon]}
+                          {TRANG_THAI_DON_LABELS[dh.trangThaiDon] || dh.trangThaiDon}
                         </span>
                       </td>
                       <td>
@@ -656,14 +654,6 @@ export default function QuanLyDonHangPage() {
                     >
                       Ngày tạo
                     </th>
-                    {(isAdmin || isKeToan || isGDKD) && (
-                      <th
-                        className={styles.hideOnMobile}
-                        style={{ minWidth: 100 }}
-                      >
-                        Người tạo
-                      </th>
-                    )}
                     <th style={{ minWidth: 100 }}>Thao tác</th>
                   </tr>
                 </thead>
@@ -710,9 +700,7 @@ export default function QuanLyDonHangPage() {
                       </td>
                       <td>
                         <span style={getBadgeStyle(dh.trangThaiDon)}>
-                          {dh.trangThaiDon === 'da_thanh_toan'
-                            ? 'Hoàn thành'
-                            : TRANG_THAI_DON_LABELS[dh.trangThaiDon]}
+                          {TRANG_THAI_DON_LABELS[dh.trangThaiDon] || dh.trangThaiDon}
                         </span>
                       </td>
                       <td

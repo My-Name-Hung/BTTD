@@ -361,7 +361,6 @@ export const TRANG_THAI_DON_LABELS: Record<string, string> = {
   nghiem_thu: "Nghiệm thu",
   da_nghiem_thu: "Đã nghiệm thu",
   da_thanh_toan: "Đã thanh toán",
-  da_hoan_thanh: "Hoàn thành",
   hoan_thanh: "Hoàn thành",
 };
 
