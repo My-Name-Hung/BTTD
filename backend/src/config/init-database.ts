@@ -843,6 +843,28 @@ async function initDatabase(): Promise<void> {
         }
       }
 
+      // 5. LichSanXuat: thêm cột khoiLuongDaTron (số khối đã trộn của trạm)
+      const colKhoiLuongDaTron = await migReq.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('LichSanXuat') AND name = 'khoiLuongDaTron'`
+      );
+      if (colKhoiLuongDaTron.recordset.length === 0) {
+        await migReq.query(`ALTER TABLE LichSanXuat ADD khoiLuongDaTron DECIMAL(18,2) NULL`);
+        console.log("  ➕ Đã thêm cột khoiLuongDaTron vào LichSanXuat");
+      } else {
+        console.log("  ✅ Cột khoiLuongDaTron đã tồn tại trong LichSanXuat");
+      }
+
+      // 6. LichSanXuat: thêm cột ghiChuXe (ghi chú xe giao)
+      const colGhiChuXe = await migReq.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('LichSanXuat') AND name = 'ghiChuXe'`
+      );
+      if (colGhiChuXe.recordset.length === 0) {
+        await migReq.query(`ALTER TABLE LichSanXuat ADD ghiChuXe NVARCHAR(MAX) NULL`);
+        console.log("  ➕ Đã thêm cột ghiChuXe vào LichSanXuat");
+      } else {
+        console.log("  ✅ Cột ghiChuXe đã tồn tại trong LichSanXuat");
+      }
+
       await migPool.close();
       console.log("  ✅ Migrations hoàn tất!");
     } catch (error) {

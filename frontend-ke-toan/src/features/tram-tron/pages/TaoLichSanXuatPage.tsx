@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome } from 'react-icons/fi';
+import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome, FiAlertCircle } from 'react-icons/fi';
 import {
   layDanhSachXe, layDanhSachDonHang, layDanhSachTramTron,
   layLichSanXuat, taoLichSanXuat, capNhatLichSanXuat, xoaLichSanXuat,
@@ -26,14 +26,18 @@ export default function TaoLichSanXuatPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
 
-  // Lưu danh sách ID của các lịch sản xuất hiện có (để biết trạm nào đã có, trạm nào cần tạo mới)
-  const [existingLichMap, setExistingLichMap] = useState<Map<number, number>>(new Map()); // Map<tramId, lichId>
+  const [tongKhoiLuongDaTron, setTongKhoiLuongDaTron] = useState(0);
+  const [khoiLuongConLai, setKhoiLuongConLai] = useState(0);
+  const [daDuKhoi, setDaDuKhoi] = useState(false);
+
+  const [existingLichMap, setExistingLichMap] = useState<Map<number, number>>(new Map());
 
   const [form, setForm] = useState({
     idXe: '', bienSoXe: '',
     idTramTron: '', tenTramTron: '',
     kyThuatCongTrinh: '', nguoiOmOng: '', nguoiBatOng: '',
     ghiChu: '',
+    ghiChuXe: '',
   });
 
   const [initialForm, setInitialForm] = useState(form);
@@ -50,7 +54,6 @@ export default function TaoLichSanXuatPage() {
           layDanhSachTramTron(),
         ]);
         setXes(xeRes);
-        // Loại bỏ trạm trùng lặp theo id
         const uniqueTrams = tramRes.filter((t, idx, arr) =>
           arr.findIndex((x) => x.id === t.id) === idx
         );
@@ -64,14 +67,24 @@ export default function TaoLichSanXuatPage() {
           const lichs = await layLichSanXuat(idDonHang);
           if (lichs?.length) {
             const lich = lichs[0];
-            const xe = xeRes.find((x: Xe) => x.id === lich.idXe);
             const tram = tramRes.find((t: TramTron) => t.id === lich.idTramTron);
-            // Set ALL trạm đã được chọn từ tất cả các lịch sản xuất
+
+            const tongDaTron = lichs.reduce((sum: number, l: any) => {
+              return sum + (l.khoiLuongDaTron || 0);
+            }, 0);
+            const khoiLuongDat = found?.khoiLuongDat || 0;
+            const conLai = Math.max(0, khoiLuongDat - tongDaTron);
+            const duKhoi = conLai === 0;
+
+            setTongKhoiLuongDaTron(tongDaTron);
+            setKhoiLuongConLai(conLai);
+            setDaDuKhoi(duKhoi);
+
             const allTramIds = lichs
               .map((l: LichSanXuat) => l.idTramTron)
               .filter((id): id is number => id != null);
             setSelectedTramIds([...new Set(allTramIds)]);
-            // Build map: tramId -> lichId để biết trạm nào đã có lịch
+
             const lichMap = new Map<number, number>();
             lichs.forEach((l: LichSanXuat) => {
               if (l.idTramTron) {
@@ -79,6 +92,7 @@ export default function TaoLichSanXuatPage() {
               }
             });
             setExistingLichMap(lichMap);
+
             setForm({
               idXe: lich.idXe ? String(lich.idXe) : '',
               bienSoXe: lich.bienSoXe || '',
@@ -88,6 +102,7 @@ export default function TaoLichSanXuatPage() {
               nguoiOmOng: lich.nguoiOmOng || '',
               nguoiBatOng: lich.nguoiBatOng || '',
               ghiChu: lich.ghiChu || '',
+              ghiChuXe: (lich as any).ghiChuXe || '',
             });
             setInitialForm({
               idXe: lich.idXe ? String(lich.idXe) : '',
@@ -98,11 +113,14 @@ export default function TaoLichSanXuatPage() {
               nguoiOmOng: lich.nguoiOmOng || '',
               nguoiBatOng: lich.nguoiBatOng || '',
               ghiChu: lich.ghiChu || '',
+              ghiChuXe: (lich as any).ghiChuXe || '',
             });
           } else {
-            // Reset khi không có lịch nào
             setSelectedTramIds([]);
             setExistingLichMap(new Map());
+            setTongKhoiLuongDaTron(0);
+            setKhoiLuongConLai(found?.khoiLuongDat || 0);
+            setDaDuKhoi(false);
           }
         }
       } catch {
@@ -120,6 +138,10 @@ export default function TaoLichSanXuatPage() {
   };
 
   const handleMultiTramToggle = (tramId: number) => {
+    if (daDuKhoi && !selectedTramIds.includes(tramId)) {
+      showToast('Đơn hàng đã đủ khối lượng, không thể thêm trạm trộn mới', 'error');
+      return;
+    }
     setSelectedTramIds((prev) => {
       if (prev.includes(tramId)) {
         return prev.filter((id) => id !== tramId);
@@ -141,31 +163,22 @@ export default function TaoLichSanXuatPage() {
     try {
       const xe = xes.find((x) => x.id === parseInt(form.idXe));
 
-      // Lấy danh sách các tramId đã có lịch
       const existingTramIds = Array.from(existingLichMap.keys());
-      // Các tramId đang được chọn
       const selectedSet = new Set(selectedTramIds);
 
-      // 1. Xóa các trạm đã có lịch nhưng bị bỏ chọn
       const deletedTramIds: number[] = [];
       for (const tramId of existingTramIds) {
         if (!selectedSet.has(tramId)) {
-          // Trạm đã có nhưng bị bỏ chọn -> Xóa lịch sản xuất
           const lichId = existingLichMap.get(tramId)!;
-          console.log(`[DEBUG] Xóa lich ID ${lichId} của tram ${tramId}`);
           try {
             await xoaLichSanXuat(lichId);
-            console.log(`[DEBUG] Đã xóa thành công lich ID ${lichId}`);
             deletedTramIds.push(tramId);
           } catch (deleteErr) {
-            console.error(`[DEBUG] Lỗi xóa lich ID ${lichId}:`, deleteErr);
             throw deleteErr;
           }
         }
       }
 
-      // 2. Cập nhật các trạm đã có lịch và vẫn được chọn
-      const createdTramIds: number[] = [];
       for (const tramId of selectedTramIds) {
         if (existingLichMap.has(tramId)) {
           const lichId = existingLichMap.get(tramId)!;
@@ -181,7 +194,7 @@ export default function TaoLichSanXuatPage() {
         }
       }
 
-      // 3. Tạo mới các trạm chưa có lịch (sau khi đã xóa xong các trạm bị bỏ)
+      const createdTramIds: number[] = [];
       for (const tramId of selectedTramIds) {
         if (!existingLichMap.has(tramId)) {
           const payload: Partial<LichSanXuat> = {
@@ -194,25 +207,21 @@ export default function TaoLichSanXuatPage() {
             nguoiBatOng: form.nguoiBatOng || null,
             ghiChu: form.ghiChu || null,
           };
-          const newLich = await taoLichSanXuat(payload);
+          await taoLichSanXuat(payload);
           createdTramIds.push(tramId);
         }
       }
 
-      // Cập nhật state trực tiếp (không cần reload)
       const newSelectedTramIds = selectedTramIds.filter(id => !deletedTramIds.includes(id));
       const newLichMap = new Map<number, number>();
       
-      // Giữ lại các trạm vẫn được chọn và có lịch
       for (const tramId of newSelectedTramIds) {
         if (existingLichMap.has(tramId)) {
           newLichMap.set(tramId, existingLichMap.get(tramId)!);
         }
       }
       
-      // Thêm các trạm mới tạo (tạm thời dùng ID từ response hoặc 0)
       for (const tramId of createdTramIds) {
-        // Tìm ID của lịch vừa tạo bằng cách gọi API
         const lichs = await layLichSanXuat(idDonHang!);
         const newLich = lichs.find(l => l.idTramTron === tramId);
         if (newLich) {
@@ -220,7 +229,6 @@ export default function TaoLichSanXuatPage() {
         }
       }
       
-      console.log(`[DEBUG] Cập nhật state: selectedTramIds =`, newSelectedTramIds);
       setSelectedTramIds(newSelectedTramIds);
       setExistingLichMap(newLichMap);
       setInitialForm(form);
@@ -273,6 +281,31 @@ export default function TaoLichSanXuatPage() {
             <div className={styles.orderInfoTitle}>{donHang.maDonHang}</div>
             <div className={styles.orderInfoBadge}>{donHang.tenKhachHang}</div>
           </div>
+
+          {tongKhoiLuongDaTron > 0 && (
+            <div className={styles.khoiLuongInfo}>
+              <div className={styles.khoiLuongItem}>
+                <span className={styles.khoiLuongLabel}>Tổng đã trộn</span>
+                <span className={styles.khoiLuongValue} style={{ color: '#10b981' }}>
+                  {tongKhoiLuongDaTron} m³
+                </span>
+              </div>
+              <div className={styles.khoiLuongItem}>
+                <span className={styles.khoiLuongLabel}>Còn lại</span>
+                <span className={styles.khoiLuongValue} style={{ color: daDuKhoi ? '#10b981' : '#f59e0b' }}>
+                  {khoiLuongConLai} m³
+                </span>
+              </div>
+            </div>
+          )}
+
+          {daDuKhoi && (
+            <div className={styles.alertBox}>
+              <FiAlertCircle size={16} />
+              <span>Đơn hàng đã đủ khối lượng. Không thể thêm trạm trộn mới.</span>
+            </div>
+          )}
+
           <div className={styles.orderInfoGrid}>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Địa chỉ</span>
@@ -283,7 +316,7 @@ export default function TaoLichSanXuatPage() {
               <span className={styles.orderInfoValue}>{donHang.tenMacBeTong}</span>
             </div>
             <div className={styles.orderInfoItem}>
-              <span className={styles.orderInfoLabel}>Khối lượng</span>
+              <span className={styles.orderInfoLabel}>Khối lượng đặt</span>
               <span className={styles.orderInfoValue}>{donHang.khoiLuongDat} m³</span>
             </div>
             <div className={styles.orderInfoItem}>
@@ -298,7 +331,6 @@ export default function TaoLichSanXuatPage() {
 
       <div className={styles.card}>
         <form onSubmit={handleSubmit}>
-          {/* Chỉ hiển thị Thông tin xe giao khi đang sửa (đã có lịch) */}
           {existingLichMap.size > 0 && (
             <>
               <div className={styles.sectionTitle}>
@@ -330,7 +362,6 @@ export default function TaoLichSanXuatPage() {
                   />
                 </div>
               </div>
-
               <div className={styles.formDivider} />
             </>
           )}

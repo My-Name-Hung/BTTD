@@ -160,6 +160,8 @@ export interface LichSanXuat {
   thoiGianDenCangDat: Date | null;
   thoiGianBatDauDo: Date | null;
   thoiGianKetThucDo: Date | null;
+  khoiLuongDaTron: number | null; // Số khối đã trộn của trạm này
+  ghiChuXe: string | null; // Ghi chú xe giao
   ghiChu: string | null;
   driveLink: string | null;
   trangThai: "chua_san_xuat" | "dang_san_xuat" | "da_xong";

@@ -53,7 +53,7 @@ router.get(
       if (isAdmin) {
         // Admin xem tất cả - bao gồm cả đơn đã duyệt (đã lên lịch sx) và đang sản xuất, đang giao, đã giao
         const countResult = await query<{ total: number }>(
-          `SELECT COUNT(*) as total FROM LichSanXuat ls
+          `SELECT COUNT(DISTINCT dh.id) as total FROM LichSanXuat ls
          INNER JOIN DonHang dh ON ls.idDonHang = dh.id
          WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')`,
           {},
@@ -61,18 +61,21 @@ router.get(
         const total = countResult[0]?.total || 0;
 
         const data = await query<any[]>(
-          `SELECT ls.*,
-                nd.hoTen as tenTaiXe,
-                dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
-                ISNULL(tt.tenTram, N'Không xác định') as tenTram
+          `SELECT 
+              dh.id as idDonHang,
+              dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
+              ls.id, ls.idTramTron, ls.trangThai, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.ghiChuXe,
+              ISNULL(tt.tenTram, N'Không xác định') as tenTram,
+              nd.hoTen as tenTaiXe, ls.bienSoXe,
+              -- Tính tổng số khối đã trộn của tất cả trạm cho đơn này
+              (SELECT ISNULL(SUM(ls2.khoiLuongDaTron), 0) FROM LichSanXuat ls2 WHERE ls2.idDonHang = dh.id AND ls2.trangThai = N'da_xong') as tongKhoiLuongDaTron
          FROM LichSanXuat ls
          INNER JOIN DonHang dh ON ls.idDonHang = dh.id
          LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
          LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
          WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
-         ORDER BY ls.ngayCapNhat DESC
-         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
-          { offset, limit },
+         ORDER BY ls.ngayCapNhat DESC`,
+          {},
         );
 
         res.json({
@@ -91,7 +94,7 @@ router.get(
 
       // tram_tron chỉ xem đơn của trạm mình - bao gồm đã duyệt (đã lên lịch sx) và đang sản xuất, đang giao, đã giao
       const countResult = await query<{ total: number }>(
-        `SELECT COUNT(*) as total FROM LichSanXuat ls
+        `SELECT COUNT(DISTINCT dh.id) as total FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
        WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
          AND ls.idTramTron = @idTram`,
@@ -100,19 +103,22 @@ router.get(
       const total = countResult[0]?.total || 0;
 
       const data = await query<any[]>(
-        `SELECT ls.*,
-              nd.hoTen as tenTaiXe,
-              dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
-              ISNULL(tt.tenTram, N'Không xác định') as tenTram
-       FROM LichSanXuat ls
-       INNER JOIN DonHang dh ON ls.idDonHang = dh.id
-       LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
-       LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
-       WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
-         AND ls.idTramTron = @idTram
-       ORDER BY ls.ngayCapNhat DESC
-       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
-        { offset, limit, idTram },
+        `SELECT 
+            dh.id as idDonHang,
+            dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
+            ls.id, ls.idTramTron, ls.trangThai, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.ghiChuXe,
+            ISNULL(tt.tenTram, N'Không xác định') as tenTram,
+            nd.hoTen as tenTaiXe, ls.bienSoXe,
+            -- Tính tổng số khối đã trộn của tất cả trạm cho đơn này
+            (SELECT ISNULL(SUM(ls2.khoiLuongDaTron), 0) FROM LichSanXuat ls2 WHERE ls2.idDonHang = dh.id AND ls2.trangThai = N'da_xong') as tongKhoiLuongDaTron
+         FROM LichSanXuat ls
+         INNER JOIN DonHang dh ON ls.idDonHang = dh.id
+         LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
+         LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
+         WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
+           AND ls.idTramTron = @idTram
+         ORDER BY ls.ngayCapNhat DESC`,
+        { idTram },
       );
 
       res.json({

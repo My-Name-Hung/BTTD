@@ -20,28 +20,37 @@ interface LichSanXuatWithDonHang extends LichSanXuat {
 }
 
 // Lấy danh sách lịch sản xuất - tất cả đơn có lịch sản xuất (dang_san_xuat, dang_giao, da_giao)
-router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron'), async (req: AuthRequest, res: Response<ApiResponseWithPagination<LichSanXuatWithDonHang>>) => {
+router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponseWithPagination<LichSanXuatWithDonHang>>) => {
   try {
     const page = parseInt(String(req.query.page || '1'), 10);
     const limit = parseInt(String(req.query.limit || '50'), 10);
     const offset = (page - 1) * limit;
 
     const countResult = await query<{ total: number }>(
-      `SELECT COUNT(*) as total FROM LichSanXuat ls
+      `SELECT COUNT(DISTINCT dh.id) as total FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
        WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')`,
       {}
     );
     const total = countResult[0]?.total || 0;
 
-    const data = await query<LichSanXuatWithDonHang>(
-      `SELECT ls.*, dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao
+    // Lấy dữ liệu với tổng số khối đã trộn
+    const data = await query<any>(
+      `SELECT 
+        dh.id as idDonHang,
+        dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
+        ls.id, ls.idTramTron, ls.trangThai, ls.thoiGianTron, ls.thoiGianBatDauDo,
+        ISNULL(tt.tenTram, N'Không xác định') as tenTram,
+        nd.hoTen as tenTaiXe, ls.bienSoXe,
+        -- Tính tổng số khối đã trộn của tất cả trạm cho đơn này
+        (SELECT ISNULL(SUM(ls2.khoiLuongDaTron), 0) FROM LichSanXuat ls2 WHERE ls2.idDonHang = dh.id AND ls2.trangThai = N'da_xong') as tongKhoiLuongDaTron
        FROM LichSanXuat ls
        INNER JOIN DonHang dh ON ls.idDonHang = dh.id
+       LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
+       LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
        WHERE dh.trangThaiDon IN (N'dang_san_xuat', N'dang_giao', N'da_giao')
-       ORDER BY ls.ngayCapNhat DESC
-       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
-      { offset, limit }
+       ORDER BY ls.ngayCapNhat DESC`,
+      {}
     );
 
     res.json({
@@ -85,10 +94,11 @@ router.get('/don-hang/:id', authMiddleware, requireRole('admin', 'tram_tron'), a
   }
 });
 
-// Xác nhận sản xuất xong - kho xác nhận đã sản xuất xong (dang_san_xuat -> dang_giao)
-router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('admin', 'tram_tron'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+// Xác nhận sản xuất xong - kho xác nhận đã sản xuất xong (dang_san_xuat -> dang_giao hoặc giữ nguyên nếu còn khối lại)
+router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('admin', 'tram_tron', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
+    const { khoiLuongDaTron, ngayGioDo, idXe, bienSoXe, ghiChuXe } = req.body;
 
     // Kiểm tra đơn hàng tồn tại
     const donHang = await query<DonHang>(
@@ -107,21 +117,72 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('adm
       return;
     }
 
-    // Kiểm tra có lịch sản xuất không
-    const lichSanXuat = await query<LichSanXuat>(
-      `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang`,
-      { idDonHang }
-    );
+    // Lấy idTramTron của user (nếu có)
+    const idTram = req.user?.idTramTron ?? null;
 
-    if (lichSanXuat.length === 0) {
-      res.status(403).json({ success: false, message: 'Đơn hàng này không có lịch sản xuất' });
+    // Lấy lịch sản xuất của trạm này (hoặc tất cả nếu là admin/dieu_phoi)
+    let lichQuery = `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang`;
+    let lichParams: any = { idDonHang };
+    
+    if (!['admin', 'dieu_phoi'].includes(req.user?.vaiTro || '')) {
+      lichQuery += ` AND idTramTron = @idTram`;
+      lichParams.idTram = idTram;
+    }
+
+    const lichSanXuatList = await query<LichSanXuat>(lichQuery, lichParams);
+
+    if (lichSanXuatList.length === 0) {
+      res.status(403).json({ success: false, message: 'Đơn hàng này không có lịch sản xuất cho trạm của bạn' });
       return;
     }
 
-    // Cập nhật trạng thái sang dang_giao (đang giao hàng)
+    // Lấy lịch sản xuất đầu tiên để cập nhật
+    const lichCanCapNhat = lichSanXuatList[0];
+
+    // Cập nhật thông tin vào lịch sản xuất
     await query(
-      `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
-      { id: idDonHang }
+      `UPDATE LichSanXuat SET
+        khoiLuongDaTron = @khoiLuongDaTron,
+        thoiGianBatDauDo = @thoiGianBatDauDo,
+        idXe = @idXe,
+        bienSoXe = @bienSoXe,
+        ghiChuXe = @ghiChuXe,
+        trangThai = N'da_xong',
+        ngayCapNhat = ${vnNow()}
+       WHERE id = @id`,
+      {
+        id: lichCanCapNhat.id,
+        khoiLuongDaTron: khoiLuongDaTron || null,
+        thoiGianBatDauDo: ngayGioDo || null,
+        idXe: idXe || null,
+        bienSoXe: bienSoXe || null,
+        ghiChuXe: ghiChuXe || null,
+      }
+    );
+
+    // Tính tổng số khối đã trộn của TẤT CẢ các trạm cho đơn này
+    const tongKhoiLuongDaTron = await query<{ tong: number }>(
+      `SELECT ISNULL(SUM(khoiLuongDaTron), 0) as tong FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai = N'da_xong'`,
+      { idDonHang }
+    );
+
+    const tongDaTron = tongKhoiLuongDaTron[0]?.tong || 0;
+    const khoiLuongDat = donHang[0].khoiLuongDat || 0;
+    const conLai = khoiLuongDat - tongDaTron;
+
+    // Nếu còn khối lại > 0 → giữ nguyên trạng thái dang_san_xuat (cho phép thêm trạm khác)
+    // Nếu đủ khối (conLai <= 0) → chuyển sang dang_giao
+    let newTrangThai = 'dang_san_xuat';
+    let message = 'Đã xác nhận sản xuất xong cho trạm này. Còn ' + conLai + ' m³ chưa trộn.';
+
+    if (conLai <= 0) {
+      newTrangThai = 'dang_giao';
+      message = 'Đã xác nhận sản xuất xong. Chuyển sang trạng thái đang giao.';
+    }
+
+    await query(
+      `UPDATE DonHang SET trangThaiDon = @trangThai, ngayCapNhat = ${vnNow()} WHERE id = @id`,
+      { id: idDonHang, trangThai: newTrangThai }
     );
 
     const updatedDonHang = await layDonHangTheoId(idDonHang);
@@ -129,17 +190,26 @@ router.put('/xac-nhan-bat-dau-giao/:idDonHang', authMiddleware, requireRole('adm
     guiThongBao('ORDER_STATUS_CHANGED', {
       id: idDonHang,
       maDonHang: updatedDonHang.maDonHang,
-      trangThai: 'dang_giao',
-      trangThaiLabel: 'Đang giao',
+      trangThai: newTrangThai,
+      trangThaiLabel: newTrangThai === 'dang_giao' ? 'Đang giao' : 'Đang sản xuất',
     });
 
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
-    await ghiNhatKy(req.user?.id, 'XAC_NHAN', 'DonHang', idDonHang,
-      JSON.stringify({ trangThaiDon: 'dang_san_xuat' }),
-      JSON.stringify({ trangThaiDon: 'dang_giao' }),
+    await ghiNhatKy(req.user?.id, 'XAC_NHAN_SX_XONG', 'DonHang', idDonHang,
+      JSON.stringify({ khoiLuongDaTron }),
+      JSON.stringify({ trangThai: newTrangThai, conLai }),
       ip);
 
-    res.json({ success: true, message: 'Xác nhận sản xuất xong thành công', data: updatedDonHang });
+    res.json({ 
+      success: true, 
+      message, 
+      data: {
+        donHang: updatedDonHang,
+        tongKhoiLuongDaTron: tongDaTron,
+        khoiLuongConLai: Math.max(0, conLai),
+        daDuKhối: conLai <= 0
+      }
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận sản xuất xong';
     res.status(400).json({ success: false, message });
