@@ -108,11 +108,11 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('admin', 'di
   }
 });
 
-/** Xóa lịch sản xuất theo đơn hàng */
-router.delete('/don-hang/:idDonHang', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+/** Xóa một lịch sản xuất cụ thể theo ID */
+router.delete('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
-    const idDonHang = parseInt(req.params.idDonHang, 10);
-    await xoaLichSanXuatTheoDonHang(idDonHang);
+    const id = parseInt(req.params.id, 10);
+    await query(`DELETE FROM LichSanXuat WHERE id = @id`, { id });
     res.json({ success: true, message: 'Xóa lịch sản xuất thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xóa lịch sản xuất';
@@ -120,11 +120,11 @@ router.delete('/don-hang/:idDonHang', authMiddleware, requireRole('admin', 'dieu
   }
 });
 
-/** Xóa một lịch sản xuất cụ thể theo ID */
-router.delete('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+/** Xóa lịch sản xuất theo đơn hàng */
+router.delete('/don-hang/:idDonHang', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
-    const id = parseInt(req.params.id, 10);
-    await query(`DELETE FROM LichSanXuat WHERE id = @id`, { id });
+    const idDonHang = parseInt(req.params.idDonHang, 10);
+    await xoaLichSanXuatTheoDonHang(idDonHang);
     res.json({ success: true, message: 'Xóa lịch sản xuất thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xóa lịch sản xuất';
