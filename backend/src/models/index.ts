@@ -21,7 +21,6 @@ export interface NguoiDung {
     | "dieu_phoi"
     | "lanh_dao"
     | "tram_tron"
-    | "kho"
     | "sale"
     | "tai_xe"
     | "ky_thuat";
