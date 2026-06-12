@@ -151,7 +151,14 @@ export default function TaoLichSanXuatPage() {
         if (!selectedSet.has(tramId)) {
           // Trạm đã có nhưng bị bỏ chọn -> Xóa lịch sản xuất
           const lichId = existingLichMap.get(tramId)!;
-          await xoaLichSanXuat(lichId);
+          console.log(`[DEBUG] Xóa lich ID ${lichId} của tram ${tramId}`);
+          try {
+            await xoaLichSanXuat(lichId);
+            console.log(`[DEBUG] Đã xóa thành công lich ID ${lichId}`);
+          } catch (deleteErr) {
+            console.error(`[DEBUG] Lỗi xóa lich ID ${lichId}:`, deleteErr);
+            throw deleteErr;
+          }
         }
       }
 
@@ -171,9 +178,16 @@ export default function TaoLichSanXuatPage() {
         }
       }
 
-      // 3. Tạo mới các trạm chưa có lịch
+      // 3. Tạo mới các trạm chưa có lịch (sau khi đã xóa xong các trạm bị bỏ)
       for (const tramId of selectedTramIds) {
         if (!existingLichMap.has(tramId)) {
+          // Kiểm tra lại trong DB xem trạm này đã có lịch chưa (phòng trường hợp race condition)
+          const existingLichs = await layLichSanXuat(idDonHang!);
+          const hasLichForTram = existingLichs.some(l => l.idTramTron === tramId);
+          if (hasLichForTram) {
+            console.log(`[DEBUG] Tram ${tramId} đã có lịch trong DB, bỏ qua tạo mới`);
+            continue;
+          }
           const payload: Partial<LichSanXuat> = {
             idDonHang: idDonHang!,
             idTramTron: tramId,
@@ -190,10 +204,12 @@ export default function TaoLichSanXuatPage() {
 
       // Reload lại để cập nhật danh sách
       const lichs = await layLichSanXuat(idDonHang);
+      console.log(`[DEBUG] Sau khi lưu, reload được ${lichs?.length || 0} lịch:`, lichs?.map(l => ({ id: l.id, tramId: l.idTramTron })));
       if (lichs?.length) {
         const allTramIds = lichs
           .map((l: LichSanXuat) => l.idTramTron)
           .filter((id): id is number => id != null);
+        console.log(`[DEBUG] selectedTramIds sau reload:`, allTramIds);
         setSelectedTramIds([...new Set(allTramIds)]);
         const lichMap = new Map<number, number>();
         lichs.forEach((l: LichSanXuat) => {
@@ -202,6 +218,11 @@ export default function TaoLichSanXuatPage() {
           }
         });
         setExistingLichMap(lichMap);
+      } else {
+        // Không có lịch nào -> clear all
+        console.log(`[DEBUG] Không có lịch nào, clear all`);
+        setSelectedTramIds([]);
+        setExistingLichMap(new Map());
       }
       setInitialForm(form);
       showToast('Lưu thay đổi thành công!');
