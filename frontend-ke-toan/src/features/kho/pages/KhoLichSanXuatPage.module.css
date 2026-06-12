@@ -135,6 +135,20 @@
   white-space: nowrap;
 }
 
+/* Cột khối lượng mới */
+.tableKhoiLuong {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tableDaTron {
+  font-weight: 600;
+}
+
+.tableConLai {
+  font-size: 13px;
+}
+
 /* Trạm trộn tags - hiển thị nhiều trạm trên 1 dòng */
 .tramTagsWrap {
   display: flex;

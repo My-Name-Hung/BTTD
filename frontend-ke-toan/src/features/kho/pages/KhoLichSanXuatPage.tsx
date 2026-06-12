@@ -3,7 +3,7 @@ import { FiCheck, FiClock, FiDownload, FiEye, FiPackage, FiTruck } from "react-i
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
-import { exportLichSanXuat, layLichSanXuatTramTron, xacNhanBatDauGiao } from "../../../shared/services/api";
+import { exportLichSanXuat, layLichSanXuatTramTron } from "../../../shared/services/api";
 import { TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../../../shared/types";
 import styles from "./KhoLichSanXuatPage.module.css";
 import { formatDateVN } from "../../../shared/utils/dateUtils";
@@ -27,6 +27,8 @@ interface LichSanXuatItem {
   thoiGianKetThucDo?: string;
   trangThai?: string;
   ngayTao?: string;
+  // Thêm trường mới cho số khối đã trộn
+  khoiLuongDaTron?: number;
 }
 
 // Group nhiều trạm trộn vào 1 dòng theo idDonHang
@@ -42,6 +44,8 @@ interface GroupedLichSanXuat {
   bienSoXe?: string;
   tenTaiXe?: string;
   ngayTao?: string;
+  // Tổng số khối đã trộn (tổng tất cả trạm)
+  tongKhoiLuongDaTron: number;
   // Tất cả trạm trộn của đơn này
   tramTrons: {
     id: number;
@@ -81,11 +85,17 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
         bienSoXe: item.bienSoXe,
         tenTaiXe: item.tenTaiXe,
         ngayTao: item.ngayTao,
+        tongKhoiLuongDaTron: 0,
         tramTrons: [],
       });
     }
 
     const group = map.get(item.idDonHang)!;
+
+    // Cộng dồn số khối đã trộn từ mỗi trạm
+    if (item.khoiLuongDaTron) {
+      group.tongKhoiLuongDaTron += item.khoiLuongDaTron;
+    }
 
     // Thêm trạm trộn vào danh sách
     if (item.idTramTron && item.tenTram) {
@@ -151,7 +161,6 @@ export default function KhoLichSanXuatPage() {
   const { showToast } = useToast();
   const [data, setData] = useState<LichSanXuatItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [filterMode, setFilterMode] = useState<FilterMode>("ngay");
   const [filterValue, setFilterValue] = useState(() => {
     const now = new Date();
@@ -185,18 +194,9 @@ export default function KhoLichSanXuatPage() {
     loadData();
   }, [navigate, loadData]);
 
-  const handleXacNhanSanXuatXong = async (item: GroupedLichSanXuat) => {
-    if (!item.idDonHang) return;
-    setActionLoading(item.idDonHang);
-    try {
-      await xacNhanBatDauGiao(item.idDonHang);
-      showToast("Đã xác nhận sản xuất xong");
-      loadData();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Lỗi xác nhận", "error");
-    } finally {
-      setActionLoading(null);
-    }
+  // Navigate sang trang xác nhận SX xong
+  const handleNavigateXacNhanSanXuat = (item: GroupedLichSanXuat) => {
+    navigate(`/kho/xac-nhan-san-xuat/${item.idDonHang}`);
   };
 
   // Group dữ liệu theo đơn hàng - mỗi đơn 1 dòng
@@ -553,9 +553,10 @@ export default function KhoLichSanXuatPage() {
                 <tr>
                   <th>Mã đơn</th>
                   <th>Khách hàng</th>
-                  <th>Địa chỉ</th>
-                  <th>Mác bê tông</th>
-                  <th>Khối lượng</th>
+                  <th className={styles.hideOnMobile}>Mác bê tông</th>
+                  <th>Ban đầu</th>
+                  <th>Đã trộn</th>
+                  <th>Còn lại</th>
                   <th>Trạng thái</th>
                   <th className={styles.hideOnMobile}>Trạm trộn</th>
                   <th className={styles.hideOnMobile}>Biển số xe</th>
@@ -567,7 +568,9 @@ export default function KhoLichSanXuatPage() {
               <tbody>
                 {filteredData.map((item) => {
                   const trangThai = item.trangThaiDon || "cho_duyet";
-                  const isLoading = actionLoading === item.idDonHang;
+                  const khoiLuongBanDau = item.khoiLuongDat || 0;
+                  const khoiLuongDaTron = item.tongKhoiLuongDaTron || 0;
+                  const khoiLuongConLai = Math.max(0, khoiLuongBanDau - khoiLuongDaTron);
                   const isChuaXacNhan = trangThai === "dang_san_xuat";
                   return (
                     <tr
@@ -584,19 +587,35 @@ export default function KhoLichSanXuatPage() {
                           {item.tenKhachHang || "—"}
                         </div>
                       </td>
-                      <td>
-                        <div className={styles.tableAddress}>
-                          {item.diaChiNhan || "—"}
-                        </div>
-                      </td>
-                      <td>
+                      <td className={styles.hideOnMobile}>
                         <div className={styles.tableMac}>
                           {item.tenMacBeTong || "—"}
                         </div>
                       </td>
                       <td>
-                        <span>
-                          {item.khoiLuongDat ? `${item.khoiLuongDat} m³` : "—"}
+                        <span className={styles.tableKhoiLuong}>
+                          {khoiLuongBanDau ? `${khoiLuongBanDau} m³` : "—"}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={styles.tableDaTron}
+                          style={{
+                            color: khoiLuongDaTron > 0 ? "#10b981" : "#94a3b8",
+                          }}
+                        >
+                          {khoiLuongDaTron > 0 ? `${khoiLuongDaTron} m³` : "—"}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={styles.tableConLai}
+                          style={{
+                            color: khoiLuongConLai > 0 ? "#f59e0b" : "#10b981",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {khoiLuongConLai > 0 ? `${khoiLuongConLai} m³` : "OK"}
                         </span>
                       </td>
                       <td>
@@ -636,20 +655,15 @@ export default function KhoLichSanXuatPage() {
                       </td>
                       <td>
                         <div className={styles.rowActions}>
-                          {/* Xác nhận sản xuất xong */}
+                          {/* Xác nhận sản xuất xong - chuyển sang trang form */}
                           {trangThai === "dang_san_xuat" && (
                             <button
                               className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
-                              onClick={() => handleXacNhanSanXuatXong(item)}
-                              disabled={isLoading}
+                              onClick={() => handleNavigateXacNhanSanXuat(item)}
                               title="Xác nhận sản xuất xong"
                             >
-                              {isLoading ? (
-                                <FiClock size={14} />
-                              ) : (
-                                <FiCheck size={14} />
-                              )}
-                              {isLoading ? "..." : "SX xong"}
+                              <FiCheck size={14} />
+                              SX xong
                             </button>
                           )}
                           {/* Đang giao */}

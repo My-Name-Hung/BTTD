@@ -322,6 +322,16 @@ export default function XuatHoaDonPage() {
         } else if (taiXe) {
           setXeTaiXe(taiXe);
         }
+        // Auto-fill giờ đổ từ lịch sản xuất (bước xác nhận SX xong)
+        if (ls.thoiGianBatDauDo) {
+          const dt = new Date(ls.thoiGianBatDauDo);
+          const y = dt.getFullYear();
+          const m = String(dt.getMonth() + 1).padStart(2, "0");
+          const day = String(dt.getDate()).padStart(2, "0");
+          const h = String(dt.getHours()).padStart(2, "0");
+          const min = String(dt.getMinutes()).padStart(2, "0");
+          setGioDo(`${y}-${m}-${day}T${h}:${min}`);
+        }
       }
     }
   }, [loading, lichSX]);

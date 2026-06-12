@@ -298,37 +298,43 @@ export default function TaoLichSanXuatPage() {
 
       <div className={styles.card}>
         <form onSubmit={handleSubmit}>
-          <div className={styles.sectionTitle}>
-            <FiTruck size={15} /> Thông tin xe giao
-          </div>
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Xe giao hàng</label>
-              <select
-                className={styles.formSelect}
-                value={form.idXe}
-                onChange={(e) => handleXeChange(e.target.value)}
-              >
-                <option value="">— Chọn xe —</option>
-                {xes.map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.bienSo} — {x.tenTaiXe || 'Không có tài xế'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Biển số xe</label>
-              <input
-                className={styles.formInput}
-                value={form.bienSoXe}
-                onChange={(e) => setForm({ ...form, bienSoXe: e.target.value })}
-                placeholder="VD: 59C1-12345"
-              />
-            </div>
-          </div>
+          {/* Chỉ hiển thị Thông tin xe giao khi đang sửa (đã có lịch) */}
+          {existingLichMap.size > 0 && (
+            <>
+              <div className={styles.sectionTitle}>
+                <FiTruck size={15} /> Thông tin xe giao
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Xe giao hàng</label>
+                  <select
+                    className={styles.formSelect}
+                    value={form.idXe}
+                    onChange={(e) => handleXeChange(e.target.value)}
+                  >
+                    <option value="">— Chọn xe —</option>
+                    {xes.map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.bienSo} — {x.tenTaiXe || 'Không có tài xế'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Biển số xe</label>
+                  <input
+                    className={styles.formInput}
+                    value={form.bienSoXe}
+                    onChange={(e) => setForm({ ...form, bienSoXe: e.target.value })}
+                    placeholder="VD: 59C1-12345"
+                  />
+                </div>
+              </div>
 
-          <div className={styles.formDivider} />
+              <div className={styles.formDivider} />
+            </>
+          )}
+
           <div className={styles.sectionTitle}>
             <FiHome size={15} /> Thông tin trạm trộn
           </div>

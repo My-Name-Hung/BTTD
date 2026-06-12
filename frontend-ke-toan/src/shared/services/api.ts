@@ -1092,6 +1092,23 @@ export async function xacNhanBatDauGiao(idDonHang: number): Promise<any> {
   });
 }
 
+// Kho xác nhận sản xuất xong - kèm thông tin khối lượng đã trộn, giờ đổ, xe giao
+export async function xacNhanSanXuatXong(
+  idDonHang: number,
+  data: {
+    khoiLuongDaTron: number;
+    ngayGioDo: string;
+    idXe?: number | null;
+    bienSoXe?: string;
+    ghiChuXe?: string;
+  },
+): Promise<any> {
+  return request<any>(`/kho/xac-nhan-san-xuat-xong/${idDonHang}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
 // Kho xác nhận đã giao thành công (dang_giao -> da_giao)
 export async function xacNhanDaGiaoKho(
   idDonHang: number,

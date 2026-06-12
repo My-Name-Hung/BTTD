@@ -23,6 +23,7 @@ const DonHangTheoTramPage = lazy(() => import("./features/don-hang/pages/DonHang
 const KhoDashboardPage = lazy(() => import("./features/kho/pages/KhoDashboardPage"));
 const KhoDonHangPage = lazy(() => import("./features/kho/pages/KhoDonHangPage"));
 const KhoLichSanXuatPage = lazy(() => import("./features/kho/pages/KhoLichSanXuatPage"));
+const KhoXacNhanSanXuatPage = lazy(() => import("./features/kho/pages/KhoXacNhanSanXuatPage"));
 
 // Trạm trộn
 const QuanLyTramTronPage = lazy(() => import("./features/tram-tron/pages/QuanLyTramTronPage"));
@@ -167,6 +168,10 @@ function App() {
                     <Route
                       path="/tram-tron/lich-san-xuat"
                       element={<KhoLichSanXuatPage />}
+                    />
+                    <Route
+                      path="/kho/xac-nhan-san-xuat/:id"
+                      element={<KhoXacNhanSanXuatPage />}
                     />
                     <Route
                       path="/tram-tron/don-hang/:id"
