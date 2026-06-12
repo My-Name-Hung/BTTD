@@ -102,6 +102,15 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const { khoiLuongDaTron, ngayGioDo, idXe, bienSoXe, ghiChuXe } = req.body;
 
+    // DEBUG
+    console.log('[DEBUG] xac-nhan-san-xuat-xong:', {
+      idDonHang,
+      khoiLuongDaTron,
+      ngayGioDo,
+      idXe,
+      bienSoXe
+    });
+
     // Kiểm tra đơn hàng tồn tại
     const donHang = await query<DonHang>(
       `SELECT * FROM DonHang WHERE id = @id`,
@@ -167,7 +176,7 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
        WHERE id = @id`,
       {
         id: lichCanCapNhat.id,
-        khoiLuongDaTron: khoiLuongDaTron || null,
+        khoiLuongDaTron: khoiLuongDaTron != null ? khoiLuongDaTron : null,
         thoiGianBatDauDo: ngayGioDo || null,
         idXe: idXe || null,
         bienSoXe: bienSoXe || null,
@@ -176,11 +185,18 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       }
     );
 
-    // Tính tổng số khối đã trộn của TẤT CẢ các trạm cho đơn này
+    // Tính tổng số khối đã trộn của TẤT CẢ các trạm cho đơn này (bao gồm cả giá trị 0)
+    // Query riêng để đảm bảo lấy đúng giá trị sau khi UPDATE
     const tongKhoiLuongDaTron = await query<{ tong: number }>(
-      `SELECT ISNULL(SUM(khoiLuongDaTron), 0) as tong FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai = N'da_xong'`,
+      `SELECT SUM(khoiLuongDaTron) as tong FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai = N'da_xong' AND khoiLuongDaTron IS NOT NULL`,
       { idDonHang }
     );
+
+    // DEBUG
+    console.log('[DEBUG] sau khi SUM:', {
+      tongKhoiLuongDaTron,
+      khoiLuongDat: donHang[0].khoiLuongDat
+    });
 
     const tongDaTron = tongKhoiLuongDaTron[0]?.tong || 0;
     const khoiLuongDat = donHang[0].khoiLuongDat || 0;
