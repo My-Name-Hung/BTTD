@@ -128,6 +128,12 @@
   box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.1);
 }
 
+.filterDropdown {
+  min-width: 160px;
+  max-width: 160px;
+  flex-shrink: 0;
+}
+
 .filterItem {
   display: flex;
   flex-direction: column;
@@ -527,6 +533,10 @@
     max-width: 130px;
     padding: 7px 28px 7px 10px;
     font-size: 12px;
+  }
+  .filterDropdown {
+    min-width: 130px;
+    max-width: 130px;
   }
   .filterClearBtn {
     flex-shrink: 0;

@@ -16,6 +16,7 @@ import {
   Loading,
   Pagination,
 } from "../../../shared/components/Common";
+import { SearchableDropdown } from "../../../shared/components/forms/SearchableDropdown";
 import { usePagination, useToast } from "../../../shared/hooks";
 import {
   duyetDonHang,
@@ -77,7 +78,14 @@ export default function QuanLyDonHangPage() {
   const [tuKhoa, setTuKhoa] = useState("");
   const [trangThai, setTrangThai] = useState("");
   const [nguoiTaoId, setNguoiTaoId] = useState<number | undefined>();
+  const [nguoiTaoSearch, setNguoiTaoSearch] = useState("");
   const [danhSachNguoiTao, setDanhSachNguoiTao] = useState<{id: number; hoTen: string; tenDangNhap: string}[]>([]);
+  const [trangThaiFilter, setTrangThaiFilter] = useState<string>("");
+
+  // Lấy các trạng thái có trong dữ liệu
+  const activeStatuses = data.data?.length
+    ? Array.from(new Set(data.data.map(d => d.trangThaiDon)))
+    : [];
 
   const [tuChoiModal, setTuChoiModal] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DonHang | null>(null);
@@ -420,43 +428,37 @@ export default function QuanLyDonHangPage() {
               }}
             />
           </div>
-          <div className={styles.filterItem}>
-            <span className={styles.filterLabel}>Trạng thái</span>
-            <select
-              className={`${styles.filterSelect} ${trangThai ? styles.filterSelectActive : ""}`}
-              value={trangThai}
-              onChange={(e) => {
-                setTrangThai(e.target.value);
+          <SearchableDropdown
+            value={trangThai || ""}
+            onChange={(val) => {
+              setTrangThai(val as string);
+              resetPage();
+            }}
+            options={[
+              { id: "", label: "Tất cả trạng thái" },
+              ...Object.entries(TRANG_THAI_DON_LABELS).map(([k, v]) => ({ id: k, label: v })),
+            ]}
+            placeholder="Trạng thái"
+            className={styles.filterDropdown}
+          />
+          {(isAdmin || isKeToan || isGDKD) && (
+            <SearchableDropdown
+              value={nguoiTaoId || ""}
+              onChange={(val) => {
+                setNguoiTaoId(val ? parseInt(String(val)) : undefined);
                 resetPage();
               }}
-            >
-              <option value="">Tất cả</option>
-              {Object.entries(TRANG_THAI_DON_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </div>
-          {(isAdmin || isKeToan || isGDKD) && (
-            <div className={styles.filterItem}>
-              <span className={styles.filterLabel}>Người tạo</span>
-              <select
-                className={`${styles.filterSelect} ${nguoiTaoId ? styles.filterSelectActive : ""}`}
-                value={nguoiTaoId || ""}
-                onChange={(e) => {
-                  setNguoiTaoId(e.target.value ? parseInt(e.target.value) : undefined);
-                  resetPage();
-                }}
-              >
-                <option value="">Tất cả</option>
-                {danhSachNguoiTao.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.hoTen || u.tenDangNhap}
-                  </option>
-                ))}
-              </select>
-            </div>
+              options={[
+                { id: "", label: "Tất cả người tạo" },
+                ...danhSachNguoiTao.map((u) => ({
+                  id: u.id,
+                  label: u.hoTen || u.tenDangNhap,
+                  subLabel: u.tenDangNhap,
+                })),
+              ]}
+              placeholder="Người tạo"
+              className={styles.filterDropdown}
+            />
           )}
           {(tuKhoa || trangThai || nguoiTaoId) && (
             <button className={styles.filterClearBtn} onClick={clearFilters}>
@@ -483,9 +485,6 @@ export default function QuanLyDonHangPage() {
                   <tr>
                     <th style={{ minWidth: 80 }}>Mã đơn</th>
                     <th style={{ minWidth: 100 }}>Khách hàng</th>
-                    {(isAdmin || isKeToan || isGDKD) && (
-                      <th style={{ minWidth: 100 }}>Người tạo</th>
-                    )}
                     <th
                       className={styles.hideOnMobile}
                       style={{ minWidth: 60 }}
@@ -623,6 +622,9 @@ export default function QuanLyDonHangPage() {
                   <tr>
                     <th style={{ minWidth: 130 }}>Mã đơn</th>
                     <th style={{ minWidth: 180 }}>Khách hàng</th>
+                    {(isAdmin || isKeToan || isGDKD) && (
+                      <th style={{ minWidth: 130 }}>Người tạo</th>
+                    )}
                     <th
                       className={styles.hideOnMobile}
                       style={{ minWidth: 160 }}
@@ -654,6 +656,14 @@ export default function QuanLyDonHangPage() {
                     >
                       Ngày tạo
                     </th>
+                    {(isAdmin || isKeToan || isGDKD) && (
+                      <th
+                        className={styles.hideOnMobile}
+                        style={{ minWidth: 100 }}
+                      >
+                        Người tạo
+                      </th>
+                    )}
                     <th style={{ minWidth: 100 }}>Thao tác</th>
                   </tr>
                 </thead>
@@ -671,6 +681,13 @@ export default function QuanLyDonHangPage() {
                         </div>
                         <div className={styles.tableSub}>{dh.soDienThoai}</div>
                       </td>
+                      {(isAdmin || isKeToan || isGDKD) && (
+                        <td className={styles.hideOnMobile}>
+                          <div className={styles.tableName}>
+                            {dh.tenNguoiTao || "—"}
+                          </div>
+                        </td>
+                      )}
                       <td
                         className={`${styles.tableAddress} ${styles.hideOnMobile}`}
                       >

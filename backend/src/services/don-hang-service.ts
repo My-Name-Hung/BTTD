@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
 import { query, vnNow } from "../config/database";
 import { ApiResponseWithPagination, DonHang } from "../models";
 import { guiThongBao } from "./thong-bao-service";
@@ -104,7 +103,7 @@ export async function taoDonHang(
   data: Partial<DonHang>,
   nguoiTaoId: number,
 ): Promise<DonHang> {
-  const maDonHang = `DH${Date.now().toString().slice(-8)}-${uuidv4().slice(0, 4).toUpperCase()}`;
+  const maDonHang = `DH${Date.now().toString().slice(-8)}`;
   const chiPhiPhatSinh = data.chiPhiPhatSinh || 0;
   const buVanChuyen = data.buVanChuyen || 0;
   // Ưu tiên dùng thanhTien từ frontend (giá tự nhập), không tự tính lại
