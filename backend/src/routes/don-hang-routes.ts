@@ -412,7 +412,7 @@ router.post(
   }
 );
 
-router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.put('/:id', authMiddleware, requireRole('admin', 'dieu_phoi', 'ke_toan'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     if (!req.user) { res.status(401).json({ success: false, message: 'Chưa đăng nhập' }); return; }
     const id = parseInt(req.params.id, 10);

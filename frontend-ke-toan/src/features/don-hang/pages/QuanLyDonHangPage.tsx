@@ -485,6 +485,9 @@ export default function QuanLyDonHangPage() {
                   <tr>
                     <th style={{ minWidth: 80 }}>Mã đơn</th>
                     <th style={{ minWidth: 100 }}>Khách hàng</th>
+                    {(isAdmin || isKeToan || isGDKD) && (
+                      <th style={{ minWidth: 100 }}>Người tạo</th>
+                    )}
                     <th
                       className={styles.hideOnMobile}
                       style={{ minWidth: 60 }}
