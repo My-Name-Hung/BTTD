@@ -27,8 +27,10 @@ interface LichSanXuatItem {
   thoiGianKetThucDo?: string;
   trangThai?: string;
   ngayTao?: string;
-  // Thêm trường mới cho số khối đã trộn
+  // Số khối đã trộn của dòng này
   khoiLuongDaTron?: number;
+  // Tổng số khối đã trộn của TẤT CẢ trạm cho đơn này (từ backend subquery)
+  tongKhoiLuongDaTron?: number;
 }
 
 // Group nhiều trạm trộn vào 1 dòng theo idDonHang
@@ -85,15 +87,16 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
         bienSoXe: item.bienSoXe,
         tenTaiXe: item.tenTaiXe,
         ngayTao: item.ngayTao,
-        tongKhoiLuongDaTron: 0,
+        // Sử dụng tongKhoiLuongDaTron từ backend nếu có, không thì cộng dồn
+        tongKhoiLuongDaTron: item.tongKhoiLuongDaTron || 0,
         tramTrons: [],
       });
     }
 
     const group = map.get(item.idDonHang)!;
 
-    // Cộng dồn số khối đã trộn từ mỗi trạm
-    if (item.khoiLuongDaTron) {
+    // Nếu backend không trả tongKhoiLuongDaTron thì cộng dồn từ mỗi trạm
+    if (!item.tongKhoiLuongDaTron && item.khoiLuongDaTron) {
       group.tongKhoiLuongDaTron += item.khoiLuongDaTron;
     }
 
@@ -615,7 +618,7 @@ export default function KhoLichSanXuatPage() {
                       </td>
                       <td>
                         <span className={styles.tableKhoiLuong}>
-                          {khoiLuongBanDau ? `${khoiLuongBanDau} m³` : "—"}
+                          {khoiLuongBanDau ? `${khoiLuongBanDau.toFixed(1)} m³` : "—"}
                         </span>
                       </td>
                       <td>
@@ -625,7 +628,7 @@ export default function KhoLichSanXuatPage() {
                             color: khoiLuongDaTron > 0 ? "#10b981" : "#94a3b8",
                           }}
                         >
-                          {khoiLuongDaTron > 0 ? `${khoiLuongDaTron} m³` : "—"}
+                          {khoiLuongDaTron > 0 ? `${khoiLuongDaTron.toFixed(1)} m³` : "—"}
                         </span>
                       </td>
                       <td>
@@ -636,7 +639,7 @@ export default function KhoLichSanXuatPage() {
                             fontWeight: 700,
                           }}
                         >
-                          {khoiLuongConLai > 0 ? `${khoiLuongConLai} m³` : "OK"}
+                          {khoiLuongConLai > 0 ? `${khoiLuongConLai.toFixed(1)} m³` : "OK"}
                         </span>
                       </td>
                       <td>

@@ -81,6 +81,7 @@ export default function KhoXacNhanSanXuatPage() {
   });
   const [idXe, setIdXe] = useState("");
   const [bienSoXe, setBienSoXe] = useState("");
+  const [tenTaiXeHienThi, setTenTaiXeHienThi] = useState("");
   const [ghiChuXe, setGhiChuXe] = useState("");
 
   const loadData = useCallback(async () => {
@@ -116,7 +117,10 @@ export default function KhoXacNhanSanXuatPage() {
         if (firstLich.idXe) {
           setIdXe(String(firstLich.idXe));
           const xe = xesData.find((x: Xe) => x.id === firstLich.idXe);
-          if (xe) setBienSoXe(xe.bienSo || "");
+          if (xe) {
+            setBienSoXe(xe.bienSo || "");
+            setTenTaiXeHienThi(xe.tenTaiXe || "");
+          }
         }
         if (firstLich.bienSoXe) setBienSoXe(firstLich.bienSoXe);
         if (firstLich.ghiChuXe) setGhiChuXe(firstLich.ghiChuXe);
@@ -139,11 +143,13 @@ export default function KhoXacNhanSanXuatPage() {
     const xe = xes.find((x) => x.id === parseInt(xeId));
     setIdXe(xeId);
     setBienSoXe(xe?.bienSo || "");
+    setTenTaiXeHienThi(xe?.tenTaiXe || "");
   };
 
-  // Tính tổng khối lượng đã trộn
+  // Tính tổng khối lượng đã trộn từ tất cả trạm trong đơn
   const tongKhoiLuongDaTron = lichTramTrons.reduce((sum, l) => {
-    // Tạm tính, sẽ được cập nhật từ backend
+    // Hiện tại chỉ có thông tin cơ bản, khối lượng đã trộn sẽ được cập nhật từ backend
+    // Khi load lại dữ liệu sau khi submit, tổng này sẽ được cập nhật
     return sum;
   }, 0);
 
@@ -167,15 +173,20 @@ export default function KhoXacNhanSanXuatPage() {
 
     setSubmitting(true);
     try {
+      // Format ngày giờ từ datetime-local (YYYY-MM-DDTHH:mm) sang SQL Server (YYYY-MM-DD HH:mm:ss)
+      const formattedNgayGioDo = ngayGioDo ? `${ngayGioDo}:00` : null;
+
       await xacNhanSanXuatXong(idDonHang, {
         khoiLuongDaTron: parseFloat(khoiLuongDaTron),
-        ngayGioDo,
+        ngayGioDo: formattedNgayGioDo,
         idXe: idXe ? parseInt(idXe) : null,
         bienSoXe,
         ghiChuXe,
       });
 
       showToast("Đã xác nhận sản xuất xong!");
+      // Reload data trước khi navigate để đảm bảo dữ liệu mới nhất
+      await loadData();
       navigate("/tram-tron/lich-san-xuat");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi xác nhận", "error");
@@ -334,6 +345,14 @@ export default function KhoXacNhanSanXuatPage() {
               />
             </div>
           </div>
+
+          {/* Hiển thị thông tin tài xế */}
+          {tenTaiXeHienThi && (
+            <div className={styles.taiXeInfo}>
+              <span className={styles.taiXeLabel}>Tài xế:</span>
+              <span className={styles.taiXeName}>{tenTaiXeHienThi}</span>
+            </div>
+          )}
 
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Ghi chú xe giao</label>

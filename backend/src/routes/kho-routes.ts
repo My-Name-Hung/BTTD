@@ -142,6 +142,18 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
     const lichCanCapNhat = lichSanXuatList[0];
 
     // Cập nhật thông tin vào lịch sản xuất
+    // Lấy idTaiXe từ bảng Xe (idTaiKhoan = id tài xế trong NguoiDung)
+    let idTaiXeValue: number | null = null;
+    if (idXe) {
+      const xeInfo = await query<{ idTaiKhoan: number | null }>(
+        `SELECT idTaiKhoan FROM Xe WHERE id = @idXe`,
+        { idXe }
+      );
+      if (xeInfo.length > 0) {
+        idTaiXeValue = xeInfo[0].idTaiKhoan || null;
+      }
+    }
+
     await query(
       `UPDATE LichSanXuat SET
         khoiLuongDaTron = @khoiLuongDaTron,
@@ -149,6 +161,7 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
         idXe = @idXe,
         bienSoXe = @bienSoXe,
         ghiChuXe = @ghiChuXe,
+        idTaiXe = @idTaiXe,
         trangThai = N'da_xong',
         ngayCapNhat = ${vnNow()}
        WHERE id = @id`,
@@ -159,6 +172,7 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
         idXe: idXe || null,
         bienSoXe: bienSoXe || null,
         ghiChuXe: ghiChuXe || null,
+        idTaiXe: idTaiXeValue,
       }
     );
 

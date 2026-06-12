@@ -200,6 +200,29 @@
   color: var(--color-text-secondary);
 }
 
+/* ── Tài xế info ── */
+.taiXeInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.taiXeLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.taiXeName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #059669;
+}
+
 /* ── Actions ── */
 .formActions {
   display: flex;
