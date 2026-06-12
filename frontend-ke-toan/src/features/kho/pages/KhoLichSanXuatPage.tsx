@@ -29,14 +29,80 @@ interface LichSanXuatItem {
   ngayTao?: string;
 }
 
+// Group nhiều trạm trộn vào 1 dòng theo idDonHang
+interface GroupedLichSanXuat {
+  idDonHang: number;
+  maDonHang?: string;
+  tenKhachHang?: string;
+  diaChiNhan?: string;
+  tenMacBeTong?: string;
+  khoiLuongDat?: number;
+  trangThaiDon?: string;
+  // Lấy thông tin xe từ dòng đầu tiên (hoặc aggregate)
+  bienSoXe?: string;
+  tenTaiXe?: string;
+  ngayTao?: string;
+  // Tất cả trạm trộn của đơn này
+  tramTrons: {
+    id: number;
+    tenTram: string;
+    idLichSanXuat: number;
+    thoiGianTron?: string;
+    trangThai?: string;
+  }[];
+}
+
 type FilterMode = "ngay" | "thang" | "nam";
 
 function formatDate(d: string) {
   return d ? formatDateVN(d) : '';
 }
 
-function getFilterSourceDate(item: LichSanXuatItem) {
-  return item.thoiGianTron || item.thoiGianBatDauDo || item.thoiGianKetThucDo || item.ngayTao || "";
+function getFilterSourceDate(item: GroupedLichSanXuat) {
+  // Lấy ngày từ trạm trộn đầu tiên hoặc ngayTao
+  const firstTram = item.tramTrons[0];
+  return firstTram?.thoiGianTron || item.ngayTao || "";
+}
+
+// Group dữ liệu theo idDonHang - mỗi đơn hàng 1 dòng
+function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
+  const map = new Map<number, GroupedLichSanXuat>();
+
+  for (const item of items) {
+    if (!map.has(item.idDonHang)) {
+      map.set(item.idDonHang, {
+        idDonHang: item.idDonHang,
+        maDonHang: item.maDonHang,
+        tenKhachHang: item.tenKhachHang,
+        diaChiNhan: item.diaChiNhan,
+        tenMacBeTong: item.tenMacBeTong,
+        khoiLuongDat: item.khoiLuongDat,
+        trangThaiDon: item.trangThaiDon,
+        bienSoXe: item.bienSoXe,
+        tenTaiXe: item.tenTaiXe,
+        ngayTao: item.ngayTao,
+        tramTrons: [],
+      });
+    }
+
+    const group = map.get(item.idDonHang)!;
+
+    // Thêm trạm trộn vào danh sách
+    if (item.idTramTron && item.tenTram) {
+      // Tránh trùng lặp trạm
+      if (!group.tramTrons.find(t => t.id === item.idTramTron)) {
+        group.tramTrons.push({
+          id: item.idTramTron,
+          tenTram: item.tenTram,
+          idLichSanXuat: item.id,
+          thoiGianTron: item.thoiGianTron,
+          trangThai: item.trangThai,
+        });
+      }
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 function parseLocalDateParts(d: string) {
@@ -100,6 +166,7 @@ export default function KhoLichSanXuatPage() {
     setLoading(true);
     try {
       const res = await layLichSanXuatTramTron();
+      // Lưu raw data để dùng cho filter dropdown
       setData(res || []);
     } catch (err) {
       console.error("Lỗi tải lịch sản xuất:", err);
@@ -118,7 +185,7 @@ export default function KhoLichSanXuatPage() {
     loadData();
   }, [navigate, loadData]);
 
-  const handleXacNhanSanXuatXong = async (item: LichSanXuatItem) => {
+  const handleXacNhanSanXuatXong = async (item: GroupedLichSanXuat) => {
     if (!item.idDonHang) return;
     setActionLoading(item.idDonHang);
     try {
@@ -132,8 +199,14 @@ export default function KhoLichSanXuatPage() {
     }
   };
 
+  // Group dữ liệu theo đơn hàng - mỗi đơn 1 dòng
+  const groupedData = useMemo(() => {
+    return groupByDonHang(data);
+  }, [data]);
+
   const filteredData = useMemo(() => {
-    let items = [...data];
+    // Bắt đầu từ dữ liệu đã group
+    let items = [...groupedData];
 
     // Lọc theo filter
     if (filterMode === "ngay") {
@@ -180,7 +253,7 @@ export default function KhoLichSanXuatPage() {
     });
 
     return items;
-  }, [data, filterMode, filterValue, maDonFilter, tenKhachFilter]);
+  }, [groupedData, filterMode, filterValue, maDonFilter, tenKhachFilter]);
 
   // Stats
   const stats = useMemo(() => {
@@ -498,7 +571,7 @@ export default function KhoLichSanXuatPage() {
                   const isChuaXacNhan = trangThai === "dang_san_xuat";
                   return (
                     <tr
-                      key={item.id}
+                      key={item.idDonHang}
                       className={isChuaXacNhan ? styles.rowChuaXacNhan : ""}
                     >
                       <td>
@@ -538,9 +611,13 @@ export default function KhoLichSanXuatPage() {
                         </span>
                       </td>
                       <td className={styles.hideOnMobile}>
-                        <span className={styles.tableXe}>
-                          {(item as any).tenTram || "—"}
-                        </span>
+                        <div className={styles.tramTagsWrap}>
+                          {item.tramTrons.map((tram) => (
+                            <span key={tram.id} className={styles.tramTag}>
+                              {tram.tenTram}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className={styles.hideOnMobile}>
                         <span className={styles.tableXe}>
@@ -572,7 +649,7 @@ export default function KhoLichSanXuatPage() {
                               ) : (
                                 <FiCheck size={14} />
                               )}
-                              {isLoading ? "Đang xử lý..." : "SX xong"}
+                              {isLoading ? "..." : "SX xong"}
                             </button>
                           )}
                           {/* Đang giao */}

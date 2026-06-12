@@ -589,6 +589,15 @@ export default function QuanLyDonHangPage() {
                           >
                             <FiEye size={12} />
                           </button>
+                          {canEdit && !["nghiem_thu", "da_nghiem_thu", "da_thanh_toan", "hoan_thanh", "tu_choi"].includes(dh.trangThaiDon) && (canEditAll || dh.nguoiTaoId === userId) && (
+                            <button
+                              className={`${styles.actionBtn} ${styles.actionBtnEdit} ${styles.actionBtnSm}`}
+                              onClick={() => navigate(`/quan-ly/don-hang/sua/${dh.id}`)}
+                              title="Sửa"
+                            >
+                              <FiEdit2 size={12} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
