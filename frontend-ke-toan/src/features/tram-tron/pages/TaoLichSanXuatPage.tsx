@@ -147,6 +147,7 @@ export default function TaoLichSanXuatPage() {
       const selectedSet = new Set(selectedTramIds);
 
       // 1. Xóa các trạm đã có lịch nhưng bị bỏ chọn
+      const deletedTramIds: number[] = [];
       for (const tramId of existingTramIds) {
         if (!selectedSet.has(tramId)) {
           // Trạm đã có nhưng bị bỏ chọn -> Xóa lịch sản xuất
@@ -155,6 +156,7 @@ export default function TaoLichSanXuatPage() {
           try {
             await xoaLichSanXuat(lichId);
             console.log(`[DEBUG] Đã xóa thành công lich ID ${lichId}`);
+            deletedTramIds.push(tramId);
           } catch (deleteErr) {
             console.error(`[DEBUG] Lỗi xóa lich ID ${lichId}:`, deleteErr);
             throw deleteErr;
@@ -163,6 +165,7 @@ export default function TaoLichSanXuatPage() {
       }
 
       // 2. Cập nhật các trạm đã có lịch và vẫn được chọn
+      const createdTramIds: number[] = [];
       for (const tramId of selectedTramIds) {
         if (existingLichMap.has(tramId)) {
           const lichId = existingLichMap.get(tramId)!;
@@ -181,13 +184,6 @@ export default function TaoLichSanXuatPage() {
       // 3. Tạo mới các trạm chưa có lịch (sau khi đã xóa xong các trạm bị bỏ)
       for (const tramId of selectedTramIds) {
         if (!existingLichMap.has(tramId)) {
-          // Kiểm tra lại trong DB xem trạm này đã có lịch chưa (phòng trường hợp race condition)
-          const existingLichs = await layLichSanXuat(idDonHang!);
-          const hasLichForTram = existingLichs.some(l => l.idTramTron === tramId);
-          if (hasLichForTram) {
-            console.log(`[DEBUG] Tram ${tramId} đã có lịch trong DB, bỏ qua tạo mới`);
-            continue;
-          }
           const payload: Partial<LichSanXuat> = {
             idDonHang: idDonHang!,
             idTramTron: tramId,
@@ -198,32 +194,35 @@ export default function TaoLichSanXuatPage() {
             nguoiBatOng: form.nguoiBatOng || null,
             ghiChu: form.ghiChu || null,
           };
-          await taoLichSanXuat(payload);
+          const newLich = await taoLichSanXuat(payload);
+          createdTramIds.push(tramId);
         }
       }
 
-      // Reload lại để cập nhật danh sách
-      const lichs = await layLichSanXuat(idDonHang);
-      console.log(`[DEBUG] Sau khi lưu, reload được ${lichs?.length || 0} lịch:`, lichs?.map(l => ({ id: l.id, tramId: l.idTramTron })));
-      if (lichs?.length) {
-        const allTramIds = lichs
-          .map((l: LichSanXuat) => l.idTramTron)
-          .filter((id): id is number => id != null);
-        console.log(`[DEBUG] selectedTramIds sau reload:`, allTramIds);
-        setSelectedTramIds([...new Set(allTramIds)]);
-        const lichMap = new Map<number, number>();
-        lichs.forEach((l: LichSanXuat) => {
-          if (l.idTramTron) {
-            lichMap.set(l.idTramTron, l.id);
-          }
-        });
-        setExistingLichMap(lichMap);
-      } else {
-        // Không có lịch nào -> clear all
-        console.log(`[DEBUG] Không có lịch nào, clear all`);
-        setSelectedTramIds([]);
-        setExistingLichMap(new Map());
+      // Cập nhật state trực tiếp (không cần reload)
+      const newSelectedTramIds = selectedTramIds.filter(id => !deletedTramIds.includes(id));
+      const newLichMap = new Map<number, number>();
+      
+      // Giữ lại các trạm vẫn được chọn và có lịch
+      for (const tramId of newSelectedTramIds) {
+        if (existingLichMap.has(tramId)) {
+          newLichMap.set(tramId, existingLichMap.get(tramId)!);
+        }
       }
+      
+      // Thêm các trạm mới tạo (tạm thời dùng ID từ response hoặc 0)
+      for (const tramId of createdTramIds) {
+        // Tìm ID của lịch vừa tạo bằng cách gọi API
+        const lichs = await layLichSanXuat(idDonHang!);
+        const newLich = lichs.find(l => l.idTramTron === tramId);
+        if (newLich) {
+          newLichMap.set(tramId, newLich.id);
+        }
+      }
+      
+      console.log(`[DEBUG] Cập nhật state: selectedTramIds =`, newSelectedTramIds);
+      setSelectedTramIds(newSelectedTramIds);
+      setExistingLichMap(newLichMap);
       setInitialForm(form);
       showToast('Lưu thay đổi thành công!');
     } catch (err) {

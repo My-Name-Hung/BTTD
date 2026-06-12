@@ -639,25 +639,29 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className={styles.kpiCard}>
-              <div className={styles.kpiIconWrap} style={{ background: "rgba(16,185,129,0.1)" }}>
-                <FiDollarSign size={22} color="#10b981" />
-              </div>
-              <div className={styles.kpiCardLeft}>
-                <div className={styles.kpiLabel}>Doanh thu</div>
-                <div className={styles.kpiValue} style={{ color: "#10b981" }}>{fmt(dashboard?.tongDoanhThu || 0)} đ</div>
-              </div>
-            </div>
+            {(!["tram_tron", "dieu_phoi", "tai_xe"].includes(vaiTro || "")) && (
+              <>
+                <div className={styles.kpiCard}>
+                  <div className={styles.kpiIconWrap} style={{ background: "rgba(16,185,129,0.1)" }}>
+                    <FiDollarSign size={22} color="#10b981" />
+                  </div>
+                  <div className={styles.kpiCardLeft}>
+                    <div className={styles.kpiLabel}>Doanh thu</div>
+                    <div className={styles.kpiValue} style={{ color: "#10b981" }}>{fmt(dashboard?.tongDoanhThu || 0)} đ</div>
+                  </div>
+                </div>
 
-            <div className={styles.kpiCard}>
-              <div className={styles.kpiIconWrap} style={{ background: "rgba(239,68,68,0.1)" }}>
-                <FiAlertTriangle size={22} color="#ef4444" />
-              </div>
-              <div className={styles.kpiCardLeft}>
-                <div className={styles.kpiLabel}>Công nợ</div>
-                <div className={styles.kpiValue} style={{ color: "#ef4444" }}>{fmt(dashboard?.tongCongNo || 0)} đ</div>
-              </div>
-            </div>
+                <div className={styles.kpiCard}>
+                  <div className={styles.kpiIconWrap} style={{ background: "rgba(239,68,68,0.1)" }}>
+                    <FiAlertTriangle size={22} color="#ef4444" />
+                  </div>
+                  <div className={styles.kpiCardLeft}>
+                    <div className={styles.kpiLabel}>Công nợ</div>
+                    <div className={styles.kpiValue} style={{ color: "#ef4444" }}>{fmt(dashboard?.tongCongNo || 0)} đ</div>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className={styles.kpiCard}>
               <div className={styles.kpiIconWrap} style={{ background: "rgba(59,130,246,0.1)" }}>
