@@ -366,6 +366,15 @@
   overflow: hidden;
 }
 
+.tramChecklistLabel {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 8px;
+  padding-left: 2px;
+}
+
 .tramChecklistHeader {
   display: flex;
   align-items: center;
