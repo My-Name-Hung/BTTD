@@ -7,6 +7,7 @@ import {
   layTatCaLichSanXuat,
   layDonHangTheoXe,
   capNhatLichSanXuat,
+  xoaLichSanXuatTheoDonHang,
   xacNhanDaGiao,
 } from '../services/dieu-phoi-service';
 import { ghiNhatKy } from '../services/access-history-service';
@@ -104,6 +105,18 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('admin', 'di
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận giao hàng';
     res.status(400).json({ success: false, message });
+  }
+});
+
+/** Xóa lịch sản xuất theo đơn hàng */
+router.delete('/don-hang/:idDonHang', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const idDonHang = parseInt(req.params.idDonHang, 10);
+    await xoaLichSanXuatTheoDonHang(idDonHang);
+    res.json({ success: true, message: 'Xóa lịch sản xuất thành công' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi xóa lịch sản xuất';
+    res.status(500).json({ success: false, message });
   }
 });
 

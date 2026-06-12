@@ -408,6 +408,12 @@ export async function xacNhanDaGiao(
   });
 }
 
+export async function xoaLichSanXuatTheoDonHang(idDonHang: number): Promise<void> {
+  return request<void>(`/dieu-phoi/don-hang/${idDonHang}`, {
+    method: "DELETE",
+  });
+}
+
 export async function taoNghiemThu(
   data: Partial<NghiemThu>,
 ): Promise<NghiemThu> {

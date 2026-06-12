@@ -22,11 +22,13 @@ export default function TaoLichSanXuatPage() {
   const [xes, setXes] = useState<Xe[]>([]);
   const [tramTrons, setTramTrons] = useState<TramTron[]>([]);
   const [donHang, setDonHang] = useState<DonHang | null>(null);
-  const [existingLich, setExistingLich] = useState<LichSanXuat | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+
+  // Lưu danh sách ID của các lịch sản xuất hiện có (để biết trạm nào đã có, trạm nào cần tạo mới)
+  const [existingLichMap, setExistingLichMap] = useState<Map<number, number>>(new Map()); // Map<tramId, lichId>
 
   const [form, setForm] = useState({
     idXe: '', bienSoXe: '',
@@ -63,14 +65,21 @@ export default function TaoLichSanXuatPage() {
           const lichs = await layLichSanXuat(idDonHang);
           if (lichs?.length) {
             const lich = lichs[0];
-            setExistingLich(lich);
             const xe = xeRes.find((x: Xe) => x.id === lich.idXe);
             const tram = tramRes.find((t: TramTron) => t.id === lich.idTramTron);
             // Set ALL trạm đã được chọn từ tất cả các lịch sản xuất
             const allTramIds = lichs
               .map((l: LichSanXuat) => l.idTramTron)
-              .filter((id: number) => id != null) as number[];
+              .filter((id): id is number => id != null);
             setSelectedTramIds([...new Set(allTramIds)]);
+            // Build map: tramId -> lichId để biết trạm nào đã có lịch
+            const lichMap = new Map<number, number>();
+            lichs.forEach((l: LichSanXuat) => {
+              if (l.idTramTron) {
+                lichMap.set(l.idTramTron, l.id);
+              }
+            });
+            setExistingLichMap(lichMap);
             setForm({
               idXe: lich.idXe ? String(lich.idXe) : '',
               bienSoXe: lich.bienSoXe || '',
@@ -91,6 +100,10 @@ export default function TaoLichSanXuatPage() {
               nguoiBatOng: lich.nguoiBatOng || '',
               ghiChu: lich.ghiChu || '',
             });
+          } else {
+            // Reset khi không có lịch nào
+            setSelectedTramIds([]);
+            setExistingLichMap(new Map());
           }
         }
       } catch {
@@ -129,21 +142,45 @@ export default function TaoLichSanXuatPage() {
     try {
       const xe = xes.find((x) => x.id === parseInt(form.idXe));
 
-      for (const tramId of selectedTramIds) {
-        const payload: Partial<LichSanXuat> = {
-          idDonHang: idDonHang!,
-          idTramTron: tramId,
-          idXe: form.idXe ? parseInt(form.idXe) : null,
-          bienSoXe: xe?.bienSo || form.bienSoXe || null,
-          kyThuatCongTrinh: form.kyThuatCongTrinh || null,
-          nguoiOmOng: form.nguoiOmOng || null,
-          nguoiBatOng: form.nguoiBatOng || null,
-          ghiChu: form.ghiChu || null,
-        };
+      // Lấy danh sách các tramId đã có lịch
+      const existingTramIds = Array.from(existingLichMap.keys());
+      // Các tramId đang được chọn
+      const selectedSet = new Set(selectedTramIds);
 
-        if (existingLich) {
-          await capNhatLichSanXuat(existingLich.id, payload);
+      // 1. Cập nhật các trạm đã có lịch
+      for (const tramId of existingTramIds) {
+        if (selectedSet.has(tramId)) {
+          // Trạm đã có và vẫn được chọn -> Cập nhật
+          const lichId = existingLichMap.get(tramId)!;
+          const payload: Partial<LichSanXuat> = {
+            idXe: form.idXe ? parseInt(form.idXe) : null,
+            bienSoXe: xe?.bienSo || form.bienSoXe || null,
+            kyThuatCongTrinh: form.kyThuatCongTrinh || null,
+            nguoiOmOng: form.nguoiOmOng || null,
+            nguoiBatOng: form.nguoiBatOng || null,
+            ghiChu: form.ghiChu || null,
+          };
+          await capNhatLichSanXuat(lichId, payload);
         } else {
+          // Trạm đã có nhưng bị bỏ chọn -> Có thể xóa hoặc giữ tùy yêu cầu
+          // Hiện tại giữ nguyên, không xóa
+        }
+      }
+
+      // 2. Tạo mới các trạm chưa có lịch
+      for (const tramId of selectedTramIds) {
+        if (!existingLichMap.has(tramId)) {
+          // Trạm mới được thêm -> Tạo mới
+          const payload: Partial<LichSanXuat> = {
+            idDonHang: idDonHang!,
+            idTramTron: tramId,
+            idXe: form.idXe ? parseInt(form.idXe) : null,
+            bienSoXe: xe?.bienSo || form.bienSoXe || null,
+            kyThuatCongTrinh: form.kyThuatCongTrinh || null,
+            nguoiOmOng: form.nguoiOmOng || null,
+            nguoiBatOng: form.nguoiBatOng || null,
+            ghiChu: form.ghiChu || null,
+          };
           await taoLichSanXuat(payload);
         }
       }
@@ -182,10 +219,10 @@ export default function TaoLichSanXuatPage() {
           </button>
           <div>
             <div className={styles.pageHeaderTitle}>
-              {existingLich ? 'Sửa lịch sản xuất' : 'Tạo lịch sản xuất'}
+              {existingLichMap.size > 0 ? 'Sửa lịch sản xuất' : 'Tạo lịch sản xuất'}
             </div>
             <div className={styles.pageHeaderDesc}>
-              {existingLich ? 'Cập nhật thông tin lịch sản xuất' : 'Nhập thông tin để tạo lịch sản xuất'}
+              {existingLichMap.size > 0 ? 'Cập nhật thông tin lịch sản xuất' : 'Nhập thông tin để tạo lịch sản xuất'}
             </div>
           </div>
         </div>
@@ -335,7 +372,7 @@ export default function TaoLichSanXuatPage() {
               Hủy bỏ
             </button>
             <button type="submit" className="btn btn-save" disabled={submitting}>
-              <FiSave /> {submitting ? 'Đang lưu...' : (existingLich ? 'Lưu thay đổi' : 'Tạo lịch sản xuất')}
+              <FiSave /> {submitting ? 'Đang lưu...' : (existingLichMap.size > 0 ? 'Lưu thay đổi' : 'Tạo lịch sản xuất')}
             </button>
           </div>
         </form>
@@ -345,7 +382,7 @@ export default function TaoLichSanXuatPage() {
         isOpen={showSuccess}
         onClose={() => { setShowSuccess(false); navigate('/dieu-phoi'); }}
         onConfirm={() => { setShowSuccess(false); navigate('/dieu-phoi'); }}
-        message={existingLich ? 'Cập nhật lịch sản xuất thành công!' : 'Tạo lịch sản xuất thành công!'}
+        message={existingLichMap.size > 0 ? 'Cập nhật lịch sản xuất thành công!' : 'Tạo lịch sản xuất thành công!'}
         confirmText="Đồng ý"
         cancelText=""
         title="Thành công"
