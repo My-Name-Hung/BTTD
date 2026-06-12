@@ -414,6 +414,12 @@ export async function xoaLichSanXuatTheoDonHang(idDonHang: number): Promise<void
   });
 }
 
+export async function xoaLichSanXuat(lichId: number): Promise<void> {
+  return request<void>(`/dieu-phoi/${lichId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function taoNghiemThu(
   data: Partial<NghiemThu>,
 ): Promise<NghiemThu> {

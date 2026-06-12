@@ -120,4 +120,16 @@ router.delete('/don-hang/:idDonHang', authMiddleware, requireRole('admin', 'dieu
   }
 });
 
+/** Xóa một lịch sản xuất cụ thể theo ID */
+router.delete('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    await query(`DELETE FROM LichSanXuat WHERE id = @id`, { id });
+    res.json({ success: true, message: 'Xóa lịch sản xuất thành công' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi xóa lịch sản xuất';
+    res.status(500).json({ success: false, message });
+  }
+});
+
 export default router;

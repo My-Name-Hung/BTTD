@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome } from 'react-icons/fi';
 import {
   layDanhSachXe, layDanhSachDonHang, layDanhSachTramTron,
-  layLichSanXuat, taoLichSanXuat, capNhatLichSanXuat,
+  layLichSanXuat, taoLichSanXuat, capNhatLichSanXuat, xoaLichSanXuat,
 } from '../../../shared/services/api';
 import { Xe, DonHang, LichSanXuat, TramTron } from '../../../shared/types';
 import { useToast } from '../../../shared/hooks';
@@ -24,7 +24,6 @@ export default function TaoLichSanXuatPage() {
   const [donHang, setDonHang] = useState<DonHang | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
 
   // Lưu danh sách ID của các lịch sản xuất hiện có (để biết trạm nào đã có, trạm nào cần tạo mới)
@@ -147,10 +146,18 @@ export default function TaoLichSanXuatPage() {
       // Các tramId đang được chọn
       const selectedSet = new Set(selectedTramIds);
 
-      // 1. Cập nhật các trạm đã có lịch
+      // 1. Xóa các trạm đã có lịch nhưng bị bỏ chọn
       for (const tramId of existingTramIds) {
-        if (selectedSet.has(tramId)) {
-          // Trạm đã có và vẫn được chọn -> Cập nhật
+        if (!selectedSet.has(tramId)) {
+          // Trạm đã có nhưng bị bỏ chọn -> Xóa lịch sản xuất
+          const lichId = existingLichMap.get(tramId)!;
+          await xoaLichSanXuat(lichId);
+        }
+      }
+
+      // 2. Cập nhật các trạm đã có lịch và vẫn được chọn
+      for (const tramId of selectedTramIds) {
+        if (existingLichMap.has(tramId)) {
           const lichId = existingLichMap.get(tramId)!;
           const payload: Partial<LichSanXuat> = {
             idXe: form.idXe ? parseInt(form.idXe) : null,
@@ -161,16 +168,12 @@ export default function TaoLichSanXuatPage() {
             ghiChu: form.ghiChu || null,
           };
           await capNhatLichSanXuat(lichId, payload);
-        } else {
-          // Trạm đã có nhưng bị bỏ chọn -> Có thể xóa hoặc giữ tùy yêu cầu
-          // Hiện tại giữ nguyên, không xóa
         }
       }
 
-      // 2. Tạo mới các trạm chưa có lịch
+      // 3. Tạo mới các trạm chưa có lịch
       for (const tramId of selectedTramIds) {
         if (!existingLichMap.has(tramId)) {
-          // Trạm mới được thêm -> Tạo mới
           const payload: Partial<LichSanXuat> = {
             idDonHang: idDonHang!,
             idTramTron: tramId,
@@ -185,7 +188,23 @@ export default function TaoLichSanXuatPage() {
         }
       }
 
-      setShowSuccess(true);
+      // Reload lại để cập nhật danh sách
+      const lichs = await layLichSanXuat(idDonHang);
+      if (lichs?.length) {
+        const allTramIds = lichs
+          .map((l: LichSanXuat) => l.idTramTron)
+          .filter((id): id is number => id != null);
+        setSelectedTramIds([...new Set(allTramIds)]);
+        const lichMap = new Map<number, number>();
+        lichs.forEach((l: LichSanXuat) => {
+          if (l.idTramTron) {
+            lichMap.set(l.idTramTron, l.id);
+          }
+        });
+        setExistingLichMap(lichMap);
+      }
+      setInitialForm(form);
+      showToast('Lưu thay đổi thành công!');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Lỗi', 'error');
     } finally {
@@ -377,17 +396,6 @@ export default function TaoLichSanXuatPage() {
           </div>
         </form>
       </div>
-
-      <ConfirmModal
-        isOpen={showSuccess}
-        onClose={() => { setShowSuccess(false); navigate('/dieu-phoi'); }}
-        onConfirm={() => { setShowSuccess(false); navigate('/dieu-phoi'); }}
-        message={existingLichMap.size > 0 ? 'Cập nhật lịch sản xuất thành công!' : 'Tạo lịch sản xuất thành công!'}
-        confirmText="Đồng ý"
-        cancelText=""
-        title="Thành công"
-        type="success"
-      />
 
       <ConfirmModal
         isOpen={showCancel}
