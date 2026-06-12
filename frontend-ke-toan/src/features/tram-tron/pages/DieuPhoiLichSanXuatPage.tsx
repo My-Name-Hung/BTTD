@@ -236,13 +236,13 @@ export default function DieuPhoiLichSanXuatPage() {
 
   const stats = useMemo(() => {
     const choSanXuat = filteredData.filter(
-      (i) => i.trangThai === "chua_san_xuat",
+      (i) => i.trangThaiDon === "chua_san_xuat",
     ).length;
     const dangSanXuat = filteredData.filter(
-      (i) => i.trangThai === "dang_san_xuat",
+      (i) => i.trangThaiDon === "dang_san_xuat",
     ).length;
     const daXong = filteredData.filter(
-      (i) => i.trangThai === "da_xong",
+      (i) => i.trangThaiDon === "da_xong",
     ).length;
     return { choSanXuat, dangSanXuat, daXong, total: filteredData.length };
   }, [filteredData]);
@@ -258,7 +258,7 @@ export default function DieuPhoiLichSanXuatPage() {
     setMaDonDropdownOpen(false);
   };
 
-  const isEditable = (item: LichSanXuatItem) => {
+  const isEditable = (item: { trangThaiDon?: string }) => {
     const trangThai = item.trangThaiDon || "";
     return !COMPLETED_STATUSES.includes(trangThai);
   };

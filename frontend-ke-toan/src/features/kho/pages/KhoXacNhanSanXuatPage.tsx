@@ -123,7 +123,7 @@ export default function KhoXacNhanSanXuatPage() {
           }
         }
         if (firstLich.bienSoXe) setBienSoXe(firstLich.bienSoXe);
-        if (firstLich.ghiChuXe) setGhiChuXe(firstLich.ghiChuXe);
+        if (firstLich.ghiChu) setGhiChuXe(firstLich.ghiChu);
         if (firstLich.thoiGianBatDauDo) {
           setNgayGioDo(formatDateTimeLocal(firstLich.thoiGianBatDauDo));
         }
@@ -174,7 +174,7 @@ export default function KhoXacNhanSanXuatPage() {
     setSubmitting(true);
     try {
       // Format ngày giờ từ datetime-local (YYYY-MM-DDTHH:mm) sang SQL Server (YYYY-MM-DD HH:mm:ss)
-      const formattedNgayGioDo = ngayGioDo ? `${ngayGioDo}:00` : null;
+      const formattedNgayGioDo = ngayGioDo ? `${ngayGioDo}:00` : "";
 
       await xacNhanSanXuatXong(idDonHang, {
         khoiLuongDaTron: parseFloat(khoiLuongDaTron),
