@@ -22,6 +22,7 @@ export async function layTatCaDonHang(
   limit: number = 20,
   trangThai?: string,
   tuKhoa?: string,
+  nguoiTaoId?: number,
 ): Promise<ApiResponseWithPagination<DonHang[]>> {
   const offset = (page - 1) * limit;
   let whereClause = "WHERE 1=1";
@@ -36,6 +37,11 @@ export async function layTatCaDonHang(
     whereClause +=
       " AND (d.maDonHang LIKE @tuKhoa OR d.tenKhachHang LIKE @tuKhoa OR d.diaChiNhan LIKE @tuKhoa)";
     params.tuKhoa = `%${tuKhoa}%`;
+  }
+
+  if (nguoiTaoId) {
+    whereClause += " AND d.nguoiTaoId = @nguoiTaoId";
+    params.nguoiTaoId = nguoiTaoId;
   }
 
   const countResult = await query<{ total: number }>(

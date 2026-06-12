@@ -25,6 +25,7 @@ import {
   tuChoiDonHang,
   xoaDonHang,
   ThongKeDonHang,
+  layDanhSachNguoiTaoDonHang,
 } from "../../../shared/services/api";
 import {
   ApiResponseWithPagination,
@@ -75,6 +76,8 @@ export default function QuanLyDonHangPage() {
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState("");
   const [trangThai, setTrangThai] = useState("");
+  const [nguoiTaoId, setNguoiTaoId] = useState<number | undefined>();
+  const [danhSachNguoiTao, setDanhSachNguoiTao] = useState<{id: number; hoTen: string; tenDangNhap: string}[]>([]);
 
   const [tuChoiModal, setTuChoiModal] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DonHang | null>(null);
@@ -115,6 +118,7 @@ export default function QuanLyDonHangPage() {
           20,
           trangThai || undefined,
           tuKhoa || undefined,
+          nguoiTaoId,
         ),
         trangThai ? Promise.resolve(null) : layThongKeDonHang(),
       ]);
@@ -125,7 +129,16 @@ export default function QuanLyDonHangPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, trangThai, tuKhoa, showToast]);
+  }, [page, trangThai, tuKhoa, nguoiTaoId, showToast]);
+
+  // Load danh sách người tạo cho filter (admin/ke_toan/GDKD)
+  useEffect(() => {
+    if (isAdmin || isKeToan || isGDKD) {
+      layDanhSachNguoiTaoDonHang()
+        .then(res => setDanhSachNguoiTao(res.data || []))
+        .catch(() => {});
+    }
+  }, [isAdmin, isKeToan, isGDKD]);
 
   useEffect(() => {
     loadData();
@@ -205,6 +218,7 @@ export default function QuanLyDonHangPage() {
   const clearFilters = () => {
     setTuKhoa("");
     setTrangThai("");
+    setNguoiTaoId(undefined);
     resetPage();
   };
 
@@ -424,7 +438,27 @@ export default function QuanLyDonHangPage() {
               ))}
             </select>
           </div>
-          {(tuKhoa || trangThai) && (
+          {(isAdmin || isKeToan || isGDKD) && (
+            <div className={styles.filterItem}>
+              <span className={styles.filterLabel}>Người tạo</span>
+              <select
+                className={`${styles.filterSelect} ${nguoiTaoId ? styles.filterSelectActive : ""}`}
+                value={nguoiTaoId || ""}
+                onChange={(e) => {
+                  setNguoiTaoId(e.target.value ? parseInt(e.target.value) : undefined);
+                  resetPage();
+                }}
+              >
+                <option value="">Tất cả</option>
+                {danhSachNguoiTao.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.hoTen || u.tenDangNhap}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {(tuKhoa || trangThai || nguoiTaoId) && (
             <button className={styles.filterClearBtn} onClick={clearFilters}>
               <FiX size={13} /> Xóa lọc
             </button>
@@ -449,6 +483,9 @@ export default function QuanLyDonHangPage() {
                   <tr>
                     <th style={{ minWidth: 80 }}>Mã đơn</th>
                     <th style={{ minWidth: 100 }}>Khách hàng</th>
+                    {(isAdmin || isKeToan || isGDKD) && (
+                      <th style={{ minWidth: 100 }}>Người tạo</th>
+                    )}
                     <th
                       className={styles.hideOnMobile}
                       style={{ minWidth: 60 }}
@@ -478,6 +515,13 @@ export default function QuanLyDonHangPage() {
                           {dh.tenKhachHang}
                         </div>
                       </td>
+                      {(isAdmin || isKeToan || isGDKD) && (
+                        <td>
+                          <div className={styles.tableNameFive}>
+                            {dh.tenNguoiTao || dh.nguoiTaoId || "—"}
+                          </div>
+                        </td>
+                      )}
                       <td className={styles.hideOnMobile}>
                         <span className={styles.tableMac}>
                           {dh.tenMacBeTong}

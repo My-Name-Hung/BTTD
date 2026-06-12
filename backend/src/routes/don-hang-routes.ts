@@ -14,8 +14,37 @@ import {
   xoaDonHang,
 } from '../services/don-hang-service';
 import { ghiNhatKy } from '../services/access-history-service';
+import { query } from '../config/database';
 
 const router = Router();
+
+/** Lấy danh sách user (sales) cho filter người tạo - chỉ admin/ke_toan/dieu_phoi */
+router.get('/nguoi-tao', authMiddleware, requireRole('admin', 'ke_toan', 'dieu_phoi', 'giam_doc_kinh_doanh'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const tuKhoa = (req.query.q as string) || '';
+    let whereClause = "WHERE vaiTro IN ('sale', 'admin', 'dieu_phoi', 'ke_toan')";
+    const params: Record<string, unknown> = {};
+    
+    if (tuKhoa) {
+      whereClause += " AND (hoTen LIKE @tuKhoa OR tenDangNhap LIKE @tuKhoa)";
+      params.tuKhoa = `%${tuKhoa}%`;
+    }
+    
+    const users = await query<any[]>(
+      `SELECT id, hoTen, tenDangNhap FROM NguoiDung ${whereClause} ORDER BY hoTen`,
+      params
+    );
+    
+    res.json({
+      success: true,
+      message: 'Lấy danh sách người tạo thành công',
+      data: users,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi lấy danh sách người tạo';
+    res.status(500).json({ success: false, message });
+  }
+});
 
 router.get(
   '/',
@@ -25,6 +54,7 @@ router.get(
     queryValidator('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
     queryValidator('trangThai').optional().trim(),
     queryValidator('tuKhoa').optional().trim(),
+    queryValidator('nguoiTaoId').optional().isInt({ min: 1 }).toInt(),
   ],
   validate([]),
   async (req: AuthRequest, res: Response<ApiResponse>) => {
@@ -33,6 +63,7 @@ router.get(
       const limit = (req.query.limit as unknown as number) || 20;
       const trangThai = req.query.trangThai as string | undefined;
       const tuKhoa = req.query.tuKhoa as string | undefined;
+      const nguoiTaoId = req.query.nguoiTaoId as number | undefined;
 
       const vaiTro = req.user?.vaiTro;
       const idTram = req.user?.idTramTron ?? null;
@@ -55,21 +86,25 @@ router.get(
         let whereClause = 'WHERE dh.nguoiTaoId = @nguoiTaoId';
         if (trangThai) whereClause += ` AND dh.trangThaiDon = @trangThai`;
         if (tuKhoa) whereClause += ` AND (dh.maDonHang LIKE @tuKhoa OR dh.tenKhachHang LIKE @tuKhoa)`;
+        if (nguoiTaoId) whereClause += ` AND dh.nguoiTaoId = @nguoiTaoIdFilter`;
 
         const dbModule = await import('../config/database');
         const countResult = await dbModule.query<{ total: number }>(
           `SELECT COUNT(*) as total FROM DonHang dh ${whereClause}`,
-          { nguoiTaoId: req.user!.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined }
+          { nguoiTaoId: req.user!.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined, nguoiTaoIdFilter: nguoiTaoId }
         );
         const total = countResult[0]?.total || 0;
 
         const data = await dbModule.query<any>(
-          `SELECT dh.*, t.tenTram as tenTramTron FROM DonHang dh
+          `SELECT dh.*, t.tenTram as tenTramTron,
+                  nd.maNhanVien as maNguoiTao, nd.hoTen as tenNguoiTao
+           FROM DonHang dh
            LEFT JOIN TramTron t ON dh.idTramTron = t.id
+           LEFT JOIN NguoiDung nd ON dh.nguoiTaoId = nd.id
            ${whereClause}
            ORDER BY dh.ngayTao DESC
            OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
-          { nguoiTaoId: req.user!.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined, offset, limit }
+          { nguoiTaoId: req.user!.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined, nguoiTaoIdFilter: nguoiTaoId, offset, limit }
         );
 
         res.json({
@@ -101,8 +136,11 @@ router.get(
         const total = countResult[0]?.total || 0;
 
         const data = await dbModule.query<any>(
-          `SELECT dh.*, t.tenTram as tenTramTron FROM DonHang dh
+          `SELECT dh.*, t.tenTram as tenTramTron,
+                  nd.maNhanVien as maNguoiTao, nd.hoTen as tenNguoiTao
+           FROM DonHang dh
            LEFT JOIN TramTron t ON dh.idTramTron = t.id
+           LEFT JOIN NguoiDung nd ON dh.nguoiTaoId = nd.id
            ${whereClause}
            ORDER BY dh.ngayTao DESC
            OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
@@ -119,7 +157,7 @@ router.get(
       }
 
       // admin, ke_toan, dieu_phoi: xem tất cả
-      const result = await layTatCaDonHang(page, limit, trangThai, tuKhoa);
+      const result = await layTatCaDonHang(page, limit, trangThai, tuKhoa, nguoiTaoId);
       res.json(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Lỗi lấy danh sách đơn hàng';

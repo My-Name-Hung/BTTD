@@ -105,6 +105,7 @@ export async function layDanhSachDonHang(
   limit = 20,
   trangThai?: string,
   tuKhoa?: string,
+  nguoiTaoId?: number,
 ): Promise<ApiResponseWithPagination<DonHang[]>> {
   const params = new URLSearchParams({
     page: String(page),
@@ -112,12 +113,22 @@ export async function layDanhSachDonHang(
   });
   if (trangThai) params.append("trangThai", trangThai);
   if (tuKhoa) params.append("tuKhoa", tuKhoa);
+  if (nguoiTaoId) params.append("nguoiTaoId", String(nguoiTaoId));
   const res = await fetch(`${BASE_URL}/don-hang?${params}`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message);
   return json as ApiResponseWithPagination<DonHang[]>;
+}
+
+export async function layDanhSachNguoiTaoDonHang(): Promise<{ success: boolean; data: { id: number; hoTen: string; tenDangNhap: string }[] }> {
+  const res = await fetch(`${BASE_URL}/don-hang/nguoi-tao`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json;
 }
 
 export async function layDonHang(id: number): Promise<DonHang> {
