@@ -102,15 +102,6 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
     const idDonHang = parseInt(req.params.idDonHang, 10);
     const { khoiLuongDaTron, ngayGioDo, idXe, bienSoXe, ghiChuXe } = req.body;
 
-    // DEBUG
-    console.log('[DEBUG] xac-nhan-san-xuat-xong:', {
-      idDonHang,
-      khoiLuongDaTron,
-      ngayGioDo,
-      idXe,
-      bienSoXe
-    });
-
     // Kiểm tra đơn hàng tồn tại
     const donHang = await query<DonHang>(
       `SELECT * FROM DonHang WHERE id = @id`,
@@ -185,32 +176,18 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       }
     );
 
-    // Tính tổng số khối đã trộn của TẤT CẢ các trạm cho đơn này (bao gồm cả giá trị 0)
-    // Query riêng để đảm bảo lấy đúng giá trị sau khi UPDATE
+    // Tính tổng số khối đã trộn của TẤT CẢ các trạm cho đơn này
     const tongKhoiLuongDaTron = await query<{ tong: number }>(
       `SELECT SUM(khoiLuongDaTron) as tong FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai = N'da_xong' AND khoiLuongDaTron IS NOT NULL`,
       { idDonHang }
     );
 
-    // DEBUG
-    console.log('[DEBUG] sau khi SUM:', {
-      tongKhoiLuongDaTron,
-      khoiLuongDat: donHang[0].khoiLuongDat
-    });
-
     const tongDaTron = tongKhoiLuongDaTron[0]?.tong || 0;
-    const khoiLuongDat = donHang[0].khoiLuongDat || 0;
-    const conLai = khoiLuongDat - tongDaTron;
 
-    // Nếu còn khối lại > 0 → giữ nguyên trạng thái dang_san_xuat (cho phép thêm trạm khác)
-    // Nếu đủ khối (conLai <= 0) → chuyển sang dang_giao
-    let newTrangThai = 'dang_san_xuat';
-    let message = 'Đã xác nhận sản xuất xong cho trạm này. Còn ' + conLai + ' m³ chưa trộn.';
-
-    if (conLai <= 0) {
-      newTrangThai = 'dang_giao';
-      message = 'Đã xác nhận sản xuất xong. Chuyển sang trạng thái đang giao.';
-    }
+    // Khi kho xác nhận sản xuất xong cho trạm → chuyển đơn sang "đang giao" ngay
+    // (Không cần kiểm tra đủ khối hay chưa - đơn sẽ giao phần đã trộn)
+    let newTrangThai = 'dang_giao';
+    let message = 'Đã xác nhận sản xuất xong. Đơn hàng chuyển sang trạng thái đang giao.';
 
     await query(
       `UPDATE DonHang SET trangThaiDon = @trangThai, ngayCapNhat = ${vnNow()} WHERE id = @id`,
@@ -229,17 +206,15 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user?.id, 'XAC_NHAN_SX_XONG', 'DonHang', idDonHang,
       JSON.stringify({ khoiLuongDaTron }),
-      JSON.stringify({ trangThai: newTrangThai, conLai }),
+      JSON.stringify({ trangThai: newTrangThai, tongDaTron }),
       ip);
 
-    res.json({ 
-      success: true, 
-      message, 
+    res.json({
+      success: true,
+      message,
       data: {
         donHang: updatedDonHang,
         tongKhoiLuongDaTron: tongDaTron,
-        khoiLuongConLai: Math.max(0, conLai),
-        daDuKhối: conLai <= 0
       }
     });
   } catch (error) {
