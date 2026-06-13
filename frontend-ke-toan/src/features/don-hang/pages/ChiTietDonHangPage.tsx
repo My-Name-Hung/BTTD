@@ -172,7 +172,7 @@ export default function ChiTietDonHangPage() {
   ]);
 
   const [donHang, setDonHang] = useState<DonHang | null>(null);
-  const [lichSX, setLichSX] = useState<LichSanXuat | null>(null);
+  const [lichSXs, setLichSXs] = useState<LichSanXuat[]>([]);
   const [nghiemThu, setNghiemThu] = useState<NghiemThu | null>(null);
   const [hoaDons, setHoaDons] = useState<HoaDon[]>([]);
   const [bangChungs, setBangChungs] = useState<BangChungDonHang[]>([]);
@@ -241,7 +241,7 @@ export default function ChiTietDonHangPage() {
         layLichSuTraLai(parseInt(id)),
       ]);
       setDonHang(dh);
-      setLichSX(lsArr[0] || null);
+      setLichSXs(lsArr || []);
       setNghiemThu(ntArr || null);
       setHoaDons(hdArr || []);
       setBangChungs(bcArr || []);
@@ -914,35 +914,47 @@ export default function ChiTietDonHangPage() {
           </div>
         </div>
 
-        {lichSX ? (
-          <table className={styles.subTable}>
-            <tbody>
-              <tr>
-                <th style={{ width: 160 }}>Biển số xe</th>
-                <td>{lichSX.bienSoXe || "—"}</td>
-                <th style={{ width: 160 }}>Tài xế</th>
-                <td>{lichSX.tenTaiXe || "—"}</td>
-              </tr>
-              <tr>
-                <th>Kỹ thuật</th>
-                <td>{lichSX.kyThuatCongTrinh || "—"}</td>
-                <th>Người ôm ống</th>
-                <td>{lichSX.nguoiOmOng || "—"}</td>
-              </tr>
-              <tr>
-                <th>Người bắt ống</th>
-                <td>{lichSX.nguoiBatOng || "—"}</td>
-                <th>Phương án đổ</th>
-                <td>{lichSX.phuongAnDo || "—"}</td>
-              </tr>
-              {lichSX.ghiChu && (
-                <tr>
-                  <th>Ghi chú</th>
-                  <td colSpan={3}>{lichSX.ghiChu}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        {lichSXs.length > 0 ? (
+          <div className={styles.subTableWrap}>
+            {lichSXs.map((lichSX, idx) => (
+              <div key={lichSX.id} className={styles.tramBlock}>
+                <div className={styles.tramBlockHeader}>
+                  <FiPackage size={14} style={{ color: "var(--color-primary)" }} />
+                  <span className={styles.tramBlockTitle}>
+                    Trạm {idx + 1}: {lichSX.tenTram || "Chưa gán trạm"}
+                  </span>
+                </div>
+                <table className={styles.subTable}>
+                  <tbody>
+                    <tr>
+                      <th style={{ width: 160 }}>Biển số xe</th>
+                      <td>{lichSX.bienSoXe || "—"}</td>
+                      <th style={{ width: 160 }}>Tài xế</th>
+                      <td>{lichSX.tenTaiXe || "—"}</td>
+                    </tr>
+                    <tr>
+                      <th>Kỹ thuật</th>
+                      <td>{lichSX.kyThuatCongTrinh || "—"}</td>
+                      <th>Người ôm ống</th>
+                      <td>{lichSX.nguoiOmOng || "—"}</td>
+                    </tr>
+                    <tr>
+                      <th>Người bắt ống</th>
+                      <td>{lichSX.nguoiBatOng || "—"}</td>
+                      <th>Phương án đổ</th>
+                      <td>{lichSX.phuongAnDo || "—"}</td>
+                    </tr>
+                    {lichSX.ghiChu && (
+                      <tr>
+                        <th>Ghi chú</th>
+                        <td colSpan={3}>{lichSX.ghiChu}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className={styles.subTableEmpty}>
             <FiTruck size={24} style={{ opacity: 0.3, marginBottom: 8 }} />

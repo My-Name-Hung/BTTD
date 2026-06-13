@@ -649,7 +649,7 @@ export default function KhoLichSanXuatPage() {
                             fontWeight: 700,
                           }}
                         >
-                          {khoiLuongConLai > 0 ? `${khoiLuongConLai.toFixed(1)} m³` : "OK"}
+                          {khoiLuongConLai > 0 ? `${khoiLuongConLai.toFixed(1)} m³` : "—"}
                         </span>
                       </td>
                       <td>
@@ -717,6 +717,12 @@ export default function KhoLichSanXuatPage() {
                             // Xác định số trạm trong đơn
                             const soTram = item.tramTrons.length;
                             const isMotTram = soTram <= 1;
+
+                            // Nếu đã trộn đủ (khoiLuongConLai = 0): không hiển thị nút hành động
+                            // vì đơn đã hoàn thành sản xuất đủ khối lượng ban đầu
+                            if (khoiLuongConLai === 0) {
+                              return null;
+                            }
 
                             // Nếu chưa trộn gì (khoiLuongDaTron = 0): luôn hiển thị nút "SX xong"
                             // (bất kể 1 trạm hay nhiều trạm - đây là lần xác nhận đầu tiên)

@@ -147,6 +147,7 @@ export interface LichSanXuat {
   idXe: number | null;
   idTramTron: number | null;
   idTaiXe: number | null;
+  tenTram?: string | null;
   kyThuatCongTrinh: string | null;
   nguoiOmOng: string | null;
   nguoiBatOng: string | null;

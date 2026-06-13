@@ -460,6 +460,38 @@
   border-bottom: none;
 }
 
+.subTableWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tramBlock {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-accent, #f8fafc);
+}
+
+.tramBlockHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: linear-gradient(90deg, rgba(7, 60, 235, 0.08), rgba(7, 60, 235, 0.02));
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.tramBlockTitle {
+  font-size: 14px;
+}
+
+.tramBlock .subTable {
+  background: var(--color-white);
+}
+
 .subTableEmpty {
   text-align: center;
   padding: 20px;
