@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FiEdit2, FiEye, FiPackage, FiTruck } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
 import { layTatCaLichSanXuat } from "../../../shared/services/api";
@@ -87,6 +87,14 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
 
     const group = map.get(item.idDonHang)!;
 
+    // Ưu tiên lấy thông tin tài xế/biển số từ dòng có dữ liệu (không null)
+    if (!group.tenTaiXe && item.tenTaiXe) {
+      group.tenTaiXe = item.tenTaiXe;
+    }
+    if (!group.bienSoXe && item.bienSoXe) {
+      group.bienSoXe = item.bienSoXe;
+    }
+
     if (item.idTramTron && item.tenTram) {
       if (!group.tramTrons.find(t => t.id === item.idTramTron)) {
         group.tramTrons.push({
@@ -149,6 +157,7 @@ const COMPLETED_STATUSES = ["nghiem_thu", "da_nghiem_thu", "da_thanh_toan", "hoa
 
 export default function DieuPhoiLichSanXuatPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
   const [data, setData] = useState<LichSanXuatItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -181,7 +190,7 @@ export default function DieuPhoiLichSanXuatPage() {
       return;
     }
     loadData();
-  }, [navigate, loadData]);
+  }, [navigate, loadData, location.key]);
 
   // Group dữ liệu theo đơn hàng - mỗi đơn 1 dòng
   const groupedData = useMemo(() => {

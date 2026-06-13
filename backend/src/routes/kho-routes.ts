@@ -138,10 +138,6 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       return;
     }
 
-    // Lấy lịch sản xuất đầu tiên để cập nhật
-    const lichCanCapNhat = lichSanXuatList[0];
-
-    // Cập nhật thông tin vào lịch sản xuất
     // Lấy idTaiXe từ bảng Xe (idTaiKhoan = id tài xế trong NguoiDung)
     let idTaiXeValue: number | null = null;
     if (idXe) {
@@ -154,27 +150,31 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       }
     }
 
-    await query(
-      `UPDATE LichSanXuat SET
-        khoiLuongDaTron = @khoiLuongDaTron,
-        thoiGianBatDauDo = @thoiGianBatDauDo,
-        idXe = @idXe,
-        bienSoXe = @bienSoXe,
-        ghiChuXe = @ghiChuXe,
-        idTaiXe = @idTaiXe,
-        trangThai = N'da_xong',
-        ngayCapNhat = ${vnNow()}
-       WHERE id = @id`,
-      {
-        id: lichCanCapNhat.id,
-        khoiLuongDaTron: khoiLuongDaTron != null ? khoiLuongDaTron : null,
-        thoiGianBatDauDo: ngayGioDo || null,
-        idXe: idXe || null,
-        bienSoXe: bienSoXe || null,
-        ghiChuXe: ghiChuXe || null,
-        idTaiXe: idTaiXeValue,
-      }
-    );
+    // Cập nhật TẤT CẢ các lịch sản xuất thuộc đơn hàng (cùng danh sách đã query ở trên)
+    // để đảm bảo tất cả các trạm đều có cùng thông tin tài xế
+    for (const lichCanCapNhat of lichSanXuatList) {
+      await query(
+        `UPDATE LichSanXuat SET
+          khoiLuongDaTron = @khoiLuongDaTron,
+          thoiGianBatDauDo = @thoiGianBatDauDo,
+          idXe = @idXe,
+          bienSoXe = @bienSoXe,
+          ghiChuXe = @ghiChuXe,
+          idTaiXe = @idTaiXe,
+          trangThai = N'da_xong',
+          ngayCapNhat = ${vnNow()}
+         WHERE id = @id`,
+        {
+          id: lichCanCapNhat.id,
+          khoiLuongDaTron: khoiLuongDaTron != null ? khoiLuongDaTron : null,
+          thoiGianBatDauDo: ngayGioDo || null,
+          idXe: idXe || null,
+          bienSoXe: bienSoXe || null,
+          ghiChuXe: ghiChuXe || null,
+          idTaiXe: idTaiXeValue,
+        }
+      );
+    }
 
     // Tính tổng số khối đã trộn của TẤT CẢ các trạm cho đơn này
     const tongKhoiLuongDaTron = await query<{ tong: number }>(

@@ -8,6 +8,7 @@ import {
   layDonHangTheoXe,
   capNhatLichSanXuat,
   xoaLichSanXuatTheoDonHang,
+  xoaLichSanXuat,
   xacNhanDaGiao,
 } from '../services/dieu-phoi-service';
 import { ghiNhatKy } from '../services/access-history-service';

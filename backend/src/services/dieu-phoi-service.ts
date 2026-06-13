@@ -294,3 +294,7 @@ export async function layDonHangTheoXe(idXe: number): Promise<any[]> {
     { idXe }
   );
 }
+
+export async function xoaLichSanXuat(id: number): Promise<void> {
+  await query(`DELETE FROM LichSanXuat WHERE id = @id`, { id });
+}

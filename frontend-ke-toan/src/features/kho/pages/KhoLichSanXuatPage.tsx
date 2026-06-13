@@ -95,6 +95,14 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
 
     const group = map.get(item.idDonHang)!;
 
+    // Ưu tiên lấy thông tin tài xế/biển số từ dòng có dữ liệu (không null)
+    if (!group.tenTaiXe && item.tenTaiXe) {
+      group.tenTaiXe = item.tenTaiXe;
+    }
+    if (!group.bienSoXe && item.bienSoXe) {
+      group.bienSoXe = item.bienSoXe;
+    }
+
     // Nếu backend không trả tongKhoiLuongDaTron thì cộng dồn từ mỗi trạm
     if (!item.tongKhoiLuongDaTron && item.khoiLuongDaTron) {
       group.tongKhoiLuongDaTron += item.khoiLuongDaTron;

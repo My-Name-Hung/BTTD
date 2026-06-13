@@ -64,7 +64,9 @@ export default function TaoLichSanXuatPage() {
 
           const lichs = await layLichSanXuat(idDonHang);
           if (lichs?.length) {
-            const lich = lichs[0];
+            // Ưu tiên lấy lịch đã có thông tin tài xế/xe (không null) để hiển thị form
+            const lichCoTaiXe = lichs.find((l: any) => l.idXe || l.bienSoXe || l.idTaiXe) || lichs[0];
+            const lich = lichCoTaiXe;
             const tram = tramRes.find((t: TramTron) => t.id === lich.idTramTron);
 
             const tongDaTron = lichs.reduce((sum: number, l: any) => {
@@ -220,6 +222,9 @@ export default function TaoLichSanXuatPage() {
       setExistingLichMap(newLichMap);
       setInitialForm(form);
       showToast('Lưu thay đổi thành công!');
+      setTimeout(() => {
+        navigate('/dieu-phoi/lich-san-xuat', { state: { refresh: Date.now() } });
+      }, 300);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Lỗi', 'error');
     } finally {
@@ -231,7 +236,7 @@ export default function TaoLichSanXuatPage() {
     if (hasChanges) {
       setShowCancel(true);
     } else {
-      navigate('/dieu-phoi-lich-san-xuat');
+      navigate('/dieu-phoi/lich-san-xuat', { state: { refresh: Date.now() } });
     }
   };
 
@@ -431,7 +436,7 @@ export default function TaoLichSanXuatPage() {
       <ConfirmModal
         isOpen={showCancel}
         onClose={() => setShowCancel(false)}
-        onConfirm={() => { setShowCancel(false); navigate('/dieu-phoi-lich-san-xuat'); }}
+        onConfirm={() => { setShowCancel(false); navigate('/dieu-phoi/lich-san-xuat', { state: { refresh: Date.now() } }); }}
         message="Bạn có chắc muốn hủy bỏ? Dữ liệu đã nhập sẽ không được lưu."
         confirmText="Hủy bỏ"
         cancelText="Ở lại"
