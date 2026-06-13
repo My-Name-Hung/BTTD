@@ -98,7 +98,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Lịch sản xuất (Trạm trộn)",
     icon: <MdFactory size={20} />,
     iconActive: <MdFactory size={20} />,
-    roles: ["admin", "tram_tron"],
+    roles: ["admin", "giam_doc_kinh_doanh", "tram_tron"],
   },
   // Điều phối - Lịch sản xuất
   {
@@ -106,7 +106,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Lịch sản xuất (Điều phối)",
     icon: <MdFactory size={20} />,
     iconActive: <MdFactory size={20} />,
-    roles: ["admin", "dieu_phoi"],
+    roles: ["admin", "giam_doc_kinh_doanh", "dieu_phoi"],
   },
   // Điều phối
   {
@@ -121,7 +121,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Mác bê tông",
     icon: <MdFactory size={20} />,
     iconActive: <MdFactory size={20} />,
-    roles: ["admin", "dieu_phoi", "sale"],
+    roles: ["admin", "giam_doc_kinh_doanh", "dieu_phoi", "sale"],
   },
   // Giao hàng
   {
@@ -129,7 +129,7 @@ const SIDEBAR_ITEMS: MenuItem[] = [
     label: "Giao hàng",
     icon: <MdDeliveryDining size={20} />,
     iconActive: <MdDeliveryDining size={20} />,
-    roles: ["admin", "tai_xe", "ky_thuat"],
+    roles: ["admin", "giam_doc_kinh_doanh", "tai_xe", "ky_thuat"],
   },
   // Nghiệm thu
   {
@@ -310,14 +310,14 @@ const BOTTOM_TABS = [
     label: "Trạm trộn",
     icon: <MdFactory size={22} />,
     iconActive: <MdFactory size={22} />,
-    roles: ["admin", "tram_tron"],
+    roles: ["admin", "giam_doc_kinh_doanh", "tram_tron"],
   },
   {
     path: "/dieu-phoi/lich-san-xuat",
     label: "Điều phối",
     icon: <MdFactory size={22} />,
     iconActive: <MdFactory size={22} />,
-    roles: ["admin", "dieu_phoi"],
+    roles: ["admin", "giam_doc_kinh_doanh", "dieu_phoi"],
   },
   {
     path: "/dieu-phoi",
@@ -331,7 +331,7 @@ const BOTTOM_TABS = [
     label: "Giao hàng",
     icon: <MdDeliveryDining size={22} />,
     iconActive: <MdDeliveryDining size={22} />,
-    roles: ["admin", "tai_xe", "ky_thuat"],
+    roles: ["admin", "giam_doc_kinh_doanh", "tai_xe", "ky_thuat"],
   },
   {
     path: "/nghiem-thu",

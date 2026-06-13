@@ -170,16 +170,18 @@ export default function DieuPhoiLichSanXuatPage() {
   const [tenKhachFilter, setTenKhachFilter] = useState("");
   const [maDonDropdownOpen, setMaDonDropdownOpen] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await layTatCaLichSanXuat();
       setData((res || []) as unknown as LichSanXuatItem[]);
     } catch (err) {
       console.error("Lỗi tải lịch sản xuất:", err);
-      showToast("Không tải được dữ liệu lịch sản xuất", "error");
+      if (!silent) {
+        showToast("Không tải được dữ liệu lịch sản xuất", "error");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [showToast]);
 
@@ -190,6 +192,11 @@ export default function DieuPhoiLichSanXuatPage() {
       return;
     }
     loadData();
+    // Auto reload mỗi 30s để cập nhật dữ liệu mới (silent - không block UI)
+    const interval = setInterval(() => {
+      loadData(true);
+    }, 30000);
+    return () => clearInterval(interval);
   }, [navigate, loadData, location.key]);
 
   // Group dữ liệu theo đơn hàng - mỗi đơn 1 dòng

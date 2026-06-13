@@ -27,7 +27,7 @@ interface LichSanXuatWithDonHang extends LichSanXuat {
 router.get(
   "/lich-san-xuat",
   authMiddleware,
-  requireRole("tram_tron", "admin"),
+  requireRole("tram_tron", "admin", "giam_doc_kinh_doanh"),
   async (req: AuthRequest, res: Response) => {
     try {
       const page = parseInt(String(req.query.page || "1"), 10);
@@ -148,7 +148,7 @@ router.get(
 router.get(
   "/don-hang/:id",
   authMiddleware,
-  requireRole("tram_tron", "admin", "dieu_phoi"),
+  requireRole("tram_tron", "admin", "giam_doc_kinh_doanh", "dieu_phoi"),
   async (req: AuthRequest, res: Response) => {
     try {
       const idDonHang = parseInt(req.params.id, 10);

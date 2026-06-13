@@ -125,6 +125,40 @@ export default function TaoLichSanXuatPage() {
     load();
   }, [idDonHang, showToast]);
 
+  // Auto reload dữ liệu lịch sản xuất mỗi 30s (silent - không block UI)
+  // Chỉ refresh existingLichMap/selectedTramIds/tongKhoiLuongDaTron, không đụng form
+  useEffect(() => {
+    if (!idDonHang) return;
+    const interval = setInterval(async () => {
+      try {
+        const lichs = await layLichSanXuat(idDonHang);
+        const tongDaTron = (lichs || []).reduce((sum: number, l: any) => {
+          return sum + (l.khoiLuongDaTron || 0);
+        }, 0);
+        setTongKhoiLuongDaTron(tongDaTron);
+
+        const allTramIds = (lichs || [])
+          .map((l: LichSanXuat) => l.idTramTron)
+          .filter((id): id is number => id != null);
+        setSelectedTramIds((prev) => {
+          const merged = [...new Set([...prev, ...allTramIds])];
+          return merged;
+        });
+
+        const lichMap = new Map<number, number>();
+        (lichs || []).forEach((l: LichSanXuat) => {
+          if (l.idTramTron) {
+            lichMap.set(l.idTramTron, l.id);
+          }
+        });
+        setExistingLichMap(lichMap);
+      } catch (err) {
+        console.error('Lỗi auto-reload lịch sản xuất:', err);
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [idDonHang]);
+
   const handleXeChange = (xeId: string) => {
     const xe = xes.find((x) => x.id === parseInt(xeId));
     setForm({ ...form, idXe: xeId, bienSoXe: xe?.bienSo || '' });

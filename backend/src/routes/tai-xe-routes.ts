@@ -21,10 +21,11 @@ router.get(
 
       const isAdmin = req.user.vaiTro === 'admin';
       const isKyThuat = req.user.vaiTro === 'ky_thuat';
+      const isGiamDoc = req.user.vaiTro === 'giam_doc_kinh_doanh';
       let data;
 
-      if (isAdmin || isKyThuat) {
-        // Admin và Kỹ thuật xem tất cả đơn đang giao
+      if (isAdmin || isKyThuat || isGiamDoc) {
+        // Admin, Kỹ thuật và Giám đốc kinh doanh xem tất cả đơn đang giao
         data = await query<any>(
           `SELECT dh.* FROM DonHang dh
            WHERE dh.trangThaiDon = N'dang_giao'
@@ -67,9 +68,10 @@ router.get(
 
       const isAdmin = req.user.vaiTro === 'admin';
       const isKyThuat = req.user.vaiTro === 'ky_thuat';
+      const isGiamDoc = req.user.vaiTro === 'giam_doc_kinh_doanh';
 
-      if (isAdmin || isKyThuat) {
-        // Admin và Kỹ thuật xem tất cả thống kê
+      if (isAdmin || isKyThuat || isGiamDoc) {
+        // Admin, Kỹ thuật và Giám đốc kinh doanh xem tất cả thống kê
         const [tongRes, chuaGiaoRes, daGiaoRes] = await Promise.all([
           query<any>(`SELECT COUNT(*) as cnt FROM DonHang dh`, {}),
           query<any>(
@@ -146,10 +148,11 @@ router.get(
 
       const isAdmin = req.user.vaiTro === 'admin';
       const isKyThuat = req.user.vaiTro === 'ky_thuat';
+      const isGiamDoc = req.user.vaiTro === 'giam_doc_kinh_doanh';
       let data;
 
-      if (isAdmin || isKyThuat) {
-        // Admin và Kỹ thuật xem tất cả đơn đã giao
+      if (isAdmin || isKyThuat || isGiamDoc) {
+        // Admin, Kỹ thuật và Giám đốc kinh doanh xem tất cả đơn đã giao
         data = await query<any>(
           `SELECT dh.* FROM DonHang dh
            WHERE dh.trangThaiDon = N'da_giao'
@@ -191,10 +194,11 @@ router.get(
       }
 
       const isAdmin = req.user.vaiTro === 'admin';
+      const isGiamDoc = req.user.vaiTro === 'giam_doc_kinh_doanh';
       let data;
 
-      if (isAdmin) {
-        // Admin xem tất cả lịch sử giao hàng - chỉ ĐÃ GIAO
+      if (isAdmin || isGiamDoc) {
+        // Admin và Giám đốc kinh doanh xem tất cả lịch sử giao hàng - chỉ ĐÃ GIAO
         data = await query<any>(
           `SELECT dh.* FROM DonHang dh
            WHERE dh.trangThaiDon = N'da_giao'

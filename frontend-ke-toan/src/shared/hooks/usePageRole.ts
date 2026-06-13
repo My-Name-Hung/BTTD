@@ -30,7 +30,7 @@ export const PERMISSIONS = {
   'donhang.view_own': ['sale', 'tai_xe', 'ky_thuat'],
 
   // === DIEU PHOI ===
-  'dieuphoi.access': ['admin', 'dieu_phoi'],
+  'dieuphoi.access': ['admin', 'giam_doc_kinh_doanh', 'dieu_phoi'],
   'dieuphoi.create': ['admin', 'dieu_phoi'],
   'dieuphoi.edit': ['admin', 'dieu_phoi'],
   'dieuphoi.confirm': ['admin', 'dieu_phoi', 'giam_doc_kinh_doanh', 'ke_toan'],
@@ -54,12 +54,12 @@ export const PERMISSIONS = {
   'khachhang.delete': ['admin'],
 
   // === TRAM TRON ===
-  'tramtron.access': ['admin', 'tram_tron'],
+  'tramtron.access': ['admin', 'giam_doc_kinh_doanh', 'tram_tron'],
   'tramtron.confirm_delivery': ['admin', 'tram_tron'],
   'tramtron.confirm_complete': ['admin', 'tram_tron'],
 
   // === TAI XE ===
-  'taixe.access': ['admin', 'tai_xe', 'ky_thuat'],
+  'taixe.access': ['admin', 'giam_doc_kinh_doanh', 'tai_xe', 'ky_thuat'],
   'taixe.update_giao': ['admin', 'tai_xe', 'ky_thuat'],
 
   // === KY THUAT ===
@@ -68,10 +68,11 @@ export const PERMISSIONS = {
 
   // === THAM SO ===
   'thamso.access': ['admin'],
-  'thamso.mac.create': ['admin', 'dieu_phoi', 'sale'],
-  'thamso.mac.edit': ['admin', 'dieu_phoi', 'sale'],
+  'thamso.mac.create': ['admin', 'giam_doc_kinh_doanh', 'dieu_phoi', 'sale'],
+  'thamso.mac.edit': ['admin', 'giam_doc_kinh_doanh', 'dieu_phoi', 'sale'],
   'thamso.xe.create': ['admin'],
   'thamso.xe.edit': ['admin', 'dieu_phoi'],
+  'thamso.mac.view': ['admin', 'giam_doc_kinh_doanh', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'sale', 'tai_xe', 'ky_thuat', 'tram_tron'],
 } as const;
 
 export function usePageRole() {

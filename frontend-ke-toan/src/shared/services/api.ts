@@ -380,8 +380,8 @@ export async function layLichSanXuat(
 }
 
 export async function layTatCaLichSanXuat(): Promise<LichSanXuat[]> {
-  const res = await request<{ data: LichSanXuat[]; pagination: any }>("/dieu-phoi?page=1&limit=500");
-  return (res?.data as LichSanXuat[]) ?? [];
+  // Backend trả về {success, message, data: [...], pagination}; request<T> unwrap data.data
+  return request<LichSanXuat[]>("/dieu-phoi?page=1&limit=500");
 }
 
 export async function layDonHangTheoXe(idXe: number): Promise<any[]> {
