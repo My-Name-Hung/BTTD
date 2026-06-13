@@ -117,6 +117,9 @@ export interface DonHang {
   nguoiDuyetGDKDId: number | null;
   ghiChu: string | null;
   lyDoTuChoi: string | null;
+  nguoiTuChoiId: number | null;
+  nguoiTuChoi: string | null;
+  buocTuChoi: number | null; // 1 = GDKD từ chối, 2 = Kế toán từ chối
 
   daThanhToan: number;
   conLai: number | null;

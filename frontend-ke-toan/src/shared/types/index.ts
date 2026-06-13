@@ -117,6 +117,10 @@ export interface DonHang {
   nguoiDuyetGDKDId: number | null;
   ghiChu: string | null;
   lyDoTuChoi: string | null;
+  // Thông tin người từ chối (để phân biệt GDKD hay Kế toán từ chối)
+  nguoiTuChoiId: number | null;
+  nguoiTuChoi: string | null;
+  buocTuChoi: number | null; // 1 = GDKD từ chối bước 1, 2 = Kế toán từ chối bước 2
   daThanhToan: number;
   conLai: number | null;
   // Hạng mục / cấu kiện

@@ -479,12 +479,14 @@ router.put('/:id/tu-choi', authMiddleware, requireRole('admin', 'giam_doc_kinh_d
       return;
     }
 
-    const donHang = await tuChoiDonHang(id, lyDo);
+    // Xác định bước từ chối: 1 = GDKD từ chối bước 1, 2 = Kế toán từ chối bước 2
+    const buocTuChoi = req.user.vaiTro === 'giam_doc_kinh_doanh' ? 1 : 2;
+    const donHang = await tuChoiDonHang(id, lyDo, req.user.id, buocTuChoi);
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     const tuTrangThai = req.user.vaiTro === 'giam_doc_kinh_doanh' ? 'cho_duyet' : 'cho_ke_toan_duyet';
     await ghiNhatKy(req.user.id, 'TU_CHOI', 'DonHang', id,
       JSON.stringify({ trangThaiDon: tuTrangThai }),
-      JSON.stringify({ trangThaiDon: 'tu_choi', lyDo }),
+      JSON.stringify({ trangThaiDon: 'tu_choi', lyDo, buocTuChoi }),
       ip);
     res.json({ success: true, message: 'Từ chối đơn hàng thành công', data: donHang });
   } catch (error) {

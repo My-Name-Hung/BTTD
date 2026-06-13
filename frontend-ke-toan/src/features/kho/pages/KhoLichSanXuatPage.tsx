@@ -193,8 +193,6 @@ export default function KhoLichSanXuatPage() {
       // Admin và tram_tron đều dùng API /tram-tron/lich-san-xuat
       // Backend sẽ tự lọc theo trạm cho user tram_tron
       const result = await layLichSanXuatTramTron();
-      console.log("[KhoLichSanXuat] API response:", result);
-      console.log("[KhoLichSanXuat] Số lượng đơn:", result?.length || 0);
       setData(result || []);
     } catch (err) {
       console.error("Lỗi tải lịch sản xuất:", err);
@@ -220,24 +218,8 @@ export default function KhoLichSanXuatPage() {
 
   // Group dữ liệu theo đơn hàng - mỗi đơn 1 dòng
   const groupedData = useMemo(() => {
-    const result = groupByDonHang(data);
-    console.log("[KhoLichSanXuat] Raw data:", data);
-    console.log("[KhoLichSanXuat] Grouped data:", result);
-    console.log("[KhoLichSanXuat] Filter mode:", filterMode, "Filter value:", filterValue);
-    result.forEach((item, idx) => {
-      console.log(`[KhoLichSanXuat] Item ${idx}:`, {
-        idDonHang: item.idDonHang,
-        maDonHang: item.maDonHang,
-        ngayTao: item.ngayTao,
-        tramTrons: item.tramTrons,
-        filterSourceDate: getFilterSourceDate(item),
-        filterDateKey: filterMode === "ngay" ? getDateKey(getFilterSourceDate(item)) : 
-                       filterMode === "thang" ? getMonthKey(getFilterSourceDate(item)) :
-                       getYearKey(getFilterSourceDate(item))
-      });
-    });
-    return result;
-  }, [data, filterMode, filterValue]);
+    return groupByDonHang(data);
+  }, [data]);
 
   const filteredData = useMemo(() => {
     // Bắt đầu từ dữ liệu đã group

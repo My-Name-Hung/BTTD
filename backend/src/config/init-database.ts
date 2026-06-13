@@ -441,6 +441,14 @@ async function initDatabase(): Promise<void> {
         await db.query(`ALTER TABLE DonHang ADD giaTienTamTinh DECIMAL(18,2)`);
         console.log("  ➕ Thêm cột giaTienTamTinh vào DonHang");
       }
+      if (!colNamesDh.includes("nguuituchoiid")) {
+        await db.query(`ALTER TABLE DonHang ADD nguoiTuChoiId INT`);
+        console.log("  ➕ Thêm cột nguoiTuChoiId vào DonHang");
+      }
+      if (!colNamesDh.includes("buoctuchoi")) {
+        await db.query(`ALTER TABLE DonHang ADD buocTuChoi INT`);
+        console.log("  ➕ Thêm cột buocTuChoi vào DonHang");
+      }
     }
 
     // Tạo bảng LichSanXuat

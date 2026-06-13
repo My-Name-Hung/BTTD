@@ -446,19 +446,28 @@ export async function duyetDonHang(
 export async function tuChoiDonHang(
   id: number,
   lyDo: string,
+  nguoiTuChoiId: number,
+  buocTuChoi: number,
 ): Promise<DonHang> {
   await query(
     `UPDATE DonHang SET
       trangThaiDon = N'tu_choi',
       lyDoTuChoi = @lyDo,
+      nguoiTuChoiId = @nguoiTuChoiId,
+      buocTuChoi = @buocTuChoi,
       ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
-    { id, lyDo },
+    { id, lyDo, nguoiTuChoiId, buocTuChoi },
   );
 
   const donHang = (
     await query<DonHang>(
-      `SELECT d.*, t.tenTram as tenTramTron FROM DonHang d LEFT JOIN TramTron t ON d.idTramTron = t.id WHERE d.id = @id`,
+      `SELECT d.*, t.tenTram as tenTramTron,
+              nd.hoTen as nguoiTuChoi
+       FROM DonHang d
+       LEFT JOIN TramTron t ON d.idTramTron = t.id
+       LEFT JOIN NguoiDung nd ON d.nguoiTuChoiId = nd.id
+       WHERE d.id = @id`,
       { id },
     )
   )[0];

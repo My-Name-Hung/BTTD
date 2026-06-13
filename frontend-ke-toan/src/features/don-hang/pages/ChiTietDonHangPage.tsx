@@ -864,6 +864,19 @@ export default function ChiTietDonHangPage() {
               </span>
             </span>
           </div>
+          {donHang.trangThaiDon === "tu_choi" && donHang.lyDoTuChoi && (
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>
+                {donHang.buocTuChoi === 1 ? "Đã từ chối bởi" : "Đã từ chối bởi"}
+              </span>
+              <span className={`${styles.infoValue} ${styles.infoValueDanger}`}>
+                {donHang.buocTuChoi === 1
+                  ? "Giám đốc kinh doanh"
+                  : "Kế toán"}
+                {donHang.nguoiTuChoi && ` (${donHang.nguoiTuChoi})`}
+              </span>
+            </div>
+          )}
           {donHang.lyDoTuChoi && (
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Lý do từ chối</span>
