@@ -61,7 +61,7 @@ router.get(
         const total = countResult[0]?.total || 0;
 
         const data = await query<any[]>(
-          `SELECT 
+          `SELECT
               dh.id as idDonHang,
               dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
               ls.id, ls.idTramTron, ls.trangThai, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.ghiChuXe,
@@ -74,8 +74,9 @@ router.get(
          LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
          LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
          WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
-         ORDER BY ls.ngayCapNhat DESC`,
-          {},
+         ORDER BY ls.ngayCapNhat DESC
+         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+          { offset, limit },
         );
 
         res.json({
@@ -103,7 +104,7 @@ router.get(
       const total = countResult[0]?.total || 0;
 
       const data = await query<any[]>(
-        `SELECT 
+        `SELECT
             dh.id as idDonHang,
             dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
             ls.id, ls.idTramTron, ls.trangThai, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.ghiChuXe,
@@ -117,8 +118,9 @@ router.get(
          LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
          WHERE dh.trangThaiDon IN (N'da_duyet', N'dang_san_xuat', N'dang_giao', N'da_giao')
            AND ls.idTramTron = @idTram
-         ORDER BY ls.ngayCapNhat DESC`,
-        { idTram },
+         ORDER BY ls.ngayCapNhat DESC
+         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+        { idTram, offset, limit },
       );
 
       res.json({

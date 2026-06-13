@@ -3,7 +3,7 @@ import { FiCheck, FiClock, FiDownload, FiEye, FiPackage, FiTruck } from "react-i
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
-import { exportLichSanXuat, layLichSanXuatKho, layLichSanXuatTramTron } from "../../../shared/services/api";
+import { exportLichSanXuat, layLichSanXuatTramTron } from "../../../shared/services/api";
 import { TRANG_THAI_DON_COLORS, TRANG_THAI_DON_LABELS } from "../../../shared/types";
 import styles from "./KhoLichSanXuatPage.module.css";
 import { formatDateVN } from "../../../shared/utils/dateUtils";
@@ -174,33 +174,28 @@ export default function KhoLichSanXuatPage() {
   const [maDonDropdownOpen, setMaDonDropdownOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+  // Lấy thông tin user từ localStorage
+  const userInfo = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("bttd_user") || "{}");
+    } catch {
+      return {};
+    }
+  }, []);
+
+  // Xác định vai trò user
+  const isAdmin = userInfo.vaiTro === "admin";
+  const isTramTron = userInfo.vaiTro === "tram_tron";
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Gọi cả 2 API để lấy đầy đủ dữ liệu
-      const [khoData, tramData] = await Promise.allSettled([
-        layLichSanXuatKho(),
-        layLichSanXuatTramTron(),
-      ]);
-
-      let allData: LichSanXuatItem[] = [];
-
-      // Merge dữ liệu từ cả 2 API
-      if (khoData.status === "fulfilled" && khoData.value) {
-        allData = [...(khoData.value as LichSanXuatItem[])];
-      }
-      if (tramData.status === "fulfilled" && tramData.value) {
-        const tramItems = tramData.value as LichSanXuatItem[];
-        // Thêm những item chưa có trong allData (theo id)
-        const existingIds = new Set(allData.map((i) => i.id));
-        for (const item of tramItems) {
-          if (!existingIds.has(item.id)) {
-            allData.push(item);
-          }
-        }
-      }
-
-      setData(allData);
+      // Admin và tram_tron đều dùng API /tram-tron/lich-san-xuat
+      // Backend sẽ tự lọc theo trạm cho user tram_tron
+      const result = await layLichSanXuatTramTron();
+      console.log("[KhoLichSanXuat] API response:", result);
+      console.log("[KhoLichSanXuat] Số lượng đơn:", result?.length || 0);
+      setData(result || []);
     } catch (err) {
       console.error("Lỗi tải lịch sản xuất:", err);
       showToast("Không tải được dữ liệu lịch sản xuất", "error");
