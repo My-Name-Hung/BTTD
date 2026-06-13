@@ -100,7 +100,7 @@ router.get('/don-hang/:id', authMiddleware, requireRole('admin', 'tram_tron'), a
 router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('admin', 'tram_tron', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
-    const { khoiLuongDaTron, ngayGioDo, idXe, bienSoXe, ghiChuXe } = req.body;
+    const { khoiLuongDaTron, ngayGioDo, idXe, bienSoXe, ghiChuXe, idLichSanXuat } = req.body;
 
     // Kiểm tra đơn hàng tồn tại
     const donHang = await query<DonHang>(
@@ -119,23 +119,50 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       return;
     }
 
-    // Lấy idTramTron của user (nếu có)
-    const idTram = req.user?.idTramTron ?? null;
+    // Xác định danh sách lịch cần cập nhật
+    let lichCanCapNhatList: LichSanXuat[] = [];
 
-    // Lấy lịch sản xuất của trạm này (hoặc tất cả nếu là admin/dieu_phoi)
-    let lichQuery = `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang`;
-    let lichParams: any = { idDonHang };
-    
-    if (!['admin', 'dieu_phoi'].includes(req.user?.vaiTro || '')) {
-      lichQuery += ` AND idTramTron = @idTram`;
-      lichParams.idTram = idTram;
-    }
+    if (idLichSanXuat) {
+      // Có chọn lịch cụ thể: chỉ cập nhật lịch đó
+      const lich = await query<LichSanXuat>(
+        `SELECT * FROM LichSanXuat WHERE id = @id AND idDonHang = @idDonHang`,
+        { id: idLichSanXuat, idDonHang }
+      );
+      if (lich.length === 0) {
+        res.status(400).json({ success: false, message: 'Không tìm thấy lịch sản xuất đã chọn' });
+        return;
+      }
+      lichCanCapNhatList = [lich[0]];
+    } else {
+      // Không có idLichSanXuat: lấy theo trạm của user (tram_tron) hoặc tất cả (admin/dieu_phoi)
+      const idTram = req.user?.idTramTron ?? null;
+      let lichQuery = `SELECT * FROM LichSanXuat WHERE idDonHang = @idDonHang`;
+      let lichParams: any = { idDonHang };
 
-    const lichSanXuatList = await query<LichSanXuat>(lichQuery, lichParams);
+      if (!['admin', 'dieu_phoi'].includes(req.user?.vaiTro || '')) {
+        // tram_tron: chỉ lấy lịch của trạm mình
+        lichQuery += ` AND idTramTron = @idTram`;
+        lichParams.idTram = idTram;
+      }
 
-    if (lichSanXuatList.length === 0) {
-      res.status(403).json({ success: false, message: 'Đơn hàng này không có lịch sản xuất cho trạm của bạn' });
-      return;
+      const lichSanXuatList = await query<LichSanXuat>(lichQuery, lichParams);
+
+      if (lichSanXuatList.length === 0) {
+        res.status(403).json({ success: false, message: 'Đơn hàng này không có lịch sản xuất cho trạm của bạn' });
+        return;
+      }
+
+      // Nếu đơn chỉ có 1 lịch: cập nhật lịch đó (không cần chọn)
+      // Nếu nhiều lịch (admin/dieu_phoi): yêu cầu chọn lịch cụ thể
+      if (lichSanXuatList.length === 1) {
+        lichCanCapNhatList = lichSanXuatList;
+      } else {
+        res.status(400).json({
+          success: false,
+          message: 'Đơn hàng có nhiều trạm trộn, vui lòng chọn trạm cụ thể để xác nhận sản xuất xong',
+        });
+        return;
+      }
     }
 
     // Lấy idTaiXe từ bảng Xe (idTaiKhoan = id tài xế trong NguoiDung)
@@ -150,10 +177,8 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       }
     }
 
-    // Cập nhật các lịch sản xuất thuộc quyền của user
-    // (đã filter theo idTramTron ở bước query lichSanXuatList phía trên)
-    // Mỗi user (kho/tram_tron) chỉ cập nhật lịch của trạm mình - tránh ghi đè kết quả trộn của trạm khác
-    for (const lichCanCapNhat of lichSanXuatList) {
+    // Cập nhật các lịch sản xuất được chọn (chỉ lịch cụ thể, không ghi đè các trạm khác)
+    for (const lichCanCapNhat of lichCanCapNhatList) {
       await query(
         `UPDATE LichSanXuat SET
           khoiLuongDaTron = @khoiLuongDaTron,

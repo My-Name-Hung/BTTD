@@ -112,11 +112,13 @@ export async function layLichSanXuatTheoDonHang(
 ): Promise<any[]> {
   return await query<any[]>(
     `SELECT ls.*,
-            nd.hoTen as tenTaiXe
+            nd.hoTen as tenTaiXe,
+            ISNULL(tt.tenTram, N'Không xác định') as tenTram
      FROM LichSanXuat ls
      LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
+     LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
      WHERE ls.idDonHang = @idDonHang
-     ORDER BY ls.ngayTao DESC`,
+     ORDER BY ls.ngayTao ASC`,
     { idDonHang },
   );
 }

@@ -1129,6 +1129,7 @@ export async function xacNhanSanXuatXong(
     idXe?: number | null;
     bienSoXe?: string;
     ghiChuXe?: string;
+    idLichSanXuat?: number | null;
   },
 ): Promise<any> {
   return request<any>(`/kho/xac-nhan-san-xuat-xong/${idDonHang}`, {

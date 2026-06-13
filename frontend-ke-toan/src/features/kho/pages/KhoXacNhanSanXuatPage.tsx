@@ -54,6 +54,7 @@ interface LichSanXuatItem {
   tenTram: string;
   thoiGianTron: string;
   trangThai: string;
+  khoiLuongDaTron?: number | null;
 }
 
 export default function KhoXacNhanSanXuatPage() {
@@ -69,6 +70,7 @@ export default function KhoXacNhanSanXuatPage() {
   const [lichTramTrons, setLichTramTrons] = useState<LichSanXuatItem[]>([]);
 
   // Form state
+  const [idLichSanXuat, setIdLichSanXuat] = useState<string>("");
   const [khoiLuongDaTron, setKhoiLuongDaTron] = useState("");
   const [ngayGioDo, setNgayGioDo] = useState(() => {
     const now = new Date();
@@ -88,11 +90,10 @@ export default function KhoXacNhanSanXuatPage() {
     if (!idDonHang) return;
     setLoading(true);
     try {
-      const [dh, xesData, lichs, allLich] = await Promise.all([
+      const [dh, xesData, lichs] = await Promise.all([
         layDonHang(idDonHang),
         layDanhSachXe(),
         layLichSanXuat(idDonHang),
-        layLichSanXuatTramTron(),
       ]);
 
       setDonHang(dh);
@@ -108,6 +109,7 @@ export default function KhoXacNhanSanXuatPage() {
           tenTram: l.tenTram,
           thoiGianTron: l.thoiGianTron,
           trangThai: l.trangThai,
+          khoiLuongDaTron: l.khoiLuongDaTron ?? null,
         }));
       setLichTramTrons(tramLichs);
 
@@ -146,20 +148,34 @@ export default function KhoXacNhanSanXuatPage() {
     setTenTaiXeHienThi(xe?.tenTaiXe || "");
   };
 
-  // Tính tổng khối lượng đã trộn từ tất cả trạm trong đơn
+  // Khi chọn trạm cụ thể: tự động điền khối lượng đã trộn hiện tại của trạm đó (nếu có)
+  // và reset về rỗng để user nhập số khối trộn thêm cho lần này
+  const handleLichChange = (lichId: string) => {
+    setIdLichSanXuat(lichId);
+    setKhoiLuongDaTron("");
+  };
+
+  // Tính tổng khối lượng đã trộn từ tất cả các lịch trạm (loại trừ lịch đang chọn nếu đã có giá trị)
   const tongKhoiLuongDaTron = lichTramTrons.reduce((sum, l) => {
-    // Hiện tại chỉ có thông tin cơ bản, khối lượng đã trộn sẽ được cập nhật từ backend
-    // Khi load lại dữ liệu sau khi submit, tổng này sẽ được cập nhật
-    return sum;
+    return sum + (l.khoiLuongDaTron || 0);
   }, 0);
 
   // Tính số khối còn lại
   const khoiLuongBanDau = donHang?.khoiLuongDat || 0;
   const khoiLuongDaTronSo = parseFloat(khoiLuongDaTron) || 0;
-  const khoiLuongConLai = Math.max(0, khoiLuongBanDau - khoiLuongDaTronSo);
+  const khoiLuongConLai = Math.max(0, khoiLuongBanDau - tongKhoiLuongDaTron);
+
+  // Có nhiều lịch trạm trong đơn (admin/dieu_phoi thấy nhiều lịch, tram_tron chỉ thấy 1)
+  const soTram = lichTramTrons.length;
+  const canChonTram = soTram > 1;
 
   const handleSubmit = async () => {
     if (!idDonHang) return;
+
+    if (canChonTram && !idLichSanXuat) {
+      showToast("Vui lòng chọn trạm trộn để xác nhận sản xuất xong", "error");
+      return;
+    }
 
     if (!khoiLuongDaTron || parseFloat(khoiLuongDaTron) <= 0) {
       showToast("Vui lòng nhập số khối đã trộn", "error");
@@ -182,6 +198,7 @@ export default function KhoXacNhanSanXuatPage() {
         idXe: idXe ? parseInt(idXe) : null,
         bienSoXe,
         ghiChuXe,
+        idLichSanXuat: idLichSanXuat ? parseInt(idLichSanXuat) : null,
       });
 
       showToast("Đã xác nhận sản xuất xong!");
@@ -265,6 +282,35 @@ export default function KhoXacNhanSanXuatPage() {
             <h3>Thông tin sản xuất</h3>
           </div>
 
+          {/* Chọn trạm trộn: chỉ hiển thị khi đơn có nhiều trạm */}
+          {canChonTram && (
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Chọn trạm trộn <span className={styles.required}>*</span>
+                </label>
+                <select
+                  className={styles.formSelect}
+                  value={idLichSanXuat}
+                  onChange={(e) => handleLichChange(e.target.value)}
+                >
+                  <option value="">— Chọn trạm trộn —</option>
+                  {lichTramTrons.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.tenTram}
+                      {l.khoiLuongDaTron != null
+                        ? ` (đã trộn: ${l.khoiLuongDaTron} m³)`
+                        : " (chưa trộn)"}
+                    </option>
+                  ))}
+                </select>
+                <span className={styles.formHint}>
+                  Mỗi lần xác nhận chỉ ghi nhận khối lượng cho 1 trạm. Đơn có {soTram} trạm trộn.
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>
@@ -275,13 +321,15 @@ export default function KhoXacNhanSanXuatPage() {
                 type="number"
                 value={khoiLuongDaTron}
                 onChange={(e) => setKhoiLuongDaTron(e.target.value)}
-                placeholder={`0 - ${khoiLuongBanDau}`}
+                placeholder={`0 - ${khoiLuongConLai || khoiLuongBanDau}`}
                 min="0"
-                max={khoiLuongBanDau}
+                max={khoiLuongConLai || khoiLuongBanDau}
                 step="0.5"
+                disabled={canChonTram && !idLichSanXuat}
               />
               <span className={styles.formHint}>
-                Khối lượng đặt: {khoiLuongBanDau} m³ · Còn lại:{" "}
+                Khối lượng đặt: {khoiLuongBanDau} m³ · Tổng đã trộn:{" "}
+                <strong>{tongKhoiLuongDaTron} m³</strong> · Còn lại:{" "}
                 <strong style={{ color: khoiLuongConLai > 0 ? "#f59e0b" : "#10b981" }}>
                   {khoiLuongConLai} m³
                 </strong>
