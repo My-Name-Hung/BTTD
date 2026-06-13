@@ -4,6 +4,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { ApiResponse } from '../models';
 import { dangNhap, layThongTinNguoiDung, doiMatKhau } from '../services/auth-service';
 import { ghiDangXuat } from '../services/access-history-service';
+import { getClientIp } from '../utils/ip-utils';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ router.post(
   ],
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     try {
-      const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || '';
+      const ipAddress = getClientIp(req);
       const userAgent = req.headers['user-agent'] || '';
       const result = await dangNhap(req.body, ipAddress, userAgent);
       res.json({

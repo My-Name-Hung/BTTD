@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { ApiResponse } from '../models';
+import { getClientIp } from '../utils/ip-utils';
 import { getSocketIO } from '../socket';
 import {
   layLichSuTruyCap,
@@ -66,7 +67,7 @@ router.post('/sessions/:id/logout', authMiddleware, requireRole('admin'), async 
 
     // Lấy thông tin phiên để biết userId
     const detail = await layChiTietSession(id);
-    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    const ip = getClientIp(req);
     await ghiNhatKy(req.user!.id, 'DANG_XUAT', 'LoginSession', id, undefined,
       `Buộc đăng xuất phiên #${id}`, ip);
     if (detail?.session?.idNguoiDung) {
@@ -95,7 +96,7 @@ router.post('/users/:id/reset-password', authMiddleware, requireRole('admin'), a
     }
     const hash = await bcrypt.hash(matKhauMoi, 10);
     await doiMatKhauUser(id, hash);
-    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    const ip = getClientIp(req);
     await ghiNhatKy(req.user!.id, 'SUA', 'NguoiDung', id, undefined,
       `Đặt lại mật khẩu cho user #${id}`, ip);
 
@@ -120,7 +121,7 @@ router.post('/users/:id/banned-ip', authMiddleware, requireRole('admin'), async 
     const id = parseInt(req.params.id, 10);
     const { bannedIp } = req.body as { bannedIp?: string | null };
     await capNhatBannedIp(id, bannedIp ?? null);
-    const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+    const ip = getClientIp(req);
     await ghiNhatKy(req.user!.id, 'SUA', 'NguoiDung', id, undefined,
       bannedIp ? `Cấm IP "${bannedIp}" cho user #${id}` : `Bỏ cấm IP cho user #${id}`, ip);
 

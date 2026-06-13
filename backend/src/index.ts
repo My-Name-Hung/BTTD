@@ -8,6 +8,12 @@ import { ApiResponse } from "./models";
 import { maintenanceMiddleware } from "./middleware/maintenance";
 import { authMiddleware } from "./middleware/auth";
 
+const app: Application = express();
+const httpServer = createServer(app);
+
+// Trust proxy để lấy đúng IP khi chạy sau proxy/load balancer
+app.set('trust proxy', true);
+
 import authRoutes from "./routes/auth-routes";
 import dashboardRoutes from "./routes/dashboard-routes";
 import dashboardSummaryRoutes from "./routes/dashboard-summary-routes";
