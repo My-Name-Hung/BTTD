@@ -86,21 +86,14 @@ export async function taoLichSanXuat(
     },
   );
 
-  // Thông báo cho kho: có đơn hàng cần giao (CHỈ gửi khi tạo lịch đầu tiên)
+  // Thông báo cho kho: có đơn hàng cần sản xuất (CHỈ gửi khi tạo lịch đầu tiên)
+  // Không gửi thêm ORDER_STATUS_CHANGED vì PRODUCTION_SCHEDULED đã đủ thông tin cho cùng sự kiện
   if (isFirstLich) {
     guiThongBao("PRODUCTION_SCHEDULED", {
       id: data.idDonHang,
       maDonHang: donHang[0].maDonHang,
       tenKhachHang: donHang[0].tenKhachHang,
       khoiLuong: donHang[0].khoiLuongDat,
-    });
-
-    // Thông báo ORDER_STATUS_CHANGED - Đang sản xuất
-    guiThongBao("ORDER_STATUS_CHANGED", {
-      id: data.idDonHang,
-      maDonHang: donHang[0].maDonHang,
-      trangThai: "dang_san_xuat",
-      trangThaiLabel: "Đang sản xuất",
     });
   }
 
