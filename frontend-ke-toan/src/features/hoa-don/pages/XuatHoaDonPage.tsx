@@ -70,7 +70,7 @@ export default function XuatHoaDonPage() {
   const [submitting, setSubmitting] = useState(false);
   const [hinhThuc, setHinhThuc] = useState<HinhThucThanhToan>("tra_het");
   const [donHang, setDonHang] = useState<DonHang | null>(null);
-  const [lichSX, setLichSX] = useState<LichSanXuat | null>(null);
+  const [lichSXs, setLichSXs] = useState<LichSanXuat[]>([]);
   const [allHoaDons, setAllHoaDons] = useState<HoaDon[]>([]);
   const existingCongNoHD = sortHoaDonsByTime(
     allHoaDons.filter(
@@ -139,14 +139,15 @@ export default function XuatHoaDonPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const [dh, ls, existingHDs] = await Promise.all([
+      const [dh, lsArr, existingHDs] = await Promise.all([
         layDonHang(parseInt(id, 10)),
-        layLichSanXuat(parseInt(id, 10)).catch(() => null),
+        layLichSanXuat(parseInt(id, 10)).catch(() => []),
         layHoaDonTheoDonHang(parseInt(id, 10)).catch(() => []),
       ]);
 
       setDonHang(dh);
-      setLichSX(Array.isArray(ls) ? ls[0] : ls);
+      const lichArr: LichSanXuat[] = Array.isArray(lsArr) ? lsArr : (lsArr ? [lsArr] : []);
+      setLichSXs(lichArr);
       setAllHoaDons(Array.isArray(existingHDs) ? existingHDs : []);
 
       // Pre-fill thông tin cơ bản
@@ -164,30 +165,40 @@ export default function XuatHoaDonPage() {
         setChieuDaiPhuongPhap(dh.chieuDaiBom ? String(dh.chieuDaiBom) : "");
       }
 
-      // Auto-fill từ lịch sản xuất
-      if (ls) {
-        const lsData = Array.isArray(ls) ? ls[0] : ls;
-        if (lsData) {
-          if (lsData.kyThuatCongTrinh) setKySu(lsData.kyThuatCongTrinh);
-          if (lsData.nguoiOmOng) setVanHanhBom(lsData.nguoiOmOng);
-          if (lsData.nguoiBatOng) setLapOng(lsData.nguoiBatOng);
-          const bienSo = lsData.bienSoXe || "";
-          const taiXe = lsData.tenTaiXe || "";
-          if (bienSo) {
-            setXeTaiXe(taiXe ? `${bienSo} – ${taiXe}` : bienSo);
-          } else if (taiXe) {
-            setXeTaiXe(taiXe);
-          }
-          // Giờ đổ
-          if (lsData.thoiGianBatDauDo) {
-            const dt = new Date(lsData.thoiGianBatDauDo);
-            const y = dt.getFullYear();
-            const m = String(dt.getMonth() + 1).padStart(2, "0");
-            const day = String(dt.getDate()).padStart(2, "0");
-            const h = String(dt.getHours()).padStart(2, "0");
-            const min = String(dt.getMinutes()).padStart(2, "0");
-            setGioDo(`${y}-${m}-${day}T${h}:${min}`);
-          }
+      // Auto-fill từ lịch sản xuất - duyệt qua TẤT CẢ row LichSanXuat của đơn
+      // (đơn 1 trạm hay 2+ trạm, hoặc có row cũ đã hoàn thành)
+      if (lichArr.length > 0) {
+        // Ưu tiên lấy thông tin từ row MỚI NHẤT (id lớn nhất)
+        const lichMoiNhat = [...lichArr].sort((a, b) => b.id - a.id)[0];
+
+        if (lichMoiNhat.kyThuatCongTrinh) setKySu(lichMoiNhat.kyThuatCongTrinh);
+        if (lichMoiNhat.nguoiOmOng) setVanHanhBom(lichMoiNhat.nguoiOmOng);
+        if (lichMoiNhat.nguoiBatOng) setLapOng(lichMoiNhat.nguoiBatOng);
+
+        // Biển số + Tài xế: tìm row CÓ DỮ LIỆU đầu tiên
+        // (vì row mới nhất có thể chưa gán xe, nhưng row cũ hơn đã gán)
+        const lichCoXe = lichArr.find(
+          (ls) => ls.bienSoXe || ls.tenTaiXe
+        ) || lichMoiNhat;
+        const bienSo = lichCoXe.bienSoXe || "";
+        const taiXe = lichCoXe.tenTaiXe || "";
+        if (bienSo && taiXe) {
+          setXeTaiXe(`${bienSo} – ${taiXe}`);
+        } else if (bienSo) {
+          setXeTaiXe(bienSo);
+        } else if (taiXe) {
+          setXeTaiXe(taiXe);
+        }
+
+        // Giờ đổ - lấy từ row mới nhất
+        if (lichMoiNhat.thoiGianBatDauDo) {
+          const dt = new Date(lichMoiNhat.thoiGianBatDauDo);
+          const y = dt.getFullYear();
+          const m = String(dt.getMonth() + 1).padStart(2, "0");
+          const day = String(dt.getDate()).padStart(2, "0");
+          const h = String(dt.getHours()).padStart(2, "0");
+          const min = String(dt.getMinutes()).padStart(2, "0");
+          setGioDo(`${y}-${m}-${day}T${h}:${min}`);
         }
       }
 
