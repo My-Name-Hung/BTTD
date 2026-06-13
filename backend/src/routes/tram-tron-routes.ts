@@ -63,7 +63,7 @@ router.get(
         const data = await query<any[]>(
           `SELECT
               dh.id as idDonHang,
-              dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
+              dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao, dh.ngayGiao,
               ls.id, ls.idTramTron, ls.trangThai, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.ghiChuXe,
               ISNULL(tt.tenTram, N'Không xác định') as tenTram,
               nd.hoTen as tenTaiXe, ls.bienSoXe,
@@ -106,7 +106,7 @@ router.get(
       const data = await query<any[]>(
         `SELECT
             dh.id as idDonHang,
-            dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao as ngayTaoDon, dh.ngayGiao,
+            dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao, dh.ngayGiao,
             ls.id, ls.idTramTron, ls.trangThai, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.ghiChuXe,
             ISNULL(tt.tenTram, N'Không xác định') as tenTram,
             nd.hoTen as tenTaiXe, ls.bienSoXe,

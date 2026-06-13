@@ -1062,9 +1062,18 @@ export async function layLichSanXuatKho(): Promise<any[]> {
   return request<any[]>("/kho/lich-san-xuat");
 }
 
-// Trạm trộn
-export async function layLichSanXuatTramTron(): Promise<any[]> {
-  return request<any[]>("/tram-tron/lich-san-xuat");
+// Trạm trộn - với pagination
+export async function layLichSanXuatTramTron(page = 1, limit = 100): Promise<any[]> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  const res = await fetch(`${BASE_URL}/tram-tron/lich-san-xuat?${params}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
 }
 
 // Lấy chi tiết đơn hàng cho tram_tron (kèm lịch sx)
