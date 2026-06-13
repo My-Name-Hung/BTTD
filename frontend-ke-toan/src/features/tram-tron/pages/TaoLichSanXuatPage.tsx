@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome } from 'react-icons/fi';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome, FiInfo } from 'react-icons/fi';
 import {
   layDanhSachXe, layDanhSachDonHang, layDanhSachTramTron,
   layLichSanXuat, taoLichSanXuat, capNhatLichSanXuat,
@@ -15,8 +15,13 @@ function formatCurrency(v: number) { return v?.toLocaleString('vi-VN') + ' đ' |
 
 export default function TaoLichSanXuatPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const idDonHang = id ? parseInt(id) : null;
+
+  // Đọc chế độ từ state - 'tiepTuc' nghĩa là đang thêm trạm mới cho đơn đã có lịch
+  const cheDo = (location.state as any)?.cheDo as 'tiepTuc' | undefined;
+  const isCheDoTiepTuc = cheDo === 'tiepTuc';
 
   const { toasts, showToast } = useToast();
 
@@ -28,6 +33,7 @@ export default function TaoLichSanXuatPage() {
   const [showCancel, setShowCancel] = useState(false);
 
   const [tongKhoiLuongDaTron, setTongKhoiLuongDaTron] = useState(0);
+  const [khoiLuongDat, setKhoiLuongDat] = useState(0);
 
   const [existingLichMap, setExistingLichMap] = useState<Map<number, number>>(new Map());
 
@@ -83,6 +89,7 @@ export default function TaoLichSanXuatPage() {
             }, 0);
 
             setTongKhoiLuongDaTron(tongDaTron);
+            if (found) setKhoiLuongDat(found.khoiLuongDat || 0);
 
             const allTramIds = lichs
               .map((l: LichSanXuat) => l.idTramTron)
@@ -126,6 +133,7 @@ export default function TaoLichSanXuatPage() {
             setInitialSelectedTramIds([]);
             setExistingLichMap(new Map());
             setTongKhoiLuongDaTron(0);
+            setKhoiLuongDat(found?.khoiLuongDat || 0);
           }
         }
       } catch {
@@ -170,6 +178,7 @@ export default function TaoLichSanXuatPage() {
           }
         });
         setExistingLichMap(lichMap);
+        if (donHang?.khoiLuongDat) setKhoiLuongDat(donHang.khoiLuongDat);
       } catch (err) {
         console.error('Lỗi auto-reload lịch sản xuất:', err);
       }
@@ -206,6 +215,47 @@ export default function TaoLichSanXuatPage() {
 
       const existingTramIds = Array.from(existingLichMap.keys());
       const selectedSet = new Set(selectedTramIds);
+
+      // Ở chế độ "tiếp tục": chỉ thêm trạm mới, KHÔNG gỡ trạm cũ, KHÔNG update trạm cũ
+      if (isCheDoTiepTuc) {
+        const createTargets = selectedTramIds.filter((id) => !existingLichMap.has(id));
+        if (createTargets.length === 0) {
+          showToast('Không có trạm mới nào để thêm. Vui lòng chọn trạm chưa có trong lịch.', 'error');
+          setSubmitting(false);
+          return;
+        }
+        const createResults = await Promise.allSettled(
+          createTargets.map((tramId) => {
+            const payload: Partial<LichSanXuat> = {
+              idDonHang: idDonHang!,
+              idTramTron: tramId,
+              idXe: form.idXe ? parseInt(form.idXe) : null,
+              bienSoXe: xe?.bienSo || form.bienSoXe || null,
+              kyThuatCongTrinh: form.kyThuatCongTrinh || null,
+              nguoiOmOng: form.nguoiOmOng || null,
+              nguoiBatOng: form.nguoiBatOng || null,
+              ghiChu: form.ghiChu || null,
+            };
+            return taoLichSanXuat(payload);
+          }),
+        );
+        const createFailures: { tramId: number; reason: unknown }[] = [];
+        createTargets.forEach((tramId, idx) => {
+          if (createResults[idx].status === "rejected") {
+            createFailures.push({ tramId, reason: (createResults[idx] as PromiseRejectedResult).reason });
+          }
+        });
+        if (createFailures.length > 0) {
+          const first = createFailures[0];
+          const msg = first.reason instanceof Error ? first.reason.message : "Lỗi tạo lịch sản xuất";
+          throw new Error(`Tạo mới thất bại ${createFailures.length}/${createTargets.length} trạm: ${msg}`);
+        }
+        showToast(`Đã thêm ${createTargets.length} trạm trộn mới vào lịch sản xuất.`);
+        setTimeout(() => {
+          navigate('/dieu-phoi/lich-san-xuat', { state: { refresh: Date.now() } });
+        }, 300);
+        return;
+      }
 
       // 1. Gỡ các trạm đã bỏ chọn - set idTramTron = NULL, giữ nguyên record lịch
       const removedTramIds: number[] = [];
@@ -343,10 +393,18 @@ export default function TaoLichSanXuatPage() {
           </button>
           <div>
             <div className={styles.pageHeaderTitle}>
-              {existingLichMap.size > 0 ? 'Sửa lịch sản xuất' : 'Tạo lịch sản xuất'}
+              {isCheDoTiepTuc
+                ? 'Tiếp tục lịch sản xuất'
+                : existingLichMap.size > 0
+                  ? 'Sửa lịch sản xuất'
+                  : 'Tạo lịch sản xuất'}
             </div>
             <div className={styles.pageHeaderDesc}>
-              {existingLichMap.size > 0 ? 'Cập nhật thông tin lịch sản xuất' : 'Nhập thông tin để tạo lịch sản xuất'}
+              {isCheDoTiepTuc
+                ? 'Thêm trạm trộn để tiếp tục sản xuất phần còn lại'
+                : existingLichMap.size > 0
+                  ? 'Cập nhật thông tin lịch sản xuất'
+                  : 'Nhập thông tin để tạo lịch sản xuất'}
             </div>
           </div>
         </div>
@@ -359,7 +417,7 @@ export default function TaoLichSanXuatPage() {
             <div className={styles.orderInfoBadge}>{donHang.tenKhachHang}</div>
           </div>
 
-          {tongKhoiLuongDaTron > 0 && (
+          {(tongKhoiLuongDaTron > 0 || isCheDoTiepTuc) && (
             <div className={styles.khoiLuongInfo}>
               <div className={styles.khoiLuongItem}>
                 <span className={styles.khoiLuongLabel}>Tổng đã trộn</span>
@@ -367,6 +425,17 @@ export default function TaoLichSanXuatPage() {
                   {tongKhoiLuongDaTron} m³
                 </span>
               </div>
+              {khoiLuongDat > 0 && (
+                <div className={styles.khoiLuongItem}>
+                  <span className={styles.khoiLuongLabel}>Còn lại</span>
+                  <span
+                    className={styles.khoiLuongValue}
+                    style={{ color: Math.max(0, khoiLuongDat - tongKhoiLuongDaTron) > 0 ? '#f59e0b' : '#10b981' }}
+                  >
+                    {Math.max(0, khoiLuongDat - tongKhoiLuongDaTron)} m³
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
@@ -394,6 +463,19 @@ export default function TaoLichSanXuatPage() {
       )}
 
       <div className={styles.card}>
+        {/* Banner cảnh báo chế độ tiếp tục */}
+        {isCheDoTiepTuc && (
+          <div className={styles.tiepTucBanner}>
+            <FiInfo size={18} />
+            <div>
+              <div className={styles.tiepTucBannerTitle}>Chế độ tiếp tục</div>
+              <div className={styles.tiepTucBannerDesc}>
+                Đơn hàng đã trộn một phần. Hãy chọn thêm trạm trộn để trộn nốt phần còn lại.
+                Thông tin tài xế, nhân sự bên dưới sẽ áp dụng cho <strong>trạm mới thêm</strong>.
+              </div>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           {existingLichMap.size > 0 && (
             <>
@@ -513,7 +595,7 @@ export default function TaoLichSanXuatPage() {
               Hủy bỏ
             </button>
             <button type="submit" className="btn btn-save" disabled={submitting}>
-              <FiSave /> {submitting ? 'Đang lưu...' : (existingLichMap.size > 0 ? 'Lưu thay đổi' : 'Tạo lịch sản xuất')}
+              <FiSave /> {submitting ? 'Đang lưu...' : (isCheDoTiepTuc ? 'Thêm trạm trộn' : (existingLichMap.size > 0 ? 'Lưu thay đổi' : 'Tạo lịch sản xuất'))}
             </button>
           </div>
         </form>

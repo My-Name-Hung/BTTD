@@ -48,13 +48,14 @@ interface GroupedLichSanXuat {
   ngayTao?: string;
   // Tổng số khối đã trộn (tổng tất cả trạm)
   tongKhoiLuongDaTron: number;
-  // Tất cả trạm trộn của đơn này
+  // Tất cả trạm trộn của đơn này (mỗi dòng LichSanXuat là 1 trạm)
   tramTrons: {
     id: number;
     tenTram: string;
     idLichSanXuat: number;
     thoiGianTron?: string;
-    trangThai?: string;
+    trangThai?: string; // chua_san_xuat | dang_san_xuat | da_xong
+    khoiLuongDaTron?: number; // Khối lượng trạm này đã trộn
   }[];
 }
 
@@ -108,7 +109,7 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
       group.tongKhoiLuongDaTron += item.khoiLuongDaTron;
     }
 
-    // Thêm trạm trộn vào danh sách
+    // Thêm trạm trộn vào danh sách - mỗi dòng LichSanXuat là 1 trạm
     if (item.idTramTron && item.tenTram) {
       // Tránh trùng lặp trạm
       if (!group.tramTrons.find(t => t.id === item.idTramTron)) {
@@ -118,6 +119,7 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
           idLichSanXuat: item.id,
           thoiGianTron: item.thoiGianTron,
           trangThai: item.trangThai,
+          khoiLuongDaTron: item.khoiLuongDaTron,
         });
       }
     }
@@ -222,6 +224,13 @@ export default function KhoLichSanXuatPage() {
   // Navigate sang trang xác nhận SX xong
   const handleNavigateXacNhanSanXuat = (item: GroupedLichSanXuat) => {
     navigate(`/kho/xac-nhan-san-xuat/${item.idDonHang}`);
+  };
+
+  // Navigate sang trang tạo lịch sản xuất ở chế độ "tiếp tục" - thêm trạm trộn mới
+  const handleNavigateTiepTuc = (item: GroupedLichSanXuat) => {
+    navigate(`/dieu-phoi/lich-san-xuat/${item.idDonHang}`, {
+      state: { cheDo: "tiepTuc", idDonHang: item.idDonHang },
+    });
   };
 
   // Group dữ liệu theo đơn hàng - mỗi đơn 1 dòng
@@ -656,11 +665,35 @@ export default function KhoLichSanXuatPage() {
                       </td>
                       <td className={styles.hideOnMobile}>
                         <div className={styles.tramTagsWrap}>
-                          {item.tramTrons.map((tram) => (
-                            <span key={tram.id} className={styles.tramTag}>
-                              {tram.tenTram}
-                            </span>
-                          ))}
+                          {item.tramTrons.map((tram) => {
+                            const isTramDaGiao = tram.trangThai === "da_xong";
+                            const klTram = tram.khoiLuongDaTron || 0;
+                            return (
+                              <span
+                                key={tram.id}
+                                className={styles.tramTag}
+                                style={
+                                  isTramDaGiao
+                                    ? {
+                                        background: "rgba(245, 158, 11, 0.12)",
+                                        color: "#f59e0b",
+                                        border: "1px solid rgba(245, 158, 11, 0.3)",
+                                      }
+                                    : undefined
+                                }
+                                title={
+                                  isTramDaGiao
+                                    ? `${tram.tenTram} - đã giao ${klTram.toFixed(1)} m³`
+                                    : tram.tenTram
+                                }
+                              >
+                                {tram.tenTram}
+                                {klTram > 0
+                                  ? ` - ${klTram.toFixed(1)}/${khoiLuongBanDau.toFixed(1)} m³`
+                                  : ""}
+                              </span>
+                            );
+                          })}
                         </div>
                       </td>
                       <td className={styles.hideOnMobile}>
@@ -680,8 +713,8 @@ export default function KhoLichSanXuatPage() {
                       </td>
                       <td>
                         <div className={styles.rowActions}>
-                          {/* Xác nhận sản xuất xong - chuyển sang trang form */}
-                          {trangThai === "dang_san_xuat" && (
+                          {/* Xác nhận sản xuất xong - hiển thị khi đơn còn dư khối lượng và user có quyền (admin/tram_tron/dieu_phoi) */}
+                          {khoiLuongConLai > 0 && (isAdmin || isTramTron) && (
                             <button
                               className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
                               onClick={() => handleNavigateXacNhanSanXuat(item)}
@@ -689,6 +722,17 @@ export default function KhoLichSanXuatPage() {
                             >
                               <FiCheck size={14} />
                               SX xong
+                            </button>
+                          )}
+                          {/* Nút Tiếp tục - hiển thị khi đơn còn dư khối lượng, click để thêm trạm trộn mới */}
+                          {khoiLuongConLai > 0 && (
+                            <button
+                              className={`${styles.actionBtn} ${styles.actionBtnWarning}`}
+                              onClick={() => handleNavigateTiepTuc(item)}
+                              title="Tiếp tục - thêm trạm trộn để trộn nốt phần còn lại"
+                            >
+                              <FiTruck size={14} />
+                              Tiếp tục
                             </button>
                           )}
                           {/* Đang giao */}

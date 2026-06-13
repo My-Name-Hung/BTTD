@@ -338,8 +338,12 @@ export default function TaiXeGiaoHangPage() {
                 <div className={styles.infoRow}>
                   <FiPackage size={14} />
                   <span>
-                    <strong>{dh.khoiLuongDat || 0} m³</strong> ·{" "}
-                    {dh.tenMacBeTong || "—"}
+                    <strong>
+                      {dh.khoiLuongThucTe && dh.khoiLuongThucTe > 0
+                        ? `${dh.khoiLuongThucTe.toFixed(1)}/${(dh.khoiLuongDat || 0).toFixed(1)} m³`
+                        : `${(dh.khoiLuongDat || 0).toFixed(1)} m³`}
+                    </strong>{" "}
+                    · {dh.tenMacBeTong || "—"}
                   </span>
                 </div>
 

@@ -298,9 +298,24 @@ router.put(
         return;
       }
 
+      // Tính tổng khối lượng đã trộn của tất cả các trạm cho đơn này
+      // Nếu tổng < khối lượng đặt: giữ nguyên "dang_san_xuat" để trạm khác tiếp tục trộn
+      // Nếu tổng >= khối lượng đặt: chuyển sang "dang_giao"
+      const tongKhoiLuongResult = await query<{ tong: number; khoiLuongDat: number }>(
+        `SELECT
+          (SELECT ISNULL(SUM(khoiLuongDaTron), 0) FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai = N'da_xong' AND khoiLuongDaTron IS NOT NULL) as tong,
+          (SELECT khoiLuongDat FROM DonHang WHERE id = @idDonHang) as khoiLuongDat`,
+        { idDonHang },
+      );
+      const tongDaTron = tongKhoiLuongResult[0]?.tong || 0;
+      const khoiLuongDat = tongKhoiLuongResult[0]?.khoiLuongDat || 0;
+      const conLai = Math.max(0, khoiLuongDat - tongDaTron);
+
+      const newTrangThai = conLai > 0 ? "dang_san_xuat" : "dang_giao";
+
       await query(
-        `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
-        { id: idDonHang },
+        `UPDATE DonHang SET trangThaiDon = @trangThai, ngayCapNhat = ${vnNow()} WHERE id = @id`,
+        { id: idDonHang, trangThai: newTrangThai },
       );
 
       const updatedDonHang = await layDonHangTheoId(idDonHang);
@@ -308,8 +323,8 @@ router.put(
       guiThongBao("ORDER_STATUS_CHANGED", {
         id: idDonHang,
         maDonHang: updatedDonHang.maDonHang,
-        trangThai: "dang_giao",
-        trangThaiLabel: "Đang giao",
+        trangThai: newTrangThai,
+        trangThaiLabel: newTrangThai === "dang_giao" ? "Đang giao" : "Đang sản xuất",
       });
 
       const ip = req.ip || (req.headers["x-forwarded-for"] as string) || "";
@@ -319,13 +334,16 @@ router.put(
         "DonHang",
         idDonHang,
         JSON.stringify({ trangThaiDon: "dang_san_xuat" }),
-        JSON.stringify({ trangThaiDon: "dang_giao" }),
+        JSON.stringify({ trangThaiDon: newTrangThai, tongDaTron, conLai }),
         ip,
       );
 
       res.json({
         success: true,
-        message: "Xác nhận sản xuất xong thành công",
+        message:
+          conLai > 0
+            ? `Đã xác nhận sản xuất xong. Còn lại ${conLai} m³, đơn tiếp tục ở trạng thái đang sản xuất.`
+            : "Xác nhận sản xuất xong thành công",
         data: updatedDonHang,
       });
     } catch (error) {

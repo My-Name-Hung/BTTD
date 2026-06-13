@@ -150,8 +150,9 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       }
     }
 
-    // Cập nhật TẤT CẢ các lịch sản xuất thuộc đơn hàng (cùng danh sách đã query ở trên)
-    // để đảm bảo tất cả các trạm đều có cùng thông tin tài xế
+    // Cập nhật các lịch sản xuất thuộc quyền của user
+    // (đã filter theo idTramTron ở bước query lichSanXuatList phía trên)
+    // Mỗi user (kho/tram_tron) chỉ cập nhật lịch của trạm mình - tránh ghi đè kết quả trộn của trạm khác
     for (const lichCanCapNhat of lichSanXuatList) {
       await query(
         `UPDATE LichSanXuat SET
@@ -183,11 +184,16 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
     );
 
     const tongDaTron = tongKhoiLuongDaTron[0]?.tong || 0;
+    const khoiLuongDat = donHang[0].khoiLuongDat || 0;
+    const conLai = Math.max(0, khoiLuongDat - tongDaTron);
 
-    // Khi kho xác nhận sản xuất xong cho trạm → chuyển đơn sang "đang giao" ngay
-    // (Không cần kiểm tra đủ khối hay chưa - đơn sẽ giao phần đã trộn)
-    let newTrangThai = 'dang_giao';
-    let message = 'Đã xác nhận sản xuất xong. Đơn hàng chuyển sang trạng thái đang giao.';
+    // Xác định trạng thái mới cho đơn hàng dựa trên khối lượng
+    // - Nếu tổng đã trộn >= khối lượng đặt: chuyển sang "đang giao"
+    // - Nếu tổng đã trộn < khối lượng đặt: giữ nguyên "đang sản xuất" để trạm khác tiếp tục trộn
+    const newTrangThai = conLai > 0 ? 'dang_san_xuat' : 'dang_giao';
+    const message = conLai > 0
+      ? `Đã xác nhận sản xuất xong ${khoiLuongDaTron} m³. Còn lại ${conLai} m³, đơn tiếp tục ở trạng thái đang sản xuất.`
+      : 'Đã xác nhận sản xuất xong. Đơn hàng chuyển sang trạng thái đang giao.';
 
     await query(
       `UPDATE DonHang SET trangThaiDon = @trangThai, ngayCapNhat = ${vnNow()} WHERE id = @id`,
