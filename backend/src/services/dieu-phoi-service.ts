@@ -29,11 +29,13 @@ export async function taoLichSanXuat(
   const idTramTron = data.idTramTron || null;
 
   // Kiểm tra đơn hàng đã có lịch sản xuất nào chưa (để tránh gửi thông báo trùng lặp)
+  // Chỉ gửi thông báo "tạo lịch" khi đơn hàng chưa từng có lịch sản xuất
+  // (kể cả lịch đã hoàn thành) và đơn hàng chưa ở trạng thái sản xuất
   const existingAllLich = await query<{ id: number }>(
-    `SELECT id FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai != N'da_xong'`,
+    `SELECT id FROM LichSanXuat WHERE idDonHang = @idDonHang`,
     { idDonHang: data.idDonHang }
   );
-  const isFirstLich = existingAllLich.length === 0;
+  const isFirstLich = existingAllLich.length === 0 && donHang[0].trangThaiDon === 'da_duyet';
 
   // Cập nhật tram trộn vào đơn hàng nếu được chọn
   if (idTramTron) {
@@ -223,19 +225,20 @@ export async function capNhatLichSanXuat(
     throw new Error('Không tìm thấy lịch sản xuất');
   }
 
+  // Lấy thông tin đơn hàng để dùng cho thông báo
+  const dh = await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: updated.idDonHang });
+  const donHangInfo = dh[0];
+
   if (data.trangThai === 'da_xong') {
     await query(
       `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
       { id: updated.idDonHang }
     );
 
-    // Lấy thông tin đơn hàng để thông báo
-    const dh = await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: updated.idDonHang });
-
     // Thông báo ORDER_STATUS_CHANGED - Đang giao
     guiThongBao('ORDER_STATUS_CHANGED', {
       id: updated.idDonHang,
-      maDonHang: dh[0].maDonHang,
+      maDonHang: donHangInfo.maDonHang,
       trangThai: 'dang_giao',
       trangThaiLabel: 'Đang giao',
     });
@@ -243,8 +246,19 @@ export async function capNhatLichSanXuat(
     // Thông báo cho kho bắt đầu giao
     guiThongBao('DELIVERY_STARTED', {
       id: updated.idDonHang,
-      maDonHang: dh[0].maDonHang,
+      maDonHang: donHangInfo.maDonHang,
       bienSoXe: data.bienSoXe || '',
+    });
+  } else {
+    // Sửa lịch sản xuất thông thường → thông báo cho kho và điều phối
+    const tramInfo = await query<{ tenTram: string }>(
+      `SELECT tenTram FROM TramTron WHERE id = @id`,
+      { id: updated.idTramTron }
+    );
+    guiThongBao('SCHEDULE_UPDATED', {
+      id: updated.idDonHang,
+      maDonHang: donHangInfo.maDonHang,
+      tenTram: tramInfo[0]?.tenTram || '',
     });
   }
 
