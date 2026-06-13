@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome } from 'react-icons/fi';
 import {
   layDanhSachXe, layDanhSachDonHang, layDanhSachTramTron,
-  layLichSanXuat, taoLichSanXuat, capNhatLichSanXuat, xoaLichSanXuat,
+  layLichSanXuat, taoLichSanXuat, capNhatLichSanXuat,
+  goTramKhoiLichSanXuat,
 } from '../../../shared/services/api';
 import { Xe, DonHang, LichSanXuat, TramTron } from '../../../shared/types';
 import { useToast } from '../../../shared/hooks';
@@ -40,6 +41,9 @@ export default function TaoLichSanXuatPage() {
 
   const [initialForm, setInitialForm] = useState(form);
   const hasChanges = JSON.stringify(form) !== JSON.stringify(initialForm);
+
+  const [selectedTramIds, setSelectedTramIds] = useState<number[]>([]);
+  const [initialSelectedTramIds, setInitialSelectedTramIds] = useState<number[]>([]);
   const tramSelectionDirty = useMemo(() => {
     if (selectedTramIds.length !== initialSelectedTramIds.length) return true;
     const a = [...selectedTramIds].sort((x, y) => x - y);
@@ -47,9 +51,6 @@ export default function TaoLichSanXuatPage() {
     return a.some((v, i) => v !== b[i]);
   }, [selectedTramIds, initialSelectedTramIds]);
   const isDirty = hasChanges || tramSelectionDirty;
-
-  const [selectedTramIds, setSelectedTramIds] = useState<number[]>([]);
-  const [initialSelectedTramIds, setInitialSelectedTramIds] = useState<number[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -206,16 +207,16 @@ export default function TaoLichSanXuatPage() {
       const existingTramIds = Array.from(existingLichMap.keys());
       const selectedSet = new Set(selectedTramIds);
 
-      // 1. Xóa các trạm đã bỏ chọn
-      const deletedTramIds: number[] = [];
+      // 1. Gỡ các trạm đã bỏ chọn - set idTramTron = NULL, giữ nguyên record lịch
+      const removedTramIds: number[] = [];
       for (const tramId of existingTramIds) {
         if (!selectedSet.has(tramId)) {
           const lichId = existingLichMap.get(tramId)!;
           try {
-            await xoaLichSanXuat(lichId);
-            deletedTramIds.push(tramId);
-          } catch (deleteErr) {
-            throw deleteErr;
+            await goTramKhoiLichSanXuat(lichId);
+            removedTramIds.push(tramId);
+          } catch (removeErr) {
+            throw removeErr;
           }
         }
       }
@@ -281,7 +282,7 @@ export default function TaoLichSanXuatPage() {
       }
 
       // 4. Cập nhật lại state map & danh sách trạm sau khi thao tác xong
-      const newSelectedTramIds = selectedTramIds.filter((id) => !deletedTramIds.includes(id));
+      const newSelectedTramIds = selectedTramIds.filter((id) => !removedTramIds.includes(id));
       const newLichMap = new Map<number, number>();
 
       // Giữ nguyên các trạm đã update (lichId cũ)

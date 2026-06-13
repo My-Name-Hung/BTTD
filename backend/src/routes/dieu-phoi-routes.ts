@@ -12,7 +12,7 @@ import {
   xacNhanDaGiao,
 } from '../services/dieu-phoi-service';
 import { ghiNhatKy } from '../services/access-history-service';
-import { query } from '../config/database';
+import { query, vnNow } from '../config/database';
 
 const router = Router();
 
@@ -117,6 +117,42 @@ router.delete('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (
     res.json({ success: true, message: 'Xóa lịch sản xuất thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xóa lịch sản xuất';
+    res.status(500).json({ success: false, message });
+  }
+});
+
+/** Gỡ trạm trộn khỏi lịch sản xuất - giữ nguyên record, chỉ set idTramTron = NULL
+ *  Dùng khi sửa lịch: bỏ chọn trạm khỏi đơn nhưng không muốn mất lịch sản xuất
+ *  Giữ nguyên tài xế, xe, biển số, các thông tin khác
+ */
+router.post('/go-tram-tron/:id', authMiddleware, requireRole('admin', 'dieu_phoi', 'giam_doc_kinh_doanh'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id || isNaN(id)) {
+      res.status(400).json({ success: false, message: 'ID lịch sản xuất không hợp lệ' });
+      return;
+    }
+    // Lấy thông tin lịch cũ trước khi gỡ
+    const [ls] = await query<{ idDonHang: number; idTramTron: number | null }>(
+      `SELECT idDonHang, idTramTron FROM LichSanXuat WHERE id = @id`,
+      { id },
+    );
+    if (!ls) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy lịch sản xuất' });
+      return;
+    }
+    // Chỉ set idTramTron = NULL - giữ nguyên tài xế, xe, biển số và các thông tin khác
+    await query(
+      `UPDATE LichSanXuat SET idTramTron = NULL, ngayCapNhat = ${vnNow()} WHERE id = @id`,
+      { id },
+    );
+    res.json({
+      success: true,
+      message: 'Đã gỡ trạm trộn khỏi lịch sản xuất (giữ nguyên lịch, giữ nguyên tài xế)',
+      data: { id, idDonHang: ls.idDonHang, idTramTronCu: ls.idTramTron },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lỗi gỡ trạm trộn khỏi lịch sản xuất';
     res.status(500).json({ success: false, message });
   }
 });

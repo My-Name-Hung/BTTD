@@ -1,28 +1,30 @@
-import { query, vnNow } from '../config/database';
-import { LichSanXuat, DonHang } from '../models';
-import { guiThongBao } from './thong-bao-service';
+import { query, vnNow } from "../config/database";
+import { DonHang, LichSanXuat } from "../models";
+import { guiThongBao } from "./thong-bao-service";
 
 export async function taoLichSanXuat(
   data: Partial<LichSanXuat>,
-  nguoiTaoId: number
+  nguoiTaoId: number,
 ): Promise<LichSanXuat> {
   // Kiểm tra đơn hàng tồn tại
   const donHang = await query<DonHang>(
     `SELECT * FROM DonHang WHERE id = @idDonHang`,
-    { idDonHang: data.idDonHang }
+    { idDonHang: data.idDonHang },
   );
 
   if (donHang.length === 0) {
-    throw new Error('Không tìm thấy đơn hàng');
+    throw new Error("Không tìm thấy đơn hàng");
   }
 
   // Kiểm tra đã có lịch sản xuất cho TRẠM NÀY chưa (tránh trùng lặp)
   const existingLich = await query<{ id: number }>(
     `SELECT id FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron = @idTramTron AND trangThai != N'da_xong'`,
-    { idDonHang: data.idDonHang, idTramTron: data.idTramTron }
+    { idDonHang: data.idDonHang, idTramTron: data.idTramTron },
   );
   if (existingLich.length > 0) {
-    throw new Error('Đơn hàng này đã có lịch sản xuất cho trạm trộn này. Vui lòng cập nhật lịch hiện có hoặc hoàn thành lịch cũ trước khi tạo mới.');
+    throw new Error(
+      "Đơn hàng này đã có lịch sản xuất cho trạm trộn này. Vui lòng cập nhật lịch hiện có hoặc hoàn thành lịch cũ trước khi tạo mới.",
+    );
   }
 
   // Lấy idTramTron từ form (do người dùng chọn khi lên lịch SX)
@@ -33,15 +35,16 @@ export async function taoLichSanXuat(
   // (kể cả lịch đã hoàn thành) và đơn hàng chưa ở trạng thái sản xuất
   const existingAllLich = await query<{ id: number }>(
     `SELECT id FROM LichSanXuat WHERE idDonHang = @idDonHang`,
-    { idDonHang: data.idDonHang }
+    { idDonHang: data.idDonHang },
   );
-  const isFirstLich = existingAllLich.length === 0 && donHang[0].trangThaiDon === 'da_duyet';
+  const isFirstLich =
+    existingAllLich.length === 0 && donHang[0].trangThaiDon === "da_duyet";
 
   // Cập nhật tram trộn vào đơn hàng nếu được chọn
   if (idTramTron) {
     await query(
       `UPDATE DonHang SET idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @id`,
-      { id: data.idDonHang, idTramTron }
+      { id: data.idDonHang, idTramTron },
     );
   }
 
@@ -50,7 +53,7 @@ export async function taoLichSanXuat(
   if (isFirstLich) {
     await query(
       `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
-      { id: data.idDonHang }
+      { id: data.idDonHang },
     );
   }
 
@@ -59,7 +62,7 @@ export async function taoLichSanXuat(
   if (data.idXe) {
     const xe = await query<{ idTaiKhoan: number | null }>(
       `SELECT idTaiKhoan FROM Xe WHERE id = @idXe`,
-      { idXe: data.idXe }
+      { idXe: data.idXe },
     );
     if (xe.length > 0 && xe[0].idTaiKhoan) {
       idTaiXe = xe[0].idTaiKhoan;
@@ -87,12 +90,12 @@ export async function taoLichSanXuat(
       bienSoXe: data.bienSoXe || null,
       ghiChu: data.ghiChu || null,
       driveLink: data.driveLink || null,
-    }
+    },
   );
 
   // Thông báo cho kho: có đơn hàng cần giao (CHỈ gửi khi tạo lịch đầu tiên)
   if (isFirstLich) {
-    guiThongBao('PRODUCTION_SCHEDULED', {
+    guiThongBao("PRODUCTION_SCHEDULED", {
       id: data.idDonHang,
       maDonHang: donHang[0].maDonHang,
       tenKhachHang: donHang[0].tenKhachHang,
@@ -100,18 +103,20 @@ export async function taoLichSanXuat(
     });
 
     // Thông báo ORDER_STATUS_CHANGED - Đang sản xuất
-    guiThongBao('ORDER_STATUS_CHANGED', {
+    guiThongBao("ORDER_STATUS_CHANGED", {
       id: data.idDonHang,
       maDonHang: donHang[0].maDonHang,
-      trangThai: 'dang_san_xuat',
-      trangThaiLabel: 'Đang sản xuất',
+      trangThai: "dang_san_xuat",
+      trangThaiLabel: "Đang sản xuất",
     });
   }
 
   return result[0];
 }
 
-export async function layLichSanXuatTheoDonHang(idDonHang: number): Promise<any[]> {
+export async function layLichSanXuatTheoDonHang(
+  idDonHang: number,
+): Promise<any[]> {
   return await query<any[]>(
     `SELECT ls.*,
             nd.hoTen as tenTaiXe
@@ -119,27 +124,27 @@ export async function layLichSanXuatTheoDonHang(idDonHang: number): Promise<any[
      LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
      WHERE ls.idDonHang = @idDonHang
      ORDER BY ls.ngayTao DESC`,
-    { idDonHang }
+    { idDonHang },
   );
 }
 
 export async function layTatCaLichSanXuat(
   page: number = 1,
   limit: number = 50,
-  trangThai?: string
+  trangThai?: string,
 ): Promise<{ data: any[]; total: number }> {
   const offset = (page - 1) * limit;
-  let whereClause = 'WHERE 1=1';
+  let whereClause = "WHERE 1=1";
   const params: Record<string, unknown> = { offset, limit };
 
   if (trangThai) {
-    whereClause += ' AND ls.trangThai = @trangThai';
+    whereClause += " AND ls.trangThai = @trangThai";
     params.trangThai = trangThai;
   }
 
   const [countResult] = await query<{ total: number }>(
     `SELECT COUNT(*) as total FROM LichSanXuat ls ${whereClause}`,
-    params
+    params,
   );
   const total = countResult?.total || 0;
 
@@ -155,7 +160,7 @@ export async function layTatCaLichSanXuat(
      ${whereClause}
      ORDER BY ls.ngayTao DESC
      OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
-    params
+    params,
   );
 
   return { data, total };
@@ -163,14 +168,14 @@ export async function layTatCaLichSanXuat(
 
 export async function capNhatLichSanXuat(
   id: number,
-  data: Partial<LichSanXuat>
+  data: Partial<LichSanXuat>,
 ): Promise<LichSanXuat> {
   // Lấy idTaiXe từ bảng Xe nếu có đổi xe
   let idTaiXe: number | null = null;
   if (data.idXe) {
     const xe = await query<{ idTaiKhoan: number | null }>(
       `SELECT idTaiKhoan FROM Xe WHERE id = @idXe`,
-      { idXe: data.idXe }
+      { idXe: data.idXe },
     );
     if (xe.length > 0 && xe[0].idTaiKhoan) {
       idTaiXe = xe[0].idTaiKhoan;
@@ -179,11 +184,14 @@ export async function capNhatLichSanXuat(
 
   // Cập nhật tram trộn vào đơn hàng nếu được chọn
   if (data.idTramTron) {
-    const [ls] = await query<{ idDonHang: number }>(`SELECT idDonHang FROM LichSanXuat WHERE id = @id`, { id });
+    const [ls] = await query<{ idDonHang: number }>(
+      `SELECT idDonHang FROM LichSanXuat WHERE id = @id`,
+      { id },
+    );
     if (ls) {
       await query(
         `UPDATE DonHang SET idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @idDonHang`,
-        { idDonHang: ls.idDonHang, idTramTron: data.idTramTron }
+        { idDonHang: ls.idDonHang, idTramTron: data.idTramTron },
       );
     }
   }
@@ -214,51 +222,56 @@ export async function capNhatLichSanXuat(
       thoiGianDenCangDat: data.thoiGianDenCangDat ?? null,
       thoiGianBatDauDo: data.thoiGianBatDauDo ?? null,
       thoiGianKetThucDo: data.thoiGianKetThucDo ?? null,
-      trangThai: data.trangThai ?? 'chua_san_xuat',
+      trangThai: data.trangThai ?? "chua_san_xuat",
       ghiChu: data.ghiChu ?? null,
       driveLink: data.driveLink ?? null,
-    }
+    },
   );
 
-  const [updated] = await query<LichSanXuat>(`SELECT * FROM LichSanXuat WHERE id = @id`, { id });
+  const [updated] = await query<LichSanXuat>(
+    `SELECT * FROM LichSanXuat WHERE id = @id`,
+    { id },
+  );
   if (!updated) {
-    throw new Error('Không tìm thấy lịch sản xuất');
+    throw new Error("Không tìm thấy lịch sản xuất");
   }
 
   // Lấy thông tin đơn hàng để dùng cho thông báo
-  const dh = await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: updated.idDonHang });
+  const dh = await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, {
+    id: updated.idDonHang,
+  });
   const donHangInfo = dh[0];
 
-  if (data.trangThai === 'da_xong') {
+  if (data.trangThai === "da_xong") {
     await query(
       `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
-      { id: updated.idDonHang }
+      { id: updated.idDonHang },
     );
 
     // Thông báo ORDER_STATUS_CHANGED - Đang giao
-    guiThongBao('ORDER_STATUS_CHANGED', {
+    guiThongBao("ORDER_STATUS_CHANGED", {
       id: updated.idDonHang,
       maDonHang: donHangInfo.maDonHang,
-      trangThai: 'dang_giao',
-      trangThaiLabel: 'Đang giao',
+      trangThai: "dang_giao",
+      trangThaiLabel: "Đang giao",
     });
 
     // Thông báo cho kho bắt đầu giao
-    guiThongBao('DELIVERY_STARTED', {
+    guiThongBao("DELIVERY_STARTED", {
       id: updated.idDonHang,
       maDonHang: donHangInfo.maDonHang,
-      bienSoXe: data.bienSoXe || '',
+      bienSoXe: data.bienSoXe || "",
     });
   } else {
     // Sửa lịch sản xuất thông thường → thông báo cho kho và điều phối
     const tramInfo = await query<{ tenTram: string }>(
       `SELECT tenTram FROM TramTron WHERE id = @id`,
-      { id: updated.idTramTron }
+      { id: updated.idTramTron },
     );
-    guiThongBao('SCHEDULE_UPDATED', {
+    guiThongBao("SCHEDULE_UPDATED", {
       id: updated.idDonHang,
       maDonHang: donHangInfo.maDonHang,
-      tenTram: tramInfo[0]?.tenTram || '',
+      tenTram: tramInfo[0]?.tenTram || "",
     });
   }
 
@@ -272,21 +285,23 @@ export async function xacNhanDaGiao(idDonHang: number): Promise<DonHang> {
       ngayGiao = ${vnNow()},
       ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
-    { id: idDonHang }
+    { id: idDonHang },
   );
 
-  const donHang = await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, { id: idDonHang });
+  const donHang = await query<DonHang>(`SELECT * FROM DonHang WHERE id = @id`, {
+    id: idDonHang,
+  });
 
   // Thông báo ORDER_STATUS_CHANGED - Đã giao
-  guiThongBao('ORDER_STATUS_CHANGED', {
+  guiThongBao("ORDER_STATUS_CHANGED", {
     id: idDonHang,
     maDonHang: donHang[0].maDonHang,
-    trangThai: 'da_giao',
-    trangThaiLabel: 'Đã giao',
+    trangThai: "da_giao",
+    trangThaiLabel: "Đã giao",
   });
 
   // Thông báo chờ nghiệm thu
-  guiThongBao('DELIVERY_COMPLETED', {
+  guiThongBao("DELIVERY_COMPLETED", {
     id: idDonHang,
     maDonHang: donHang[0].maDonHang,
     khoiLuong: donHang[0].khoiLuongThucTe || donHang[0].khoiLuongDat,
@@ -305,7 +320,7 @@ export async function layDonHangTheoXe(idXe: number): Promise<any[]> {
      LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
      WHERE ls.idXe = @idXe
      ORDER BY ls.ngayTao DESC`,
-    { idXe }
+    { idXe },
   );
 }
 

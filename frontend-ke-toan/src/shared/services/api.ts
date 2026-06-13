@@ -421,6 +421,14 @@ export async function xoaLichSanXuat(lichId: number): Promise<void> {
   });
 }
 
+// Gỡ trạm trộn khỏi lịch sản xuất - giữ nguyên record lịch, chỉ set idTramTron = NULL
+export async function goTramKhoiLichSanXuat(lichId: number): Promise<{ id: number; idDonHang: number; idTramTronCu: number | null }> {
+  return request<{ id: number; idDonHang: number; idTramTronCu: number | null }>(
+    `/dieu-phoi/go-tram-tron/${lichId}`,
+    { method: "POST" },
+  );
+}
+
 export async function taoNghiemThu(
   data: Partial<NghiemThu>,
 ): Promise<NghiemThu> {
