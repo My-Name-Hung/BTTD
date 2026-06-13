@@ -95,6 +95,10 @@ export interface DonHang {
   buVanChuyen?: number;
   giamTru?: number;
   thoiGianGiaoDuKien: string | null;
+  // Phương thức thanh toán dự kiến (mặc định khi tạo đơn)
+  // tra_het | tra_het_du | cong_no | cong_no_du
+  phuongThucThanhToan?: "tra_het" | "tra_het_du" | "cong_no" | "cong_no_du" | null;
+
   ngayTaoDon: string;
   ngayDuyet: string | null;
   ngayGiao: string | null;

@@ -135,6 +135,9 @@ export interface DonHang {
   // Thông tin giao hàng
   nguoiNhanHang: string | null;
   giaTienTamTinh: number | null;
+  // Phương thức thanh toán dự kiến khi tạo đơn
+  // tra_het | tra_het_du | cong_no | cong_no_du
+  phuongThucThanhToan: string | null;
 
   ngayTao: Date | string;
   ngayCapNhat: Date | string;

@@ -49,7 +49,15 @@ const EMPTY_FORM = {
   chieuDaiNoi: '',
   nguoiNhanHang: '',
   giaTienTamTinh: '',
+  phuongThucThanhToan: 'tra_het' as 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du',
 };
+
+const PHUONG_THUC_THANH_TOAN_OPTIONS: { value: 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du'; label: string }[] = [
+  { value: 'tra_het', label: 'Trả hết' },
+  { value: 'tra_het_du', label: 'Trả hết dư' },
+  { value: 'cong_no', label: 'Công nợ' },
+  { value: 'cong_no_du', label: 'Công nợ dư' },
+];
 
 export default function TaoDonHangPage() {
   const navigate = useNavigate();
@@ -151,6 +159,7 @@ export default function TaoDonHangPage() {
             chieuDaiNoi: dh.chieuDaiNoi != null ? String(dh.chieuDaiNoi) : '',
             nguoiNhanHang: (dh as any).nguoiNhanHang || '',
             giaTienTamTinh: (dh as any).giaTienTamTinh != null ? String((dh as any).giaTienTamTinh) : '',
+            phuongThucThanhToan: (dh.phuongThucThanhToan || 'tra_het') as 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du',
           };
           const t = parseLocalDatetime(dh.thoiGianGiaoDuKien);
           setForm(f);
@@ -322,6 +331,7 @@ export default function TaoDonHangPage() {
         chieuDaiNoi: form.chieuDaiNoi ? parseFloat(form.chieuDaiNoi) : null,
         nguoiNhanHang: form.nguoiNhanHang || null,
         giaTienTamTinh: giaTamTinh || null,
+        phuongThucThanhToan: form.phuongThucThanhToan,
       };
 
       if (editingId) {
@@ -771,6 +781,23 @@ export default function TaoDonHangPage() {
                 }}
                 placeholder="VD: 50.000.000"
               />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Phương thức thanh toán</label>
+              <select
+                className={styles.formInput}
+                value={form.phuongThucThanhToan}
+                onChange={(e) => setForm({
+                  ...form,
+                  phuongThucThanhToan: e.target.value as typeof form.phuongThucThanhToan,
+                })}
+              >
+                {PHUONG_THUC_THANH_TOAN_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div className={styles.formGroup}>

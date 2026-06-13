@@ -123,7 +123,7 @@ export async function taoDonHang(
       thoiGianGiaoDuKien, trangThaiDon, trangThaiHoanThanh,
       nguoiTaoId, ghiChu,
       hangMuc, phuongPhapDo, loaiBom, chieuDaiBom, kieuNoi, chieuDaiNoi,
-      nguoiNhanHang, giaTienTamTinh
+      nguoiNhanHang, giaTienTamTinh, phuongThucThanhToan
     ) VALUES (
       @maDonHang, @idKhachHang, @idMacBeTong, @idTramTron,
       @tenKhachHang, @diaChiNhan, @soDienThoai,
@@ -131,7 +131,7 @@ export async function taoDonHang(
       @thoiGianGiaoDuKien, N'cho_duyet', N'chua_hoan_thanh',
       @nguoiTaoId, @ghiChu,
       @hangMuc, @phuongPhapDo, @loaiBom, @chieuDaiBom, @kieuNoi, @chieuDaiNoi,
-      @nguoiNhanHang, @giaTienTamTinh
+      @nguoiNhanHang, @giaTienTamTinh, @phuongThucThanhToan
     );
     SELECT * FROM DonHang WHERE id = SCOPE_IDENTITY();`,
     {
@@ -160,6 +160,7 @@ export async function taoDonHang(
       chieuDaiNoi: data.chieuDaiNoi || null,
       nguoiNhanHang: data.nguoiNhanHang || null,
       giaTienTamTinh: data.giaTienTamTinh || null,
+      phuongThucThanhToan: data.phuongThucThanhToan || "tra_het",
     },
   );
 
@@ -236,6 +237,7 @@ export async function suaDonHang(
       hangMuc = @hangMuc, phuongPhapDo = @phuongPhapDo, loaiBom = @loaiBom,
       chieuDaiBom = @chieuDaiBom, kieuNoi = @kieuNoi, chieuDaiNoi = @chieuDaiNoi,
       nguoiNhanHang = @nguoiNhanHang, giaTienTamTinh = @giaTienTamTinh,
+      phuongThucThanhToan = @phuongThucThanhToan,
       ngayCapNhat = ${vnNow()}
      WHERE id = @id`,
     {
@@ -264,6 +266,7 @@ export async function suaDonHang(
       chieuDaiNoi: data.chieuDaiNoi ?? existing.chieuDaiNoi ?? null,
       nguoiNhanHang: data.nguoiNhanHang ?? existing.nguoiNhanHang ?? null,
       giaTienTamTinh: data.giaTienTamTinh ?? existing.giaTienTamTinh ?? null,
+      phuongThucThanhToan: data.phuongThucThanhToan ?? existing.phuongThucThanhToan ?? "tra_het",
     },
   );
 
@@ -288,6 +291,7 @@ export async function suaDonHang(
     chieuDaiNoi: data.chieuDaiNoi ?? existing.chieuDaiNoi ?? null,
     nguoiNhanHang: data.nguoiNhanHang ?? existing.nguoiNhanHang ?? null,
     giaTienTamTinh: data.giaTienTamTinh ?? existing.giaTienTamTinh ?? null,
+    phuongThucThanhToan: data.phuongThucThanhToan ?? existing.phuongThucThanhToan ?? "tra_het",
   };
 
   const updated = (

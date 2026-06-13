@@ -772,6 +772,23 @@ export default function ChiTietDonHangPage() {
           <div className={styles.infoCardTitle}>
             <FiDollarSign size={14} /> Thông tin thanh toán
           </div>
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>Phương thức thanh toán</span>
+            <span
+              className={`${styles.infoValue} ${
+                donHang.phuongThucThanhToan === "cong_no" ||
+                donHang.phuongThucThanhToan === "cong_no_du"
+                  ? styles.infoValueWarning
+                  : styles.infoValuePrimary
+              }`}
+            >
+              {donHang.phuongThucThanhToan === "tra_het" && "Trả hết"}
+              {donHang.phuongThucThanhToan === "tra_het_du" && "Trả hết dư"}
+              {donHang.phuongThucThanhToan === "cong_no" && "Công nợ"}
+              {donHang.phuongThucThanhToan === "cong_no_du" && "Công nợ dư"}
+              {!donHang.phuongThucThanhToan && "Trả hết"}
+            </span>
+          </div>
 
           {/* Tính từ hóa đơn - đồng bộ với phần hóa đơn bên dưới */}
           {(() => {

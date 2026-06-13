@@ -515,6 +515,10 @@ async function initDatabase(): Promise<void> {
         "buocTuChoi",
         `ALTER TABLE DonHang ADD buocTuChoi INT`,
       );
+      await safeAddColumn(
+        "phuongThucThanhToan",
+        `ALTER TABLE DonHang ADD phuongThucThanhToan NVARCHAR(50) DEFAULT N'tra_het'`,
+      );
     }
 
     // Tạo bảng LichSanXuat
