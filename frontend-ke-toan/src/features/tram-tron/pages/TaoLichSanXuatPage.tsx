@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome } from 'react-icons/fi';
 import {
@@ -40,8 +40,16 @@ export default function TaoLichSanXuatPage() {
 
   const [initialForm, setInitialForm] = useState(form);
   const hasChanges = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const tramSelectionDirty = useMemo(() => {
+    if (selectedTramIds.length !== initialSelectedTramIds.length) return true;
+    const a = [...selectedTramIds].sort((x, y) => x - y);
+    const b = [...initialSelectedTramIds].sort((x, y) => x - y);
+    return a.some((v, i) => v !== b[i]);
+  }, [selectedTramIds, initialSelectedTramIds]);
+  const isDirty = hasChanges || tramSelectionDirty;
 
   const [selectedTramIds, setSelectedTramIds] = useState<number[]>([]);
+  const [initialSelectedTramIds, setInitialSelectedTramIds] = useState<number[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -78,7 +86,9 @@ export default function TaoLichSanXuatPage() {
             const allTramIds = lichs
               .map((l: LichSanXuat) => l.idTramTron)
               .filter((id): id is number => id != null);
-            setSelectedTramIds([...new Set(allTramIds)]);
+            const uniqueTramIds = [...new Set(allTramIds)];
+            setSelectedTramIds(uniqueTramIds);
+            setInitialSelectedTramIds(uniqueTramIds);
 
             const lichMap = new Map<number, number>();
             lichs.forEach((l: LichSanXuat) => {
@@ -112,6 +122,7 @@ export default function TaoLichSanXuatPage() {
             });
           } else {
             setSelectedTramIds([]);
+            setInitialSelectedTramIds([]);
             setExistingLichMap(new Map());
             setTongKhoiLuongDaTron(0);
           }
@@ -127,9 +138,16 @@ export default function TaoLichSanXuatPage() {
 
   // Auto reload dữ liệu lịch sản xuất mỗi 30s (silent - không block UI)
   // Chỉ refresh existingLichMap/selectedTramIds/tongKhoiLuongDaTron, không đụng form
+  // BỎ QUA khi người dùng đang có thay đổi chưa lưu (form dirty) để tránh ghi đè lựa chọn
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
   useEffect(() => {
     if (!idDonHang) return;
     const interval = setInterval(async () => {
+      if (isDirtyRef.current) {
+        // Có thay đổi chưa lưu - bỏ qua auto-reload để không ghi đè lựa chọn của người dùng
+        return;
+      }
       try {
         const lichs = await layLichSanXuat(idDonHang);
         const tongDaTron = (lichs || []).reduce((sum: number, l: any) => {
@@ -140,10 +158,9 @@ export default function TaoLichSanXuatPage() {
         const allTramIds = (lichs || [])
           .map((l: LichSanXuat) => l.idTramTron)
           .filter((id): id is number => id != null);
-        setSelectedTramIds((prev) => {
-          const merged = [...new Set([...prev, ...allTramIds])];
-          return merged;
-        });
+        const uniqueTramIds = [...new Set(allTramIds)];
+        setSelectedTramIds(uniqueTramIds);
+        setInitialSelectedTramIds(uniqueTramIds);
 
         const lichMap = new Map<number, number>();
         (lichs || []).forEach((l: LichSanXuat) => {
@@ -286,6 +303,7 @@ export default function TaoLichSanXuatPage() {
       }
 
       setSelectedTramIds(newSelectedTramIds);
+      setInitialSelectedTramIds(newSelectedTramIds);
       setExistingLichMap(newLichMap);
       setInitialForm(form);
       showToast(`Lưu thành công ${newSelectedTramIds.length} trạm trộn!`);
