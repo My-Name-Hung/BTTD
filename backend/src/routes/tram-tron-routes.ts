@@ -35,12 +35,15 @@ router.get(
       const offset = (page - 1) * limit;
 
       const isAdmin = req.user?.vaiTro === "admin";
+      const isGiamDoc = req.user?.vaiTro === "giam_doc_kinh_doanh";
       const idTram = req.user?.idTramTron ?? null;
 
       let whereClause = "";
       let params: Record<string, any> = { offset, limit };
 
-      if (!isAdmin && !idTram) {
+      // Admin và Giám đốc kinh doanh xem tất cả trạm, không yêu cầu idTramTron
+      const xemTatCa = isAdmin || isGiamDoc;
+      if (!xemTatCa && !idTram) {
         res
           .status(403)
           .json({
@@ -50,8 +53,8 @@ router.get(
         return;
       }
 
-      if (isAdmin) {
-        // Admin xem tất cả - bao gồm cả đơn đã duyệt (đã lên lịch sx) và đang sản xuất, đang giao, đã giao
+      if (xemTatCa) {
+        // Admin và Giám đốc kinh doanh xem tất cả - bao gồm cả đơn đã duyệt (đã lên lịch sx) và đang sản xuất, đang giao, đã giao
         const countResult = await query<{ total: number }>(
           `SELECT COUNT(DISTINCT dh.id) as total FROM LichSanXuat ls
          INNER JOIN DonHang dh ON ls.idDonHang = dh.id
