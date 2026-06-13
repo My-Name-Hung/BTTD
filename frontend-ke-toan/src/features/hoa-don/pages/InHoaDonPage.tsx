@@ -319,9 +319,10 @@ export default function InHoaDonPage() {
     (sum, item) => sum + item.amount,
     0,
   );
-  const soTienDuocChot = hd.soTienThanhToan || hd.tongCong || 0;
-  const tongCongHienThi =
-    isCongNo && !isCongNoDu ? soTienDuocChot : hd.tongCong || 0;
+  // Tổng cộng hóa đơn (do XuatHoaDonPage tính và lưu) =
+  // tienBeTong + buuVanChuyen + phiPhatSinh - giamTru
+  // Tất cả các loại hóa đơn (trả hết / công nợ / công nợ dư) đều hiển thị cùng một tongCong.
+  const tongCongHienThi = hd.tongCong || 0;
   const phuongThucText =
     hd.phuongThucThanhToan === "chuyen_khoan" ? "Chuyển khoản" : "Tiền mặt";
 

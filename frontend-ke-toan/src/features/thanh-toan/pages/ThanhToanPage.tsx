@@ -102,11 +102,14 @@ export default function ThanhToanPage() {
               maHoaDon: h.soHoaDon,
               ngayLap: h.ngayTao,
               khachHang: dh.tenKhachHang,
-              tienBeTong: (h.tongCong || 0) - (h.giamTru || 0),
-              buuVanChuyen: 0,
-              phiPhatSinh: 0,
+              // tongCong đã được XuatHoaDonPage tính sẵn và lưu xuống DB
+              // = tienBeTong + buuVanChuyen + phiPhatSinh - giamTru
+              // Tuyệt đối KHÔNG tính ngược từ tongCong (sẽ trừ giamTru 2 lần)
+              tienBeTong: h.tienBeTong || 0,
+              buuVanChuyen: h.buuVanChuyen || 0,
+              phiPhatSinh: h.phiPhatSinh || 0,
               giamTru: h.giamTru || 0,
-              tongCong: (h.tongCong || 0),
+              tongCong: h.tongCong || 0,
               loaiThanhToan: h.loaiThanhToan || "tra_het",
               soTienDu: h.soTienDu || 0,
               hanTraCongNo: h.hanTraCongNo || null,
