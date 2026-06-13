@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiChevronLeft, FiLogOut, FiKey } from 'react-icons/fi';
+import { FiChevronLeft, FiLogOut, FiKey, FiDownload } from 'react-icons/fi';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   layChiTietAccessSession,
@@ -72,6 +72,44 @@ export default function AccessHistoryDetailPage() {
     } finally { setResetPwLoading(false); }
   };
 
+  const handleExportJson = () => {
+    if (!detail) return;
+    const exportData = {
+      thongTinPhien: {
+        id: session.id,
+        nguoiDung: session.hoTen,
+        vaiTro: session.vaiTro,
+        diaChiIP: session.ipAddress,
+        userAgent: session.userAgent,
+        ngayDangNhap: session.ngayTao,
+        ngayKetThuc: session.ngayKetThuc,
+        trangThai: session.thaoTac === 'dang_nhap' ? 'Đang hoạt động' : 'Đã kết thúc',
+      },
+      nhatKyThaoTac: logs.map(log => ({
+        id: log.id,
+        hanhDong: log.hanhDong,
+        hanhDongLabel: HANH_DONG_LABELS[log.hanhDong] || log.hanhDong,
+        bangTacDong: log.bangDuocTacDong,
+        banGhiId: log.banGhiId,
+        noiDungCu: log.noiDungCu,
+        noiDungMoi: log.noiDungMoi,
+        diaChiIP: log.ipAddress,
+        thoiGian: log.thoiGian,
+      })),
+      xuatLuc: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lich-su-truy-cap-${session.id}-${session.hoTen?.replace(/\s+/g, '-') || 'user'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Đã xuất file JSON', 'success');
+  };
+
   if (loading) return <Loading />;
   if (!detail) return (
     <div className={styles.empty}>
@@ -133,6 +171,9 @@ export default function AccessHistoryDetailPage() {
 
           {/* Action Buttons */}
           <div className={styles.actions}>
+            <button className={`btn btn-secondary ${styles.actionBtn}`} onClick={handleExportJson}>
+              <FiDownload size={16} /> Xuất JSON
+            </button>
             {session.thaoTac === 'dang_nhap' && (
               <button className={`btn btn-danger ${styles.actionBtn}`} onClick={handleForceLogout}>
                 <FiLogOut size={16} /> Buộc đăng xuất

@@ -35,6 +35,9 @@ import bangChungRoutes from "./routes/bang-chung-routes";
 const app: Application = express();
 const httpServer = createServer(app);
 
+// Trust proxy để lấy đúng IP khi chạy sau proxy/load balancer
+app.set('trust proxy', true);
+
 // CORS — cho phép frontend dev server truy cập
 app.use(
   cors({
