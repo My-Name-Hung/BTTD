@@ -27,7 +27,8 @@ export async function taoLichSanXuat(
     );
   }
 
-  // Lấy idTramTron từ form (do người dùng chọn khi lên lịch SX)
+  // Lấy idTramTron từ form (lưu vào LichSanXuat - KHÔNG ghi vào DonHang.idTramTron
+  // vì 1 đơn hàng có thể được gán nhiều trạm trộn qua các bản ghi LichSanXuat)
   const idTramTron = data.idTramTron || null;
 
   // Kiểm tra đơn hàng đã có lịch sản xuất nào chưa (để tránh gửi thông báo trùng lặp)
@@ -39,14 +40,6 @@ export async function taoLichSanXuat(
   );
   const isFirstLich =
     existingAllLich.length === 0 && donHang[0].trangThaiDon === "da_duyet";
-
-  // Cập nhật tram trộn vào đơn hàng nếu được chọn
-  if (idTramTron) {
-    await query(
-      `UPDATE DonHang SET idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @id`,
-      { id: data.idDonHang, idTramTron },
-    );
-  }
 
   // Chỉ cập nhật trạng thái và gửi thông báo khi TẠO LỊCH ĐẦU TIÊN cho đơn hàng
   // Khi thêm trạm thứ 2, thứ 3... thì không gửi thông báo nữa
@@ -182,50 +175,56 @@ export async function capNhatLichSanXuat(
     }
   }
 
-  // Cập nhật tram trộn vào đơn hàng nếu được chọn
-  if (data.idTramTron) {
-    const [ls] = await query<{ idDonHang: number }>(
-      `SELECT idDonHang FROM LichSanXuat WHERE id = @id`,
-      { id },
-    );
-    if (ls) {
-      await query(
-        `UPDATE DonHang SET idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @idDonHang`,
-        { idDonHang: ls.idDonHang, idTramTron: data.idTramTron },
-      );
-    }
+  // Cập nhật tram trộn vào đơn hàng: BỎ - 1 đơn có thể có nhiều trạm qua LichSanXuat
+  // Trước đây ghi đè DonHang.idTramTron làm mất thông tin trạm cũ khi thêm trạm mới
+
+  // Build động danh sách cột cần update - chỉ update field nào có trong data
+  // Tránh bug: nếu payload không gửi idTramTron mà set = null thì mất trạm
+  const setClauses: string[] = [
+    "idXe = @idXe",
+    "idTaiXe = @idTaiXe",
+    "kyThuatCongTrinh = @kyThuatCongTrinh",
+    "nguoiOmOng = @nguoiOmOng",
+    "nguoiBatOng = @nguoiBatOng",
+    "phuongAnDo = @phuongAnDo",
+    "bienSoXe = @bienSoXe",
+    "thoiGianTron = @thoiGianTron",
+    "thoiGianXuatBen = @thoiGianXuatBen",
+    "thoiGianDenCangDat = @thoiGianDenCangDat",
+    "thoiGianBatDauDo = @thoiGianBatDauDo",
+    "thoiGianKetThucDo = @thoiGianKetThucDo",
+    "trangThai = @trangThai",
+    "ghiChu = @ghiChu",
+    "driveLink = @driveLink",
+    `ngayCapNhat = ${vnNow()}`,
+  ];
+  const updateParams: Record<string, unknown> = {
+    id,
+    idXe: data.idXe !== undefined ? data.idXe : null,
+    idTaiXe: idTaiXe !== null ? idTaiXe : (data.idTaiXe !== undefined ? data.idTaiXe : null),
+    kyThuatCongTrinh: data.kyThuatCongTrinh !== undefined ? data.kyThuatCongTrinh : null,
+    nguoiOmOng: data.nguoiOmOng !== undefined ? data.nguoiOmOng : null,
+    nguoiBatOng: data.nguoiBatOng !== undefined ? data.nguoiBatOng : null,
+    phuongAnDo: data.phuongAnDo !== undefined ? data.phuongAnDo : null,
+    bienSoXe: data.bienSoXe !== undefined ? data.bienSoXe : null,
+    thoiGianTron: data.thoiGianTron !== undefined ? data.thoiGianTron : null,
+    thoiGianXuatBen: data.thoiGianXuatBen !== undefined ? data.thoiGianXuatBen : null,
+    thoiGianDenCangDat: data.thoiGianDenCangDat !== undefined ? data.thoiGianDenCangDat : null,
+    thoiGianBatDauDo: data.thoiGianBatDauDo !== undefined ? data.thoiGianBatDauDo : null,
+    thoiGianKetThucDo: data.thoiGianKetThucDo !== undefined ? data.thoiGianKetThucDo : null,
+    trangThai: data.trangThai !== undefined ? data.trangThai : "chua_san_xuat",
+    ghiChu: data.ghiChu !== undefined ? data.ghiChu : null,
+    driveLink: data.driveLink !== undefined ? data.driveLink : null,
+  };
+  // Chỉ update idTramTron khi payload có gửi lên (undefined = không đụng, null = gỡ trạm)
+  if (data.idTramTron !== undefined) {
+    setClauses.push("idTramTron = @idTramTron");
+    updateParams.idTramTron = data.idTramTron;
   }
 
   await query(
-    `UPDATE LichSanXuat SET
-      idXe = @idXe, idTaiXe = @idTaiXe, idTramTron = @idTramTron, kyThuatCongTrinh = @kyThuatCongTrinh,
-      nguoiOmOng = @nguoiOmOng, nguoiBatOng = @nguoiBatOng,
-      phuongAnDo = @phuongAnDo, bienSoXe = @bienSoXe,
-      thoiGianTron = @thoiGianTron, thoiGianXuatBen = @thoiGianXuatBen,
-      thoiGianDenCangDat = @thoiGianDenCangDat,
-      thoiGianBatDauDo = @thoiGianBatDauDo, thoiGianKetThucDo = @thoiGianKetThucDo,
-      trangThai = @trangThai, ghiChu = @ghiChu, driveLink = @driveLink,
-      ngayCapNhat = ${vnNow()}
-     WHERE id = @id`,
-    {
-      id,
-      idXe: data.idXe ?? null,
-      idTaiXe: idTaiXe ?? data.idTaiXe ?? null,
-      idTramTron: data.idTramTron ?? null,
-      kyThuatCongTrinh: data.kyThuatCongTrinh ?? null,
-      nguoiOmOng: data.nguoiOmOng ?? null,
-      nguoiBatOng: data.nguoiBatOng ?? null,
-      phuongAnDo: data.phuongAnDo ?? null,
-      bienSoXe: data.bienSoXe ?? null,
-      thoiGianTron: data.thoiGianTron ?? null,
-      thoiGianXuatBen: data.thoiGianXuatBen ?? null,
-      thoiGianDenCangDat: data.thoiGianDenCangDat ?? null,
-      thoiGianBatDauDo: data.thoiGianBatDauDo ?? null,
-      thoiGianKetThucDo: data.thoiGianKetThucDo ?? null,
-      trangThai: data.trangThai ?? "chua_san_xuat",
-      ghiChu: data.ghiChu ?? null,
-      driveLink: data.driveLink ?? null,
-    },
+    `UPDATE LichSanXuat SET ${setClauses.join(", ")} WHERE id = @id`,
+    updateParams,
   );
 
   const [updated] = await query<LichSanXuat>(
@@ -262,18 +261,9 @@ export async function capNhatLichSanXuat(
       maDonHang: donHangInfo.maDonHang,
       bienSoXe: data.bienSoXe || "",
     });
-  } else {
-    // Sửa lịch sản xuất thông thường → thông báo cho kho và điều phối
-    const tramInfo = await query<{ tenTram: string }>(
-      `SELECT tenTram FROM TramTron WHERE id = @id`,
-      { id: updated.idTramTron },
-    );
-    guiThongBao("SCHEDULE_UPDATED", {
-      id: updated.idDonHang,
-      maDonHang: donHangInfo.maDonHang,
-      tenTram: tramInfo[0]?.tenTram || "",
-    });
   }
+  // BỎ thông báo SCHEDULE_UPDATED khi sửa lịch sản xuất thông thường
+  // (theo yêu cầu: không gửi thông báo khi điều phối chỉnh sửa lịch)
 
   return updated;
 }
