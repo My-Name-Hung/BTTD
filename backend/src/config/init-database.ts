@@ -773,6 +773,33 @@ async function initDatabase(): Promise<void> {
       console.log("  ✅ Bảng ThongBao đã tồn tại");
     }
 
+    // Tạo bảng LichSuTraLai (lịch sử trả lại đơn hàng - trộn lại)
+    const lichSuTraLaiExists = await db.query<{ name: string }[]>(
+      `SELECT name FROM sys.tables WHERE name = 'LichSuTraLai'`,
+    );
+    if (lichSuTraLaiExists.recordset.length === 0) {
+      console.log("  ➕ Tạo bảng LichSuTraLai...");
+      await db.query(`
+        CREATE TABLE LichSuTraLai (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          idDonHang INT NOT NULL,
+          lyDo NVARCHAR(500) NOT NULL,
+          idNguoiTra INT,
+          hoTen NVARCHAR(100),
+          vaiTro NVARCHAR(50),
+          ngayTra DATETIME DEFAULT GETDATE(),
+          daXuLy BIT DEFAULT 0,
+          ngayXuLy DATETIME,
+          ghiChu NVARCHAR(MAX),
+          createdAt DATETIME DEFAULT GETDATE(),
+          updatedAt DATETIME
+        )
+      `);
+      console.log("  ✅ Bảng LichSuTraLai đã tạo");
+    } else {
+      console.log("  ✅ Bảng LichSuTraLai đã tồn tại");
+    }
+
     await dbPool.close();
 
     // ===== MIGRATIONS: Cập nhật các cột mới =====
@@ -1042,6 +1069,13 @@ async function createPerformanceIndexes(db: mssql.ConnectionPool): Promise<void>
       name: 'IX_LoginSession_ThaoTac',
       sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LoginSession_ThaoTac' AND object_id = OBJECT_ID('LoginSession'))
             CREATE NONCLUSTERED INDEX IX_LoginSession_ThaoTac ON LoginSession(thaoTac, ngayTao DESC)`
+    },
+
+    // LichSuTraLai indexes
+    {
+      name: 'IX_LichSuTraLai_DonHang',
+      sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LichSuTraLai_DonHang' AND object_id = OBJECT_ID('LichSuTraLai'))
+            CREATE NONCLUSTERED INDEX IX_LichSuTraLai_DonHang ON LichSuTraLai(idDonHang, ngayTra DESC)`
     },
   ];
 
