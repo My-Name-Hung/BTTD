@@ -189,6 +189,7 @@ export default function TaoLichSanXuatPage() {
       const existingTramIds = Array.from(existingLichMap.keys());
       const selectedSet = new Set(selectedTramIds);
 
+      // 1. Xóa các trạm đã bỏ chọn
       const deletedTramIds: number[] = [];
       for (const tramId of existingTramIds) {
         if (!selectedSet.has(tramId)) {
@@ -202,8 +203,10 @@ export default function TaoLichSanXuatPage() {
         }
       }
 
-      for (const tramId of selectedTramIds) {
-        if (existingLichMap.has(tramId)) {
+      // 2. Cập nhật các trạm đã có - chạy song song, gom lỗi
+      const updateTargets = selectedTramIds.filter((id) => existingLichMap.has(id));
+      const updateResults = await Promise.allSettled(
+        updateTargets.map((tramId) => {
           const lichId = existingLichMap.get(tramId)!;
           const payload: Partial<LichSanXuat> = {
             idXe: form.idXe ? parseInt(form.idXe) : null,
@@ -213,49 +216,79 @@ export default function TaoLichSanXuatPage() {
             nguoiBatOng: form.nguoiBatOng || null,
             ghiChu: form.ghiChu || null,
           };
-          await capNhatLichSanXuat(lichId, payload);
-        }
+          return capNhatLichSanXuat(lichId, payload);
+        }),
+      );
+      const updateFailures = updateResults.filter((r) => r.status === "rejected");
+      if (updateFailures.length > 0) {
+        const firstReason = (updateFailures[0] as PromiseRejectedResult).reason;
+        const msg = firstReason instanceof Error ? firstReason.message : "Lỗi cập nhật lịch sản xuất";
+        throw new Error(`Cập nhật thất bại ${updateFailures.length}/${updateResults.length} trạm: ${msg}`);
       }
 
+      // 3. Tạo mới các trạm chưa có - chạy song song, gom lỗi
+      const createTargets = selectedTramIds.filter((id) => !existingLichMap.has(id));
       const createdTramIds: number[] = [];
-      for (const tramId of selectedTramIds) {
-        if (!existingLichMap.has(tramId)) {
-          const payload: Partial<LichSanXuat> = {
-            idDonHang: idDonHang!,
-            idTramTron: tramId,
-            idXe: form.idXe ? parseInt(form.idXe) : null,
-            bienSoXe: xe?.bienSo || form.bienSoXe || null,
-            kyThuatCongTrinh: form.kyThuatCongTrinh || null,
-            nguoiOmOng: form.nguoiOmOng || null,
-            nguoiBatOng: form.nguoiBatOng || null,
-            ghiChu: form.ghiChu || null,
-          };
-          await taoLichSanXuat(payload);
-          createdTramIds.push(tramId);
+      if (createTargets.length > 0) {
+        const createResults = await Promise.allSettled(
+          createTargets.map((tramId) => {
+            const payload: Partial<LichSanXuat> = {
+              idDonHang: idDonHang!,
+              idTramTron: tramId,
+              idXe: form.idXe ? parseInt(form.idXe) : null,
+              bienSoXe: xe?.bienSo || form.bienSoXe || null,
+              kyThuatCongTrinh: form.kyThuatCongTrinh || null,
+              nguoiOmOng: form.nguoiOmOng || null,
+              nguoiBatOng: form.nguoiBatOng || null,
+              ghiChu: form.ghiChu || null,
+            };
+            return taoLichSanXuat(payload);
+          }),
+        );
+        const createFailures: { tramId: number; reason: unknown }[] = [];
+        createTargets.forEach((tramId, idx) => {
+          const r = createResults[idx];
+          if (r.status === "rejected") {
+            createFailures.push({ tramId, reason: r.reason });
+          } else {
+            createdTramIds.push(tramId);
+          }
+        });
+        if (createFailures.length > 0) {
+          const first = createFailures[0];
+          const msg = first.reason instanceof Error ? first.reason.message : "Lỗi tạo lịch sản xuất";
+          throw new Error(
+            `Tạo mới thất bại ${createFailures.length}/${createTargets.length} trạm: ${msg}`,
+          );
         }
       }
 
-      const newSelectedTramIds = selectedTramIds.filter(id => !deletedTramIds.includes(id));
+      // 4. Cập nhật lại state map & danh sách trạm sau khi thao tác xong
+      const newSelectedTramIds = selectedTramIds.filter((id) => !deletedTramIds.includes(id));
       const newLichMap = new Map<number, number>();
-      
-      for (const tramId of newSelectedTramIds) {
-        if (existingLichMap.has(tramId)) {
+
+      // Giữ nguyên các trạm đã update (lichId cũ)
+      for (const tramId of updateTargets) {
+        if (newSelectedTramIds.includes(tramId)) {
           newLichMap.set(tramId, existingLichMap.get(tramId)!);
         }
       }
-      
-      for (const tramId of createdTramIds) {
+
+      // Tra id cho các trạm mới tạo - chạy 1 lần thay vì gọi API cho từng trạm
+      if (createdTramIds.length > 0) {
         const lichs = await layLichSanXuat(idDonHang!);
-        const newLich = lichs.find(l => l.idTramTron === tramId);
-        if (newLich) {
-          newLichMap.set(tramId, newLich.id);
+        for (const tramId of createdTramIds) {
+          const newLich = lichs.find((l) => l.idTramTron === tramId);
+          if (newLich) {
+            newLichMap.set(tramId, newLich.id);
+          }
         }
       }
-      
+
       setSelectedTramIds(newSelectedTramIds);
       setExistingLichMap(newLichMap);
       setInitialForm(form);
-      showToast('Lưu thay đổi thành công!');
+      showToast(`Lưu thành công ${newSelectedTramIds.length} trạm trộn!`);
       setTimeout(() => {
         navigate('/dieu-phoi/lich-san-xuat', { state: { refresh: Date.now() } });
       }, 300);
