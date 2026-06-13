@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome, FiAlertCircle } from 'react-icons/fi';
+import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome } from 'react-icons/fi';
 import {
   layDanhSachXe, layDanhSachDonHang, layDanhSachTramTron,
   layLichSanXuat, taoLichSanXuat, capNhatLichSanXuat, xoaLichSanXuat,
@@ -27,8 +27,6 @@ export default function TaoLichSanXuatPage() {
   const [showCancel, setShowCancel] = useState(false);
 
   const [tongKhoiLuongDaTron, setTongKhoiLuongDaTron] = useState(0);
-  const [khoiLuongConLai, setKhoiLuongConLai] = useState(0);
-  const [daDuKhoi, setDaDuKhoi] = useState(false);
 
   const [existingLichMap, setExistingLichMap] = useState<Map<number, number>>(new Map());
 
@@ -72,13 +70,8 @@ export default function TaoLichSanXuatPage() {
             const tongDaTron = lichs.reduce((sum: number, l: any) => {
               return sum + (l.khoiLuongDaTron || 0);
             }, 0);
-            const khoiLuongDat = found?.khoiLuongDat || 0;
-            const conLai = Math.max(0, khoiLuongDat - tongDaTron);
-            const duKhoi = conLai === 0;
 
             setTongKhoiLuongDaTron(tongDaTron);
-            setKhoiLuongConLai(conLai);
-            setDaDuKhoi(duKhoi);
 
             const allTramIds = lichs
               .map((l: LichSanXuat) => l.idTramTron)
@@ -119,8 +112,6 @@ export default function TaoLichSanXuatPage() {
             setSelectedTramIds([]);
             setExistingLichMap(new Map());
             setTongKhoiLuongDaTron(0);
-            setKhoiLuongConLai(found?.khoiLuongDat || 0);
-            setDaDuKhoi(false);
           }
         }
       } catch {
@@ -138,10 +129,6 @@ export default function TaoLichSanXuatPage() {
   };
 
   const handleMultiTramToggle = (tramId: number) => {
-    if (daDuKhoi && !selectedTramIds.includes(tramId)) {
-      showToast('Đơn hàng đã đủ khối lượng, không thể thêm trạm trộn mới', 'error');
-      return;
-    }
     setSelectedTramIds((prev) => {
       if (prev.includes(tramId)) {
         return prev.filter((id) => id !== tramId);
@@ -244,7 +231,7 @@ export default function TaoLichSanXuatPage() {
     if (hasChanges) {
       setShowCancel(true);
     } else {
-      navigate('/dieu-phoi');
+      navigate('/dieu-phoi-lich-san-xuat');
     }
   };
 
@@ -290,19 +277,6 @@ export default function TaoLichSanXuatPage() {
                   {tongKhoiLuongDaTron} m³
                 </span>
               </div>
-              <div className={styles.khoiLuongItem}>
-                <span className={styles.khoiLuongLabel}>Còn lại</span>
-                <span className={styles.khoiLuongValue} style={{ color: daDuKhoi ? '#10b981' : '#f59e0b' }}>
-                  {khoiLuongConLai} m³
-                </span>
-              </div>
-            </div>
-          )}
-
-          {daDuKhoi && (
-            <div className={styles.alertBox}>
-              <FiAlertCircle size={16} />
-              <span>Đơn hàng đã đủ khối lượng. Không thể thêm trạm trộn mới.</span>
             </div>
           )}
 
@@ -457,7 +431,7 @@ export default function TaoLichSanXuatPage() {
       <ConfirmModal
         isOpen={showCancel}
         onClose={() => setShowCancel(false)}
-        onConfirm={() => { setShowCancel(false); navigate('/dieu-phoi'); }}
+        onConfirm={() => { setShowCancel(false); navigate('/dieu-phoi-lich-san-xuat'); }}
         message="Bạn có chắc muốn hủy bỏ? Dữ liệu đã nhập sẽ không được lưu."
         confirmText="Hủy bỏ"
         cancelText="Ở lại"

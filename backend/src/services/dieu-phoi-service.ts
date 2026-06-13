@@ -28,7 +28,14 @@ export async function taoLichSanXuat(
   // Lấy idTramTron từ form (do người dùng chọn khi lên lịch SX)
   const idTramTron = data.idTramTron || null;
 
-  // Cập nhật trạm trộn vào đơn hàng
+  // Kiểm tra đơn hàng đã có lịch sản xuất nào chưa (để tránh gửi thông báo trùng lặp)
+  const existingAllLich = await query<{ id: number }>(
+    `SELECT id FROM LichSanXuat WHERE idDonHang = @idDonHang AND trangThai != N'da_xong'`,
+    { idDonHang: data.idDonHang }
+  );
+  const isFirstLich = existingAllLich.length === 0;
+
+  // Cập nhật tram trộn vào đơn hàng nếu được chọn
   if (idTramTron) {
     await query(
       `UPDATE DonHang SET idTramTron = @idTramTron, ngayCapNhat = ${vnNow()} WHERE id = @id`,
@@ -36,10 +43,14 @@ export async function taoLichSanXuat(
     );
   }
 
-  await query(
-    `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
-    { id: data.idDonHang }
-  );
+  // Chỉ cập nhật trạng thái và gửi thông báo khi TẠO LỊCH ĐẦU TIÊN cho đơn hàng
+  // Khi thêm trạm thứ 2, thứ 3... thì không gửi thông báo nữa
+  if (isFirstLich) {
+    await query(
+      `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
+      { id: data.idDonHang }
+    );
+  }
 
   // Lấy idTaiXe từ bảng Xe (qua idTaiKhoan)
   let idTaiXe: number | null = null;
@@ -77,21 +88,23 @@ export async function taoLichSanXuat(
     }
   );
 
-  // Thông báo cho kho: có đơn hàng cần giao
-  guiThongBao('PRODUCTION_SCHEDULED', {
-    id: data.idDonHang,
-    maDonHang: donHang[0].maDonHang,
-    tenKhachHang: donHang[0].tenKhachHang,
-    khoiLuong: donHang[0].khoiLuongDat,
-  });
+  // Thông báo cho kho: có đơn hàng cần giao (CHỈ gửi khi tạo lịch đầu tiên)
+  if (isFirstLich) {
+    guiThongBao('PRODUCTION_SCHEDULED', {
+      id: data.idDonHang,
+      maDonHang: donHang[0].maDonHang,
+      tenKhachHang: donHang[0].tenKhachHang,
+      khoiLuong: donHang[0].khoiLuongDat,
+    });
 
-  // Thông báo ORDER_STATUS_CHANGED - Đang sản xuất
-  guiThongBao('ORDER_STATUS_CHANGED', {
-    id: data.idDonHang,
-    maDonHang: donHang[0].maDonHang,
-    trangThai: 'dang_san_xuat',
-    trangThaiLabel: 'Đang sản xuất',
-  });
+    // Thông báo ORDER_STATUS_CHANGED - Đang sản xuất
+    guiThongBao('ORDER_STATUS_CHANGED', {
+      id: data.idDonHang,
+      maDonHang: donHang[0].maDonHang,
+      trangThai: 'dang_san_xuat',
+      trangThaiLabel: 'Đang sản xuất',
+    });
+  }
 
   return result[0];
 }
