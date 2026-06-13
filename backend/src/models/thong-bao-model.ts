@@ -38,7 +38,8 @@ export type NotificationType =
   | 'PRODUCTION_SCHEDULED'
   | 'DELIVERY_STARTED'
   | 'DELIVERY_COMPLETED'
-  | 'ORDER_STATUS_CHANGED';
+  | 'ORDER_STATUS_CHANGED'
+  | 'ORDER_RETURNED';
 
 export type UserRole = 'admin' | 'giam_doc_kinh_doanh' | 'ke_toan' | 'dieu_phoi' | 'lanh_dao' | 'kho' | 'sale' | 'tai_xe' | 'ky_thuat';
 
@@ -113,5 +114,9 @@ export const NOTIFICATION_MESSAGES: Record<
   ORDER_STATUS_CHANGED: (d) => ({
     tieuDe: `Cập nhật: ${d.trangThaiLabel || "Trạng thái đơn hàng"}`,
     noiDung: `Đơn hàng ${d.maDonHang || ""} đã chuyển sang bước: ${d.trangThaiLabel || d.trangThai || ""}.`,
+  }),
+  ORDER_RETURNED: (d) => ({
+    tieuDe: "Đơn hàng được yêu cầu trộn lại",
+    noiDung: `${d.nguoiTra || "Nhân viên"} yêu cầu trộn lại đơn hàng ${d.maDonHang || ""}. Lý do: ${d.lyDo || "Không có"}.`,
   }),
 };

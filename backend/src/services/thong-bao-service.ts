@@ -63,6 +63,7 @@ export function guiThongBao(
     DELIVERY_STARTED: ['dieu_phoi', 'admin', 'lanh_dao'],
     DELIVERY_COMPLETED: ['dieu_phoi', 'admin', 'lanh_dao', 'ke_toan', 'ky_thuat'],
     ORDER_STATUS_CHANGED: ['admin', 'ke_toan', 'dieu_phoi', 'lanh_dao', 'kho', 'sale', 'tai_xe', 'ky_thuat'],
+    ORDER_RETURNED: ['dieu_phoi', 'admin', 'lanh_dao'],
   };
 
   const roles = roleMap[type] || [];
@@ -85,6 +86,7 @@ export function guiThongBao(
       DELIVERY_STARTED: `/dieu-phoi`,
       DELIVERY_COMPLETED: `/nghiem-thu`,
       ORDER_STATUS_CHANGED: `/quan-ly/don-hang`,
+      ORDER_RETURNED: `/dieu-phoi/lich-san-xuat`,
     };
 
     taoThongBao({
