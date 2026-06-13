@@ -6,25 +6,23 @@ import {
   FiClock,
   FiDollarSign,
   FiFileText,
-  FiPackage,
-  FiTruck,
+  FiPrinter,
   FiUser,
+  FiTruck,
 } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
 import {
-  layCongNoKhachHangGrouped,
   layDonHang,
-  layDonHangGiaoTrongNgay,
-  layHoaDonTheoDonHang,
   layLichSanXuat,
+  layHoaDonTheoDonHang,
   taoHoaDon,
 } from "../../../shared/services/api";
 import { DonHang, HoaDon, LichSanXuat } from "../../../shared/types";
 import styles from "./XuatHoaDonPage.module.css";
 
-type TabType = "tra_het" | "tra_het_du" | "cong_no" | "cong_no_du";
+type HinhThucThanhToan = "tra_het" | "cong_no";
 
 function formatCurrency(v: number): string {
   return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
@@ -49,38 +47,6 @@ function formatDate(d: string | null | undefined): string {
   return `${y}-${m}-${day}`;
 }
 
-function buildUniqueOrders(orders: DonHang[], currentOrder: DonHang): DonHang[] {
-  const map = new Map<number, DonHang>();
-
-  for (const order of [currentOrder, ...orders]) {
-    if (!order?.id) continue;
-    map.set(order.id, order);
-  }
-
-  return Array.from(map.values());
-}
-
-function normalizeCustomerKey(value: string | null | undefined): string {
-  return (value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
-
-function isSameCustomer(a: DonHang, b: DonHang): boolean {
-  if (a.idKhachHang && b.idKhachHang) {
-    return a.idKhachHang === b.idKhachHang;
-  }
-
-  return normalizeCustomerKey(a.tenKhachHang) === normalizeCustomerKey(b.tenKhachHang);
-}
-
-function isSameDeliveryDate(a: string | null | undefined, b: string | null | undefined): boolean {
-  return formatDate(a) === formatDate(b);
-}
-
 function sortHoaDonsByTime(items: HoaDon[]) {
   return [...items].sort((a, b) => {
     const aTime = new Date(a.ngayLap || a.createdAt || 0).getTime();
@@ -90,19 +56,10 @@ function sortHoaDonsByTime(items: HoaDon[]) {
   });
 }
 
-function getDebtInvoiceStepLabel(items: HoaDon[], invoiceId: number) {
-  const debtInvoices = sortHoaDonsByTime(
-    items.filter(
-      (item) => item.loaiThanhToan === "cong_no" || item.loaiThanhToan === "cong_no_du",
-    ),
-  );
-  const index = debtInvoices.findIndex((item) => item.id === invoiceId);
-  if (index === -1) return "";
-  return `Thanh toán lần ${index + 1}`;
-}
-
-const MUC_GIA_BU_VC = 110000;
-const NGƯỠNG_TOI_THIEU_M3 = 5;
+const LOAI_HINH_THUC: { value: HinhThucThanhToan; label: string; desc: string }[] = [
+  { value: "tra_het", label: "Trả hết", desc: "Thanh toán đầy đủ 1 lần" },
+  { value: "cong_no", label: "Công nợ", desc: "Thanh toán trước một phần, còn lại ghi nợ" },
+];
 
 export default function XuatHoaDonPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,274 +68,195 @@ export default function XuatHoaDonPage() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("tra_het");
+  const [hinhThuc, setHinhThuc] = useState<HinhThucThanhToan>("tra_het");
   const [donHang, setDonHang] = useState<DonHang | null>(null);
   const [lichSX, setLichSX] = useState<LichSanXuat | null>(null);
-  const [existingHoaDon, setExistingHoaDon] = useState<HoaDon | null>(null);
   const [allHoaDons, setAllHoaDons] = useState<HoaDon[]>([]);
-  const [khoiLuongNgay, setKhoiLuongNgay] = useState(0);
-  const [soDonNgay, setSoDonNgay] = useState(0);
-  const [isDonCuoiNgay, setIsDonCuoiNgay] = useState(false); // Đánh dấu có phải đơn cuối ngày không
+  const existingCongNoHD = sortHoaDonsByTime(
+    allHoaDons.filter(
+      (h) => h.loaiThanhToan === "cong_no" || h.loaiThanhToan === "cong_no_du",
+    ),
+  );
 
-  const [donGiaBuVC, setDonGiaBuVC] = useState("");
-  const [donGiaBuVCDaSet, setDonGiaBuVCDaSet] = useState(false);
-  const [soKhoiCanBu, setSoKhoiCanBu] = useState("");
-  const [soKhoiCanBuDaSet, setSoKhoiCanBuDaSet] = useState(false);
-  const [phiPhatSinh, setPhiPhatSinh] = useState("");
-  const [giamTru, setGiamTru] = useState("");
-  const [soTienThanhToanTruoc, setSoTienThanhToanTruoc] = useState("");
-  const [soTienDu, setSoTienDu] = useState("");
-  const [soTienDuSuDung, setSoTienDuSuDung] = useState("");
-  const [duCuoiCoHienTai, setDuCuoiCoHienTai] = useState(0);
+  // Tổng tiền gốc đơn hàng
+  const tongTienGoc = donHang ? (donHang.thanhTien || 0) : 0;
+
+  // ── Form fields (tất cả nhập thủ công) ──
   const [ngayLap, setNgayLap] = useState(() =>
     formatDate(new Date().toISOString()),
   );
   const [khachHang, setKhachHang] = useState("");
+  const [diaChiNhan, setDiaChiNhan] = useState("");
+  const [hangMuc, setHangMuc] = useState("");
+  const [phuongPhapDo, setPhuongPhapDo] = useState("");
+  const [chieuDaiPhuongPhap, setChieuDaiPhuongPhap] = useState("");
   const [loaiXiMang, setLoaiXiMang] = useState("");
   const [gioDo, setGioDo] = useState("");
   const [phuongThuc, setPhuongThuc] = useState("tien_mat");
   const [ghiChu, setGhiChu] = useState("");
-  const [hanTraCongNo, setHanTraCongNo] = useState("");
 
-  // Thông tin nhân sự & xe – auto-fill từ lịch sản xuất
+  // Tiền bê tông (auto từ đơn hàng, readonly)
+  const [tienBeTong, setTienBeTong] = useState(0);
+  // Bù vận chuyển (nhập thủ công)
+  const [buuVanChuyen, setBuuVanChuyen] = useState("");
+  // Chi phí phát sinh (nhập thủ công)
+  const [phiPhatSinh, setPhiPhatSinh] = useState("");
+  // Giảm trừ (nhập thủ công)
+  const [giamTru, setGiamTru] = useState("");
+  // Tổng cộng (tính = tienBeTong + buuVanChuyen + phiPhatSinh - giamTru)
+  const [tongCong, setTongCong] = useState(0);
+
+  // Trả hết
+  const [soTienTra, setSoTienTra] = useState("");
+  const [soTienDu, setSoTienDu] = useState("");
+
+  // Công nợ
+  const [soTienTraTruoc, setSoTienTraTruoc] = useState("");
+  const [hanTraCongNo, setHanTraCongNo] = useState("");
+  const [soTienNoConLai, setSoTienNoConLai] = useState("");
+
+  // Nhân sự & xe
   const [kySu, setKySu] = useState("");
   const [vanHanhBom, setVanHanhBom] = useState("");
   const [lapOng, setLapOng] = useState("");
   const [xeTaiXe, setXeTaiXe] = useState("");
 
+  // Số hóa đơn
   const [soHoaDon] = useState(() => {
     const random = Math.floor(1000 + Math.random() * 9000);
     return `BBTD-${random}`;
   });
 
+  // Tính tổng cộng mỗi khi các trường thay đổi
+  useEffect(() => {
+    const bv = parseCurrency(buuVanChuyen);
+    const pp = parseCurrency(phiPhatSinh);
+    const gt = parseCurrency(giamTru);
+    setTongCong(Math.max(0, tienBeTong + bv + pp - gt));
+  }, [buuVanChuyen, phiPhatSinh, giamTru, tienBeTong]);
+
   const loadData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [dh, ls, existingHDs, congNoGroups] = await Promise.all([
+      const [dh, ls, existingHDs] = await Promise.all([
         layDonHang(parseInt(id, 10)),
         layLichSanXuat(parseInt(id, 10)).catch(() => null),
         layHoaDonTheoDonHang(parseInt(id, 10)).catch(() => []),
-        layCongNoKhachHangGrouped(undefined, undefined).catch(() => []),
       ]);
+
       setDonHang(dh);
       setLichSX(Array.isArray(ls) ? ls[0] : ls);
       setAllHoaDons(Array.isArray(existingHDs) ? existingHDs : []);
+
+      // Pre-fill thông tin cơ bản
       setKhachHang(dh.tenKhachHang || "");
-      const allCongNoItems = (congNoGroups || []).flatMap((g) => g.items || []);
-      const currentCongNo = allCongNoItems.find(
-        (item) => item.tenKhachHang === dh.tenKhachHang,
-      );
-      setDuCuoiCoHienTai(currentCongNo?.duCuoiCo || 0);
+      setDiaChiNhan(dh.diaChiNhan || "");
+      setHangMuc(dh.hangMuc || "");
+      setTienBeTong(dh.thanhTien || 0);
 
-      // Lấy hóa đơn công nợ đã xuất trước đó
-      const hoaDonCongNo = (Array.isArray(existingHDs) ? existingHDs : [])
-        .filter((h: any) => h.loaiThanhToan === "cong_no" || h.loaiThanhToan === "cong_no_du")
-        .sort(
-          (a: any, b: any) =>
-            new Date(b.ngayLap || 0).getTime() -
-            new Date(a.ngayLap || 0).getTime(),
-        );
-      if (hoaDonCongNo.length > 0) {
-        setExistingHoaDon(hoaDonCongNo[0]);
-        setActiveTab("cong_no_du");
+      // Phương pháp đổ
+      if (dh.phuongPhapDo === "do_xa") {
+        setPhuongPhapDo("do_xa");
+        setChieuDaiPhuongPhap(dh.chieuDaiNoi ? String(dh.chieuDaiNoi) : "");
+      } else if (dh.phuongPhapDo === "do_bom") {
+        setPhuongPhapDo("do_bom");
+        setChieuDaiPhuongPhap(dh.chieuDaiBom ? String(dh.chieuDaiBom) : "");
       }
 
-      if (dh.ngayGiao) {
-        try {
-          const dsNgay = await layDonHangGiaoTrongNgay(dh.ngayGiao);
-          const dsDonTrongNgay = buildUniqueOrders(dsNgay, dh);
-          const dsCungNgay = dsDonTrongNgay.filter((d: DonHang) =>
-            isSameDeliveryDate(d.ngayGiao, dh.ngayGiao),
-          );
-          const dsCungKhach = dsCungNgay.filter((d: DonHang) =>
-            isSameCustomer(d, dh),
-          );
-          const tongKL = dsCungKhach.reduce(
-            (sum: number, d: DonHang) => sum + Number(d.khoiLuongDat || 0),
-            0,
-          );
-          setKhoiLuongNgay(tongKL > 0 ? tongKL : Number(dh.khoiLuongDat || 0));
-          setSoDonNgay(dsCungKhach.length > 0 ? dsCungKhach.length : 1);
-          setIsDonCuoiNgay(dsCungKhach.length > 0);
-        } catch {
-          setKhoiLuongNgay(Number(dh.khoiLuongDat || 0));
-          setSoDonNgay(1);
-          setIsDonCuoiNgay(true);
+      // Auto-fill từ lịch sản xuất
+      if (ls) {
+        const lsData = Array.isArray(ls) ? ls[0] : ls;
+        if (lsData) {
+          if (lsData.kyThuatCongTrinh) setKySu(lsData.kyThuatCongTrinh);
+          if (lsData.nguoiOmOng) setVanHanhBom(lsData.nguoiOmOng);
+          if (lsData.nguoiBatOng) setLapOng(lsData.nguoiBatOng);
+          const bienSo = lsData.bienSoXe || "";
+          const taiXe = lsData.tenTaiXe || "";
+          if (bienSo) {
+            setXeTaiXe(taiXe ? `${bienSo} – ${taiXe}` : bienSo);
+          } else if (taiXe) {
+            setXeTaiXe(taiXe);
+          }
+          // Giờ đổ
+          if (lsData.thoiGianBatDauDo) {
+            const dt = new Date(lsData.thoiGianBatDauDo);
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, "0");
+            const day = String(dt.getDate()).padStart(2, "0");
+            const h = String(dt.getHours()).padStart(2, "0");
+            const min = String(dt.getMinutes()).padStart(2, "0");
+            setGioDo(`${y}-${m}-${day}T${h}:${min}`);
+          }
         }
-      } else {
-        setKhoiLuongNgay(dh.khoiLuongDat || 0);
-        setSoDonNgay(1);
-        setIsDonCuoiNgay(true);
       }
-    } catch (err) {
+
+      // Nếu đã có hóa đơn công nợ -> auto chọn công nợ
+      if (existingCongNoHD.length > 0) {
+        setHinhThuc("cong_no");
+      }
+    } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
     } finally {
       setLoading(false);
     }
-  }, [id, showToast]);
+  }, [id, showToast, tienBeTong]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const donGiaBuVCSo = parseCurrency(donGiaBuVC) || MUC_GIA_BU_VC;
-  const debtHoaDons = sortHoaDonsByTime(
-    allHoaDons.filter(
-      (item) => item.loaiThanhToan === "cong_no" || item.loaiThanhToan === "cong_no_du",
-    ),
-  );
-  const nextDebtStep = debtHoaDons.length + 1;
-  const phiPhatSinhSo = parseCurrency(phiPhatSinh);
-  const giamTruSo = parseCurrency(giamTru);
-  const soTTTS = parseCurrency(soTienThanhToanTruoc);
-  const soTienDuSo = parseCurrency(soTienDu);
-  const soTienDuSuDungSo = Math.min(
-    parseCurrency(soTienDuSuDung),
-    duCuoiCoHienTai,
-  );
-
-  const khoiLuongDisplay = donHang?.khoiLuongDat || 0;
-  const donGiaDisplay = donHang?.donGia || 0;
-  const tienBeTong = khoiLuongDisplay * donGiaDisplay;
-
-  // Số khối cần bù - LUÔN dùng tổng khối cùng khách trong ngày cho mọi đơn
-  const soKhoiCanBuSo = parseFloat(soKhoiCanBu) || 0;
-  // Luôn dùng tổng khối trong ngày để tính bù VC, bất kể đơn nào
-  const khoiLuongTinhBuVC = khoiLuongNgay;
-  const khoiBuVC = Math.max(0, NGƯỠNG_TOI_THIEU_M3 - khoiLuongTinhBuVC);
-
-  // Tiền bù VC = Số khối cần bù × Đơn giá bù VC
-  const tienBuVC = soKhoiCanBuSo * donGiaBuVCSo;
-
-  // Nếu đã có hóa đơn công nợ trước đó → tổng tiền = số còn lại thực tế của đơn hàng
-  const isTraPhanConLai = !!existingHoaDon;
-  const isCongNo = activeTab === "cong_no";
-  const isCongNoDu = activeTab === "cong_no_du";
-  const tongGoc =
-    isTraPhanConLai || isCongNoDu
-      ? Math.max(0, donHang?.conLai || 0)
-      : tienBeTong + tienBuVC + phiPhatSinhSo - giamTruSo;
-  const tongCong = Math.max(0, tongGoc - soTienDuSuDungSo);
-  const soTienThanhToanKyNay =
-    activeTab === "cong_no" || activeTab === "cong_no_du"
-      ? Math.max(0, Math.min(tongCong, soTTTS))
-      : tongCong;
-  const tongHienThiHoaDon =
-    activeTab === "cong_no" || activeTab === "cong_no_du"
-      ? soTienThanhToanKyNay
-      : tongCong;
-  const tongKhachCanTra =
-    activeTab === "tra_het_du"
-      ? tongCong + soTienDuSo
-      : activeTab === "cong_no_du"
-        ? soTienThanhToanKyNay + soTienDuSo
-        : tongCong;
-  const soTienConLaiSauKyNay =
-    activeTab === "cong_no" || activeTab === "cong_no_du"
-      ? Math.max(0, tongCong - soTienThanhToanKyNay)
-      : Math.max(0, tongCong - soTTTS);
-
-  // Auto-fill tiền thanh toán trước từ hóa đơn công nợ đã xuất
-  useEffect(() => {
-    if (!loading && existingHoaDon) {
-      const daTT =
-        existingHoaDon.soTienThanhToan || existingHoaDon.tongCong || 0;
-      if (daTT > 0) {
-        setSoTienThanhToanTruoc(formatNumberInput(daTT));
-      }
-    }
-  }, [loading, existingHoaDon]);
-
-  // Auto-fill số khối cần bù - MỖI ĐƠN đều được tính bù riêng
-  useEffect(() => {
-    if (!loading && khoiLuongTinhBuVC > 0 && !soKhoiCanBuDaSet) {
-      setSoKhoiCanBu(khoiBuVC.toString());
-    } else if (!loading && !soKhoiCanBuDaSet) {
-      setSoKhoiCanBu("0");
-    }
-  }, [loading, khoiLuongTinhBuVC, khoiBuVC, soKhoiCanBuDaSet]);
-
-  // Auto-fill đơn giá bù VC - dùng mặc định 110.000 nếu chưa chỉnh sửa
-  useEffect(() => {
-    if (!loading && !donGiaBuVCDaSet) {
-      setDonGiaBuVC(formatNumberInput(MUC_GIA_BU_VC));
-    }
-  }, [loading, donGiaBuVCDaSet]);
-
-  // Auto-fill thông tin nhân sự & xe từ lịch sản xuất
-  useEffect(() => {
-    if (!loading && lichSX) {
-      const ls = Array.isArray(lichSX) ? lichSX[0] : lichSX;
-      if (ls) {
-        if (ls.kyThuatCongTrinh) setKySu(ls.kyThuatCongTrinh);
-        if (ls.nguoiOmOng) setVanHanhBom(ls.nguoiOmOng);
-        if (ls.nguoiBatOng) setLapOng(ls.nguoiBatOng);
-        // Xe (biển số - tài xế)
-        const bienSo = ls.bienSoXe || "";
-        const taiXe = ls.tenTaiXe || "";
-        if (bienSo) {
-          setXeTaiXe(taiXe ? `${bienSo} – ${taiXe}` : bienSo);
-        } else if (taiXe) {
-          setXeTaiXe(taiXe);
-        }
-        // Auto-fill giờ đổ từ lịch sản xuất (bước xác nhận SX xong)
-        if (ls.thoiGianBatDauDo) {
-          const dt = new Date(ls.thoiGianBatDauDo);
-          const y = dt.getFullYear();
-          const m = String(dt.getMonth() + 1).padStart(2, "0");
-          const day = String(dt.getDate()).padStart(2, "0");
-          const h = String(dt.getHours()).padStart(2, "0");
-          const min = String(dt.getMinutes()).padStart(2, "0");
-          setGioDo(`${y}-${m}-${day}T${h}:${min}`);
-        }
-      }
-    }
-  }, [loading, lichSX]);
-
   const handleSubmit = async () => {
     if (!donHang) return;
-    if ((activeTab === "cong_no" || activeTab === "cong_no_du") && !hanTraCongNo && !existingHoaDon) {
-      showToast("Vui lòng nhập hạn trả công nợ", "error");
+
+    // Validate
+    if (hinhThuc === "cong_no" && !hanTraCongNo) {
+      showToast("Vui lòng nhập hạn thanh toán công nợ", "error");
       return;
     }
+
+    const soTienTraNum = parseCurrency(soTienTra);
+    const soTienDuNum = parseCurrency(soTienDu);
+    const soTienTraTruocNum = parseCurrency(soTienTraTruoc);
+    const bvNum = parseCurrency(buuVanChuyen);
+    const ppNum = parseCurrency(phiPhatSinh);
+    const gtNum = parseCurrency(giamTru);
+    const noConLaiNum = parseCurrency(soTienNoConLai);
+
     setSubmitting(true);
     try {
+      const loaiTT: "tra_het" | "tra_het_du" | "cong_no" | "cong_no_du" =
+        hinhThuc === "tra_het"
+          ? soTienDuNum > 0
+            ? "tra_het_du"
+            : "tra_het"
+          : soTienDuNum > 0
+            ? "cong_no_du"
+            : "cong_no";
+
       const hoaDon = await taoHoaDon({
         idDonHang: donHang.id,
-        loaiThanhToan: activeTab,
-        buuVanChuyen: tienBuVC,
-        phiPhatSinh: phiPhatSinhSo,
-        giamTru: giamTruSo,
+        loaiThanhToan: loaiTT,
+        buuVanChuyen: bvNum,
+        phiPhatSinh: ppNum,
+        giamTru: gtNum,
         ngayLap: ngayLap,
         khachHang,
         loaiXiMang,
         gioDo,
         phuongThucThanhToan: phuongThuc,
         ghiChu,
-        hanTraCongNo:
-          activeTab === "cong_no" || activeTab === "cong_no_du"
-            ? hanTraCongNo
-            : undefined,
+        hanTraCongNo: hinhThuc === "cong_no" ? hanTraCongNo : undefined,
         soTienThanhToanTruoc:
-          activeTab === "cong_no" || activeTab === "cong_no_du"
-            ? soTTTS  // Luôn truyền số tiền khách thực trả, backend sẽ xử lý giới hạn
-            : tongCong,
-        soTienDu:
-          activeTab === "tra_het_du" || activeTab === "cong_no_du"
-            ? soTienDuSo
-            : 0,
-        soTienDuSuDung: soTienDuSuDungSo,
+          hinhThuc === "cong_no" ? soTienTraTruocNum : soTienTraNum,
+        soTienDu: soTienDuNum,
+        soTienDuSuDung: 0,
       });
 
       showToast(
-        activeTab === "tra_het"
-          ? "Đã xác nhận trả hết và xuất hóa đơn"
-          : activeTab === "tra_het_du"
-            ? "Đã xác nhận trả hết dư và xuất hóa đơn"
-            : activeTab === "cong_no_du"
-              ? "Đã ghi công nợ dư và xuất hóa đơn"
-              : "Đã ghi công nợ và xuất hóa đơn",
+        hinhThuc === "tra_het"
+          ? "Đã xác nhận thanh toán và xuất hóa đơn"
+          : "Đã ghi công nợ và xuất hóa đơn",
       );
 
       navigate(`/in-hoa-don/${hoaDon.id}`);
@@ -406,6 +284,14 @@ export default function XuatHoaDonPage() {
     );
   }
 
+  // Thông tin hạng mục/phương pháp đổ
+  const phuongPhapDoLabel =
+    phuongPhapDo === "do_xa"
+      ? `Đổ xã${chieuDaiPhuongPhap ? ` (${chieuDaiPhuongPhap}m)` : ""}`
+      : phuongPhapDo === "do_bom"
+        ? `Đổ bơm${chieuDaiPhuongPhap ? ` (${chieuDaiPhuongPhap}m)` : ""}`
+        : "—";
+
   return (
     <div className={styles.pageWrapper}>
       {/* Header bar */}
@@ -424,289 +310,125 @@ export default function XuatHoaDonPage() {
         </div>
         <div className={styles.headerBadge}>
           <FiFileText size={16} />
-          {activeTab === "tra_het"
-            ? "Trả hết"
-            : activeTab === "tra_het_du"
-              ? "Trả hết dư"
-              : activeTab === "cong_no_du"
-                ? `Thanh toán lần ${nextDebtStep}`
-                : `Thanh toán lần ${nextDebtStep}`}
+          {hinhThuc === "tra_het" ? "Trả hết" : "Công nợ"}
+          {existingCongNoHD.length > 0 && ` · Lần ${existingCongNoHD.length + 1}`}
         </div>
       </div>
 
       <div className={styles.formBody}>
-        {/* Order Summary - full width */}
-        <div className={`${styles.section} ${styles.fullWidth}`}>
-          <div className={styles.summaryGrid}>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Mác bê tông</span>
-              <span className={styles.summaryValue}>
-                {donHang.tenMacBeTong}
-              </span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Khối lượng đặt</span>
-              <span className={styles.summaryValue}>{khoiLuongDisplay} m³</span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Đơn giá</span>
-              <span className={styles.summaryValue}>
-                {formatCurrency(donHang.donGia)}
-              </span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Thành tiền</span>
-              <span className={styles.summaryValue}>
-                {formatCurrency(donHang.thanhTien || 0)}
-              </span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Còn lại</span>
-              <span
-                className={styles.summaryValue}
-                style={{ color: "var(--color-warning)" }}
-              >
-                {formatCurrency(donHang.conLai || 0)}
-              </span>
-            </div>
-            {existingHoaDon && (
-              <div className={styles.summaryItem}>
-                <span className={styles.summaryLabel}>
-                  Đã thanh toán (HĐ cũ)
-                </span>
-                <span
-                  className={styles.summaryValue}
-                  style={{ color: "var(--color-success)" }}
-                >
-                  {formatCurrency(existingHoaDon.soTienThanhToan || 0)}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
+        {/* ── Thông tin đơn hàng (readonly) ── */}
         <div className={`${styles.section} ${styles.fullWidth}`}>
           <div className={styles.sectionHeader}>
             <FiFileText size={18} />
-            <h3>Lịch sử hóa đơn</h3>
+            <h3>Thông tin đơn hàng</h3>
           </div>
-          {allHoaDons.length === 0 ? (
-            <div className={styles.totalRowNote}>
-              <span>Chưa có hóa đơn nào cho đơn hàng này</span>
+          <div className={styles.orderInfoGrid}>
+            <div className={styles.orderInfoItem}>
+              <span className={styles.orderInfoLabel}>Khách hàng</span>
+              <span className={styles.orderInfoValue}>{donHang.tenKhachHang}</span>
             </div>
-          ) : (
-            <div className={styles.totalRows}>
-              {sortHoaDonsByTime(allHoaDons).map((hd) => {
-                const debtLabel = getDebtInvoiceStepLabel(allHoaDons, hd.id);
-                return (
-                  <div key={hd.id} className={styles.totalRow}>
-                    <span>
-                      <strong>{hd.maHoaDon}</strong>
-                      {debtLabel ? ` · ${debtLabel}` : ""}
-                    </span>
-                    <button
-                      type="button"
-                      className={styles.backBtn}
-                      onClick={() => navigate(`/in-hoa-don/${hd.id}`)}
-                    >
-                      Xem
-                    </button>
-                  </div>
-                );
-              })}
+            <div className={styles.orderInfoItem}>
+              <span className={styles.orderInfoLabel}>Địa chỉ giao</span>
+              <span className={styles.orderInfoValue}>{donHang.diaChiNhan || "—"}</span>
             </div>
-          )}
+            <div className={styles.orderInfoItem}>
+              <span className={styles.orderInfoLabel}>Mác bê tông</span>
+              <span className={styles.orderInfoValue}>{donHang.tenMacBeTong || "—"}</span>
+            </div>
+            <div className={styles.orderInfoItem}>
+              <span className={styles.orderInfoLabel}>Khối lượng đặt</span>
+              <span className={styles.orderInfoValue}>{donHang.khoiLuongDat} m³</span>
+            </div>
+            <div className={styles.orderInfoItem}>
+              <span className={styles.orderInfoLabel}>Đơn giá</span>
+              <span className={styles.orderInfoValue}>{formatCurrency(donHang.donGia)}</span>
+            </div>
+            <div className={styles.orderInfoItem}>
+              <span className={styles.orderInfoLabel}>Thành tiền</span>
+              <span className={styles.orderInfoValue}>{formatCurrency(donHang.thanhTien || 0)}</span>
+            </div>
+            <div className={styles.orderInfoItem}>
+              <span className={styles.orderInfoLabel}>Hạng mục / Cấu kiện</span>
+              <span className={styles.orderInfoValue}>{hangMuc || "—"}</span>
+            </div>
+            <div className={styles.orderInfoItem}>
+              <span className={styles.orderInfoLabel}>Phương pháp đổ</span>
+              <span className={styles.orderInfoValue}>{phuongPhapDoLabel}</span>
+            </div>
+            {existingCongNoHD.length > 0 && (
+              <div className={styles.orderInfoItem} style={{ gridColumn: "1 / -1" }}>
+                <span className={styles.orderInfoLabel}>Hóa đơn công nợ đã xuất</span>
+                <div className={styles.congNoDaXuat}>
+                  {existingCongNoHD.map((hd, i) => (
+                    <div key={hd.id} className={styles.congNoItem}>
+                      <span>{hd.maHoaDon}</span>
+                      <span>{formatCurrency(hd.soTienThanhToan || 0)}</span>
+                      <button
+                        className={styles.btnXemHdSmall}
+                        onClick={() => navigate(`/in-hoa-don/${hd.id}`)}
+                      >
+                        Xem
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Tab bar - full width */}
-        <div className={`${styles.tabBarWrap} ${styles.fullWidth}`}>
-          <button
-            className={`${styles.tabCard} ${activeTab === "tra_het" ? styles.tabCardActive : ""}`}
-            onClick={() => setActiveTab("tra_het")}
-          >
-            <div className={styles.tabCardIcon}>
-              <FiDollarSign size={24} />
-            </div>
-            <div className={styles.tabCardContent}>
-              <div className={styles.tabCardTitle}>Trả hết</div>
-              <div className={styles.tabCardDesc}>
-                Thanh toán đầy đủ và xuất hóa đơn
-              </div>
-            </div>
-            {activeTab === "tra_het" && (
-              <div className={styles.tabCardCheck}>
-                <FiCheck size={18} />
-              </div>
-            )}
-          </button>
-          <button
-            className={`${styles.tabCard} ${activeTab === "tra_het_du" ? styles.tabCardActive : ""}`}
-            onClick={() => setActiveTab("tra_het_du")}
-          >
-            <div className={styles.tabCardIcon}>
-              <FiDollarSign size={24} />
-            </div>
-            <div className={styles.tabCardContent}>
-              <div className={styles.tabCardTitle}>Trả hết dư</div>
-              <div className={styles.tabCardDesc}>
-                Thanh toán đủ và ghi nhận tiền dư của khách
-              </div>
-            </div>
-            {activeTab === "tra_het_du" && (
-              <div className={styles.tabCardCheck}>
-                <FiCheck size={18} />
-              </div>
-            )}
-          </button>
-          <button
-            className={`${styles.tabCard} ${activeTab === "cong_no" ? styles.tabCardActive : ""}`}
-            onClick={() => setActiveTab("cong_no")}
-          >
-            <div className={styles.tabCardIcon}>
-              <FiClock size={24} />
-            </div>
-            <div className={styles.tabCardContent}>
-              <div className={styles.tabCardTitle}>Công nợ</div>
-              <div className={styles.tabCardDesc}>
-                Thanh toán trước một phần và ghi nợ
-              </div>
-            </div>
-            {activeTab === "cong_no" && (
-              <div className={styles.tabCardCheck}>
-                <FiCheck size={18} />
-              </div>
-            )}
-          </button>
-          <button
-            className={`${styles.tabCard} ${activeTab === "cong_no_du" ? styles.tabCardActive : ""}`}
-            onClick={() => setActiveTab("cong_no_du")}
-          >
-            <div className={styles.tabCardIcon}>
-              <FiClock size={24} />
-            </div>
-            <div className={styles.tabCardContent}>
-              <div className={styles.tabCardTitle}>Công nợ dư</div>
-              <div className={styles.tabCardDesc}>
-                Thanh toán phần còn lại và có thể phát sinh dư
-              </div>
-            </div>
-            {activeTab === "cong_no_du" && (
-              <div className={styles.tabCardCheck}>
-                <FiCheck size={18} />
-              </div>
-            )}
-          </button>
-        </div>
-
-        {/* ====== LEFT COLUMN ====== */}
-        {/* Bù vận chuyển */}
-        <div className={styles.section}>
+        {/* ── Chọn hình thức thanh toán ── */}
+        <div className={`${styles.section} ${styles.fullWidth}`}>
           <div className={styles.sectionHeader}>
-            <FiTruck size={18} />
-            <h3>Bù vận chuyển</h3>
+            <FiDollarSign size={18} />
+            <h3>Hình thức thanh toán</h3>
           </div>
-          <div className={styles.sectionHint}>
-            <strong>Quy tắc tính bù vận chuyển:</strong>
-            <br />• <strong>Đơn cuối ngày:</strong> Dùng{" "}
-            <strong>Tổng KL ngày</strong> (tổng tất cả đơn cùng khách) để tính
-            bù
-            <br />• <strong>Đơn trước đó:</strong> Dùng{" "}
-            <strong>KL đơn này</strong> để tính bù (riêng biệt)
-            <br />• <strong>Công thức:</strong> Số khối bù ={" "}
-            {NGƯỠNG_TOI_THIEU_M3} - KL tính bù
-            <br />• <strong>Tiền bù VC</strong> = Số khối bù × Đơn giá bù VC (
-            <strong>{formatCurrency(MUC_GIA_BU_VC)}/m³</strong>)
-          </div>
-
-          <div className={styles.buVcGrid}>
-            <div className={styles.buVcCard}>
-              <span className={styles.buVcLabel}>
-                Tổng khối lượng trong ngày
-              </span>
-              <span className={styles.buVcValue}>{khoiLuongNgay} m³</span>
-            </div>
-            <div className={styles.buVcCard}>
-              <span className={styles.buVcLabel}>Số đơn trong ngày</span>
-              <span className={styles.buVcValue}>{soDonNgay} đơn</span>
-            </div>
-            <div className={styles.buVcCard}>
-              <span className={styles.buVcLabel}>Số khối cần bù</span>
-              <span
-                className={`${styles.buVcValue} ${khoiBuVC > 0 ? styles.buVcWarning : styles.buVcZero}`}
+          <div className={styles.hinhThucGrid}>
+            {LOAI_HINH_THUC.map((ht) => (
+              <button
+                key={ht.value}
+                className={`${styles.hinhThucCard} ${hinhThuc === ht.value ? styles.hinhThucCardActive : ""}`}
+                onClick={() => setHinhThuc(ht.value)}
               >
-                {soKhoiCanBuSo} m³
-              </span>
-            </div>
-            <div className={styles.buVcCard}>
-              <span className={styles.buVcLabel}>Đơn giá bù VC</span>
-              <span className={styles.buVcValue}>
-                {formatCurrency(donGiaBuVCSo)}/m³
-              </span>
-            </div>
+                <div className={styles.hinhThucCheck}>
+                  {hinhThuc === ht.value && <FiCheck size={14} />}
+                </div>
+                <div>
+                  <div className={styles.hinhThucLabel}>{ht.label}</div>
+                  <div className={styles.hinhThucDesc}>{ht.desc}</div>
+                </div>
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Input editable cho Số khối cần bù */}
-          <div className={styles.formRow}>
-            <div className={styles.formGroup} style={{ flex: 1 }}>
-              <label className={styles.formLabel}>Số khối cần bù (m³)</label>
-              <input
-                className={styles.formInput}
-                type="number"
-                value={soKhoiCanBu}
-                onChange={(e) => {
-                  setSoKhoiCanBuDaSet(true);
-                  setSoKhoiCanBu(e.target.value);
-                }}
-                min="0"
-                step="0.5"
-                placeholder="0"
-              />
-              <span className={styles.formHint}>
-                {isDonCuoiNgay
-                  ? `Auto: ${NGƯỠNG_TOI_THIEU_M3} - ${khoiLuongNgay} = ${khoiBuVC} m³ (dùng tổng KL ngày)`
-                  : `Auto: ${NGƯỠNG_TOI_THIEU_M3} - ${khoiLuongDisplay} = ${khoiBuVC} m³ (dùng KL đơn này)`}
-              </span>
-            </div>
+        {/* ── Chi phí (nhập thủ công) ── */}
+        <div className={`${styles.section} ${styles.fullWidth}`}>
+          <div className={styles.sectionHeader}>
+            <FiDollarSign size={18} />
+            <h3>Chi phí (nhập thủ công)</h3>
           </div>
-
           <div className={styles.formRow}>
-            <div className={styles.formGroup} style={{ flex: 1 }}>
-              <label className={styles.formLabel}>Đơn giá bù VC (đ/m³)</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                value={donGiaBuVC}
-                onChange={(e) => {
-                  setDonGiaBuVCDaSet(true);
-                  setDonGiaBuVC(formatNumberInput(e.target.value));
-                }}
-                placeholder={formatNumberInput(MUC_GIA_BU_VC)}
-              />
-              <span className={styles.formHint}>
-                Mặc định: {formatCurrency(MUC_GIA_BU_VC)}/m³ - Có thể điều chỉnh
-              </span>
-            </div>
-            <div className={styles.formGroup} style={{ flex: 1 }}>
-              <label className={styles.formLabel}>Tiền bù vận chuyển (đ)</label>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Tiền bê tông (đ)</label>
               <input
                 className={`${styles.formInput} ${styles.inputReadOnly}`}
                 type="text"
-                value={formatNumberInput(tienBuVC)}
+                value={formatNumberInput(tienBeTong)}
                 readOnly
               />
-              <span className={styles.formHint}>
-                = {soKhoiCanBuSo} × {formatCurrency(donGiaBuVCSo)} ={" "}
-                {formatCurrency(tienBuVC)}
-              </span>
+              <span className={styles.formHint}>Auto từ đơn hàng</span>
             </div>
-          </div>
-        </div>
-
-        {/* Chi phí phát sinh & Khuyến mãi */}
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <FiDollarSign size={18} />
-            <h3>Chi phí phát sinh &amp; Khuyến mãi</h3>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Bù vận chuyển (đ)</label>
+              <input
+                className={styles.formInput}
+                type="text"
+                value={buuVanChuyen}
+                onChange={(e) => setBuuVanChuyen(formatNumberInput(e.target.value))}
+                placeholder="0"
+              />
+            </div>
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
@@ -715,16 +437,12 @@ export default function XuatHoaDonPage() {
                 className={styles.formInput}
                 type="text"
                 value={phiPhatSinh}
-                onChange={(e) =>
-                  setPhiPhatSinh(formatNumberInput(e.target.value))
-                }
+                onChange={(e) => setPhiPhatSinh(formatNumberInput(e.target.value))}
                 placeholder="0"
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>
-                Giảm trừ / Khuyến mãi (đ)
-              </label>
+              <label className={styles.formLabel}>Giảm trừ (đ)</label>
               <input
                 className={styles.formInput}
                 type="text"
@@ -734,63 +452,93 @@ export default function XuatHoaDonPage() {
               />
             </div>
           </div>
+          <div className={styles.tongCongRow}>
+            <span className={styles.tongCongLabel}>TỔNG CỘNG</span>
+            <span className={styles.tongCongValue}>{formatCurrency(tongCong)}</span>
+          </div>
         </div>
 
-        {/* ====== RIGHT COLUMN ====== */}
-        {/* Thông tin nhân sự & xe */}
-        <div className={styles.section}>
+        {/* ── Thông tin thanh toán ── */}
+        <div className={`${styles.section} ${styles.fullWidth}`}>
           <div className={styles.sectionHeader}>
-            <FiUser size={18} />
-            <h3>Thông tin nhân sự &amp; xe</h3>
+            <FiClock size={18} />
+            <h3>Thông tin thanh toán</h3>
           </div>
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Kỹ sư</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                value={kySu}
-                onChange={(e) => setKySu(e.target.value)}
-                placeholder="Tên kỹ sư công trình"
-              />
+
+          {/* Trả hết */}
+          {hinhThuc === "tra_het" && (
+            <div className={styles.thanhToanGroup}>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Số tiền trả (đ)</label>
+                  <input
+                    className={styles.formInput}
+                    type="text"
+                    value={soTienTra}
+                    onChange={(e) => setSoTienTra(formatNumberInput(e.target.value))}
+                    placeholder={formatNumberInput(tongCong)}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Tiền trả dư (đ)</label>
+                  <input
+                    className={styles.formInput}
+                    type="text"
+                    value={soTienDu}
+                    onChange={(e) => setSoTienDu(formatNumberInput(e.target.value))}
+                    placeholder="0"
+                  />
+                  <span className={styles.formHint}>Khách trả vượt, ghi nhận dư</span>
+                </div>
+              </div>
             </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Vận hành bơm</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                value={vanHanhBom}
-                onChange={(e) => setVanHanhBom(e.target.value)}
-                placeholder="Tên vận hành bơm"
-              />
+          )}
+
+          {/* Công nợ */}
+          {hinhThuc === "cong_no" && (
+            <div className={styles.thanhToanGroup}>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Số tiền trả trước (đ)</label>
+                  <input
+                    className={styles.formInput}
+                    type="text"
+                    value={soTienTraTruoc}
+                    onChange={(e) => setSoTienTraTruoc(formatNumberInput(e.target.value))}
+                    placeholder="0"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Hạn thanh toán</label>
+                  <input
+                    className={styles.formInput}
+                    type="date"
+                    value={hanTraCongNo}
+                    onChange={(e) => setHanTraCongNo(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Nợ còn lại (đ)</label>
+                  <input
+                    className={styles.formInput}
+                    type="text"
+                    value={soTienNoConLai}
+                    onChange={(e) => setSoTienNoConLai(formatNumberInput(e.target.value))}
+                    placeholder="0"
+                  />
+                  <span className={styles.formHint}>
+                    = {formatCurrency(tongCong)} - {formatCurrency(parseCurrency(soTienTraTruoc))}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Lắp ống</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                value={lapOng}
-                onChange={(e) => setLapOng(e.target.value)}
-                placeholder="Tên người lắp ống"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Xe (Biển số – Tài xế)</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                value={xeTaiXe}
-                onChange={(e) => setXeTaiXe(e.target.value)}
-                placeholder="VD: 59C1-12345 – Nguyễn Văn A"
-              />
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Thông tin hóa đơn */}
-        <div className={styles.section}>
+        {/* ── Thông tin hóa đơn ── */}
+        <div className={`${styles.section} ${styles.fullWidth}`}>
           <div className={styles.sectionHeader}>
             <FiFileText size={18} />
             <h3>Thông tin hóa đơn</h3>
@@ -806,7 +554,7 @@ export default function XuatHoaDonPage() {
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Ngày lập hóa đơn</label>
+              <label className={styles.formLabel}>Ngày lập</label>
               <input
                 className={styles.formInput}
                 type="date"
@@ -848,7 +596,7 @@ export default function XuatHoaDonPage() {
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Phương thức thanh toán</label>
+              <label className={styles.formLabel}>Phương thức TT</label>
               <select
                 className={styles.formSelect}
                 value={phuongThuc}
@@ -873,236 +621,59 @@ export default function XuatHoaDonPage() {
           </div>
         </div>
 
-        {/* ====== FULL WIDTH SECTIONS ====== */}
-        {(activeTab === "cong_no" ||
-          activeTab === "cong_no_du" ||
-          activeTab === "tra_het_du") && (
-          <div className={`${styles.section} ${styles.fullWidth}`}>
-            <div className={styles.sectionHeader}>
-              <FiClock size={18} />
-              <h3>Thông tin thanh toán mở rộng</h3>
-            </div>
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>
-                  Dư cuối Có hiện tại (đ)
-                </label>
-                <input
-                  className={`${styles.formInput} ${styles.inputReadOnly}`}
-                  type="text"
-                  value={formatNumberInput(duCuoiCoHienTai)}
-                  readOnly
-                />
-                <span className={styles.formHint}>
-                  Số tiền công ty đang giữ dư của khách hàng
-                </span>
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>
-                  Số tiền dư sử dụng (đ)
-                </label>
-                <input
-                  className={styles.formInput}
-                  type="text"
-                  value={soTienDuSuDung}
-                  onChange={(e) =>
-                    setSoTienDuSuDung(formatNumberInput(e.target.value))
-                  }
-                  placeholder="0"
-                />
-                <span className={styles.formHint}>
-                  Tối đa dùng: {formatCurrency(duCuoiCoHienTai)}
-                </span>
-              </div>
-            </div>
-
-            {(activeTab === "cong_no" || activeTab === "cong_no_du") && (
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>
-                    Tiền khách thanh toán lần này (đ)
-                  </label>
-                  <input
-                    className={styles.formInput}
-                    type="text"
-                    value={soTienThanhToanTruoc}
-                    onChange={(e) =>
-                      setSoTienThanhToanTruoc(formatNumberInput(e.target.value))
-                    }
-                    placeholder="0"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Hạn thanh toán</label>
-                  <input
-                    className={styles.formInput}
-                    type="date"
-                    value={hanTraCongNo}
-                    onChange={(e) => setHanTraCongNo(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
-            {(activeTab === "tra_het_du" || activeTab === "cong_no_du") && (
-              <div className={styles.formRow}>
-                {/* <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>
-                    Số tiền dư ghi nhận thêm (đ)
-                  </label>
-                  <input
-                    className={styles.formInput}
-                    type="text"
-                    value={soTienDu}
-                    onChange={(e) =>
-                      setSoTienDu(formatNumberInput(e.target.value))
-                    }
-                    placeholder="0"
-                  />
-                  <span className={styles.formHint}>
-                    Khoản tiền khách trả vượt nghĩa vụ thanh toán hiện tại
-                  </span>
-                </div> */}
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>
-                    Khách thực trả kỳ này (đ)
-                  </label>
-                  <input
-                    className={`${styles.formInput} ${styles.inputReadOnly}`}
-                    type="text"
-                    value={formatNumberInput(
-                      activeTab === "tra_het_du"
-                        ? tongCong + soTienDuSo
-                        : soTTTS + soTienDuSo,
-                    )}
-                    readOnly
-                  />
-                </div>
-              </div>
-            )}
-
-            {(activeTab === "cong_no" || activeTab === "cong_no_du") && (
-              <div className={styles.conLaiBox}>
-                <span className={styles.conLaiLabel}>
-                  Số tiền còn lại sau lần thanh toán này:
-                </span>
-                <span className={styles.conLaiValue}>
-                  {formatCurrency(soTienConLaiSauKyNay)}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tổng hợp */}
-        <div
-          className={`${styles.section} ${styles.sectionTotal} ${styles.fullWidth}`}
-        >
+        {/* ── Nhân sự & xe ── */}
+        <div className={`${styles.section} ${styles.fullWidth}`}>
           <div className={styles.sectionHeader}>
-            <FiPackage size={18} />
-            <h3>Tổng hợp</h3>
+            <FiUser size={18} />
+            <h3>Thông tin nhân sự &amp; xe</h3>
           </div>
-          <div className={styles.totalRows}>
-            {/* Khi thanh toán phần 2 công nợ: chỉ hiện số còn lại, không hiện chi tiết (đã nằm trong HĐ trước) */}
-            {!isTraPhanConLai && (
-              <>
-                <div className={styles.totalRow}>
-                  <span>Tiền bê tông</span>
-                  <span>{formatCurrency(tienBeTong)}</span>
-                </div>
-                {tienBuVC > 0 && (
-                  <div className={styles.totalRow}>
-                    <span>Bù vận chuyển</span>
-                    <span>{formatCurrency(tienBuVC)}</span>
-                  </div>
-                )}
-                {phiPhatSinhSo > 0 && (
-                  <div className={styles.totalRow}>
-                    <span>Chi phí phát sinh</span>
-                    <span>+ {formatCurrency(phiPhatSinhSo)}</span>
-                  </div>
-                )}
-                {giamTruSo > 0 && (
-                  <div className={styles.totalRow}>
-                    <span>Giảm trừ / Khuyến mãi</span>
-                    <span style={{ color: "var(--color-success)" }}>
-                      - {formatCurrency(giamTruSo)}
-                    </span>
-                  </div>
-                )}
-                {tienBuVC === 0 && phiPhatSinhSo === 0 && giamTruSo === 0 && (
-                  <div className={styles.totalRowNote}>
-                    <span>Không có chi phí bù VC, phát sinh hay giảm trừ</span>
-                  </div>
-                )}
-              </>
-            )}
-            {isTraPhanConLai && !isCongNoDu && (
-              <div className={styles.totalRow}>
-                <span>Còn lại (đơn hàng)</span>
-                <span>{formatCurrency(donHang?.conLai || 0)}</span>
-              </div>
-            )}
-            {soTienDuSuDungSo > 0 && (
-              <div className={styles.totalRow}>
-                <span>Dùng từ dư cuối Có</span>
-                <span style={{ color: "var(--color-success)" }}>
-                  - {formatCurrency(soTienDuSuDungSo)}
-                </span>
-              </div>
-            )}
-            {soTTTS > 0 &&
-              (activeTab === "cong_no" || activeTab === "cong_no_du") && (
-                <div className={styles.totalRow}>
-                  <span>Khách thanh toán kỳ này</span>
-                  <span style={{ color: "var(--color-success)" }}>
-                    {formatCurrency(soTienThanhToanKyNay)}
-                  </span>
-                </div>
-              )}
-            {activeTab === "cong_no" && (
-              <div className={styles.totalRow}>
-                <span>Số tiền còn lại cần thanh toán</span>
-                <span style={{ color: "var(--color-warning)" }}>
-                  {formatCurrency(soTienConLaiSauKyNay)}
-                </span>
-              </div>
-            )}
-            {soTienDuSo > 0 &&
-              (activeTab === "tra_het_du" || activeTab === "cong_no_du") && (
-                <div className={styles.totalRow}>
-                  <span>Tiền dư ghi nhận thêm</span>
-                  <span style={{ color: "var(--color-success)" }}>
-                    + {formatCurrency(soTienDuSo)}
-                  </span>
-                </div>
-              )}
-            <div className={`${styles.totalRow} ${styles.totalRowBold}`}>
-              <span>
-                {activeTab === "tra_het_du"
-                  ? "TỔNG KHÁCH THANH TOÁN"
-                  : activeTab === "cong_no_du"
-                    ? "TỔNG KHÁCH THANH TOÁN KỲ NÀY"
-                    : activeTab === "cong_no"
-                      ? "TỔNG THANH TOÁN KỲ NÀY"
-                      : "TỔNG CỘNG"}
-              </span>
-              <span>
-                {formatCurrency(
-                  activeTab === "tra_het_du"
-                    ? tongKhachCanTra
-                    : activeTab === "cong_no_du"
-                      ? tongHienThiHoaDon + soTienDuSo
-                      : activeTab === "cong_no"
-                        ? tongHienThiHoaDon
-                        : tongCong,
-                )}
-              </span>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Kỹ sư công trình</label>
+              <input
+                className={styles.formInput}
+                type="text"
+                value={kySu}
+                onChange={(e) => setKySu(e.target.value)}
+                placeholder="Tên kỹ sư"
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Vận hành bơm</label>
+              <input
+                className={styles.formInput}
+                type="text"
+                value={vanHanhBom}
+                onChange={(e) => setVanHanhBom(e.target.value)}
+                placeholder="Tên người vận hành bơm"
+              />
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Lắp ống</label>
+              <input
+                className={styles.formInput}
+                type="text"
+                value={lapOng}
+                onChange={(e) => setLapOng(e.target.value)}
+                placeholder="Tên người lắp ống"
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Xe (Biển số – Tài xế)</label>
+              <input
+                className={styles.formInput}
+                type="text"
+                value={xeTaiXe}
+                onChange={(e) => setXeTaiXe(e.target.value)}
+                placeholder="VD: 59C1-12345 – Nguyễn Văn A"
+              />
             </div>
           </div>
         </div>
 
-        {/* Actions */}
+        {/* ── Actions ── */}
         <div className={`${styles.actionsWrap} ${styles.fullWidth}`}>
           <div className={styles.actions}>
             <button
@@ -1122,13 +693,9 @@ export default function XuatHoaDonPage() {
               ) : (
                 <>
                   <FiCheck size={16} />
-                  {activeTab === "tra_het"
-                    ? "Xác nhận trả hết & xuất hóa đơn"
-                    : activeTab === "tra_het_du"
-                      ? "Xác nhận trả hết dư & xuất hóa đơn"
-                      : activeTab === "cong_no_du"
-                        ? "Ghi công nợ dư & xuất hóa đơn"
-                        : "Ghi công nợ & xuất hóa đơn"}
+                  {hinhThuc === "tra_het"
+                    ? "Xác nhận & xuất hóa đơn"
+                    : "Ghi công nợ & xuất hóa đơn"}
                 </>
               )}
             </button>

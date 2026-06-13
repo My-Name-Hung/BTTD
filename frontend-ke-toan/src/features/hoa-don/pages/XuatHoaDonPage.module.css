@@ -794,3 +794,172 @@
   font-weight: 800;
   color: var(--color-warning);
 }
+
+/* ── Order info grid ── */
+.orderInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.orderInfoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.orderInfoLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.orderInfoValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+/* ── Hình thức thanh toán ── */
+.hinhThucGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.hinhThucCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  text-align: left;
+}
+
+.hinhThucCard:hover {
+  border-color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.03);
+}
+
+.hinhThucCardActive {
+  border-color: var(--color-primary) !important;
+  background: rgba(7, 60, 235, 0.06) !important;
+  box-shadow: 0 4px 12px rgba(7, 60, 235, 0.12);
+}
+
+.hinhThucCheck {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: white;
+  font-size: 12px;
+}
+
+.hinhThucCardActive .hinhThucCheck {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.hinhThucLabel {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.hinhThucDesc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ── Tổng cộng row ── */
+.tongCongRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(7, 60, 235, 0.06), rgba(7, 60, 235, 0.1));
+  border: 1px solid rgba(7, 60, 235, 0.2);
+  border-radius: 10px;
+  margin-top: 8px;
+}
+
+.tongCongLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tongCongValue {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+/* ── Thanh toán group ── */
+.thanhToanGroup {
+  margin-top: 8px;
+}
+
+/* ── Công nợ đã xuất ── */
+.congNoDaXuat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.congNoItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.congNoItem span:first-child {
+  flex: 1;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.congNoItem span:nth-child(2) {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.btnXemHdSmall {
+  padding: 3px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btnXemHdSmall:hover {
+  background: rgba(7, 60, 235, 0.06);
+}

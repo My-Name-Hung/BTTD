@@ -5,6 +5,8 @@ import {
   FiPrinter,
   FiSearch,
   FiX,
+  FiAlertTriangle,
+  FiClock,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import {
@@ -34,7 +36,7 @@ function formatCurrency(v: number) {
   return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
 }
 
-type TabFilter = "chua_tat_toan" | "da_tat_toan";
+type TabFilter = "chua_tat_toan" | "cong_no" | "da_tat_toan";
 
 interface HoaDonItem {
   id: number;
@@ -47,6 +49,8 @@ interface HoaDonItem {
   giamTru: number;
   tongCong: number;
   loaiThanhToan: string;
+  soTienDu?: number;
+  hanTraCongNo?: string | null;
 }
 
 export default function ThanhToanPage() {
@@ -62,7 +66,6 @@ export default function ThanhToanPage() {
   const [tuKhoa, setTuKhoa] = useState("");
   const [activeTab, setActiveTab] = useState<TabFilter>("chua_tat_toan");
   const [exporting, setExporting] = useState(false);
-  // Lưu trữ hóa đơn đang chọn cho mỗi đơn hàng
   const [selectedHoaDonIds, setSelectedHoaDonIds] = useState<Record<number, boolean>>({});
 
   const canCreate = hasPermission("thanhtoan.create");
@@ -80,7 +83,6 @@ export default function ThanhToanPage() {
 
       const dhs = dhRes.data || [];
 
-      // OPTIMIZED: Batch API calls thay vì N+1 queries
       if (dhs.length > 0) {
         const donHangIds = dhs.map((dh: DonHang) => dh.id);
         const [batchTT, batchHD, batchNT] = await Promise.all([
@@ -93,7 +95,6 @@ export default function ThanhToanPage() {
         const mapHD: Record<number, HoaDonItem[]> = {};
         dhs.forEach((dh: DonHang) => {
           mapTT[dh.id] = batchTT[dh.id] || [];
-          // Chuyển đổi mảng hóa đơn từ batch API
           const hoaDonList = batchHD[dh.id] || [];
           mapHD[dh.id] = hoaDonList.map(
             (h: any) => ({
@@ -107,6 +108,8 @@ export default function ThanhToanPage() {
               giamTru: h.giamTru || 0,
               tongCong: (h.tongCong || 0),
               loaiThanhToan: h.loaiThanhToan || "tra_het",
+              soTienDu: h.soTienDu || 0,
+              hanTraCongNo: h.hanTraCongNo || null,
             }),
           );
         });
@@ -128,7 +131,6 @@ export default function ThanhToanPage() {
     loadData();
   }, [loadData]);
 
-  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = () => {
       setSelectedHoaDonIds({});
@@ -137,16 +139,64 @@ export default function ThanhToanPage() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  // Lọc theo tab — chỉ dựa vào tiền, không dựa vào trạng thái đơn hàng
-  // Chỉ hiện đơn chưa từ chối, đơn đã từ chối không cho thanh toán
+  // Kiểm tra đơn có được phép thanh toán (đã nghiệm thu với kết quả 'dat')
+  const isChoPhepThanhToan = (dh: DonHang) => {
+    if (dh.trangThaiDon === "tu_choi") return false;
+    const nt = nghiemThus[dh.id];
+    if (!nt || nt.ketQua !== "dat") return false;
+    return true;
+  };
+
+  // Kiểm tra đơn có phải công nợ không (đã xuất hóa đơn công nợ nhưng chưa tất toán hết)
+  const isCongNo = (dh: DonHang) => {
+    const hds = hoaDons[dh.id] || [];
+    const hasCongNoHoaDon = hds.some(
+      (h) => h.loaiThanhToan === "cong_no" || h.loaiThanhToan === "cong_no_du",
+    );
+    return hasCongNoHoaDon && Math.max(0, dh.conLai || 0) > 0;
+  };
+
+  // Kiểm tra công nợ có quá hạn không
+  const isQuaHan = (dh: DonHang) => {
+    const hds = hoaDons[dh.id] || [];
+    const congNoHoaDon = hds.find(
+      (h) => h.loaiThanhToan === "cong_no" || h.loaiThanhToan === "cong_no_du",
+    );
+    if (!congNoHoaDon?.hanTraCongNo) return false;
+    const han = new Date(congNoHoaDon.hanTraCongNo);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return han < now && Math.max(0, dh.conLai || 0) > 0;
+  };
+
+  // Lọc đơn chưa tất toán (chưa xuất hóa đơn công nợ, còn nợ tiền)
   const chuaTatToan = donHangs.filter((dh) => {
     if (dh.trangThaiDon === "tu_choi") return false;
     const nt = nghiemThus[dh.id];
     if (!nt || nt.ketQua !== "dat") return false;
+    const hds = hoaDons[dh.id] || [];
+    const hasCongNoHoaDon = hds.some(
+      (h) => h.loaiThanhToan === "cong_no" || h.loaiThanhToan === "cong_no_du",
+    );
+    if (hasCongNoHoaDon) return false;
     const conLai = Math.max(0, dh.conLai || 0);
     return conLai > 0;
   });
 
+  // Lọc đơn công nợ (đã xuất hóa đơn công nợ, chưa tất toán hết)
+  const listCongNo = donHangs.filter((dh) => {
+    if (dh.trangThaiDon === "tu_choi") return false;
+    const nt = nghiemThus[dh.id];
+    if (!nt || nt.ketQua !== "dat") return false;
+    const conLai = Math.max(0, dh.conLai || 0);
+    if (conLai <= 0) return false;
+    const hds = hoaDons[dh.id] || [];
+    return hds.some(
+      (h) => h.loaiThanhToan === "cong_no" || h.loaiThanhToan === "cong_no_du",
+    );
+  });
+
+  // Lọc đơn đã tất toán
   const daTatToan = donHangs.filter((dh) => {
     const nt = nghiemThus[dh.id];
     if (!nt || nt.ketQua !== "dat") return false;
@@ -154,34 +204,28 @@ export default function ThanhToanPage() {
     return conLai <= 0;
   });
 
-  /** Kiểm tra đơn có được phép thanh toán hay không (phải đã nghiệm thu với kết quả 'dat') */
-  const isChoPhepThanhToan = (dh: DonHang) => {
-    if (dh.trangThaiDon === "tu_choi") return false;
-    // Phải có record NghiemThu với ketQua = 'dat'
-    const nt = nghiemThus[dh.id];
-    if (!nt || nt.ketQua !== "dat") return false;
-    return true;
-  };
+  const displayList =
+    activeTab === "chua_tat_toan"
+      ? chuaTatToan
+      : activeTab === "cong_no"
+        ? listCongNo
+        : daTatToan;
 
-  const displayList = activeTab === "chua_tat_toan" ? chuaTatToan : daTatToan;
   const LIMIT = 20;
   const totalPages = Math.max(1, Math.ceil(displayList.length / LIMIT));
   const paginatedList = displayList.slice((page - 1) * LIMIT, page * LIMIT);
 
-  const tongCongNo = chuaTatToan.reduce(
+  const tongCongNo = [...chuaTatToan, ...listCongNo].reduce(
     (sum, dh) => sum + Math.max(0, dh.conLai || 0),
     0,
   );
-  const tongDaTT = [...chuaTatToan, ...daTatToan].reduce(
+  const tongDaTT = [...chuaTatToan, ...listCongNo, ...daTatToan].reduce(
     (sum, dh) => sum + (dh.daThanhToan || 0),
     0,
   );
+  const soDonQuaHan = listCongNo.filter((dh) => isQuaHan(dh)).length;
 
   const handlePrintHD = (hoaDonId: number) => {
-    navigate(`/in-hoa-don/${hoaDonId}`);
-  };
-
-  const handleDownloadHD = (hoaDonId: number) => {
     navigate(`/in-hoa-don/${hoaDonId}`);
   };
 
@@ -280,6 +324,17 @@ export default function ThanhToanPage() {
             {formatCurrency(tongDaTT)}
           </div>
         </div>
+        {soDonQuaHan > 0 && (
+          <div className={styles.kpiCard}>
+            <div className={styles.kpiLabel}>Quá hạn thanh toán</div>
+            <div
+              className={styles.kpiValue}
+              style={{ color: "var(--color-danger)" }}
+            >
+              {soDonQuaHan} đơn
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tab filter */}
@@ -292,6 +347,19 @@ export default function ThanhToanPage() {
           }}
         >
           Chưa tất toán ({chuaTatToan.length})
+        </button>
+        <button
+          className={`${styles.tabBtn} ${activeTab === "cong_no" ? styles.tabBtnActive : ""}`}
+          onClick={() => {
+            setActiveTab("cong_no");
+            resetPage();
+          }}
+        >
+          <FiClock size={14} />
+          Công nợ ({listCongNo.length})
+          {soDonQuaHan > 0 && (
+            <span className={styles.tabBadgeWarning}>{soDonQuaHan} quá hạn</span>
+          )}
         </button>
         <button
           className={`${styles.tabBtn} ${activeTab === "da_tat_toan" ? styles.tabBtnActive : ""}`}
@@ -354,10 +422,21 @@ export default function ThanhToanPage() {
                     className={styles.hideOnMobile}
                     style={{ minWidth: 90, textAlign: "right" }}
                   >
-                    Đã Thanh Toán
+                    Đã TT
                   </th>
                   <th style={{ minWidth: 80 }}>Còn lại</th>
-                  <th style={{ minWidth: 160 }}>Thao tác</th>
+                  {activeTab === "da_tat_toan" && (
+                    <th
+                      className={styles.hideOnMobile}
+                      style={{ minWidth: 80, textAlign: "right" }}
+                    >
+                      Tiền dư
+                    </th>
+                  )}
+                  {activeTab === "cong_no" && (
+                    <th style={{ minWidth: 90 }}>Hạn thanh toán</th>
+                  )}
+                  <th style={{ minWidth: 180 }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -366,9 +445,14 @@ export default function ThanhToanPage() {
                   const conLai = Math.max(0, dh.conLai || 0);
                   const hds = hoaDons[dh.id] || [];
                   const daTatToanOrder = conLai <= 0;
+                  const isQuaHanOrder = isQuaHan(dh);
+                  const tienDu = hds.reduce((sum, h) => sum + (h.soTienDu || 0), 0);
 
                   return (
-                    <tr key={dh.id}>
+                    <tr
+                      key={dh.id}
+                      className={isQuaHanOrder ? styles.rowQuaHan : ""}
+                    >
                       <td>
                         <span className={styles.tableCode}>{dh.maDonHang}</span>
                       </td>
@@ -401,10 +485,62 @@ export default function ThanhToanPage() {
                           {formatCurrency(conLai)}
                         </span>
                       </td>
+                      {activeTab === "da_tat_toan" && (
+                        <td
+                          className={`${styles.tableRight} ${styles.hideOnMobile}`}
+                        >
+                          {tienDu > 0 ? (
+                            <span style={{ color: "var(--color-success)", fontWeight: 600 }}>
+                              +{formatCurrency(tienDu)}
+                            </span>
+                          ) : (
+                            <span style={{ color: "var(--color-text-secondary)" }}>
+                              0 đ
+                            </span>
+                          )}
+                        </td>
+                      )}
+                      {activeTab === "cong_no" && (
+                        <td>
+                          {(() => {
+                            const cnHD = hds.find(
+                              (h) =>
+                                h.loaiThanhToan === "cong_no" ||
+                                h.loaiThanhToan === "cong_no_du",
+                            );
+                            if (!cnHD?.hanTraCongNo) return (
+                              <span style={{ color: "var(--color-text-secondary)" }}>
+                                —
+                              </span>
+                            );
+                            return (
+                              <span
+                                style={{
+                                  color: isQuaHanOrder
+                                    ? "var(--color-danger)"
+                                    : "var(--color-text)",
+                                  fontWeight: isQuaHanOrder ? 700 : 500,
+                                }}
+                              >
+                                {new Date(cnHD.hanTraCongNo!).toLocaleDateString(
+                                  "vi-VN",
+                                )}
+                                {isQuaHanOrder && (
+                                  <FiAlertTriangle
+                                    size={12}
+                                    style={{ marginLeft: 4, verticalAlign: "middle" }}
+                                  />
+                                )}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                      )}
                       <td>
                         <div className={styles.actionBtns}>
-                          {/* Chưa tất toán & đơn đủ điều kiện thanh toán (đã nghiệm thu, không bị từ chối) */}
-                          {!daTatToanOrder &&
+                          {/* Tab chưa tất toán: nút thanh toán */}
+                          {activeTab === "chua_tat_toan" &&
+                            !daTatToanOrder &&
                             canCreate &&
                             isChoPhepThanhToan(dh) && (
                               <button
@@ -414,47 +550,68 @@ export default function ThanhToanPage() {
                                 }
                                 title="Thanh toán"
                               >
-                                <FiDollarSign size={13} />{" "}
+                                <FiDollarSign size={13} />
                                 {conLai > 0
                                   ? formatCurrency(conLai)
                                   : "Thanh toán"}
                               </button>
                             )}
 
-                          {/* Đơn chưa đủ điều kiện thanh toán (chưa nghiệm thu hoặc từ chối): hiện mô tả */}
-                          {!daTatToanOrder &&
+                          {/* Tab công nợ: nút tất toán */}
+                          {activeTab === "cong_no" &&
                             canCreate &&
-                            !isChoPhepThanhToan(dh) && (
-                              <span className={styles.badgeKhongChoPhep}>
-                                Cần nghiệm thu trước khi thanh toán
-                              </span>
+                            isChoPhepThanhToan(dh) && (
+                              <button
+                                className={styles.btnPay}
+                                onClick={() =>
+                                  navigate(`/thanh-toan/xuat/${dh.id}`)
+                                }
+                                title="Tất toán công nợ"
+                              >
+                                <FiDollarSign size={13} />
+                                Tất toán
+                              </button>
                             )}
 
-                          {/* Nếu đã có hóa đơn (công nợ đã xuất HĐ trước đó): hiện dropdown chọn HĐ */}
-                          {!daTatToanOrder && hds.length > 0 && (
+                          {/* Tab đã tất toán: hiện mặc định đã hoàn tất */}
+                          {activeTab === "da_tat_toan" && (
+                            <span className={styles.badgeDaHoanTat}>
+                              Hoàn tất
+                            </span>
+                          )}
+
+                          {/* Xem hóa đơn đã xuất */}
+                          {hds.length > 0 && (
                             <div className={styles.hoaDonDropdown}>
                               <button
                                 className={styles.btnHoaDon}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedHoaDonIds(prev => ({
+                                  setSelectedHoaDonIds((prev) => ({
                                     ...prev,
-                                    [dh.id]: prev[dh.id] ? false : true
+                                    [dh.id]: prev[dh.id] ? false : true,
                                   }));
                                 }}
                                 title="Xem hóa đơn đã xuất"
                               >
-                                <FiPrinter size={13} /> Xem HĐ {hds.length > 1 && `(${hds.length})`}
+                                <FiPrinter size={13} />
+                                HĐ {hds.length > 1 ? `(${hds.length})` : ""}
                               </button>
                               {selectedHoaDonIds[dh.id] && hds.length > 1 && (
-                                <div className={styles.dropdownMenu} onClick={(e) => e.stopPropagation()}>
+                                <div
+                                  className={styles.dropdownMenu}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   {hds.map((hd) => (
                                     <button
                                       key={hd.id}
                                       className={styles.dropdownItem}
                                       onClick={() => {
                                         handlePrintHD(hd.id);
-                                        setSelectedHoaDonIds(prev => ({ ...prev, [dh.id]: false }));
+                                        setSelectedHoaDonIds((prev) => ({
+                                          ...prev,
+                                          [dh.id]: false,
+                                        }));
                                       }}
                                     >
                                       <span>{hd.maHoaDon}</span>
@@ -465,43 +622,19 @@ export default function ThanhToanPage() {
                                   ))}
                                 </div>
                               )}
-                            </div>
-                          )}
-
-                          {/* Đã tất toán: hiện dropdown chọn hóa đơn */}
-                          {daTatToanOrder && hds.length > 0 && (
-                            <div className={styles.hoaDonDropdown}>
-                              <button
-                                className={styles.btnHoaDon}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedHoaDonIds(prev => ({
-                                    ...prev,
-                                    [dh.id]: prev[dh.id] ? false : true
-                                  }));
-                                }}
-                                title="Xem hóa đơn"
-                              >
-                                <FiPrinter size={13} /> Xem HĐ {hds.length > 1 && `(${hds.length})`}
-                              </button>
-                              {selectedHoaDonIds[dh.id] && hds.length > 1 && (
-                                <div className={styles.dropdownMenu} onClick={(e) => e.stopPropagation()}>
-                                  {hds.map((hd) => (
-                                    <button
-                                      key={hd.id}
-                                      className={styles.dropdownItem}
-                                      onClick={() => {
-                                        handlePrintHD(hd.id);
-                                        setSelectedHoaDonIds(prev => ({ ...prev, [dh.id]: false }));
-                                      }}
-                                    >
-                                      <span>{hd.maHoaDon}</span>
-                                      <span className={styles.dropdownAmount}>
-                                        {formatCurrency(hd.tongCong)}
-                                      </span>
-                                    </button>
-                                  ))}
-                                </div>
+                              {selectedHoaDonIds[dh.id] && hds.length === 1 && (
+                                <button
+                                  className={styles.btnPrintSingle}
+                                  onClick={() => {
+                                    handlePrintHD(hds[0].id);
+                                    setSelectedHoaDonIds((prev) => ({
+                                      ...prev,
+                                      [dh.id]: false,
+                                    }));
+                                  }}
+                                >
+                                  <FiPrinter size={12} /> Xem HĐ
+                                </button>
                               )}
                             </div>
                           )}

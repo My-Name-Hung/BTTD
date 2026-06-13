@@ -9,7 +9,6 @@ import { useToast } from "../../../shared/hooks";
 import logo from "../../../assets/Logo.png";
 import {
   layHoaDon,
-  layDonHang,
   layNghiemThu,
   layLichSanXuat,
   layHoaDonTheoDonHang,
@@ -46,7 +45,7 @@ function sortHoaDonsByTime(items: HoaDonData[]) {
   });
 }
 
-/** Đọc số tiền thành chữ tiếng Việt (hỗ trợ đến hàng tỷ) */
+/** Đọc số tiền thành chữ tiếng Việt */
 function numberToVietnamese(n: number): string {
   if (n === 0) return "Không đồng";
   if (n < 0) return "Âm " + numberToVietnamese(-n);
@@ -111,7 +110,7 @@ interface HoaDonData {
   hanTraCongNo: string | null;
   nguoiTaoId: number | null;
   createdAt: string;
-  // Join fields (từ layHoaDonTheoId)
+  // Join fields
   maDonHang?: string;
   tenKhachHang?: string;
   diaChiNhan?: string;
@@ -174,7 +173,6 @@ export default function InHoaDonPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  // Ref đúng element cần in
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const [hoaDon, setHoaDon] = useState<HoaDonData | null>(null);
@@ -185,7 +183,7 @@ export default function InHoaDonPage() {
   const [error, setError] = useState<string | null>(null);
   const [downloadLoading, setDownloadLoading] = useState(false);
 
-  /* In bằng react-to-print – trỏ trực tiếp vào element */
+  /* In bằng react-to-print */
   const handlePrint = useReactToPrint({
     contentRef: invoiceRef,
     documentTitle: hoaDon ? `HoaDon-${hoaDon.maHoaDon}` : "HoaDon",
@@ -247,7 +245,6 @@ export default function InHoaDonPage() {
     setError(null);
 
     try {
-      // Bước 1: Lấy hóa đơn theo ID (API mới /hoa-don/:id)
       const numId = parseInt(id.replace(/[^0-9]/g, ""), 10);
       if (!numId) throw new Error("ID không hợp lệ");
 
@@ -258,7 +255,6 @@ export default function InHoaDonPage() {
         return;
       }
 
-      // Bước 2: Lấy thêm nghiệm thu + lịch sản xuất (song song)
       const [nt, lsArr, hdArr] = await Promise.all([
         layNghiemThu(hd.idDonHang).catch(() => null),
         layLichSanXuat(hd.idDonHang).catch(() => null),
@@ -329,8 +325,23 @@ export default function InHoaDonPage() {
   const phuongThucText =
     hd.phuongThucThanhToan === "chuyen_khoan" ? "Chuyển khoản" : "Tiền mặt";
 
-  // Địa chỉ trạm trộn đầy đủ
-  const tramTronLabel = hd.tenTramTron || "—";
+  // Phương pháp đổ label
+  const phuongPhapDoLabel = (() => {
+    if (!hd.phuongPhapDo) return "—";
+    let label = hd.phuongPhapDo === "do_xa" ? "Đổ xã" : "Đổ bơm";
+    if (hd.phuongPhapDo === "do_bom") {
+      if (hd.loaiBom === "bom_ngang") label += " – Bơm ngang";
+      else if (hd.loaiBom === "bom_can") label += " – Bơm cần";
+      if (hd.chieuDaiBom) label += ` (${hd.chieuDaiBom}m)`;
+    }
+    if (hd.phuongPhapDo === "do_xa") {
+      if (hd.kieuNoi === "khong_dau") label += " – Không đầu";
+      else if (hd.kieuNoi === "noi_dau") label += " – Nối đầu";
+      else if (hd.kieuNoi === "noi_dit") label += " – Nối đít";
+      if (hd.chieuDaiNoi) label += ` (${hd.chieuDaiNoi}m)`;
+    }
+    return label;
+  })();
 
   return (
     <div className={styles.wrapper}>
@@ -354,7 +365,7 @@ export default function InHoaDonPage() {
         </div>
       </div>
 
-      {/* ── Invoice content – ref trỏ vào đây ── */}
+      {/* ── Invoice content ── */}
       <div
         ref={invoiceRef}
         style={{ maxWidth: 800, margin: "0 auto", padding: "0 16px 40px" }}
@@ -470,7 +481,7 @@ export default function InHoaDonPage() {
                     {hd.loaiXiMang || "PCB40"}
                   </span>
                 </div>
-                {(hd.hangMuc) && (
+                {hd.hangMuc && (
                   <div className={styles.infoRow}>
                     <span className={styles.infoLabel}>Hạng mục / Cấu kiện:</span>
                     <span className={styles.infoValue}>{hd.hangMuc}</span>
@@ -479,27 +490,7 @@ export default function InHoaDonPage() {
                 {hd.phuongPhapDo && (
                   <div className={styles.infoRow}>
                     <span className={styles.infoLabel}>Phương pháp đổ:</span>
-                    <span className={styles.infoValue}>
-                      {hd.phuongPhapDo === "do_xa"
-                        ? "Đổ xã"
-                        : hd.phuongPhapDo === "do_bom"
-                          ? "Đổ bơm"
-                          : hd.phuongPhapDo}
-                      {hd.phuongPhapDo === "do_bom" && hd.loaiBom && (
-                        <span>
-                          {hd.loaiBom === "bom_ngang" ? " – Bơm ngang" : " – Bơm cần"}
-                          {hd.chieuDaiBom ? ` (${hd.chieuDaiBom}m)` : ""}
-                        </span>
-                      )}
-                      {hd.phuongPhapDo === "do_xa" && hd.kieuNoi && (
-                        <span>
-                          {hd.kieuNoi === "khong_dau" ? " – Không đầu" :
-                           hd.kieuNoi === "noi_dau" ? " – Nối đầu" :
-                           hd.kieuNoi === "noi_dit" ? " – Nối đít" : ""}
-                          {hd.chieuDaiNoi ? ` (${hd.chieuDaiNoi}m)` : ""}
-                        </span>
-                      )}
-                    </span>
+                    <span className={styles.infoValue}>{phuongPhapDoLabel}</span>
                   </div>
                 )}
               </div>
