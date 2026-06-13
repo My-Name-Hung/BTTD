@@ -647,7 +647,7 @@ export default function NghiemThuPage() {
             <div>
               <div className={styles.optionBtnTitle}>Ghi nhận trực tiếp</div>
               <div className={styles.optionBtnDesc}>
-                Chụp 1 tấm ảnh tại công trình và gửi lên server
+                Chụp 1 tấm ảnh tại công trình và gửi lên hệ thống
               </div>
             </div>
           </button>

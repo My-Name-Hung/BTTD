@@ -278,7 +278,6 @@ export default function InTamTinhPage() {
                     {donHang.phuongPhapDo === "do_bom" && donHang.loaiBom && (
                       <span>
                         {donHang.loaiBom === "bom_ngang" ? " – Bơm ngang" : " – Bơm cần"}
-                        {donHang.chieuDaiBom ? ` (${donHang.chieuDaiBom}m)` : ""}
                       </span>
                     )}
                     {donHang.phuongPhapDo === "do_xa" && donHang.kieuNoi && (
@@ -286,8 +285,13 @@ export default function InTamTinhPage() {
                         {donHang.kieuNoi === "khong_dau" ? " – Không đầu" :
                          donHang.kieuNoi === "noi_dau" ? " – Nối đầu" :
                          donHang.kieuNoi === "noi_dit" ? " – Nối đít" : ""}
-                        {donHang.chieuDaiNoi ? ` (${donHang.chieuDaiNoi}m)` : ""}
                       </span>
+                    )}
+                    {donHang.phuongPhapDo === "do_bom" && donHang.chieuDaiBom && (
+                      <span> (chiều dài bơm {donHang.chieuDaiBom}m)</span>
+                    )}
+                    {donHang.phuongPhapDo === "do_xa" && donHang.chieuDaiNoi && (
+                      <span> (chiều dài nối {donHang.chieuDaiNoi}m)</span>
                     )}
                   </td>
                 </tr>
