@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FiAlertCircle,
   FiArrowLeft,
@@ -256,6 +256,27 @@ export default function ChiTietDonHangPage() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  // Dedup theo idTramTron - 1 trạm chỉ hiển thị 1 block.
+  // Trường hợp DB có 2 bản ghi LichSanXuat cùng trạm (lịch cũ đã hoàn thành + tạo lại),
+  // chỉ giữ bản ghi mới nhất (theo ngayTao/id desc) cho mỗi trạm.
+  // Đồng bộ với logic de-dup của KhoLichSanXuatPage.
+  const lichSXsHienThi = useMemo(() => {
+    const map = new Map<number, LichSanXuat>();
+    for (const ls of lichSXs) {
+      const key = ls.idTramTron ?? -ls.id; // lịch không có idTramTron (dữ liệu cũ) thì group theo id
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, ls);
+        continue;
+      }
+      // Ưu tiên bản ghi có id lớn hơn (mới tạo sau)
+      if (ls.id >= existing.id) {
+        map.set(key, ls);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.id - b.id);
+  }, [lichSXs]);
 
   const handleDuyet = async () => {
     if (!donHang) return;
@@ -914,9 +935,9 @@ export default function ChiTietDonHangPage() {
           </div>
         </div>
 
-        {lichSXs.length > 0 ? (
+        {lichSXsHienThi.length > 0 ? (
           <div className={styles.subTableWrap}>
-            {lichSXs.map((lichSX, idx) => (
+            {lichSXsHienThi.map((lichSX, idx) => (
               <div key={lichSX.id} className={styles.tramBlock}>
                 <div className={styles.tramBlockHeader}>
                   <FiPackage size={14} style={{ color: "var(--color-primary)" }} />

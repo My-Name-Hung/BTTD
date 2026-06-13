@@ -162,6 +162,7 @@ export interface LichSanXuat {
   ghiChu: string | null;
   driveLink: string | null;
   trangThai: "chua_san_xuat" | "dang_san_xuat" | "da_xong";
+  ngayTao?: string | null;
 }
 
 export interface NghiemThu {
