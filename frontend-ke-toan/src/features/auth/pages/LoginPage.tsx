@@ -9,6 +9,7 @@ import logo from "../../../assets/Logo.png";
 
   const REMEMBER_PASSWORD_KEY = "bttd_remember";
 const SAVED_USERNAME_KEY = "bttd_saved_user";
+const SAVED_PASSWORD_KEY = "bttd_saved_pass";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -16,7 +17,11 @@ export default function LoginPage() {
   const [username, setUsername] = useState(() => {
     return localStorage.getItem(SAVED_USERNAME_KEY) || "";
   });
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(() => {
+    return localStorage.getItem(REMEMBER_PASSWORD_KEY) === "true"
+      ? localStorage.getItem(SAVED_PASSWORD_KEY) || ""
+      : "";
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [rememberPassword, setRememberPassword] = useState(
     localStorage.getItem(REMEMBER_PASSWORD_KEY) === "true",
@@ -34,9 +39,11 @@ export default function LoginPage() {
       if (rememberPassword) {
         localStorage.setItem(REMEMBER_PASSWORD_KEY, "true");
         localStorage.setItem(SAVED_USERNAME_KEY, username);
+        localStorage.setItem(SAVED_PASSWORD_KEY, password);
       } else {
         localStorage.removeItem(REMEMBER_PASSWORD_KEY);
         localStorage.removeItem(SAVED_USERNAME_KEY);
+        localStorage.removeItem(SAVED_PASSWORD_KEY);
       }
       navigate("/dashboard");
     } catch (err) {
