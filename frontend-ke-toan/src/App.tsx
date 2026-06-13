@@ -4,6 +4,7 @@ import { Layout } from "./shared/components";
 import { Loading } from "./shared/components/ui";
 import { AuthProvider, useAuth } from "./shared/hooks";
 import { useMaintenanceCheck } from "./shared/hooks/useMaintenanceCheck";
+import { useNotificationBadge } from "./shared/hooks/useNotificationBadge";
 
 // Auth
 const LoginPage = lazy(() => import("./features/auth/pages/LoginPage"));
@@ -85,6 +86,12 @@ function PageFallback() {
       <Loading />
     </div>
   );
+}
+
+/** Component cập nhật notification badge trên tab - chỉ chạy khi đã đăng nhập */
+function NotificationBadgeUpdater() {
+  useNotificationBadge();
+  return null;
 }
 
 /** Chỉ admin được bypass maintenance, tất cả role khác đều bị block */

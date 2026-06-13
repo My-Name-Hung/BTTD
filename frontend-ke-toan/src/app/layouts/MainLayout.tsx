@@ -25,6 +25,7 @@ import {
 } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ROLE_LABELS, useAuth, useNotifications } from "../../shared/hooks";
+import { useNotificationBadge } from "../../shared/hooks/useNotificationBadge";
 import "../../shared/styles/layout.css";
 import logo from "../../assets/Logo.png";
 
@@ -364,6 +365,9 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Cập nhật notification badge trên tab trình duyệt
+  useNotificationBadge();
 
   // Notifications
   const vaiTro = user?.vaiTro || "";

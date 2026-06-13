@@ -907,6 +907,15 @@ export async function xoaMacBeTong(id: number): Promise<void> {
 }
 
 // ===== NOTIFICATIONS =====
+export async function layThongBaoChuaDoc(): Promise<import("../types").ThongBao[]> {
+  const res = await fetch(`${BASE_URL}/notifications?isRead=false&limit=100`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
+  return json.data || [];
+}
+
 export async function layDanhSachThongBao(
   page = 1,
   limit = 20,
