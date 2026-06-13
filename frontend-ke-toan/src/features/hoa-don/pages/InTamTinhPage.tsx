@@ -7,8 +7,8 @@ import { useReactToPrint } from "react-to-print";
 import logo from "../../../assets/Logo.png";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
-import { layDonHang } from "../../../shared/services/api";
-import { DonHang } from "../../../shared/types";
+import { layDonHang, layDanhSachMacBeTong } from "../../../shared/services/api";
+import { DonHang, MacBeTong } from "../../../shared/types";
 import styles from "./InTamTinhPage.module.css";
 
 function formatCurrency(v: number): string {
@@ -31,6 +31,7 @@ export default function InTamTinhPage() {
   const { showToast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
   const [donHang, setDonHang] = useState<DonHang | null>(null);
+  const [macBeTongs, setMacBeTongs] = useState<MacBeTong[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadLoading, setDownloadLoading] = useState(false);
 
@@ -93,8 +94,12 @@ export default function InTamTinhPage() {
     setLoading(true);
     try {
       const numId = parseInt(id.replace(/[^0-9]/g, ""), 10);
-      const dh = await layDonHang(numId);
+      const [dh, macList] = await Promise.all([
+        layDonHang(numId),
+        layDanhSachMacBeTong().catch(() => []),
+      ]);
       setDonHang(dh);
+      setMacBeTongs(Array.isArray(macList) ? macList : []);
     } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
     } finally {
@@ -105,6 +110,21 @@ export default function InTamTinhPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Tra cứu đơn giá catalog của mác bê tông để hiển thị kèm tên mác
+  const getDonGiaMacCatalog = (): number | null => {
+    if (!donHang) return null;
+    if (donHang.idMacBeTong) {
+      const found = macBeTongs.find((m) => m.id === donHang.idMacBeTong);
+      if (found) return found.donGia;
+    }
+    if (donHang.tenMacBeTong) {
+      const found = macBeTongs.find((m) => m.tenMac === donHang.tenMacBeTong);
+      if (found) return found.donGia;
+    }
+    if (donHang.donGia && donHang.donGia > 0) return donHang.donGia;
+    return null;
+  };
 
   if (loading) return <Loading />;
 
@@ -222,7 +242,18 @@ export default function InTamTinhPage() {
               <tr>
                 <td>
                   <div className={styles.productName}>Bê tông thương phẩm</div>
-                  <div className={styles.productSub}>{donHang.tenMacBeTong}</div>
+                  <div className={styles.productSub}>
+                    {donHang.tenMacBeTong}
+                    {(() => {
+                      const gia = getDonGiaMacCatalog();
+                      if (gia == null) return null;
+                      return (
+                        <span className={styles.productSubPrice}>
+                          {" "}— {formatCurrency(gia)}/m³
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </td>
                 <td className={styles.thRight}>
                   {donHang.khoiLuongDat?.toLocaleString("vi-VN")} m³

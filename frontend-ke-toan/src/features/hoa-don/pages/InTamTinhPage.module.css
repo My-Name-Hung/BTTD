@@ -258,6 +258,11 @@
   color: #666;
 }
 
+.productSubPrice {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
 .detailsTable tfoot td {
   padding: 8px;
   background: #f0f4ff;

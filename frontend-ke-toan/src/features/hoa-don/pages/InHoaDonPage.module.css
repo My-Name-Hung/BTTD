@@ -314,6 +314,13 @@
   flex: 1;
 }
 
+.infoValueSub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-left: 2px;
+}
+
 /* ── Table ── */
 .table {
   width: 100%;

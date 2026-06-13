@@ -22,6 +22,7 @@ import {
   FiUser,
   FiX,
   FiImage,
+  FiChevronRight,
 } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { ConfirmModal, Loading, Modal } from "../../../shared/components/Common";
@@ -40,12 +41,14 @@ import {
   uploadBangChungCamera,
   xoaBangChungDonHang,
   layLichSuTraLai,
+  layDanhSachMacBeTong,
 } from "../../../shared/services/api";
 import { buildFileUrl } from "../../../shared/utils";
 import {
   DonHang,
   HoaDon,
   LichSanXuat,
+  MacBeTong,
   NghiemThu,
   TRANG_THAI_DON_COLORS,
   TRANG_THAI_DON_LABELS,
@@ -200,11 +203,32 @@ export default function ChiTietDonHangPage() {
   const [bangChungUploadModalOpen, setBangChungUploadModalOpen] = useState(false);
   const [bangChungCameraModalOpen, setBangChungCameraModalOpen] = useState(false);
   const [bangChungFiles, setBangChungFiles] = useState<File[]>([]);
+  const [bangChungFilePreviews, setBangChungFilePreviews] = useState<string[]>([]);
+  const [bangChungDragActive, setBangChungDragActive] = useState(false);
   const [bangChungUploadLoading, setBangChungUploadLoading] = useState(false);
   const [bangChungCameraLoading, setBangChungCameraLoading] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Tạo / giải phóng object URL cho ảnh preview sau khi chọn file
+  useEffect(() => {
+    const urls = bangChungFiles.map((f) =>
+      f.type.startsWith("image/") ? URL.createObjectURL(f) : "",
+    );
+    setBangChungFilePreviews(urls);
+    return () => {
+      urls.forEach((u) => u && URL.revokeObjectURL(u));
+    };
+  }, [bangChungFiles]);
+
+  // Reset khi đóng modal upload
+  const closeUploadModal = () => {
+    setBangChungUploadModalOpen(false);
+    setBangChungFiles([]);
+    setBangChungFilePreviews([]);
+    setBangChungDragActive(false);
+  };
 
   const userVaiTro = JSON.parse(
     localStorage.getItem("bttd_user") || "{}",
@@ -217,6 +241,28 @@ export default function ChiTietDonHangPage() {
   const canEditAll = ["admin", "giam_doc_kinh_doanh", "ke_toan"].includes(userVaiTro);
   const canEdit = canEditAll || isSale;
   const canDelete = ["admin"].includes(userVaiTro);
+  // Danh sách mác bê tông - dùng để tra cứu đơn giá catalog hiển thị kèm theo tên mác
+  const [macBeTongs, setMacBeTongs] = useState<MacBeTong[]>([]);
+  useEffect(() => {
+    layDanhSachMacBeTong()
+      .then((list) => setMacBeTongs(list || []))
+      .catch(() => setMacBeTongs([]));
+  }, []);
+  const donGiaMacCatalog = useMemo(() => {
+    if (!donHang) return null;
+    // Ưu tiên tra theo idMacBeTong, fallback theo tên
+    if (donHang.idMacBeTong) {
+      const found = macBeTongs.find((m) => m.id === donHang.idMacBeTong);
+      if (found) return found.donGia;
+    }
+    if (donHang.tenMacBeTong) {
+      const found = macBeTongs.find(
+        (m) => m.tenMac === donHang.tenMacBeTong,
+      );
+      if (found) return found.donGia;
+    }
+    return null;
+  }, [donHang, macBeTongs]);
   const isStep1 = donHang?.trangThaiDon === "cho_duyet";
   const isStep2 = donHang?.trangThaiDon === "cho_ke_toan_duyet";
   // Hiện hóa đơn tạm tính khi đơn đã qua 2 lần duyệt (không còn chờ duyệt)
@@ -225,8 +271,14 @@ export default function ChiTietDonHangPage() {
     ? (isStep1 ? "Duyệt lần 1" : isStep2 ? "Duyệt lần 2" : "Duyệt đơn")
     : "Duyệt đơn";
 
+  // Chặn upload bằng chứng ở 3 trạng thái đầu: chờ duyệt, chờ kế toán duyệt, từ chối
+  // Các trạng thái còn lại (đã duyệt / đang sản xuất / đang giao / đã giao /
+  // nghiệm thu / đã thanh toán / hoàn thành) đều cho phép upload.
   const isDonHangHoanThanh = donHang?.trangThaiDon === "hoan_thanh" || donHang?.trangThaiDon === "da_thanh_toan";
-  const canUploadBangChung = isDonHangHoanThanh && (isAdmin || isSale);
+  const isChuaChoPhepBangChung = donHang
+    ? ["cho_duyet", "cho_ke_toan_duyet", "tu_choi"].includes(donHang.trangThaiDon)
+    : true;
+  const canUploadBangChung = !isChuaChoPhepBangChung && (isAdmin || isSale);
 
   const loadAll = useCallback(async () => {
     if (!id) return;
@@ -552,7 +604,7 @@ export default function ChiTietDonHangPage() {
                 <FiDollarSign /> Xuất hóa đơn
               </button>
             )}
-          {/* Nút tải lên bằng chứng - chỉ hiện khi đơn hoàn thành + role admin/sale */}
+          {/* Nút tải lên bằng chứng - cho phép ở mọi trạng thái trừ chờ duyệt, chờ kế toán duyệt, từ chối (role admin/sale) */}
           {canUploadBangChung && (
             <button
               className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
@@ -650,6 +702,11 @@ export default function ChiTietDonHangPage() {
             <span className={styles.infoLabel}>Mác bê tông</span>
             <span className={`${styles.infoValue} ${styles.infoValuePrimary}`}>
               {donHang.tenMacBeTong}
+              {donGiaMacCatalog != null && (
+                <span className={styles.infoValueSub}>
+                  {" "}— {formatCurrency(donGiaMacCatalog)}/m³
+                </span>
+              )}
             </span>
           </div>
           <div className={styles.infoRow}>
@@ -720,48 +777,31 @@ export default function ChiTietDonHangPage() {
                         : donHang.phuongPhapDo}
                   </span>
                 </div>
-                {donHang.phuongPhapDo === "do_bom" && donHang.chieuDaiBom && (
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Chiều dài bơm</span>
-                    <span className={styles.infoValue}>
-                      {donHang.chieuDaiBom} m
-                    </span>
-                  </div>
-                )}
-                {donHang.chieuDaiNoi && (
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Chiều dài nội</span>
-                    <span className={styles.infoValue}>
-                      {donHang.chieuDaiNoi} m
-                    </span>
-                  </div>
-                )}
-                {donHang.loaiBom && (
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Loại bơm</span>
-                    <span className={styles.infoValue}>
-                      {donHang.loaiBom === "bom_ngang"
-                        ? "Bơm ngang"
-                        : donHang.loaiBom === "bom_can"
-                          ? "Bơm cần"
-                          : donHang.loaiBom}
-                    </span>
-                  </div>
-                )}
-                {donHang.kieuNoi && (
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Kiểu nối</span>
-                    <span className={styles.infoValue}>
-                      {donHang.kieuNoi === "khong_dau"
-                        ? "Không đầu"
-                        : donHang.kieuNoi === "noi_dau"
-                          ? "Nối đầu"
-                          : donHang.kieuNoi === "noi_dit"
-                            ? "Nối đít"
-                            : donHang.kieuNoi}
-                    </span>
-                  </div>
-                )}
+                {(() => {
+                  // Gộp tất cả thông tin chiều dài / loại bơm / kiểu nối vào 1 dòng duy nhất
+                  if (donHang.phuongPhapDo !== "do_bom") return null;
+
+                  const parts: string[] = [];
+                  if (donHang.loaiBom === "bom_ngang") {
+                    parts.push("Bơm ngang");
+                    if (donHang.chieuDaiBom) parts.push(`${donHang.chieuDaiBom} m`);
+                  } else if (donHang.loaiBom === "bom_can") {
+                    parts.push("Bơm cần");
+                    if (donHang.kieuNoi === "noi_dau") parts.push("Nối đầu");
+                    else if (donHang.kieuNoi === "noi_dit") parts.push("Nối đít");
+                    if (donHang.chieuDaiNoi) parts.push(`${donHang.chieuDaiNoi} m`);
+                  } else if (donHang.chieuDaiBom) {
+                    parts.push(`${donHang.chieuDaiBom} m`);
+                  }
+
+                  if (parts.length === 0) return null;
+                  return (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Chiều dài</span>
+                      <span className={styles.infoValue}>{parts.join(" • ")}</span>
+                    </div>
+                  );
+                })()}
               </>
             )}
           </div>
@@ -2188,37 +2228,39 @@ export default function ChiTietDonHangPage() {
         onClose={() => setBangChungOptionModalOpen(false)}
         title={`Bằng chứng đơn hàng - ${donHang.maDonHang}`}
       >
-        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 20, textAlign: "center" }}>
+        <p className={styles.bangChungHint} style={{ marginBottom: 20 }}>
           Chọn hình thức ghi nhận bằng chứng cho đơn hàng này
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={styles.bangChungOptions}>
           <button
-            className={styles.optionBtn}
+            className={styles.bangChungOptionBtn}
             onClick={handleChonUploadFileBangChung}
           >
-            <div className={styles.optionBtnIcon}>
-              <FiUpload size={28} />
+            <div className={styles.bangChungOptionIcon}>
+              <FiUpload size={26} />
             </div>
-            <div>
-              <div className={styles.optionBtnTitle}>Upload file</div>
-              <div className={styles.optionBtnDesc}>
+            <div className={styles.bangChungOptionContent}>
+              <div className={styles.bangChungOptionTitle}>Upload file</div>
+              <div className={styles.bangChungOptionDesc}>
                 Tải lên file hình ảnh, PDF, DOCX
               </div>
             </div>
+            <FiChevronRight size={20} className={styles.bangChungOptionArrow} />
           </button>
           <button
-            className={styles.optionBtn}
+            className={styles.bangChungOptionBtn}
             onClick={handleChonCameraBangChung}
           >
-            <div className={styles.optionBtnIcon}>
-              <FiCamera size={28} />
+            <div className={styles.bangChungOptionIcon}>
+              <FiCamera size={26} />
             </div>
-            <div>
-              <div className={styles.optionBtnTitle}>Ghi nhận trực tiếp</div>
-              <div className={styles.optionBtnDesc}>
-                Chụp ảnh tại công trình
+            <div className={styles.bangChungOptionContent}>
+              <div className={styles.bangChungOptionTitle}>Ghi nhận trực tiếp</div>
+              <div className={styles.bangChungOptionDesc}>
+                Chụp ảnh tại công trình bằng camera
               </div>
             </div>
+            <FiChevronRight size={20} className={styles.bangChungOptionArrow} />
           </button>
         </div>
       </Modal>
@@ -2226,11 +2268,11 @@ export default function ChiTietDonHangPage() {
       {/* ========== MODAL: Upload file bằng chứng ========== */}
       <Modal
         isOpen={bangChungUploadModalOpen}
-        onClose={() => { setBangChungUploadModalOpen(false); setBangChungFiles([]); }}
-        title={`Upload bằng chứng - ${donHang.maDonHang}`}
+        onClose={closeUploadModal}
+        title={`Tải lên bằng chứng - ${donHang.maDonHang}`}
         footer={
           <>
-            <button className="btn btn-cancel" onClick={() => { setBangChungUploadModalOpen(false); setBangChungFiles([]); }}>
+            <button className="btn btn-cancel" onClick={closeUploadModal}>
               Hủy
             </button>
             <button
@@ -2243,51 +2285,97 @@ export default function ChiTietDonHangPage() {
           </>
         }
       >
-        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 16 }}>
-          Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .jpeg, .png</strong>
+        <p className={styles.bangChungHint}>
+          Hỗ trợ: <strong>.doc, .docx, .pdf, .jpg, .jpeg, .png</strong> (có thể
+          chọn nhiều file)
         </p>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Chọn file (có thể chọn nhiều file)</label>
+        <div
+          className={`${styles.bangChungDropzone} ${bangChungDragActive ? styles.bangChungDropzoneActive : ""}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setBangChungDragActive(true);
+          }}
+          onDragLeave={() => setBangChungDragActive(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setBangChungDragActive(false);
+            const files = Array.from(e.dataTransfer.files || []);
+            if (files.length > 0) {
+              setBangChungFiles((prev) => [...prev, ...files]);
+            }
+          }}
+        >
+          <div className={styles.bangChungDropzoneIcon}>
+            <FiUpload size={26} />
+          </div>
+          <div className={styles.bangChungDropzoneTitle}>
+            Kéo thả file vào đây hoặc bấm để chọn
+          </div>
+          <div className={styles.bangChungDropzoneHint}>
+            Hỗ trợ ảnh, PDF, Word — chọn được nhiều file cùng lúc
+          </div>
           <input
             type="file"
-            className={styles.formInput}
-            accept=".doc,.docx,.pdf,.jpg,.jpeg,.png"
+            accept=".doc,.docx,.pdf,.jpg,.jpeg,.png,image/*"
             multiple
             onChange={(e) => {
               const files = Array.from(e.target.files || []);
-              setBangChungFiles((prev) => [...prev, ...files]);
+              if (files.length > 0) {
+                setBangChungFiles((prev) => [...prev, ...files]);
+              }
+              e.target.value = "";
             }}
           />
         </div>
+
         {bangChungFiles.length > 0 && (
-          <div className={styles.uploadFileList}>
-            <div className={styles.uploadFileListHeader}>
+          <>
+            <div className={styles.bangChungFileHeader}>
               <span>Đã chọn {bangChungFiles.length} file</span>
-              <button className={styles.clearAllBtn} onClick={() => setBangChungFiles([])}>
+              <button className={styles.bangChungClearAll} onClick={() => setBangChungFiles([])}>
                 <FiX size={12} /> Xóa tất cả
               </button>
             </div>
-            {bangChungFiles.map((file, idx) => {
-              const isImage = file.type.startsWith("image/");
-              return (
-                <div key={idx} className={styles.uploadFileItem}>
-                  <div className={styles.uploadFileIcon}>
-                    {isImage ? <FiImage size={16} /> : <FiFile size={16} />}
+            <div className={styles.bangChungFileGrid}>
+              {bangChungFiles.map((file, idx) => {
+                const isImage = file.type.startsWith("image/");
+                const preview = bangChungFilePreviews[idx];
+                const ext = (file.name.split(".").pop() || "FILE").toUpperCase().slice(0, 4);
+                return (
+                  <div key={`${file.name}-${idx}`} className={styles.bangChungFileCard}>
+                    <button
+                      className={styles.bangChungFileRemove}
+                      onClick={() =>
+                        setBangChungFiles((prev) => prev.filter((_, i) => i !== idx))
+                      }
+                      title="Xóa file"
+                      type="button"
+                    >
+                      <FiX size={14} />
+                    </button>
+                    {isImage && preview ? (
+                      <img
+                        src={preview}
+                        alt={file.name}
+                        className={styles.bangChungFileThumb}
+                      />
+                    ) : (
+                      <div className={styles.bangChungFileIcon}>
+                        <FiFile size={28} />
+                        <span className={styles.bangChungFileIconLabel}>{ext}</span>
+                      </div>
+                    )}
+                    <div className={styles.bangChungFileInfo}>
+                      <span className={styles.bangChungFileName}>{file.name}</span>
+                      <span className={styles.bangChungFileSize}>
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </span>
+                    </div>
                   </div>
-                  <div className={styles.uploadFileInfo}>
-                    <span className={styles.uploadFileName}>{file.name}</span>
-                    <span className={styles.uploadFileSize}>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                  </div>
-                  <button
-                    className={styles.removeFileBtn}
-                    onClick={() => setBangChungFiles((prev) => prev.filter((_, i) => i !== idx))}
-                  >
-                    <FiX size={14} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </Modal>
 
@@ -2335,30 +2423,38 @@ export default function ChiTietDonHangPage() {
           </>
         }
       >
-        <div style={{ textAlign: "center" }}>
+        <div className={styles.bangChungCameraWrap}>
           {!capturedImage ? (
             <>
-              <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 12 }}>
-                Hướng camera về phía công trình và bấm <strong>Chụp ảnh</strong>
+              <p className={styles.bangChungCameraHelp}>
+                Hướng camera về phía công trình và bấm nút <strong>Chụp ảnh</strong> bên dưới
               </p>
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
-                style={{ width: "100%", maxWidth: 400, borderRadius: 12, background: "#000", display: "block", margin: "0 auto" }}
+                className={styles.bangChungCameraVideo}
               />
-              <canvas ref={canvasRef} style={{ display: "none" }} />
+              <canvas ref={canvasRef} className={styles.bangChungCameraCanvas} />
+              <button
+                type="button"
+                className={styles.bangChungCameraShutter}
+                onClick={handleCaptureBangChung}
+                title="Chụp ảnh"
+              >
+                <FiCamera size={28} />
+              </button>
             </>
           ) : (
             <>
-              <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 12 }}>
+              <p className={styles.bangChungCameraHelp}>
                 Ảnh đã chụp. Bấm <strong>Chụp lại</strong> để chụp lại hoặc <strong>Lưu ảnh</strong> để xác nhận.
               </p>
               <img
                 src={capturedImage}
                 alt="Ảnh bằng chứng"
-                style={{ width: "100%", maxWidth: 400, borderRadius: 12, border: "2px solid var(--color-success)", display: "block", margin: "0 auto" }}
+                className={styles.bangChungCameraPreview}
               />
             </>
           )}

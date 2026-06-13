@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSave, FiCalendar, FiArrowLeft, FiPlus, FiExternalLink } from 'react-icons/fi';
+import { FiSave, FiCalendar, FiArrowLeft, FiPlus, FiExternalLink, FiCheckCircle, FiCreditCard, FiClock, FiAlertCircle } from 'react-icons/fi';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
@@ -53,11 +53,46 @@ const EMPTY_FORM = {
 };
 
 const PHUONG_THUC_THANH_TOAN_OPTIONS: { value: 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du'; label: string }[] = [
-  { value: 'tra_het', label: 'Trả hết' },
-  { value: 'tra_het_du', label: 'Trả hết dư' },
-  { value: 'cong_no', label: 'Công nợ' },
-  { value: 'cong_no_du', label: 'Công nợ dư' },
+  { value: 'tra_het', label: 'Trả hết - Thanh toán đầy đủ và xuất hóa đơn' },
+  { value: 'tra_het_du', label: 'Trả hết dư - Thanh toán đầy đủ và ghi nhận tiền dư của khách' },
+  { value: 'cong_no', label: 'Công nợ - Thanh toán trước một phần và ghi nợ' },
+  { value: 'cong_no_du', label: 'Công nợ dư - Thanh toán phần còn lại và có thể phát sinh dư' },
 ];
+
+// Metadata cho từng phương thức thanh toán (icon, màu, tiêu đề rút gọn, mô tả ngắn)
+const PTTT_META: Record<
+  'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du',
+  { icon: React.ReactNode; color: string; bg: string; title: string; desc: string }
+> = {
+  tra_het: {
+    icon: <FiCheckCircle size={22} />,
+    color: '#16a34a',
+    bg: 'rgba(22, 163, 74, 0.10)',
+    title: 'Trả hết',
+    desc: 'Thanh toán đầy đủ và xuất hóa đơn',
+  },
+  tra_het_du: {
+    icon: <FiCreditCard size={22} />,
+    color: '#0284c7',
+    bg: 'rgba(2, 132, 199, 0.10)',
+    title: 'Trả hết dư',
+    desc: 'Thanh toán đầy đủ và ghi nhận tiền dư của khách',
+  },
+  cong_no: {
+    icon: <FiClock size={22} />,
+    color: '#d97706',
+    bg: 'rgba(217, 119, 6, 0.10)',
+    title: 'Công nợ',
+    desc: 'Thanh toán trước một phần và ghi nợ phần còn lại',
+  },
+  cong_no_du: {
+    icon: <FiAlertCircle size={22} />,
+    color: '#dc2626',
+    bg: 'rgba(220, 38, 38, 0.10)',
+    title: 'Công nợ dư',
+    desc: 'Thanh toán phần còn lại và có thể phát sinh dư',
+  },
+};
 
 export default function TaoDonHangPage() {
   const navigate = useNavigate();
@@ -784,20 +819,50 @@ export default function TaoDonHangPage() {
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Phương thức thanh toán</label>
-              <select
-                className={styles.formInput}
-                value={form.phuongThucThanhToan}
-                onChange={(e) => setForm({
-                  ...form,
-                  phuongThucThanhToan: e.target.value as typeof form.phuongThucThanhToan,
-                })}
+              <div
+                className={styles.ptttGrid}
+                role="radiogroup"
+                aria-label="Phương thức thanh toán"
               >
-                {PHUONG_THUC_THANH_TOAN_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                {PHUONG_THUC_THANH_TOAN_OPTIONS.map((opt) => {
+                  const isActive = form.phuongThucThanhToan === opt.value;
+                  const meta = PTTT_META[opt.value];
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={isActive}
+                      className={`${styles.ptttOption} ${isActive ? styles.ptttOptionActive : ""}`}
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          phuongThucThanhToan: opt.value,
+                        })
+                      }
+                    >
+                      <div
+                        className={styles.ptttOptionIcon}
+                        style={{
+                          background: meta.bg,
+                          color: meta.color,
+                        }}
+                      >
+                        {meta.icon}
+                      </div>
+                      <div className={styles.ptttOptionContent}>
+                        <div className={styles.ptttOptionTitle}>{meta.title}</div>
+                        <div className={styles.ptttOptionDesc}>{meta.desc}</div>
+                      </div>
+                      <div
+                        className={`${styles.ptttOptionRadio} ${isActive ? styles.ptttOptionRadioActive : ""}`}
+                      >
+                        {isActive && <span className={styles.ptttOptionRadioDot} />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
           <div className={styles.formGroup}>

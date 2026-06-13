@@ -18,8 +18,14 @@ import {
   layLichSanXuat,
   layHoaDonTheoDonHang,
   taoHoaDon,
+  layDanhSachMacBeTong,
 } from "../../../shared/services/api";
-import { DonHang, HoaDon, LichSanXuat } from "../../../shared/types";
+import {
+  DonHang,
+  HoaDon,
+  LichSanXuat,
+  MacBeTong,
+} from "../../../shared/types";
 import styles from "./XuatHoaDonPage.module.css";
 
 type HinhThucThanhToan = "tra_het" | "cong_no";
@@ -66,7 +72,23 @@ export default function XuatHoaDonPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
+  const [macBeTongs, setMacBeTongs] = useState<MacBeTong[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Tra cứu đơn giá catalog của mác bê tông; ưu tiên theo idMacBeTong, sau đó tên
+  const getDonGiaMacCatalog = (): number | null => {
+    if (!donHang) return null;
+    if (donHang.idMacBeTong) {
+      const found = macBeTongs.find((m) => m.id === donHang.idMacBeTong);
+      if (found) return found.donGia;
+    }
+    if (donHang.tenMacBeTong) {
+      const found = macBeTongs.find((m) => m.tenMac === donHang.tenMacBeTong);
+      if (found) return found.donGia;
+    }
+    if (donHang.donGia && donHang.donGia > 0) return donHang.donGia;
+    return null;
+  };
   const [submitting, setSubmitting] = useState(false);
   const [hinhThuc, setHinhThuc] = useState<HinhThucThanhToan>("tra_het");
   const [donHang, setDonHang] = useState<DonHang | null>(null);
@@ -139,16 +161,18 @@ export default function XuatHoaDonPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const [dh, lsArr, existingHDs] = await Promise.all([
+      const [dh, lsArr, existingHDs, macList] = await Promise.all([
         layDonHang(parseInt(id, 10)),
         layLichSanXuat(parseInt(id, 10)).catch(() => []),
         layHoaDonTheoDonHang(parseInt(id, 10)).catch(() => []),
+        layDanhSachMacBeTong().catch(() => []),
       ]);
 
       setDonHang(dh);
       const lichArr: LichSanXuat[] = Array.isArray(lsArr) ? lsArr : (lsArr ? [lsArr] : []);
       setLichSXs(lichArr);
       setAllHoaDons(Array.isArray(existingHDs) ? existingHDs : []);
+      setMacBeTongs(Array.isArray(macList) ? macList : []);
 
       // Pre-fill thông tin cơ bản
       setKhachHang(dh.tenKhachHang || "");
@@ -347,7 +371,17 @@ export default function XuatHoaDonPage() {
             </div>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Mác bê tông</span>
-              <span className={styles.orderInfoValue}>{donHang.tenMacBeTong || "—"}</span>
+              <span className={styles.orderInfoValue}>
+                {donHang.tenMacBeTong || "—"}
+                {(() => {
+                  const gia = getDonGiaMacCatalog();
+                  return gia != null ? (
+                    <span className={styles.orderInfoValueSub}>
+                      {" "}— {formatCurrency(gia)}/m³
+                    </span>
+                  ) : null;
+                })()}
+              </span>
             </div>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Khối lượng đặt</span>
@@ -355,7 +389,21 @@ export default function XuatHoaDonPage() {
             </div>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Đơn giá</span>
-              <span className={styles.orderInfoValue}>{formatCurrency(donHang.donGia)}</span>
+              <span className={styles.orderInfoValue}>
+                {formatCurrency(donHang.donGia)}
+                {(() => {
+                  const gia = getDonGiaMacCatalog();
+                  if (gia == null || gia === donHang.donGia) return null;
+                  return (
+                    <span
+                      className={styles.orderInfoValueSub}
+                      title="Đơn giá hiện tại trong bảng mác bê tông"
+                    >
+                      {" "}(catalog: {formatCurrency(gia)}/m³)
+                    </span>
+                  );
+                })()}
+              </span>
             </div>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Thành tiền</span>

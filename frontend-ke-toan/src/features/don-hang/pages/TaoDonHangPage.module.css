@@ -63,6 +63,117 @@
 
 .formGroup { margin-bottom: 16px; }
 .formLabel { display: block; font-size: 13px; font-weight: 600; color: var(--color-text); margin-bottom: 6px; }
+
+/* ── Phương thức thanh toán (segmented card grid) ── */
+.ptttGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.ptttOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--color-white);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+  transition: all 0.18s ease;
+  box-sizing: border-box;
+  min-height: 60px;
+}
+
+.ptttOption:hover {
+  border-color: var(--color-primary);
+  background: var(--color-accent);
+}
+
+.ptttOption:active {
+  transform: scale(0.99);
+}
+
+.ptttOptionActive {
+  border-color: var(--color-primary);
+  background: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.12);
+}
+
+.ptttOptionIcon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ptttOptionContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ptttOptionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.ptttOptionDesc {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ptttOptionRadio {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-white);
+  transition: all 0.18s ease;
+}
+
+.ptttOptionRadioActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.ptttOptionRadioDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-white);
+}
+
+@media (min-width: 640px) {
+  .ptttGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
 .formInput { width: 100%; padding: 9px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 14px; font-family: inherit; color: var(--color-text); background: var(--color-white); transition: border-color 0.2s ease; box-sizing: border-box; }
 .formInput:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.1); }
 .formSelect { width: 100%; padding: 9px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 14px; font-family: inherit; color: var(--color-text); background: var(--color-white); transition: border-color 0.2s ease; box-sizing: border-box; cursor: pointer; }

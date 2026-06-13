@@ -12,6 +12,7 @@ import {
   layNghiemThu,
   layLichSanXuat,
   layHoaDonTheoDonHang,
+  layDanhSachMacBeTong,
 } from "../../../shared/services/api";
 import styles from "./InHoaDonPage.module.css";
 
@@ -179,9 +180,21 @@ export default function InHoaDonPage() {
   const [allHoaDons, setAllHoaDons] = useState<HoaDonData[]>([]);
   const [nghiemThu, setNghiemThu] = useState<NghiemThuData | null>(null);
   const [lichSX, setLichSX] = useState<LichSanXuatItem[]>([]);
+  const [macBeTongs, setMacBeTongs] = useState<{ id: number; tenMac: string; donGia: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadLoading, setDownloadLoading] = useState(false);
+
+  // Tra cứu đơn giá catalog của mác bê tông; ưu tiên theo tên, fallback về đơn giá trên hóa đơn
+  const donGiaMacCatalog = (): number | null => {
+    if (!hoaDon) return null;
+    if (hoaDon.tenMacBeTong) {
+      const found = macBeTongs.find((m) => m.tenMac === hoaDon.tenMacBeTong);
+      if (found) return found.donGia;
+    }
+    if (hoaDon.donGia && hoaDon.donGia > 0) return hoaDon.donGia;
+    return null;
+  };
 
   /* In bằng react-to-print */
   const handlePrint = useReactToPrint({
@@ -255,16 +268,18 @@ export default function InHoaDonPage() {
         return;
       }
 
-      const [nt, lsArr, hdArr] = await Promise.all([
+      const [nt, lsArr, hdArr, macList] = await Promise.all([
         layNghiemThu(hd.idDonHang).catch(() => null),
         layLichSanXuat(hd.idDonHang).catch(() => null),
         layHoaDonTheoDonHang(hd.idDonHang).catch(() => []),
+        layDanhSachMacBeTong().catch(() => []),
       ]);
 
       setHoaDon(hd);
       setAllHoaDons(Array.isArray(hdArr) ? hdArr : []);
       setNghiemThu(nt || null);
       setLichSX(Array.isArray(lsArr) ? lsArr : []);
+      setMacBeTongs(Array.isArray(macList) ? macList : []);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Không tải được thông tin hóa đơn",
@@ -474,6 +489,11 @@ export default function InHoaDonPage() {
                   <span className={styles.infoLabel}>Mác bê tông:</span>
                   <span className={styles.infoValue}>
                     {hd.tenMacBeTong || "—"}
+                    {donGiaMacCatalog() != null && (
+                      <span className={styles.infoValueSub}>
+                        {" "}— {formatCurrency(donGiaMacCatalog() as number)}/m³
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div className={styles.infoRow}>
