@@ -380,7 +380,8 @@ export async function layLichSanXuat(
 }
 
 export async function layTatCaLichSanXuat(): Promise<LichSanXuat[]> {
-  return request<LichSanXuat[]>("/dieu-phoi");
+  const res = await request<{ data: LichSanXuat[]; pagination: any }>("/dieu-phoi?page=1&limit=500");
+  return (res?.data as LichSanXuat[]) ?? [];
 }
 
 export async function layDonHangTheoXe(idXe: number): Promise<any[]> {
@@ -1072,7 +1073,7 @@ export async function layLichSanXuatKho(): Promise<any[]> {
 }
 
 // Trạm trộn - với pagination
-export async function layLichSanXuatTramTron(page = 1, limit = 100): Promise<any[]> {
+export async function layLichSanXuatTramTron(page = 1, limit = 500): Promise<any[]> {
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
@@ -1082,7 +1083,8 @@ export async function layLichSanXuatTramTron(page = 1, limit = 100): Promise<any
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message);
-  return json.data || [];
+  // Backend trả về {data, pagination} - cần lấy json.data.data
+  return (json.data && Array.isArray(json.data)) ? json.data : (json.data?.data ?? []);
 }
 
 // Lấy chi tiết đơn hàng cho tram_tron (kèm lịch sx)
