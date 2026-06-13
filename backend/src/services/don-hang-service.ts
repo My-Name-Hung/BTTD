@@ -472,7 +472,11 @@ export async function tuChoiDonHang(
     )
   )[0];
 
-  guiThongBao("ORDER_REJECTED", { id, maDonHang: donHang.maDonHang, lyDo });
+  // Gửi thông báo đúng loại dựa trên bước từ chối
+  const notificationType = donHang.buocTuChoi === 1
+    ? "ORDER_REJECTED_BY_GDKD"
+    : "ORDER_REJECTED";
+  guiThongBao(notificationType as any, { id, maDonHang: donHang.maDonHang, lyDo });
 
   return donHang;
 }

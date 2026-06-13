@@ -26,6 +26,7 @@ export type NotificationType =
   | 'ORDER_APPROVED'
   | 'ORDER_APPROVED_BY_GDKD'
   | 'ORDER_REJECTED'
+  | 'ORDER_REJECTED_BY_GDKD'
   | 'PAYMENT_RECEIVED'
   | 'SCHEDULE_UPDATED'
   | 'ORDER_COMPLETED'
@@ -58,6 +59,10 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, (data: Record<strin
   ORDER_REJECTED: (d) => ({
     tieuDe: 'Đơn hàng bị từ chối',
     noiDung: `Đơn hàng ${d.maDonHang || ''} đã bị kế toán từ chối. Lý do: ${d.lyDo || 'Không có'}`
+  }),
+  ORDER_REJECTED_BY_GDKD: (d) => ({
+    tieuDe: 'Đơn hàng bị từ chối',
+    noiDung: `Đơn hàng ${d.maDonHang || ''} đã bị giám đốc kinh doanh từ chối. Lý do: ${d.lyDo || 'Không có'}`
   }),
   PAYMENT_RECEIVED: (d) => ({
     tieuDe: 'Khách hàng đã thanh toán',
