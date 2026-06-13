@@ -307,7 +307,6 @@ export default function TaoLichSanXuatPage() {
       setInitialSelectedTramIds(newSelectedTramIds);
       setExistingLichMap(newLichMap);
       setInitialForm(form);
-      showToast(`Lưu thành công ${newSelectedTramIds.length} trạm trộn!`);
       setTimeout(() => {
         navigate('/dieu-phoi/lich-san-xuat', { state: { refresh: Date.now() } });
       }, 300);
@@ -443,6 +442,7 @@ export default function TaoLichSanXuatPage() {
                     type="checkbox"
                     checked={selectedTramIds.includes(tram.id)}
                     onChange={() => handleMultiTramToggle(tram.id)}
+                    disabled={submitting}
                     className={styles.checkboxInput}
                   />
                   <span className={styles.checkboxCustom} />
