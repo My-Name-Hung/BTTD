@@ -113,6 +113,27 @@ export default function KhoXacNhanSanXuatPage() {
         }));
       setLichTramTrons(tramLichs);
 
+      // Tính tổng đã trộn từ các lịch (chỉ tính các lịch có giá trị)
+      const tongDaTron = tramLichs.reduce(
+        (sum, l) => sum + (l.khoiLuongDaTron || 0),
+        0,
+      );
+      const klDat = dh?.khoiLuongDat || 0;
+      const conLai = Math.max(0, klDat - tongDaTron);
+
+      // Auto-fill số khối đã trộn:
+      // - 1 lịch: nếu lịch đó chưa có khoiLuongDaTron -> auto-fill = còn lại (trường hợp phổ biến: trộn hết)
+      //   nếu lịch đó đã có -> dùng lại giá trị cũ
+      // - Nhiều lịch: chưa chọn trạm -> KHÔNG auto-fill (chờ user chọn)
+      if (tramLichs.length === 1) {
+        const lichDuyNhat = tramLichs[0];
+        if (lichDuyNhat.khoiLuongDaTron != null) {
+          setKhoiLuongDaTron(String(lichDuyNhat.khoiLuongDaTron));
+        } else if (conLai > 0) {
+          setKhoiLuongDaTron(String(conLai));
+        }
+      }
+
       // Auto-fill từ lịch sản xuất đầu tiên
       if (Array.isArray(lichs) && lichs.length > 0) {
         const firstLich = lichs[0];
@@ -148,22 +169,27 @@ export default function KhoXacNhanSanXuatPage() {
     setTenTaiXeHienThi(xe?.tenTaiXe || "");
   };
 
-  // Khi chọn trạm cụ thể: tự động điền khối lượng đã trộn hiện tại của trạm đó (nếu có)
-  // và reset về rỗng để user nhập số khối trộn thêm cho lần này
-  const handleLichChange = (lichId: string) => {
-    setIdLichSanXuat(lichId);
-    setKhoiLuongDaTron("");
-  };
-
-  // Tính tổng khối lượng đã trộn từ tất cả các lịch trạm (loại trừ lịch đang chọn nếu đã có giá trị)
+  // Tính tổng khối lượng đã trộn từ tất cả các lịch trạm
   const tongKhoiLuongDaTron = lichTramTrons.reduce((sum, l) => {
     return sum + (l.khoiLuongDaTron || 0);
   }, 0);
 
   // Tính số khối còn lại
   const khoiLuongBanDau = donHang?.khoiLuongDat || 0;
-  const khoiLuongDaTronSo = parseFloat(khoiLuongDaTron) || 0;
   const khoiLuongConLai = Math.max(0, khoiLuongBanDau - tongKhoiLuongDaTron);
+
+  // Khi chọn trạm cụ thể:
+  // - Nếu lịch đã có khoiLuongDaTron -> auto-fill lại giá trị đó
+  // - Nếu lịch chưa có -> auto-fill bằng phần còn lại (khoiLuongConLai) để user chỉ cần confirm nếu muốn ghi nhận toàn bộ
+  const handleLichChange = (lichId: string) => {
+    setIdLichSanXuat(lichId);
+    const lich = lichTramTrons.find((l) => l.id === parseInt(lichId));
+    if (lich?.khoiLuongDaTron != null) {
+      setKhoiLuongDaTron(String(lich.khoiLuongDaTron));
+    } else {
+      setKhoiLuongDaTron(String(khoiLuongConLai > 0 ? khoiLuongConLai : ""));
+    }
+  };
 
   // Có nhiều lịch trạm trong đơn (admin/dieu_phoi thấy nhiều lịch, tram_tron chỉ thấy 1)
   const soTram = lichTramTrons.length;
@@ -333,6 +359,9 @@ export default function KhoXacNhanSanXuatPage() {
                 <strong style={{ color: khoiLuongConLai > 0 ? "#f59e0b" : "#10b981" }}>
                   {khoiLuongConLai} m³
                 </strong>
+                {khoiLuongDaTron && (
+                  <> · Số khối ghi nhận lần này: <strong style={{ color: "#073ceb" }}>{khoiLuongDaTron} m³</strong></>
+                )}
               </span>
             </div>
           </div>
