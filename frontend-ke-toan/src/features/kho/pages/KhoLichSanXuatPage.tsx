@@ -713,28 +713,59 @@ export default function KhoLichSanXuatPage() {
                       </td>
                       <td>
                         <div className={styles.rowActions}>
-                          {/* Xác nhận sản xuất xong - hiển thị khi đơn còn dư khối lượng và user có quyền (admin/tram_tron/dieu_phoi) */}
-                          {khoiLuongConLai > 0 && (isAdmin || isTramTron) && (
-                            <button
-                              className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
-                              onClick={() => handleNavigateXacNhanSanXuat(item)}
-                              title="Xác nhận sản xuất xong"
-                            >
-                              <FiCheck size={14} />
-                              SX xong
-                            </button>
-                          )}
-                          {/* Nút Tiếp tục - hiển thị khi đơn còn dư khối lượng, click để thêm trạm trộn mới */}
-                          {khoiLuongConLai > 0 && (
-                            <button
-                              className={`${styles.actionBtn} ${styles.actionBtnWarning}`}
-                              onClick={() => handleNavigateTiepTuc(item)}
-                              title="Tiếp tục - thêm trạm trộn để trộn nốt phần còn lại"
-                            >
-                              <FiTruck size={14} />
-                              Tiếp tục
-                            </button>
-                          )}
+                          {(() => {
+                            // Xác định số trạm trong đơn
+                            const soTram = item.tramTrons.length;
+                            const isMotTram = soTram <= 1;
+
+                            // Nếu chưa trộn gì (khoiLuongDaTron = 0): luôn hiển thị nút "SX xong"
+                            // (bất kể 1 trạm hay nhiều trạm - đây là lần xác nhận đầu tiên)
+                            if (khoiLuongDaTron === 0) {
+                              if (isAdmin || isTramTron) {
+                                return (
+                                  <button
+                                    className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
+                                    onClick={() => handleNavigateXacNhanSanXuat(item)}
+                                    title="Xác nhận sản xuất xong"
+                                  >
+                                    <FiCheck size={14} />
+                                    SX xong
+                                  </button>
+                                );
+                              }
+                              return null;
+                            }
+
+                            // Đã trộn 1 phần (khoiLuongDaTron > 0) và còn dư (khoiLuongConLai > 0):
+                            // - Đơn chỉ có 1 trạm: nút "Tiếp tục" → chọn thêm trạm mới
+                            // - Đơn có 2+ trạm: nút "Tiếp tục" thay thế nút "SX xong" (xác nhận trộn xong cho trạm chưa hoàn thành)
+                            if (isMotTram) {
+                              // Đơn 1 trạm: nút "Tiếp tục" cho phép thêm trạm trộn khác
+                              return (
+                                <button
+                                  className={`${styles.actionBtn} ${styles.actionBtnWarning}`}
+                                  onClick={() => handleNavigateTiepTuc(item)}
+                                  title="Thêm trạm trộn để trộn nốt phần còn lại"
+                                >
+                                  <FiTruck size={14} />
+                                  Tiếp tục
+                                </button>
+                              );
+                            }
+
+                            // Đơn nhiều trạm: ẩn nút "SX xong", chỉ hiển thị nút "Tiếp tục"
+                            // với chức năng xác nhận SX xong (giống nút "SX xong")
+                            return (
+                              <button
+                                className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
+                                onClick={() => handleNavigateXacNhanSanXuat(item)}
+                                title="Xác nhận sản xuất xong"
+                              >
+                                <FiCheck size={14} />
+                                Tiếp tục
+                              </button>
+                            );
+                          })()}
                           {/* Đang giao */}
                           {trangThai === "dang_giao" && (
                             <span

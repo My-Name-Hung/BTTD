@@ -377,6 +377,55 @@ async function initDatabase(): Promise<void> {
         dhCols.recordset.map((c) => c.COLUMN_NAME).join(", "),
       );
 
+      // Phát hiện cột trùng tên (do lỗi migration cũ) bằng sys.columns
+      // sys.columns trả về cả những cột mà INFORMATION_SCHEMA có thể ẩn
+      const duplicateCols = await db.query<{ name: string; cnt: number }[]>(
+        `SELECT name, COUNT(*) as cnt
+         FROM sys.columns
+         WHERE object_id = OBJECT_ID('DonHang')
+         GROUP BY name
+         HAVING COUNT(*) > 1`,
+      );
+      if (duplicateCols.recordset.length > 0) {
+        console.log(
+          "  ⚠ Phát hiện cột trùng tên trong DonHang:",
+          duplicateCols.recordset.map((c) => `${c.name} (x${c.cnt})`).join(", "),
+        );
+        for (const dup of duplicateCols.recordset) {
+          // Lấy danh sách tất cả cột trùng, giữ lại 1 cái đầu tiên (id nhỏ nhất), xóa các cái còn lại
+          // Validate tên cột chỉ chứa ký tự an toàn để tránh SQL injection khi nhúng vào template
+          const safeColName = dup.name.replace(/[^a-zA-Z0-9_]/g, "");
+          if (!safeColName || safeColName !== dup.name) {
+            console.log(`  ⚠ Bỏ qua cột có tên không hợp lệ: ${dup.name}`);
+            continue;
+          }
+          const dups = await db.query<{ column_id: number; name: string }[]>(
+            `SELECT column_id, name FROM sys.columns
+             WHERE object_id = OBJECT_ID('DonHang') AND name = '${safeColName}'
+             ORDER BY column_id`,
+          );
+          // Xóa tất cả trừ cột đầu tiên (giữ lại bản gốc)
+          for (let i = 1; i < dups.recordset.length; i++) {
+            const dropColName = dups.recordset[i].name;
+            try {
+              // Dùng dynamic SQL với tên cột escape
+              const escapedName = dropColName.replace(/]/g, "]]");
+              await db.query(
+                `ALTER TABLE DonHang DROP COLUMN [${escapedName}]`,
+              );
+              console.log(
+                `  🗑 Đã xóa cột trùng: DonHang.${dropColName} (column_id=${dups.recordset[i].column_id})`,
+              );
+            } catch (dropErr) {
+              console.log(
+                `  ⚠ Không thể xóa cột trùng ${dropColName}:`,
+                dropErr,
+              );
+            }
+          }
+        }
+      }
+
       // Migration: fix column name if wrong (l -> I)
       const hasNguoiTaold = dhCols.recordset.some(
         (c) => c.COLUMN_NAME === "nguoiTaold",
@@ -393,62 +442,79 @@ async function initDatabase(): Promise<void> {
       }
 
       // Migration: thêm cột chiPhiPhatSinh và buVanChuyen nếu chưa có
-      const colNamesDh = dhCols.recordset.map((c) =>
-        c.COLUMN_NAME.toLowerCase(),
+      // Dùng sys.columns (đáng tin cậy hơn INFORMATION_SCHEMA) để check cột đã tồn tại chưa
+      const sysColsDh = await db.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('DonHang')`,
       );
-      if (!colNamesDh.includes("chiphiphatsinh")) {
-        await db.query(
-          `ALTER TABLE DonHang ADD chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0`,
-        );
-        console.log("  ➕ Thêm cột chiPhiPhatSinh vào DonHang");
-      }
-      if (!colNamesDh.includes("buvanchuyen")) {
-        await db.query(
-          `ALTER TABLE DonHang ADD buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0`,
-        );
-        console.log("  ➕ Thêm cột buVanChuyen vào DonHang");
-      }
-      // Migration: thêm cột hạng mục và phương pháp đổ
-      if (!colNamesDh.includes("hangmuc")) {
-        await db.query(`ALTER TABLE DonHang ADD hangMuc NVARCHAR(500)`);
-        console.log("  ➕ Thêm cột hangMuc vào DonHang");
-      }
-      if (!colNamesDh.includes("phuongphapdo")) {
-        await db.query(`ALTER TABLE DonHang ADD phuongPhapDo NVARCHAR(50)`);
-        console.log("  ➕ Thêm cột phuongPhapDo vào DonHang");
-      }
-      if (!colNamesDh.includes("loaibom")) {
-        await db.query(`ALTER TABLE DonHang ADD loaiBom NVARCHAR(50)`);
-        console.log("  ➕ Thêm cột loaiBom vào DonHang");
-      }
-      if (!colNamesDh.includes("chieudaibom")) {
-        await db.query(`ALTER TABLE DonHang ADD chieuDaiBom DECIMAL(10,2)`);
-        console.log("  ➕ Thêm cột chieuDaiBom vào DonHang");
-      }
-      if (!colNamesDh.includes("kieunoi")) {
-        await db.query(`ALTER TABLE DonHang ADD kieuNoi NVARCHAR(50)`);
-        console.log("  ➕ Thêm cột kieuNoi vào DonHang");
-      }
-      if (!colNamesDh.includes("chieudainoi")) {
-        await db.query(`ALTER TABLE DonHang ADD chieuDaiNoi DECIMAL(10,2)`);
-        console.log("  ➕ Thêm cột chieuDaiNoi vào DonHang");
-      }
-      if (!colNamesDh.includes("nguoinhanhang")) {
-        await db.query(`ALTER TABLE DonHang ADD nguoiNhanHang NVARCHAR(200)`);
-        console.log("  ➕ Thêm cột nguoiNhanHang vào DonHang");
-      }
-      if (!colNamesDh.includes("giatientamtinh")) {
-        await db.query(`ALTER TABLE DonHang ADD giaTienTamTinh DECIMAL(18,2)`);
-        console.log("  ➕ Thêm cột giaTienTamTinh vào DonHang");
-      }
-      if (!colNamesDh.includes("nguuituchoiid")) {
-        await db.query(`ALTER TABLE DonHang ADD nguoiTuChoiId INT`);
-        console.log("  ➕ Thêm cột nguoiTuChoiId vào DonHang");
-      }
-      if (!colNamesDh.includes("buoctuchoi")) {
-        await db.query(`ALTER TABLE DonHang ADD buocTuChoi INT`);
-        console.log("  ➕ Thêm cột buocTuChoi vào DonHang");
-      }
+      const existingColsDh = new Set(
+        sysColsDh.recordset.map((c) => c.name.toLowerCase()),
+      );
+      // Giữ colNamesDh để tương thích với phần còn lại (nếu cần)
+      const colNamesDh = Array.from(existingColsDh);
+
+      // Helper: thêm cột nếu chưa tồn tại, an toàn (không crash nếu lỗi)
+      const safeAddColumn = async (
+        colName: string,
+        ddl: string,
+      ): Promise<void> => {
+        if (existingColsDh.has(colName.toLowerCase())) return;
+        try {
+          await db.query(ddl);
+          console.log(`  ➕ Thêm cột ${colName} vào DonHang`);
+          existingColsDh.add(colName.toLowerCase());
+        } catch (e) {
+          console.log(`  ⚠ Không thể thêm cột ${colName}:`, e);
+        }
+      };
+
+      await safeAddColumn(
+        "chiPhiPhatSinh",
+        `ALTER TABLE DonHang ADD chiPhiPhatSinh DECIMAL(18,2) NOT NULL DEFAULT 0`,
+      );
+      await safeAddColumn(
+        "buVanChuyen",
+        `ALTER TABLE DonHang ADD buVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0`,
+      );
+      await safeAddColumn(
+        "hangMuc",
+        `ALTER TABLE DonHang ADD hangMuc NVARCHAR(500)`,
+      );
+      await safeAddColumn(
+        "phuongPhapDo",
+        `ALTER TABLE DonHang ADD phuongPhapDo NVARCHAR(50)`,
+      );
+      await safeAddColumn(
+        "loaiBom",
+        `ALTER TABLE DonHang ADD loaiBom NVARCHAR(50)`,
+      );
+      await safeAddColumn(
+        "chieuDaiBom",
+        `ALTER TABLE DonHang ADD chieuDaiBom DECIMAL(10,2)`,
+      );
+      await safeAddColumn(
+        "kieuNoi",
+        `ALTER TABLE DonHang ADD kieuNoi NVARCHAR(50)`,
+      );
+      await safeAddColumn(
+        "chieuDaiNoi",
+        `ALTER TABLE DonHang ADD chieuDaiNoi DECIMAL(10,2)`,
+      );
+      await safeAddColumn(
+        "nguoiNhanHang",
+        `ALTER TABLE DonHang ADD nguoiNhanHang NVARCHAR(200)`,
+      );
+      await safeAddColumn(
+        "giaTienTamTinh",
+        `ALTER TABLE DonHang ADD giaTienTamTinh DECIMAL(18,2)`,
+      );
+      await safeAddColumn(
+        "nguoiTuChoiId",
+        `ALTER TABLE DonHang ADD nguoiTuChoiId INT`,
+      );
+      await safeAddColumn(
+        "buocTuChoi",
+        `ALTER TABLE DonHang ADD buocTuChoi INT`,
+      );
     }
 
     // Tạo bảng LichSanXuat
