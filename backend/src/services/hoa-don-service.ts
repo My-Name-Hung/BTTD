@@ -31,6 +31,7 @@ export interface HoaDon {
 interface TaoHoaDonInput {
   idDonHang: number;
   loaiThanhToan: 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du';
+  tienBeTong?: number;
   buuVanChuyen?: number;
   phiPhatSinh?: number;
   giamTru?: number;
@@ -55,7 +56,11 @@ interface HoaDonPhanBo {
 }
 
 function tinhTongNghiaVuDonHang(dh: DonHang, data: TaoHoaDonInput): number {
-  const tienBeTongGoc = (dh.khoiLuongDat || 0) * (dh.donGia || 0);
+  // Ưu tiên tiền bê tông do frontend gửi lên (từ XuatHoaDonPage)
+  // Fallback về khoiLuongDat * donGia nếu frontend không gửi
+  const tienBeTongGoc = data.tienBeTong != null
+    ? data.tienBeTong
+    : (dh.khoiLuongDat || 0) * (dh.donGia || 0);
   const buuVanChuyen = data.buuVanChuyen || 0;
   const phiPhatSinh = data.phiPhatSinh || 0;
   const giamTru = data.giamTru || 0;
@@ -148,7 +153,11 @@ export async function taoHoaDon(data: TaoHoaDonInput, nguoiTaoId: number): Promi
   const soHoaDon = `BBTD-${randomNum}-${dh.maDonHang}`;
   const maHoaDon = soHoaDon;
 
-  const tienBeTongGoc = (dh.khoiLuongDat || 0) * (dh.donGia || 0);
+  // Ưu tiên tiền bê tông do frontend gửi lên (từ XuatHoaDonPage)
+  // Fallback về khoiLuongDat * donGia nếu frontend không gửi
+  const tienBeTongGoc = data.tienBeTong != null
+    ? data.tienBeTong
+    : (dh.khoiLuongDat || 0) * (dh.donGia || 0);
   const buuVanChuyen = data.buuVanChuyen || 0;
   const phiPhatSinh = data.phiPhatSinh || 0;
   const giamTru = data.giamTru || 0;

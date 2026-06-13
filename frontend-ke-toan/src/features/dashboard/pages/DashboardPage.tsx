@@ -508,7 +508,7 @@ export default function DashboardPage() {
 
   // ── THANH TOÁN CHARTS ──
   const thanhToanBarData = {
-    labels: ["Hoàn thành", "Chưa thanh toán", "Công nợ"],
+    labels: ["Đã thanh toán", "Chưa thanh toán", "Công nợ"],
     datasets: [{
       data: [thanhToan.daThanhToan, thanhToan.chuaThanhToan, thanhToan.congNo].map(v => v / 1_000_000),
       backgroundColor: ["#10b981", "#f59e0b", "#ef4444"],
@@ -519,7 +519,7 @@ export default function DashboardPage() {
   };
 
   const thanhToanDonutData = {
-    labels: ["Hoàn thành", "Chưa thanh toán", "Công nợ"],
+    labels: ["Đã thanh toán", "Chưa thanh toán", "Công nợ"],
     datasets: [{
       data: [thanhToan.daThanhToan, thanhToan.chuaThanhToan, thanhToan.congNo].map(v => v / 1_000_000),
       backgroundColor: ["#10b981", "#f59e0b", "#ef4444"],
@@ -688,7 +688,7 @@ export default function DashboardPage() {
           <div className={styles.statsRow}>
             <div className={styles.statCard}>
               <FiCheckCircle size={18} color="#10b981" />
-              <span>Hoàn thành: <strong>{dashboard?.donDaHoanThanh || 0}</strong></span>
+              <span>Đã thanh toán: <strong>{dashboard?.donDaHoanThanh || 0}</strong></span>
             </div>
             <div className={styles.statCard}>
               <FiUsers size={18} color="#8b5cf6" />
@@ -734,7 +734,7 @@ export default function DashboardPage() {
             <div className={styles.chartCard}>
               <div className={styles.chartCardHeader}>
                 <h3 className={styles.chartCardTitle}>Sản lượng đơn hàng</h3>
-                <p className={styles.chartCardDesc}>Số đơn hàng hoàn thành</p>
+                <p className={styles.chartCardDesc}>Số đơn hàng đã thanh toán</p>
               </div>
               <div className={styles.chartArea}>
                 <Bar data={revenueBarData} options={createBarOpts("đơn")} />

@@ -1549,6 +1549,7 @@ export async function exportCongNo(): Promise<ExportCongNo[]> {
 export async function taoHoaDon(data: {
   idDonHang: number;
   loaiThanhToan: "tra_het" | "tra_het_du" | "cong_no" | "cong_no_du";
+  tienBeTong?: number;
   buuVanChuyen?: number;
   phiPhatSinh?: number;
   giamTru?: number;

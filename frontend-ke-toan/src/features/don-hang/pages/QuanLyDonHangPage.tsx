@@ -401,7 +401,7 @@ export default function QuanLyDonHangPage() {
               </div>
             </div>
             <div className={styles.kpiItem}>
-              <div className={styles.kpiLabel}>Hoàn thành</div>
+              <div className={styles.kpiLabel}>Đã thanh toán</div>
               <div
                 className={styles.kpiValue}
                 style={{ color: "var(--color-success)" }}

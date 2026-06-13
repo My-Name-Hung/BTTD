@@ -248,6 +248,9 @@ export default function XuatHoaDonPage() {
       const hoaDon = await taoHoaDon({
         idDonHang: donHang.id,
         loaiThanhToan: loaiTT,
+        // Gửi tiền bê tông đã hiển thị ở input "Tiền bê tông (đ)"
+        // (không để backend auto tính = khoiLuongDat * donGia)
+        tienBeTong: tienBeTong,
         buuVanChuyen: bvNum,
         phiPhatSinh: ppNum,
         giamTru: gtNum,
