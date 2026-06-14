@@ -55,7 +55,10 @@ interface GroupedLichSanXuat {
     idLichSanXuat: number;
     thoiGianTron?: string;
     trangThai?: string; // chua_san_xuat | dang_san_xuat | da_xong
+    trangThaiGiao?: string | null; // dang_giao | da_giao | tron_lai
     khoiLuongDaTron?: number; // Khối lượng trạm này đã trộn
+    khoiLuongGiaoThucTe?: number | null;
+    ngayXacNhanGiao?: string | null;
     bienSoXe?: string;
     tenTaiXe?: string;
   }[];
@@ -111,7 +114,7 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
       group.tongKhoiLuongDaTron += item.khoiLuongDaTron;
     }
 
-    // Thêm trạm trộn vào danh sách - mỗi dòng LichSanXuat là 1 trạm
+      // Thêm trạm trộn vào danh sách - mỗi dòng LichSanXuat là 1 trạm
     if (item.idTramTron && item.tenTram) {
       // Tránh trùng lặp trạm
       if (!group.tramTrons.find(t => t.id === item.idTramTron)) {
@@ -121,7 +124,10 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
           idLichSanXuat: item.id,
           thoiGianTron: item.thoiGianTron,
           trangThai: item.trangThai,
+          trangThaiGiao: (item as any).trangThaiGiao ?? null,
           khoiLuongDaTron: item.khoiLuongDaTron,
+          khoiLuongGiaoThucTe: (item as any).khoiLuongGiaoThucTe ?? null,
+          ngayXacNhanGiao: (item as any).ngayXacNhanGiao ?? null,
           bienSoXe: item.bienSoXe,
           tenTaiXe: item.tenTaiXe,
         });
@@ -595,7 +601,7 @@ export default function KhoLichSanXuatPage() {
                   <th>Ban đầu</th>
                   <th>Đã trộn</th>
                   <th>Còn lại</th>
-                  <th>Trạng thái</th>
+                  <th>Trạng thái trạm</th>
                   <th className={styles.hideOnMobile}>Trạm trộn</th>
                   <th className={styles.hideOnMobile}>Biển số xe</th>
                   <th className={styles.hideOnMobile}>Tài xế</th>
@@ -657,15 +663,55 @@ export default function KhoLichSanXuatPage() {
                         </span>
                       </td>
                       <td>
-                        <span
-                          className={styles.statusBadge}
-                          style={{
-                            background: statusBg(trangThai),
-                            color: statusColor(trangThai),
-                          }}
-                        >
-                          {TRANG_THAI_DON_LABELS[trangThai] || trangThai}
-                        </span>
+                        <div className={styles.tramTagsWrap}>
+                          {item.tramTrons.map((tram) => {
+                            const giao = tram.trangThaiGiao;
+                            const sx = tram.trangThai;
+                            // Ưu tiên hiển thị trạng thái giao nếu trạm đã giao,
+                            // ngược lại hiển thị trạng thái SX
+                            let bg = "rgba(100, 116, 139, 0.12)";
+                            let color = "#64748b";
+                            let label = "Chưa SX";
+                            if (giao === "da_giao") {
+                              bg = "rgba(76, 175, 80, 0.12)";
+                              color = "#4caf50";
+                              label = "Đã giao";
+                            } else if (giao === "dang_giao") {
+                              bg = "rgba(0, 150, 136, 0.12)";
+                              color = "#009688";
+                              label = "Đang giao";
+                            } else if (giao === "tron_lai") {
+                              bg = "rgba(234, 88, 12, 0.12)";
+                              color = "#ea580c";
+                              label = "Trộn lại";
+                            } else if (sx === "da_xong") {
+                              bg = "rgba(76, 175, 80, 0.12)";
+                              color = "#4caf50";
+                              label = "SX xong";
+                            } else if (sx === "dang_san_xuat") {
+                              bg = "rgba(103, 58, 183, 0.12)";
+                              color = "#673ab7";
+                              label = "Đang SX";
+                            }
+                            return (
+                              <span
+                                key={`tt-${tram.id}`}
+                                style={{
+                                  display: "inline-block",
+                                  padding: "2px 8px",
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  borderRadius: 10,
+                                  background: bg,
+                                  color,
+                                }}
+                                title={`${tram.tenTram} - ${label}`}
+                              >
+                                {label}
+                              </span>
+                            );
+                          })}
+                        </div>
                       </td>
                       <td className={styles.hideOnMobile}>
                         <div className={styles.tramTagsWrap}>

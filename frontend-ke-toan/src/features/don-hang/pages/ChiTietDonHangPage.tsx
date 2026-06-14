@@ -1154,12 +1154,59 @@ export default function ChiTietDonHangPage() {
 
         {lichSXsHienThi.length > 0 ? (
           <div className={styles.subTableWrap}>
-            {lichSXsHienThi.map((lichSX, idx) => (
+            {lichSXsHienThi.map((lichSX, idx) => {
+              const giao = lichSX.trangThaiGiao;
+              const sx = lichSX.trangThai;
+              // Map badge trạng thái giao theo từng trạm
+              const giaoBadge: { bg: string; color: string; label: string } =
+                giao === "da_giao"
+                  ? { bg: "rgba(76, 175, 80, 0.12)", color: "#4caf50", label: "Đã giao" }
+                  : giao === "dang_giao"
+                    ? { bg: "rgba(0, 150, 136, 0.12)", color: "#009688", label: "Đang giao" }
+                    : giao === "tron_lai"
+                      ? { bg: "rgba(234, 88, 12, 0.12)", color: "#ea580c", label: "Trộn lại" }
+                      : { bg: "rgba(100, 116, 139, 0.12)", color: "#64748b", label: "Chưa giao" };
+              // Map badge trạng thái sản xuất theo từng trạm
+              const sxBadge: { bg: string; color: string; label: string } =
+                sx === "da_xong"
+                  ? { bg: "rgba(76, 175, 80, 0.12)", color: "#4caf50", label: "SX xong" }
+                  : sx === "dang_san_xuat"
+                    ? { bg: "rgba(103, 58, 183, 0.12)", color: "#673ab7", label: "Đang SX" }
+                    : { bg: "rgba(100, 116, 139, 0.12)", color: "#64748b", label: "Chưa SX" };
+              return (
               <div key={lichSX.id} className={styles.tramBlock}>
                 <div className={styles.tramBlockHeader}>
                   <FiPackage size={14} style={{ color: "var(--color-primary)" }} />
                   <span className={styles.tramBlockTitle}>
                     Trạm {idx + 1}: {lichSX.tenTram || "Chưa gán trạm"}
+                  </span>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      padding: "2px 8px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      borderRadius: 10,
+                      background: sxBadge.bg,
+                      color: sxBadge.color,
+                      marginLeft: 8,
+                    }}
+                  >
+                    {sxBadge.label}
+                  </span>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      padding: "2px 8px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      borderRadius: 10,
+                      background: giaoBadge.bg,
+                      color: giaoBadge.color,
+                      marginLeft: 6,
+                    }}
+                  >
+                    {giaoBadge.label}
                   </span>
                 </div>
                 <table className={styles.subTable}>
@@ -1182,6 +1229,20 @@ export default function ChiTietDonHangPage() {
                       <th>Phương án đổ</th>
                       <td>{lichSX.phuongAnDo || "—"}</td>
                     </tr>
+                    {lichSX.khoiLuongGiaoThucTe != null && (
+                      <tr>
+                        <th>KL giao thực tế</th>
+                        <td>
+                          <strong>{lichSX.khoiLuongGiaoThucTe.toFixed(1)} m³</strong>
+                        </td>
+                        <th>Ngày xác nhận giao</th>
+                        <td>
+                          {lichSX.ngayXacNhanGiao
+                            ? formatDate(lichSX.ngayXacNhanGiao)
+                            : "—"}
+                        </td>
+                      </tr>
+                    )}
                     {lichSX.ghiChu && (
                       <tr>
                         <th>Ghi chú</th>
@@ -1191,7 +1252,8 @@ export default function ChiTietDonHangPage() {
                   </tbody>
                 </table>
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className={styles.subTableEmpty}>

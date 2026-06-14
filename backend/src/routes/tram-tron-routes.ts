@@ -67,7 +67,7 @@ router.get(
           `SELECT
               dh.id as idDonHang,
               dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, ls.ngayTao as ngayTao, dh.ngayGiao,
-              ls.id, ls.idTramTron, ls.trangThai, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.ghiChuXe,
+              ls.id, ls.idTramTron, ls.trangThai, ls.trangThaiGiao, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.khoiLuongGiaoThucTe, ls.ngayXacNhanGiao, ls.ghiChuXe,
               ISNULL(tt.tenTram, N'Không xác định') as tenTram,
               nd.hoTen as tenTaiXe, ls.bienSoXe,
               -- Tính tổng số khối đã trộn của tất cả trạm cho đơn này
@@ -110,7 +110,7 @@ router.get(
         `SELECT
             dh.id as idDonHang,
             dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, ls.ngayTao as ngayTao, dh.ngayGiao,
-            ls.id, ls.idTramTron, ls.trangThai, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.ghiChuXe,
+            ls.id, ls.idTramTron, ls.trangThai, ls.trangThaiGiao, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.khoiLuongGiaoThucTe, ls.ngayXacNhanGiao, ls.ghiChuXe,
             ISNULL(tt.tenTram, N'Không xác định') as tenTram,
             nd.hoTen as tenTaiXe, ls.bienSoXe,
             -- Tính tổng số khối đã trộn của tất cả trạm cho đơn này

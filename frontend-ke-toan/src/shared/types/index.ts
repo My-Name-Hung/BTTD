@@ -166,6 +166,9 @@ export interface LichSanXuat {
   ghiChu: string | null;
   driveLink: string | null;
   trangThai: "chua_san_xuat" | "dang_san_xuat" | "da_xong";
+  trangThaiGiao?: "dang_giao" | "da_giao" | "tron_lai" | null;
+  khoiLuongGiaoThucTe?: number | null;
+  ngayXacNhanGiao?: string | null;
   ngayTao?: string | null;
 }
 

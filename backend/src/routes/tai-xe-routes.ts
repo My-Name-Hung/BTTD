@@ -544,11 +544,9 @@ router.post(
       let idTramTron: number | null = null;
       if (idLichSanXuat != null) {
         const lsInfo = await query<any>(
-          `SELECT ls.idTramTron, ls.bienSoXe, tt.tenTram, nd.hoTen as tenTaiXe
+          `SELECT ls.idTramTron, tt.tenTram
              FROM LichSanXuat ls
              LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
-             LEFT JOIN Xe xe ON ls.idXe = xe.id
-             LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
              WHERE ls.id = @idLichSanXuat AND ls.idDonHang = @idDonHang`,
           { idLichSanXuat, idDonHang }
         );
