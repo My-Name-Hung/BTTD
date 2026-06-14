@@ -200,6 +200,30 @@
   color: var(--color-text-secondary);
 }
 
+/* ── Trạm trộn read-only (user tram_tron) ── */
+.tramTronReadonly {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--color-text);
+  flex-wrap: wrap;
+}
+.tramTronReadonly strong {
+  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+.tramTronHint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
 /* ── Tài xế info ── */
 .taiXeInfo {
   display: flex;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FiArrowLeft,
   FiCalendar,
@@ -86,6 +86,17 @@ export default function KhoXacNhanSanXuatPage() {
   const [tenTaiXeHienThi, setTenTaiXeHienThi] = useState("");
   const [ghiChuXe, setGhiChuXe] = useState("");
 
+  // Lấy thông tin user từ localStorage
+  const userInfo = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("bttd_user") || "{}");
+    } catch {
+      return {};
+    }
+  }, []);
+  const isAdmin = userInfo.vaiTro === "admin";
+  const isTramTron = userInfo.vaiTro === "tram_tron";
+
   const loadData = useCallback(async () => {
     if (!idDonHang) return;
     setLoading(true);
@@ -130,12 +141,18 @@ export default function KhoXacNhanSanXuatPage() {
           setNgayGioDo(formatDateTimeLocal(firstLich.thoiGianBatDauDo));
         }
       }
+
+      // User tram_tron: auto-fill cứng trạm của mình vào lịch trạm
+      // (backend đã lọc chỉ trả về lịch của trạm user) → luôn set idLichSanXuat
+      if (isTramTron && tramLichs.length > 0) {
+        setIdLichSanXuat(String(tramLichs[0].id));
+      }
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
     } finally {
       setLoading(false);
     }
-  }, [idDonHang, showToast]);
+  }, [idDonHang, showToast, isTramTron]);
 
   useEffect(() => {
     loadData();
@@ -165,9 +182,10 @@ export default function KhoXacNhanSanXuatPage() {
   const khoiLuongDaTronSo = parseFloat(khoiLuongDaTron) || 0;
   const khoiLuongConLai = Math.max(0, khoiLuongBanDau - tongKhoiLuongDaTron);
 
-  // Có nhiều lịch trạm trong đơn (admin/dieu_phoi thấy nhiều lịch, tram_tron chỉ thấy 1)
+  // Chỉ admin mới được phép chọn trạm (khi đơn có nhiều trạm).
+  // User tram_tron thì trạm đã được auto-fill cứng → không hiển thị select.
   const soTram = lichTramTrons.length;
-  const canChonTram = soTram > 1;
+  const canChonTram = isAdmin && soTram > 1;
 
   const handleSubmit = async () => {
     if (!idDonHang) return;
@@ -282,8 +300,8 @@ export default function KhoXacNhanSanXuatPage() {
             <h3>Thông tin sản xuất</h3>
           </div>
 
-          {/* Chọn trạm trộn: chỉ hiển thị khi đơn có nhiều trạm */}
-          {canChonTram && (
+          {/* Chọn trạm trộn: chỉ admin và đơn có nhiều trạm mới thấy select */}
+          {canChonTram ? (
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>
@@ -309,6 +327,20 @@ export default function KhoXacNhanSanXuatPage() {
                 </span>
               </div>
             </div>
+          ) : (
+            // User tram_tron hoặc đơn chỉ có 1 trạm: hiển thị tên trạm (read-only)
+            lichTramTrons.length > 0 && (
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    Trạm trộn <span className={styles.required}>*</span>
+                  </label>
+                  <div className={styles.tramTronReadonly}>
+                    <strong>{lichTramTrons[0].tenTram}</strong>
+                  </div>
+                </div>
+              </div>
+            )
           )}
 
           <div className={styles.formRow}>

@@ -743,10 +743,25 @@ export default function KhoLichSanXuatPage() {
                             }
 
                             // Đã trộn 1 phần (khoiLuongDaTron > 0) và còn dư (khoiLuongConLai > 0):
-                            // - Đơn chỉ có 1 trạm: nút "Tiếp tục" → chọn thêm trạm mới
-                            // - Đơn có 2+ trạm: nút "Tiếp tục" thay thế nút "SX xong" (xác nhận trộn xong cho trạm chưa hoàn thành)
+                            // - User tram_tron: nút "Tiếp tục" → xác nhận SX xong cho trạm của mình
+                            //   (user tram_tron chỉ thấy 1 trạm → không thể "thêm trạm mới", chỉ có thể trộn nốt phần còn lại)
+                            // - Admin đơn 1 trạm: nút "Tiếp tục" → chọn thêm trạm mới
+                            // - Admin đơn 2+ trạm: nút "Tiếp tục" thay thế nút "SX xong" (xác nhận trộn xong cho trạm chưa hoàn thành)
+                            if (isTramTron) {
+                              // User tram_tron: luôn đi đến trang xác nhận SX xong
+                              return (
+                                <button
+                                  className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
+                                  onClick={() => handleNavigateXacNhanSanXuat(item)}
+                                  title="Xác nhận sản xuất xong"
+                                >
+                                  <FiCheck size={14} />
+                                  Tiếp tục
+                                </button>
+                              );
+                            }
                             if (isMotTram) {
-                              // Đơn 1 trạm: nút "Tiếp tục" cho phép thêm trạm trộn khác
+                              // Admin đơn 1 trạm: nút "Tiếp tục" cho phép thêm trạm trộn khác
                               return (
                                 <button
                                   className={`${styles.actionBtn} ${styles.actionBtnWarning}`}
@@ -759,7 +774,7 @@ export default function KhoLichSanXuatPage() {
                               );
                             }
 
-                            // Đơn nhiều trạm: ẩn nút "SX xong", chỉ hiển thị nút "Tiếp tục"
+                            // Admin đơn nhiều trạm: ẩn nút "SX xong", chỉ hiển thị nút "Tiếp tục"
                             // với chức năng xác nhận SX xong (giống nút "SX xong")
                             return (
                               <button
