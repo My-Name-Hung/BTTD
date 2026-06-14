@@ -321,10 +321,197 @@
   box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.1);
 }
 
+/* ===== Form hoàn thành nghiệm thu (file list + 3 trường thông tin) ===== */
+.infoHint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: rgba(7, 60, 235, 0.05);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 6px;
+  line-height: 1.5;
+}
+.infoHint strong { color: var(--color-text); }
+
+.infoSection {
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+.infoSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.infoSectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.infoSectionActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.infoActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-white);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.infoActionBtn:hover {
+  background: rgba(7, 60, 235, 0.06);
+  box-shadow: 0 2px 8px rgba(7, 60, 235, 0.15);
+}
+.infoEmpty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+}
+
+.infoFileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+.infoFileCard {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.infoFileRemove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  z-index: 3;
+}
+.infoFileRemove:hover { background: var(--color-danger); }
+
+.infoFileSource {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  z-index: 2;
+}
+.infoFileSourceUpload {
+  background: rgba(7, 60, 235, 0.85);
+  color: white;
+}
+.infoFileSourceCamera {
+  background: rgba(16, 185, 129, 0.9);
+  color: white;
+}
+
+.infoFileThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.infoFileIconWrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(7, 60, 235, 0.05) 0%, rgba(7, 60, 235, 0.01) 100%);
+  color: var(--color-primary);
+}
+.infoFileExt {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+}
+.infoFileInfo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.75) 100%);
+  color: white;
+  padding: 18px 8px 6px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.infoFileName {
+  display: block;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.infoFileSize {
+  display: block;
+  font-size: 10px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.infoFormGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
 /* Mobile responsive for option modal */
 @media (max-width: 480px) {
   .optionBtn { gap: 12px; padding: 12px; }
   .optionBtnIcon { width: 48px; height: 48px; }
   .optionBtnTitle { font-size: 14px; }
   .optionBtnDesc { font-size: 11px; }
+  .infoFileGrid { grid-template-columns: repeat(2, 1fr); }
+  .infoSectionHeader { flex-direction: column; align-items: stretch; }
+  .infoActionBtn { width: 100%; justify-content: center; }
+  .infoFormGrid { grid-template-columns: 1fr; }
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  FiAlertCircle,
   FiCamera,
   FiCheck,
   FiCheckCircle,
@@ -12,7 +13,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { EmptyState, Loading, Modal } from "../../../shared/components/Common";
-import { usePageRole, useToast } from "../../../shared/hooks";
+import { useToast } from "../../../shared/hooks";
 import {
   layDanhSachDonHang,
   layNghiemThuBatch,
@@ -34,6 +35,17 @@ function formatCurrency(v: number) {
 
 type TabType = "can_nghiem_thu" | "da_nghiem_thu";
 
+// Mỗi mục trong danh sách file của form nhập thông tin nghiệm thu
+// có thể từ 2 nguồn: upload từ máy hoặc chụp từ camera
+type NguonFile = "upload" | "camera";
+
+interface FileNghiemThu {
+  id: string; // id tạm để React key ổn định
+  file: File;
+  nguon: NguonFile;
+  preview?: string; // object URL cho ảnh (nếu là ảnh)
+}
+
 // Parse bienBanFile: có thể là string, string[], hoặc JSON string
 function parseBienBanFiles(
   bienBanFile: string | string[] | null | undefined,
@@ -53,8 +65,25 @@ function parseBienBanFiles(
   return [];
 }
 
+// Sinh id tạm duy nhất
+function taoIdTam(): string {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Convert data URL → File
+async function dataUrlSangFile(
+  dataUrl: string,
+  baseName: string,
+): Promise<File> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const ext = blob.type.includes("png") ? "png" : "jpg";
+  return new File([blob], `${baseName}_${Date.now()}.${ext}`, {
+    type: blob.type || "image/jpeg",
+  });
+}
+
 export default function NghiemThuPage() {
-  const { hasPermission } = usePageRole();
   const { toasts, showToast } = useToast();
   const [donHangs, setDonHangs] = useState<DonHang[]>([]);
   const [nghiemThus, setNghiemThus] = useState<
@@ -72,9 +101,7 @@ export default function NghiemThuPage() {
 
   // --- Upload file modal ---
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(
-    null,
-  );
+  const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadLoading, setUploadLoading] = useState(false);
 
@@ -85,17 +112,20 @@ export default function NghiemThuPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // --- Thông tin nghiệm thu modal ---
+  // --- Thông tin nghiệm thu modal (form nhập thông tin + danh sách file) ---
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [infoLoading, setInfoLoading] = useState(false);
   const [pendingDonHang, setPendingDonHang] = useState<DonHang | null>(null);
   const [infoKyThuat, setInfoKyThuat] = useState("");
   const [infoOmOng, setInfoOmOng] = useState("");
   const [infoBatOng, setInfoBatOng] = useState("");
-  // Track files đã upload từ modal upload file (trước khi mở info modal)
-  const [uploadedFilesData, setUploadedFilesData] = useState<{ idDonHang: number; files: File[] } | null>(null);
+  // Danh sách file đã ghi nhận (cả từ upload lẫn chụp ảnh) trong phiên hiện tại
+  const [danhSachFile, setDanhSachFile] = useState<FileNghiemThu[]>([]);
 
-  const canConfirm = hasPermission("nghiemthu.confirm");
+  // Khi đang trong form thông tin mà muốn chụp thêm ảnh
+  const [captureInInfo, setCaptureInInfo] = useState(false);
+  // Khi đang trong form thông tin mà muốn upload thêm file
+  const [uploadInInfo, setUploadInInfo] = useState(false);
 
   const userVaiTro = JSON.parse(
     localStorage.getItem("bttd_user") || "{}",
@@ -113,7 +143,13 @@ export default function NghiemThuPage() {
     setInfoKyThuat("");
     setInfoOmOng("");
     setInfoBatOng("");
-    setUploadedFilesData(null);
+    setDanhSachFile((prev) => {
+      // thu hồi object URL ảnh trước khi xoá
+      prev.forEach((f) => f.preview && URL.revokeObjectURL(f.preview));
+      return [];
+    });
+    setCaptureInInfo(false);
+    setUploadInInfo(false);
   };
 
   const loadData = useCallback(async () => {
@@ -262,42 +298,33 @@ export default function NghiemThuPage() {
     setCapturedImage(null);
   };
 
-  // Bước 3: Xác nhận nghiệm thu + mở modal thông tin
-  const hoanTatNghiemThu = async (donHang: DonHang) => {
-    // Đóng camera / upload modal
-    setCameraModalOpen(false);
-    setUploadModalOpen(false);
-
-    // Dừng camera nếu đang chạy
-    if (videoRef.current) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      if (stream) stream.getTracks().forEach((t) => t.stop());
-    }
-
-    // Mở modal thông tin nghiệm thu
-    setPendingDonHang(donHang);
-    setInfoKyThuat("");
-    setInfoOmOng("");
-    setInfoBatOng("");
-    setInfoModalOpen(true);
-  };
-
-  // Upload file xong → mở modal nhập 3 trường thông tin
+  // Upload file xong → mở modal nhập thông tin
   const handleUploadAndOpenInfo = async () => {
     if (!selectedDonHang || uploadFiles.length === 0) return;
     setUploadLoading(true);
     try {
       await uploadBienBanNghiemThu(selectedDonHang.id, uploadFiles);
-      // Lưu lại files đã upload + đơn hàng, mở modal thông tin
-      setUploadedFilesData({ idDonHang: selectedDonHang.id, files: uploadFiles });
+      // Thêm các file vừa upload vào danh sách file của form thông tin
+      const filesMoi: FileNghiemThu[] = uploadFiles.map((f) => ({
+        id: taoIdTam(),
+        file: f,
+        nguon: "upload" as const,
+        preview: f.type.startsWith("image/")
+          ? URL.createObjectURL(f)
+          : undefined,
+      }));
+      setDanhSachFile((prev) => [...prev, ...filesMoi]);
       setPendingDonHang(selectedDonHang);
       setInfoKyThuat("");
       setInfoOmOng("");
       setInfoBatOng("");
+      setUploadFiles([]);
       setUploadModalOpen(false);
       setOptionModalOpen(false);
       setInfoModalOpen(true);
-      showToast(`Đã tải ${uploadFiles.length} file. Vui lòng nhập thông tin nghiệm thu.`);
+      showToast(
+        `Đã tải ${filesMoi.length} file. Có thể chụp thêm ảnh hoặc hoàn thành.`,
+      );
     } catch (err) {
       showToast(
         err instanceof Error ? err.message : "Lỗi tải file",
@@ -308,25 +335,39 @@ export default function NghiemThuPage() {
     }
   };
 
-  // Lưu thông tin nghiệm thu + xác nhận (chụp ảnh)
-  const handleCaptureAndFinish = async () => {
+  // Sau khi chụp xong và bấm "Tiếp tục" trong modal camera
+  // → upload ảnh + mở form thông tin nghiệm thu
+  const handleCaptureAndOpenInfo = async () => {
     if (!selectedDonHang || !capturedImage) return;
     setCameraLoading(true);
     try {
-      // Convert dataUrl → File
-      const res = await fetch(capturedImage);
-      const blob = await res.blob();
-      const fileName = `nghiemthu_${selectedDonHang.id}_${Date.now()}.jpg`;
-      const file = new File([blob], fileName, { type: "image/jpeg" });
-
+      const file = await dataUrlSangFile(
+        capturedImage,
+        `nghiemthu_${selectedDonHang.id}`,
+      );
       await uploadAnhNghiemThu(selectedDonHang.id, file);
-      await xacNhanNghiemThu(selectedDonHang.id, "da");
-      showToast("Đã chụp ảnh và xác nhận nghiệm thu thành công");
-      resetAll();
-      loadData();
+      // Thêm ảnh vừa chụp vào danh sách file
+      const fileMoi: FileNghiemThu = {
+        id: taoIdTam(),
+        file,
+        nguon: "camera",
+        preview: capturedImage,
+      };
+      setDanhSachFile((prev) => [...prev, fileMoi]);
+      setPendingDonHang(selectedDonHang);
+      setInfoKyThuat("");
+      setInfoOmOng("");
+      setInfoBatOng("");
+      setCapturedImage(null);
+      setCameraModalOpen(false);
+      setOptionModalOpen(false);
+      setInfoModalOpen(true);
+      showToast(
+        "Đã chụp ảnh. Có thể tải thêm file hoặc hoàn thành.",
+      );
     } catch (err) {
       showToast(
-        err instanceof Error ? err.message : "Lỗi tải ảnh",
+        err instanceof Error ? err.message : "Lỗi lưu ảnh",
         "error",
       );
     } finally {
@@ -334,23 +375,102 @@ export default function NghiemThuPage() {
     }
   };
 
-  // Lưu thông tin nghiệm thu (3 trường) + xác nhận nghiệm thu
-  // - Nếu có uploadedFilesData → đã upload file ở bước trước → chỉ xác nhận
-  // - Nếu có capturedImage → flow camera → cần upload ảnh + xác nhận
+  // Từ form thông tin: bấm "Tiếp tục tải lên" → mở file picker
+  const handleInfoUploadMore = () => {
+    setUploadInInfo(true);
+    // đóng info form, mở lại upload modal
+    setInfoModalOpen(false);
+    setUploadFiles([]);
+    setUploadModalOpen(true);
+  };
+
+  // Khi upload xong trong luồng "tiếp tục tải lên" từ form thông tin
+  const handleUploadMoreFromInfo = async () => {
+    if (!pendingDonHang || uploadFiles.length === 0) return;
+    setUploadLoading(true);
+    try {
+      await uploadBienBanNghiemThu(pendingDonHang.id, uploadFiles);
+      const filesMoi: FileNghiemThu[] = uploadFiles.map((f) => ({
+        id: taoIdTam(),
+        file: f,
+        nguon: "upload" as const,
+        preview: f.type.startsWith("image/")
+          ? URL.createObjectURL(f)
+          : undefined,
+      }));
+      setDanhSachFile((prev) => [...prev, ...filesMoi]);
+      setUploadFiles([]);
+      setUploadModalOpen(false);
+      setUploadInInfo(false);
+      // Quay lại form thông tin
+      setInfoModalOpen(true);
+      showToast(`Đã tải thêm ${filesMoi.length} file.`);
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : "Lỗi tải file",
+        "error",
+      );
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  // Từ form thông tin: bấm "Tiếp tục chụp ảnh" → mở camera
+  const handleInfoCaptureMore = () => {
+    setCaptureInInfo(true);
+    setInfoModalOpen(false);
+    setCapturedImage(null);
+    setCameraModalOpen(true);
+  };
+
+  // Khi chụp xong trong luồng "tiếp tục chụp ảnh" từ form thông tin
+  const handleCaptureMoreFromInfo = async () => {
+    if (!pendingDonHang || !capturedImage) return;
+    setCameraLoading(true);
+    try {
+      const file = await dataUrlSangFile(
+        capturedImage,
+        `nghiemthu_${pendingDonHang.id}`,
+      );
+      await uploadAnhNghiemThu(pendingDonHang.id, file);
+      const fileMoi: FileNghiemThu = {
+        id: taoIdTam(),
+        file,
+        nguon: "camera",
+        preview: capturedImage,
+      };
+      setDanhSachFile((prev) => [...prev, fileMoi]);
+      setCapturedImage(null);
+      setCameraModalOpen(false);
+      setCaptureInInfo(false);
+      // Quay lại form thông tin
+      setInfoModalOpen(true);
+      showToast("Đã chụp thêm 1 ảnh.");
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : "Lỗi lưu ảnh",
+        "error",
+      );
+    } finally {
+      setCameraLoading(false);
+    }
+  };
+
+  // Xoá một file khỏi danh sách file trong form thông tin
+  const handleXoaFileKhoiDanhSach = (id: string) => {
+    setDanhSachFile((prev) => {
+      const target = prev.find((f) => f.id === id);
+      if (target?.preview) URL.revokeObjectURL(target.preview);
+      return prev.filter((f) => f.id !== id);
+    });
+  };
+
+  // Hoàn thành nghiệm thu: lưu thông tin + xác nhận
   const handleLuuThongTin = async () => {
     if (!pendingDonHang) return;
     setInfoLoading(true);
     try {
-      // Upload ảnh chụp nếu có (flow camera)
-      if (capturedImage) {
-        const res = await fetch(capturedImage);
-        const blob = await res.blob();
-        const fileName = `nghiemthu_${pendingDonHang.id}_${Date.now()}.jpg`;
-        const file = new File([blob], fileName, { type: "image/jpeg" });
-        await uploadAnhNghiemThu(pendingDonHang.id, file);
-      }
-
-      // Update thông tin kỹ thuật vào LichSanXuat (chỉ khi có nhập)
+      // Cập nhật thông tin kỹ thuật vào LichSanXuat (chỉ khi có nhập)
       const hasInfo =
         infoKyThuat.trim() || infoOmOng.trim() || infoBatOng.trim();
       if (hasInfo) {
@@ -364,7 +484,7 @@ export default function NghiemThuPage() {
       // Xác nhận nghiệm thu
       await xacNhanNghiemThu(pendingDonHang.id, "da");
 
-      showToast("Xác nhận nghiệm thu thành công");
+      showToast("Hoàn thành nghiệm thu thành công");
       resetAll();
       loadData();
     } catch (err) {
@@ -659,17 +779,34 @@ export default function NghiemThuPage() {
         isOpen={uploadModalOpen}
         onClose={() => {
           setUploadModalOpen(false);
-          setSelectedDonHang(null);
+          // Nếu đang trong luồng "tiếp tục tải lên" từ form thông tin
+          // mà huỷ thì quay lại form thông tin
+          if (uploadInInfo && pendingDonHang) {
+            setInfoModalOpen(true);
+          } else {
+            setSelectedDonHang(null);
+          }
           setUploadFiles([]);
+          setUploadInInfo(false);
         }}
-        title={`Tải biên bản nghiệm thu - ${selectedDonHang?.maDonHang}`}
+        title={
+          uploadInInfo
+            ? `Tải thêm file - ${pendingDonHang?.maDonHang}`
+            : `Tải biên bản nghiệm thu - ${selectedDonHang?.maDonHang}`
+        }
         footer={
           <>
             <button
               className="btn btn-cancel"
               onClick={() => {
                 setUploadModalOpen(false);
+                if (uploadInInfo && pendingDonHang) {
+                  setInfoModalOpen(true);
+                } else {
+                  setSelectedDonHang(null);
+                }
                 setUploadFiles([]);
+                setUploadInInfo(false);
               }}
             >
               Hủy
@@ -681,11 +818,19 @@ export default function NghiemThuPage() {
                   showToast("Vui lòng chọn ít nhất 1 file", "error");
                   return;
                 }
-                await handleUploadAndOpenInfo();
+                if (uploadInInfo) {
+                  await handleUploadMoreFromInfo();
+                } else {
+                  await handleUploadAndOpenInfo();
+                }
               }}
               disabled={uploadFiles.length === 0 || uploadLoading}
             >
-              {uploadLoading ? "Đang tải..." : "Tiếp tục nhập thông tin"}
+              {uploadLoading
+                ? "Đang tải..."
+                : uploadInInfo
+                  ? `Tải thêm (${uploadFiles.length})`
+                  : "Tiếp tục nhập thông tin"}
             </button>
           </>
         }
@@ -767,9 +912,20 @@ export default function NghiemThuPage() {
             const stream = videoRef.current.srcObject as MediaStream;
             if (stream) stream.getTracks().forEach((t) => t.stop());
           }
-          setSelectedDonHang(null);
+          // Nếu đang trong luồng "tiếp tục chụp ảnh" từ form thông tin
+          // mà huỷ thì quay lại form thông tin
+          if (captureInInfo && pendingDonHang) {
+            setInfoModalOpen(true);
+          } else {
+            setSelectedDonHang(null);
+          }
+          setCaptureInInfo(false);
         }}
-        title={`Chụp ảnh nghiệm thu - ${selectedDonHang?.maDonHang}`}
+        title={
+          captureInInfo
+            ? `Chụp thêm ảnh - ${pendingDonHang?.maDonHang}`
+            : `Chụp ảnh nghiệm thu - ${selectedDonHang?.maDonHang}`
+        }
         footer={
           <>
             <button
@@ -782,6 +938,12 @@ export default function NghiemThuPage() {
                     videoRef.current.srcObject as MediaStream;
                   if (stream) stream.getTracks().forEach((t) => t.stop());
                 }
+                if (captureInInfo && pendingDonHang) {
+                  setInfoModalOpen(true);
+                } else {
+                  setSelectedDonHang(null);
+                }
+                setCaptureInInfo(false);
               }}
             >
               Hủy
@@ -793,9 +955,20 @@ export default function NghiemThuPage() {
                 </button>
                 <button
                   className="btn btn-save"
-                  onClick={() => hoanTatNghiemThu(selectedDonHang!)}
+                  onClick={() => {
+                    if (captureInInfo) {
+                      handleCaptureMoreFromInfo();
+                    } else {
+                      handleCaptureAndOpenInfo();
+                    }
+                  }}
+                  disabled={cameraLoading}
                 >
-                  Tiếp tục
+                  {cameraLoading
+                    ? "Đang lưu..."
+                    : captureInInfo
+                      ? "Lưu ảnh"
+                      : "Tiếp tục"}
                 </button>
               </>
             ) : (
@@ -847,7 +1020,7 @@ export default function NghiemThuPage() {
                 }}
               >
                 Ảnh đã chụp. Bấm <strong>Chụp lại</strong> để chụp lại hoặc
-                <strong> Xác nhận nghiệm thu</strong> để tiếp tục.
+                <strong> Tiếp tục</strong> để ghi nhận.
               </p>
               <img
                 src={capturedImage}
@@ -866,14 +1039,14 @@ export default function NghiemThuPage() {
         </div>
       </Modal>
 
-      {/* ========== MODAL 4: Thông tin nghiệm thu (3 trường) ========== */}
+      {/* ========== MODAL 4: Form thông tin nghiệm thu ========== */}
       <Modal
         isOpen={infoModalOpen}
         onClose={() => {
           setInfoModalOpen(false);
           setPendingDonHang(null);
         }}
-        title={`Thông tin nghiệm thu - ${pendingDonHang?.maDonHang}`}
+        title={`Hoàn thành nghiệm thu - ${pendingDonHang?.maDonHang}`}
         footer={
           <>
             <button
@@ -883,64 +1056,160 @@ export default function NghiemThuPage() {
                 setPendingDonHang(null);
               }}
             >
-              Bỏ qua
+              Đóng
             </button>
             <button
               className="btn btn-save"
               onClick={handleLuuThongTin}
               disabled={infoLoading}
             >
-              {infoLoading ? "Đang lưu..." : "Lưu thông tin"}
+              {infoLoading ? "Đang lưu..." : "Hoàn thành"}
             </button>
           </>
         }
       >
-        <p
-          style={{
-            fontSize: 13,
-            color: "var(--color-text-secondary)",
-            marginBottom: 20,
-          }}
-        >
-          Nhập thông tin kỹ thuật nghiệm thu. Có thể bỏ qua nếu không cần
-          cập nhật.
+        <p className={styles.infoHint}>
+          Tệp đã ghi nhận cho đơn hàng này. Có thể tiếp tục chụp ảnh hoặc tải
+          thêm file, hoặc bấm <strong>Hoàn thành</strong> để kết thúc nghiệm thu.
         </p>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: 16,
-          }}
-        >
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Kỹ thuật công trình</label>
-            <input
-              type="text"
-              className={styles.formInput}
-              placeholder="Nhập tên kỹ thuật..."
-              value={infoKyThuat}
-              onChange={(e) => setInfoKyThuat(e.target.value)}
-            />
+
+        {/* Danh sách file đã ghi nhận (cả upload lẫn chụp ảnh) */}
+        <div className={styles.infoSection}>
+          <div className={styles.infoSectionHeader}>
+            <span className={styles.infoSectionTitle}>
+              Tệp nghiệm thu ({danhSachFile.length})
+            </span>
+            <div className={styles.infoSectionActions}>
+              <button
+                type="button"
+                className={styles.infoActionBtn}
+                onClick={handleInfoCaptureMore}
+              >
+                <FiCamera size={14} /> Tiếp tục chụp ảnh
+              </button>
+              <button
+                type="button"
+                className={styles.infoActionBtn}
+                onClick={handleInfoUploadMore}
+              >
+                <FiUpload size={14} /> Tiếp tục tải lên
+              </button>
+            </div>
           </div>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Người ôm ống</label>
-            <input
-              type="text"
-              className={styles.formInput}
-              placeholder="Nhập tên người ôm ống..."
-              value={infoOmOng}
-              onChange={(e) => setInfoOmOng(e.target.value)}
-            />
+
+          {danhSachFile.length === 0 ? (
+            <div className={styles.infoEmpty}>
+              <FiAlertCircle size={16} />
+              <span>Chưa có tệp nào. Hãy chụp ảnh hoặc tải file lên.</span>
+            </div>
+          ) : (
+            <div className={styles.infoFileGrid}>
+              {danhSachFile.map((item) => {
+                const isImage = item.file.type.startsWith("image/");
+                const ext = (item.file.name.split(".").pop() || "FILE")
+                  .toUpperCase()
+                  .slice(0, 4);
+                return (
+                  <div
+                    key={item.id}
+                    className={styles.infoFileCard}
+                  >
+                    <button
+                      type="button"
+                      className={styles.infoFileRemove}
+                      onClick={() => handleXoaFileKhoiDanhSach(item.id)}
+                      title="Xóa file"
+                    >
+                      <FiX size={14} />
+                    </button>
+                    <span
+                      className={`${styles.infoFileSource} ${
+                        item.nguon === "camera"
+                          ? styles.infoFileSourceCamera
+                          : styles.infoFileSourceUpload
+                      }`}
+                    >
+                      {item.nguon === "camera" ? (
+                        <>
+                          <FiCamera size={10} /> Chụp ảnh
+                        </>
+                      ) : (
+                        <>
+                          <FiUpload size={10} /> Tải lên
+                        </>
+                      )}
+                    </span>
+                    {isImage && item.preview ? (
+                      <img
+                        src={item.preview}
+                        alt={item.file.name}
+                        className={styles.infoFileThumb}
+                      />
+                    ) : (
+                      <div className={styles.infoFileIconWrap}>
+                        <FiFile size={28} />
+                        <span className={styles.infoFileExt}>{ext}</span>
+                      </div>
+                    )}
+                    <div className={styles.infoFileInfo}>
+                      <span
+                        className={styles.infoFileName}
+                        title={item.file.name}
+                      >
+                        {item.file.name}
+                      </span>
+                      <span className={styles.infoFileSize}>
+                        {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Thông tin kỹ thuật */}
+        <div className={styles.infoSection}>
+          <div className={styles.infoSectionHeader}>
+            <span className={styles.infoSectionTitle}>
+              Thông tin kỹ thuật
+            </span>
           </div>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Người bắt ống</label>
-            <input
-              type="text"
-              className={styles.formInput}
-              placeholder="Nhập tên người bắt ống..."
-              value={infoBatOng}
-              onChange={(e) => setInfoBatOng(e.target.value)}
-            />
+          <p className={styles.infoHint} style={{ marginBottom: 12 }}>
+            Có thể bỏ trống nếu không cần cập nhật.
+          </p>
+          <div className={styles.infoFormGrid}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Kỹ thuật công trình</label>
+              <input
+                type="text"
+                className={styles.formInput}
+                placeholder="Nhập tên kỹ thuật..."
+                value={infoKyThuat}
+                onChange={(e) => setInfoKyThuat(e.target.value)}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Người ôm ống</label>
+              <input
+                type="text"
+                className={styles.formInput}
+                placeholder="Nhập tên người ôm ống..."
+                value={infoOmOng}
+                onChange={(e) => setInfoOmOng(e.target.value)}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Người bắt ống</label>
+              <input
+                type="text"
+                className={styles.formInput}
+                placeholder="Nhập tên người bắt ống..."
+                value={infoBatOng}
+                onChange={(e) => setInfoBatOng(e.target.value)}
+              />
+            </div>
           </div>
         </div>
       </Modal>
