@@ -38,10 +38,10 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron', '
 
     // Lấy chi tiết từng dòng LichSanXuat (mỗi trạm trộn 1 dòng)
     const data = await query<any>(
-      `SELECT 
+      `SELECT
         dh.id as idDonHang,
         dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon, dh.ngayTao, dh.ngayGiao,
-        ls.id, ls.idTramTron, ls.trangThai, ls.thoiGianTron, ls.thoiGianBatDauDo,
+        ls.id, ls.idTramTron, ls.trangThai, ls.trangThaiGiao, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.khoiLuongGiaoThucTe, ls.ngayXacNhanGiao, ls.ghiChuXe,
         ISNULL(tt.tenTram, N'Không xác định') as tenTram,
         nd.hoTen as tenTaiXe, ls.bienSoXe,
         -- Tính tổng số khối đã trộn của tất cả trạm cho đơn này

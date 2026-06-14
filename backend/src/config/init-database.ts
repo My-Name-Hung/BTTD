@@ -1011,6 +1011,27 @@ async function initDatabase(): Promise<void> {
         console.log("  ✅ Cột ngayXacNhanGiao đã tồn tại trong LichSanXuat");
       }
 
+      // 10. LichSuTraLai: thêm các cột theo dõi trộn lại theo từng trạm
+      //     (idLichSanXuat, idTramTron, tenTram, tenTaiXe, bienSoXe) — bắt buộc cho endpoint /tai-xe/tron-lai
+      const lichSuTraLaiCols: Array<{ name: string; ddl: string }> = [
+        { name: 'idLichSanXuat', ddl: 'INT NULL' },
+        { name: 'idTramTron', ddl: 'INT NULL' },
+        { name: 'tenTram', ddl: 'NVARCHAR(200) NULL' },
+        { name: 'tenTaiXe', ddl: 'NVARCHAR(100) NULL' },
+        { name: 'bienSoXe', ddl: 'NVARCHAR(50) NULL' },
+      ];
+      for (const col of lichSuTraLaiCols) {
+        const existingCol = await migReq.query<{ name: string }[]>(
+          `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('LichSuTraLai') AND name = '${col.name}'`
+        );
+        if (existingCol.recordset.length === 0) {
+          await migReq.query(`ALTER TABLE LichSuTraLai ADD ${col.name} ${col.ddl}`);
+          console.log(`  ➕ Đã thêm cột ${col.name} vào LichSuTraLai`);
+        } else {
+          console.log(`  ✅ Cột ${col.name} đã tồn tại trong LichSuTraLai`);
+        }
+      }
+
       await migPool.close();
       console.log("  ✅ Migrations hoàn tất!");
     } catch (error) {

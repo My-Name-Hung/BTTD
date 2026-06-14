@@ -667,23 +667,28 @@ export default function KhoLichSanXuatPage() {
                           {item.tramTrons.map((tram) => {
                             const giao = tram.trangThaiGiao;
                             const sx = tram.trangThai;
-                            // Ưu tiên hiển thị trạng thái giao nếu trạm đã giao,
-                            // ngược lại hiển thị trạng thái SX
+                            // Logic ưu tiên (giống TaiXeGiaoHangPage để đồng bộ giữa các trang):
+                            //   1) Trộn lại theo từng trạm (cao nhất)
+                            //   2) Đã giao (trạm tài xế xác nhận xong)
+                            //   3) Đang giao (trạm tài xế đã bấm "Đang giao" HOẶC đơn đang ở "dang_giao" mà trạm chưa có giao state)
+                            //   4) SX xong (kho xác nhận xong, đơn chưa sang giao)
+                            //   5) Đang SX
+                            //   6) Mặc định: Chưa SX
                             let bg = "rgba(100, 116, 139, 0.12)";
                             let color = "#64748b";
                             let label = "Chưa SX";
-                            if (giao === "da_giao") {
-                              bg = "rgba(76, 175, 80, 0.12)";
-                              color = "#4caf50";
-                              label = "Đã giao";
-                            } else if (giao === "dang_giao") {
-                              bg = "rgba(0, 150, 136, 0.12)";
-                              color = "#009688";
-                              label = "Đang giao";
-                            } else if (giao === "tron_lai") {
+                            if (giao === "tron_lai") {
                               bg = "rgba(234, 88, 12, 0.12)";
                               color = "#ea580c";
                               label = "Trộn lại";
+                            } else if (giao === "da_giao") {
+                              bg = "rgba(76, 175, 80, 0.12)";
+                              color = "#4caf50";
+                              label = "Đã giao";
+                            } else if (giao === "dang_giao" || (giao == null && item.trangThaiDon === "dang_giao")) {
+                              bg = "rgba(0, 150, 136, 0.12)";
+                              color = "#009688";
+                              label = "Đang giao";
                             } else if (sx === "da_xong") {
                               bg = "rgba(76, 175, 80, 0.12)";
                               color = "#4caf50";

@@ -1157,14 +1157,19 @@ export default function ChiTietDonHangPage() {
             {lichSXsHienThi.map((lichSX, idx) => {
               const giao = lichSX.trangThaiGiao;
               const sx = lichSX.trangThai;
-              // Map badge trạng thái giao theo từng trạm
+              // Map badge trạng thái giao theo từng trạm (đồng bộ với TaiXeGiaoHangPage):
+              //   - Nếu trạm đã giao xong → "Đã giao"
+              //   - Nếu trạm đang giao HOẶC (trạm chưa có giao state nhưng đơn đã sang "dang_giao") → "Đang giao"
+              //   - Nếu trạm bị trộn lại → "Trộn lại"
+              //   - Mặc định → "Chưa giao"
+              const donDangGiao = donHang?.trangThaiDon === "dang_giao";
               const giaoBadge: { bg: string; color: string; label: string } =
                 giao === "da_giao"
                   ? { bg: "rgba(76, 175, 80, 0.12)", color: "#4caf50", label: "Đã giao" }
-                  : giao === "dang_giao"
-                    ? { bg: "rgba(0, 150, 136, 0.12)", color: "#009688", label: "Đang giao" }
-                    : giao === "tron_lai"
-                      ? { bg: "rgba(234, 88, 12, 0.12)", color: "#ea580c", label: "Trộn lại" }
+                  : giao === "tron_lai"
+                    ? { bg: "rgba(234, 88, 12, 0.12)", color: "#ea580c", label: "Trộn lại" }
+                    : giao === "dang_giao" || (giao == null && donDangGiao)
+                      ? { bg: "rgba(0, 150, 136, 0.12)", color: "#009688", label: "Đang giao" }
                       : { bg: "rgba(100, 116, 139, 0.12)", color: "#64748b", label: "Chưa giao" };
               // Map badge trạng thái sản xuất theo từng trạm
               const sxBadge: { bg: string; color: string; label: string } =
