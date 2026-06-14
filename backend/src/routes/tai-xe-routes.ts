@@ -36,7 +36,7 @@ router.get(
                   ls.ngayXacNhanGiao,
                   tt.tenTram,
                   nd.hoTen as tenTaiXe,
-                  xe.bienSoXe as xeBienSoXe
+                  xe.bienSo as xeBienSoXe
              FROM DonHang dh
              INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang AND ls.idTramTron IS NOT NULL
              LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
@@ -60,7 +60,7 @@ router.get(
                   ls.ngayXacNhanGiao,
                   tt.tenTram,
                   nd.hoTen as tenTaiXe,
-                  xe.bienSoXe as xeBienSoXe
+                  xe.bienSo as xeBienSoXe
              FROM DonHang dh
              INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang AND ls.idTramTron IS NOT NULL
              INNER JOIN Xe xe ON ls.idXe = xe.id
@@ -191,7 +191,7 @@ router.get(
                   ls.ngayXacNhanGiao,
                   tt.tenTram,
                   nd.hoTen as tenTaiXe,
-                  xe.bienSoXe as xeBienSoXe
+                  xe.bienSo as xeBienSoXe
              FROM DonHang dh
              INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
                AND ls.idTramTron IS NOT NULL
@@ -217,7 +217,7 @@ router.get(
                   ls.ngayXacNhanGiao,
                   tt.tenTram,
                   nd.hoTen as tenTaiXe,
-                  xe.bienSoXe as xeBienSoXe
+                  xe.bienSo as xeBienSoXe
              FROM DonHang dh
              INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
                AND ls.idTramTron IS NOT NULL
