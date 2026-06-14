@@ -175,10 +175,13 @@ router.get(
         // Lấy tất cả lịch sản xuất của đơn hàng thuộc trạm này
         const lichSanXuatList = await query<any[]>(
           `SELECT ls.*,
-                nd.hoTen as tenTaiXe
+                nd.hoTen as tenTaiXe,
+                tt.tenTram
          FROM LichSanXuat ls
          LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
-         WHERE ls.idDonHang = @idDonHang AND ls.idTramTron = @idTram`,
+         LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
+         WHERE ls.idDonHang = @idDonHang AND ls.idTramTron = @idTram
+         ORDER BY ls.id ASC`,
           { idDonHang, idTram },
         );
 
@@ -205,10 +208,14 @@ router.get(
       // Admin và dieu_phoi: xem đơn hàng bất kỳ - lấy tất cả lịch sản xuất
       const lichSanXuatList = await query<any[]>(
         `SELECT ls.*,
-              nd.hoTen as tenTaiXe
+              nd.hoTen as tenTaiXe,
+              tt.tenTram
        FROM LichSanXuat ls
        LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
-       WHERE ls.idDonHang = @idDonHang`,
+       LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
+       WHERE ls.idDonHang = @idDonHang
+         AND ls.idTramTron IS NOT NULL
+       ORDER BY ls.id ASC`,
         { idDonHang },
       );
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -10,7 +10,7 @@ import {
   FiCheckCircle,
   FiClock,
 } from "react-icons/fi";
-import { layDonHangTramTron, xacNhanBatDauGiao } from "../../../shared/services/api";
+import { layDonHangTramTron } from "../../../shared/services/api";
 import { TRANG_THAI_DON_LABELS, TRANG_THAI_DON_COLORS } from "../../../shared/types";
 import { useToast } from "../../../shared/hooks";
 import { Loading } from "../../../shared/components/Common";
@@ -53,6 +53,28 @@ function statusBg(key: string) {
   return `rgba(${hexToRgb(c)}, 0.12)`;
 }
 
+/** Trạng thái giao của 1 trạm (LichSanXuat) */
+function tramGiaoBadge(trangThaiGiao?: string | null) {
+  if (trangThaiGiao === "da_giao") {
+    return { label: "Đã giao", cls: styles.tramBadgeXong };
+  }
+  if (trangThaiGiao === "tron_lai") {
+    return { label: "Đã trộn lại", cls: styles.tramBadgeCho };
+  }
+  return { label: "Đang giao", cls: styles.tramBadgeGiao };
+}
+
+/** Trạng thái sản xuất của 1 trạm (LichSanXuat.trangThai) */
+function tramSxBadge(trangThai?: string | null) {
+  if (trangThai === "da_xong") {
+    return { label: "Đã trộn xong", cls: styles.tramBadgeXong };
+  }
+  if (trangThai === "dang_san_xuat") {
+    return { label: "Đang trộn", cls: styles.tramBadgeGiao };
+  }
+  return { label: "Chờ trộn", cls: styles.tramBadgeCho };
+}
+
 interface DonHangData {
   id: number;
   maDonHang?: string;
@@ -74,8 +96,27 @@ interface DonHangData {
 }
 
 interface LichSanXuatData {
-  bienSoXe?: string;
-  tenTaiXe?: string;
+  id?: number;
+  idTramTron?: number | null;
+  tenTram?: string | null;
+  idTaiXe?: number | null;
+  tenTaiXe?: string | null;
+  bienSoXe?: string | null;
+  kyThuatCongTrinh?: string | null;
+  nguoiOmOng?: string | null;
+  nguoiBatOng?: string | null;
+  phuongAnDo?: string | null;
+  ghiChu?: string | null;
+  thoiGianTron?: string | null;
+  thoiGianXuatBen?: string | null;
+  thoiGianBatDauDo?: string | null;
+  thoiGianKetThucDo?: string | null;
+  trangThai?: string | null;
+  khoiLuongDaTron?: number | null;
+  // Trạng thái giao theo từng trạm (từ backend)
+  trangThaiGiao?: string | null;
+  khoiLuongGiaoThucTe?: number | null;
+  ngayXacNhanGiao?: string | null;
 }
 
 export default function KhoDonHangPage() {
@@ -85,20 +126,15 @@ export default function KhoDonHangPage() {
 
   const [donHang, setDonHang] = useState<DonHangData | null>(null);
   const [lichSanXuatList, setLichSanXuatList] = useState<LichSanXuatData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!id) return;
-    setLoading(true);
     try {
       const res = await layDonHangTramTron(parseInt(id));
       setDonHang(res.donHang);
       setLichSanXuatList(Array.isArray(res.lichSanXuat) ? res.lichSanXuat : []);
     } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
-    } finally {
-      setLoading(false);
     }
   }, [id, showToast]);
 
@@ -106,29 +142,26 @@ export default function KhoDonHangPage() {
     loadData();
   }, [loadData]);
 
-  const handleXacNhanBatDauGiao = async () => {
-    if (!donHang) return;
-    setConfirmLoading(true);
-    try {
-      await xacNhanBatDauGiao(donHang.id);
-      showToast("Đã xác nhận sản xuất xong");
-      loadData();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Lỗi xác nhận", "error");
-    } finally {
-      setConfirmLoading(false);
-    }
-  };
-
-  if (loading) return <Loading />;
+  // Tổng hợp khối lượng đã trộn / đã giao từ tất cả các trạm
+  const tongKhoiLuongDaTron = useMemo(
+    () =>
+      lichSanXuatList.reduce(
+        (sum, ls) => sum + (ls.khoiLuongDaTron || 0),
+        0,
+      ),
+    [lichSanXuatList],
+  );
+  const tongKhoiLuongGiaoThucTe = useMemo(
+    () =>
+      lichSanXuatList.reduce(
+        (sum, ls) => sum + (ls.khoiLuongGiaoThucTe || 0),
+        0,
+      ),
+    [lichSanXuatList],
+  );
 
   if (!donHang) {
-    return (
-      <div className={styles.loading}>
-        <div className={styles.loadingSpinner} />
-        <span>Không tìm thấy đơn hàng</span>
-      </div>
-    );
+    return <Loading />;
   }
 
   const currentStepIdx = TRANG_THAI_STEPS.findIndex(
@@ -136,6 +169,7 @@ export default function KhoDonHangPage() {
   );
   const connLai = (donHang.thanhTien || 0) - (donHang.daThanhToan || 0);
   const trangThai = donHang.trangThaiDon || "dang_san_xuat";
+  const khoiLuongDat = donHang.khoiLuongDat || 0;
 
   return (
     <div className={styles.detailPage}>
@@ -164,22 +198,18 @@ export default function KhoDonHangPage() {
           </div>
         </div>
 
-        {/* Action buttons for Kho */}
+        {/* Trạng thái hiện tại */}
         <div className={styles.pageActions}>
           {trangThai === "dang_san_xuat" && (
-            <button
-              className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
-              onClick={handleXacNhanBatDauGiao}
-              disabled={confirmLoading}
-            >
-              <FiCheck size={16} />
-              {confirmLoading ? "Đang xử lý..." : "Xác nhận sản xuất xong"}
-            </button>
+            <span className={styles.completedBadge}>
+              <FiClock size={16} />
+              {lichSanXuatList.length} trạm đang sản xuất
+            </span>
           )}
-          {(trangThai === "dang_giao") && (
+          {trangThai === "dang_giao" && (
             <span className={styles.completedBadge}>
               <FiTruck size={16} />
-              {lichSanXuatList[0]?.tenTaiXe ? `Tài xế ${lichSanXuatList[0].tenTaiXe} đang giao` : "Đang giao hàng"}
+              Đang giao hàng
             </span>
           )}
           {trangThai === "da_giao" && (
@@ -278,16 +308,30 @@ export default function KhoDonHangPage() {
               {donHang.khoiLuongDat ? `${donHang.khoiLuongDat} m³` : "—"}
             </span>
           </div>
-          {donHang.khoiLuongThucTe && (
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Khối lượng thực tế</span>
-              <span
-                className={`${styles.infoValue} ${styles.infoValueSuccess}`}
-              >
-                {donHang.khoiLuongThucTe} m³
-              </span>
-            </div>
-          )}
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>Đã trộn (tất cả trạm)</span>
+            <span
+              className={`${styles.infoValue} ${
+                tongKhoiLuongDaTron > 0 ? styles.infoValueSuccess : ""
+              }`}
+            >
+              {tongKhoiLuongDaTron > 0
+                ? `${tongKhoiLuongDaTron.toFixed(1)} m³`
+                : "—"}
+            </span>
+          </div>
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>Đã giao (tất cả trạm)</span>
+            <span
+              className={`${styles.infoValue} ${
+                tongKhoiLuongGiaoThucTe > 0 ? styles.infoValueSuccess : ""
+              }`}
+            >
+              {tongKhoiLuongGiaoThucTe > 0
+                ? `${tongKhoiLuongGiaoThucTe.toFixed(1)} m³`
+                : "—"}
+            </span>
+          </div>
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Đơn giá</span>
             <span className={styles.infoValue}>
@@ -348,25 +392,91 @@ export default function KhoDonHangPage() {
             </span>
           </div>
         </div>
+      </div>
 
-        {/* Card: Giao hàng */}
-        <div className={styles.infoCard}>
-          <div className={styles.infoCardTitle}>
-            <FiTruck size={14} /> Thông tin giao hàng
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Biển số xe</span>
-            <span className={styles.infoValue}>
-              {lichSanXuatList[0]?.bienSoXe || "—"}
-            </span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Tài xế</span>
-            <span className={styles.infoValue}>
-              {lichSanXuatList[0]?.tenTaiXe || "—"}
-            </span>
+      {/* Section: Lịch sản xuất (theo từng trạm) */}
+      <div className={styles.sectionCard}>
+        <div className={styles.sectionHeader}>
+          <div className={styles.sectionTitle}>
+            <div className={styles.sectionAccent} />
+            <FiTruck size={16} style={{ color: "var(--color-primary)" }} />
+            Lịch sản xuất ({lichSanXuatList.length} trạm)
           </div>
         </div>
+
+        {lichSanXuatList.length > 0 ? (
+          <div className={styles.subTableWrap}>
+            {lichSanXuatList.map((ls, idx) => {
+              const sxBadge = tramSxBadge(ls.trangThai);
+              const giaoBadge = tramGiaoBadge(ls.trangThaiGiao);
+              const khoiLuongCuaTram = ls.khoiLuongDaTron || 0;
+              return (
+                <div key={ls.id ?? idx} className={styles.tramBlock}>
+                  <div className={styles.tramBlockHeader}>
+                    <FiPackage size={14} style={{ color: "var(--color-primary)" }} />
+                    <span className={styles.tramBlockTitle}>
+                      Trạm {idx + 1}: {ls.tenTram || "Chưa gán trạm"}
+                    </span>
+                    <span className={`${styles.tramBadge} ${sxBadge.cls}`}>
+                      {sxBadge.label}
+                      {khoiLuongCuaTram > 0 ? ` · ${khoiLuongCuaTram.toFixed(1)}/${khoiLuongDat.toFixed(1)} m³` : ""}
+                    </span>
+                    <span className={`${styles.tramBadge} ${giaoBadge.cls}`}>
+                      {giaoBadge.label}
+                      {ls.khoiLuongGiaoThucTe ? ` · ${ls.khoiLuongGiaoThucTe.toFixed(1)} m³` : ""}
+                    </span>
+                  </div>
+
+                  <div className={styles.tramBlockBody}>
+                    <div className={styles.tramRow}>
+                      <span className={styles.tramRowLabel}>Biển số xe:</span>
+                      <span className={styles.tramRowValue}>{ls.bienSoXe || "—"}</span>
+                    </div>
+                    <div className={styles.tramRow}>
+                      <span className={styles.tramRowLabel}>Tài xế:</span>
+                      <span className={styles.tramRowValue}>{ls.tenTaiXe || "—"}</span>
+                    </div>
+                    <div className={styles.tramRow}>
+                      <span className={styles.tramRowLabel}>Kỹ thuật:</span>
+                      <span className={styles.tramRowValue}>{ls.kyThuatCongTrinh || "—"}</span>
+                    </div>
+                    <div className={styles.tramRow}>
+                      <span className={styles.tramRowLabel}>Người ôm ống:</span>
+                      <span className={styles.tramRowValue}>{ls.nguoiOmOng || "—"}</span>
+                    </div>
+                    <div className={styles.tramRow}>
+                      <span className={styles.tramRowLabel}>Người bắt ống:</span>
+                      <span className={styles.tramRowValue}>{ls.nguoiBatOng || "—"}</span>
+                    </div>
+                    <div className={styles.tramRow}>
+                      <span className={styles.tramRowLabel}>Phương án đổ:</span>
+                      <span className={styles.tramRowValue}>{ls.phuongAnDo || "—"}</span>
+                    </div>
+                    <div className={styles.tramRow}>
+                      <span className={styles.tramRowLabel}>Giờ trộn:</span>
+                      <span className={styles.tramRowValue}>{formatDateTime(ls.thoiGianTron || "") || "—"}</span>
+                    </div>
+                    <div className={styles.tramRow}>
+                      <span className={styles.tramRowLabel}>Giờ xuất bến:</span>
+                      <span className={styles.tramRowValue}>{formatDateTime(ls.thoiGianXuatBen || "") || "—"}</span>
+                    </div>
+                    {ls.ghiChu && (
+                      <div className={`${styles.tramRow} ${styles.tramRowFull}`}>
+                        <span className={styles.tramRowLabel}>Ghi chú:</span>
+                        <span className={styles.tramRowValue}>{ls.ghiChu}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={styles.subTableEmpty}>
+            <FiTruck size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
+            <div>Chưa có lịch sản xuất</div>
+          </div>
+        )}
       </div>
 
       {/* Ghi chú đơn hàng */}
