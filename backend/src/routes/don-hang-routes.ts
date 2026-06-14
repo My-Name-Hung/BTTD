@@ -69,17 +69,20 @@ router.get(
       const idTram = req.user?.idTramTron ?? null;
 
       // Phân quyền xem đơn hàng:
-      // - admin, ke_toan, dieu_phoi: xem tất cả
+      // - admin, ke_toan, dieu_phoi, giam_doc_kinh_doanh: xem tất cả
       // - sale: chỉ xem đơn của mình (nguoiTaoId)
       // - tram_tron: chỉ xem đơn thuộc trạm của mình (idTramTron)
-      // - tai_xe, ky_thuat: xem tất cả (điều phối/xem đơn)
+      // - tai_xe: chỉ xem đơn có LichSanXuat với Xe.idTaiKhoan = mình
+      // - ky_thuat: xem tất cả (kỹ thuật công trình hỗ trợ nghiệm thu nhiều đơn)
       const isAdmin = vaiTro === 'admin';
       const isKeToan = vaiTro === 'ke_toan';
       const isDieuPhoi = vaiTro === 'dieu_phoi';
+      const isGDKD = vaiTro === 'giam_doc_kinh_doanh';
       const isSale = vaiTro === 'sale';
       const isTramTron = vaiTro === 'tram_tron';
+      const isTaiXe = vaiTro === 'tai_xe';
 
-      // Neu la sale hoac tram_tron, chuyen huong sang endpoint cua-toi hoac theo-tram
+      // Neu la sale hoac tram_tron hoac tai_xe, chuyen huong sang endpoint cua-toi/theo-tram/theo-xe
       if (isSale) {
         // Sale xem don cua minh
         const offset = (page - 1) * limit;
@@ -156,7 +159,48 @@ router.get(
         return;
       }
 
-      // admin, ke_toan, dieu_phoi: xem tất cả
+      if (isTaiXe) {
+        // Tài xế chỉ xem đơn có LichSanXuat với Xe.idTaiKhoan = mình
+        // (DISTINCT để tránh 1 đơn có nhiều trạm của mình bị đếm/liệt kê trùng)
+        const offset = (page - 1) * limit;
+        let whereClause = `WHERE EXISTS (
+            SELECT 1 FROM LichSanXuat ls
+            INNER JOIN Xe xe ON ls.idXe = xe.id
+            WHERE ls.idDonHang = dh.id AND xe.idTaiKhoan = @idTaiXe
+          )`;
+        if (trangThai) whereClause += ` AND dh.trangThaiDon = @trangThai`;
+        if (tuKhoa) whereClause += ` AND (dh.maDonHang LIKE @tuKhoa OR dh.tenKhachHang LIKE @tuKhoa)`;
+        if (nguoiTaoId) whereClause += ` AND dh.nguoiTaoId = @nguoiTaoIdFilter`;
+
+        const dbModule = await import('../config/database');
+        const countResult = await dbModule.query<{ total: number }>(
+          `SELECT COUNT(*) as total FROM DonHang dh ${whereClause}`,
+          { idTaiXe: req.user!.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined, nguoiTaoIdFilter: nguoiTaoId }
+        );
+        const total = countResult[0]?.total || 0;
+
+        const data = await dbModule.query<any>(
+          `SELECT dh.*, t.tenTram as tenTramTron,
+                  nd.tenDangNhap as maNguoiTao, nd.hoTen as tenNguoiTao
+           FROM DonHang dh
+           LEFT JOIN TramTron t ON dh.idTramTron = t.id
+           LEFT JOIN NguoiDung nd ON dh.nguoiTaoId = nd.id
+           ${whereClause}
+           ORDER BY dh.ngayTao DESC
+           OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+          { idTaiXe: req.user!.id, trangThai, tuKhoa: tuKhoa ? `%${tuKhoa}%` : undefined, nguoiTaoIdFilter: nguoiTaoId, offset, limit }
+        );
+
+        res.json({
+          success: true,
+          message: 'Lấy đơn hàng của tài xế thành công',
+          data,
+          pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        });
+        return;
+      }
+
+      // admin, ke_toan, dieu_phoi, giam_doc_kinh_doanh: xem tất cả
       const result = await layTatCaDonHang(page, limit, trangThai, tuKhoa, nguoiTaoId);
       res.json(result);
     } catch (error) {
@@ -173,6 +217,7 @@ router.get('/thong-ke', authMiddleware, async (req: AuthRequest, res: Response<A
     const idTram = req.user?.idTramTron ?? null;
     const isSale = vaiTro === 'sale';
     const isTramTron = vaiTro === 'tram_tron';
+    const isTaiXe = vaiTro === 'tai_xe';
 
     let whereClause = '';
     const params: Record<string, unknown> = {};
@@ -183,6 +228,14 @@ router.get('/thong-ke', authMiddleware, async (req: AuthRequest, res: Response<A
     } else if (isTramTron && idTram) {
       whereClause = 'WHERE dh.idTramTron = @idTram';
       params.idTram = idTram;
+    } else if (isTaiXe) {
+      // Tài xế chỉ thống kê đơn có LichSanXuat với Xe.idTaiKhoan = mình
+      whereClause = `WHERE EXISTS (
+          SELECT 1 FROM LichSanXuat ls
+          INNER JOIN Xe xe ON ls.idXe = xe.id
+          WHERE ls.idDonHang = dh.id AND xe.idTaiKhoan = @idTaiXe
+        )`;
+      params.idTaiXe = req.user!.id;
     }
 
     const dbModule = await import('../config/database');

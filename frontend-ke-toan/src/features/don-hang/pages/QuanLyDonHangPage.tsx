@@ -104,14 +104,15 @@ export default function QuanLyDonHangPage() {
   const isKeToan = userVaiTro === "ke_toan";
   const isGDKD = userVaiTro === "giam_doc_kinh_doanh";
   const isDieuPhoi = userVaiTro === "dieu_phoi";
+  const isTaiXe = userVaiTro === "tai_xe";
   const isKeToanOrAdmin = isKeToan || isAdmin;
   const isGDKDOrAdmin = isGDKD || isAdmin;
-  const canCreate = ["admin", "dieu_phoi", "sale"].includes(userVaiTro);
-  const canCreateOrder = ["admin", "sale", "dieu_phoi"].includes(userVaiTro);
+  const canCreate = ["admin", "dieu_phoi", "sale"].includes(userVaiTro || "");
+  const canCreateOrder = ["admin", "sale", "dieu_phoi"].includes(userVaiTro || "");
   // Sửa: admin/GDKD/kế toán sửa tất cả đơn đến trước nghiệm thu; sales chỉ sửa đơn của mình
-  const canEditAll = ["admin", "giam_doc_kinh_doanh", "ke_toan"].includes(userVaiTro);
+  const canEditAll = ["admin", "giam_doc_kinh_doanh", "ke_toan"].includes(userVaiTro || "");
   const canEdit = canEditAll || isSale;
-  const canDelete = ["admin"].includes(userVaiTro);
+  const canDelete = ["admin"].includes(userVaiTro || "");
   // GDKD duyệt bước 1 (cho_duyet), Kế toán duyệt bước 2 (cho_ke_toan_duyet)
   const canApprove = isGDKDOrAdmin || isKeToan;
   const canApproveStep1 = isGDKDOrAdmin; // GDKD duyệt đơn chờ duyệt
@@ -307,20 +308,26 @@ export default function QuanLyDonHangPage() {
       {/* Page header */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageHeaderTitle}>Quản lý đơn hàng</div>
+          <div className={styles.pageHeaderTitle}>
+            {isTaiXe ? "Đơn hàng của tôi" : "Quản lý đơn hàng"}
+          </div>
           <div className={styles.pageHeaderDesc}>
-            Toàn quyền quản lý đơn hàng bê tông
+            {isTaiXe
+              ? "Danh sách các đơn hàng được gán cho tài xế của bạn"
+              : "Toàn quyền quản lý đơn hàng bê tông"}
           </div>
         </div>
         <div className={styles.pageHeaderActions}>
-          <button
-            className={`btn btn-export ${exporting ? "btn-loading" : ""}`}
-            onClick={handleExportExcel}
-            disabled={exporting}
-          >
-            <FiDownload />
-            {exporting ? "Đang xuất..." : "Xuất báo cáo"}
-          </button>
+          {!isTaiXe && (
+            <button
+              className={`btn btn-export ${exporting ? "btn-loading" : ""}`}
+              onClick={handleExportExcel}
+              disabled={exporting}
+            >
+              <FiDownload />
+              {exporting ? "Đang xuất..." : "Xuất báo cáo"}
+            </button>
+          )}
           {canCreateOrder && (
             <button
               className="btn btn-add"
@@ -332,9 +339,25 @@ export default function QuanLyDonHangPage() {
         </div>
       </div>
 
-      {/* KPI Row - Sale/Kế toán/Điều phối/GDKD role uses simplified 2-column grid */}
-      <div className={isSale || isKeToan || isDieuPhoi || isGDKD ? styles.kpiRowSale : styles.kpiRow}>
-        {isSale || isKeToan || isDieuPhoi || isGDKD ? (
+      {/* KPI Row - tài xế chỉ cần Tổng đơn + Đang giao */}
+      <div className={isSale || isKeToan || isDieuPhoi || isGDKD || isTaiXe ? styles.kpiRowSale : styles.kpiRow}>
+        {isTaiXe ? (
+          <>
+            <div className={styles.kpiItem}>
+              <div className={styles.kpiLabel}>Tổng đơn của tôi</div>
+              <div className={styles.kpiValue}>{kpiTotal}</div>
+            </div>
+            <div className={styles.kpiItem}>
+              <div className={styles.kpiLabel}>Đang giao</div>
+              <div
+                className={styles.kpiValue}
+                style={{ color: "var(--color-primary)" }}
+              >
+                {kpiDangXL}
+              </div>
+            </div>
+          </>
+        ) : isSale || isKeToan || isDieuPhoi || isGDKD ? (
           <>
             <div className={styles.kpiItem}>
               <div className={styles.kpiLabel}>Tổng đơn</div>
@@ -469,7 +492,7 @@ export default function QuanLyDonHangPage() {
       </div>
 
       {/* Table - Sale/Kế toán/Điều phối/GDKD uses simplified table with actions */}
-      {isSale || isKeToan || isDieuPhoi || isGDKD ? (
+      {isSale || isKeToan || isDieuPhoi || isGDKD || isTaiXe ? (
         <div className={styles.card}>
           <div className={styles.saleCardHeader}>
             <span className={styles.saleCardTitle}>Danh sách đơn hàng</span>
@@ -592,7 +615,7 @@ export default function QuanLyDonHangPage() {
                           >
                             <FiEye size={12} />
                           </button>
-                          {canEdit && !["nghiem_thu", "da_nghiem_thu", "da_thanh_toan", "hoan_thanh", "tu_choi"].includes(dh.trangThaiDon) && (canEditAll || dh.nguoiTaoId === userId) && (
+                          {!isTaiXe && canEdit && !["nghiem_thu", "da_nghiem_thu", "da_thanh_toan", "hoan_thanh", "tu_choi"].includes(dh.trangThaiDon) && (canEditAll || dh.nguoiTaoId === userId) && (
                             <button
                               className={`${styles.actionBtn} ${styles.actionBtnEdit} ${styles.actionBtnSm}`}
                               onClick={() => navigate(`/quan-ly/don-hang/sua/${dh.id}`)}
