@@ -56,6 +56,8 @@ interface GroupedLichSanXuat {
     thoiGianTron?: string;
     trangThai?: string; // chua_san_xuat | dang_san_xuat | da_xong
     khoiLuongDaTron?: number; // Khối lượng trạm này đã trộn
+    bienSoXe?: string;
+    tenTaiXe?: string;
   }[];
 }
 
@@ -120,6 +122,8 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
           thoiGianTron: item.thoiGianTron,
           trangThai: item.trangThai,
           khoiLuongDaTron: item.khoiLuongDaTron,
+          bienSoXe: item.bienSoXe,
+          tenTaiXe: item.tenTaiXe,
         });
       }
     }
@@ -697,14 +701,30 @@ export default function KhoLichSanXuatPage() {
                         </div>
                       </td>
                       <td className={styles.hideOnMobile}>
-                        <span className={styles.tableXe}>
-                          {item.bienSoXe || "—"}
-                        </span>
+                        <div className={styles.tramTagsWrap}>
+                          {item.tramTrons.map((tram) => (
+                            <span
+                              key={tram.id}
+                              className={styles.tramTag}
+                              title={tram.tenTram}
+                            >
+                              {tram.bienSoXe || "—"}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className={styles.hideOnMobile}>
-                        <span className={styles.tableTaiXe}>
-                          {item.tenTaiXe || "—"}
-                        </span>
+                        <div className={styles.tramTagsWrap}>
+                          {item.tramTrons.map((tram) => (
+                            <span
+                              key={tram.id}
+                              className={styles.tramTag}
+                              title={tram.tenTram}
+                            >
+                              {tram.tenTaiXe || "—"}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td>
                         <span className={styles.tableDate}>

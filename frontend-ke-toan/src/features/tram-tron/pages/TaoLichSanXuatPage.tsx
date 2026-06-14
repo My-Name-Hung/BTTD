@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { FiSave, FiTruck, FiUser, FiTool, FiArrowLeft, FiHome, FiInfo } from 'react-icons/fi';
+import { FiSave, FiUser, FiTool, FiArrowLeft, FiHome, FiInfo } from 'react-icons/fi';
 import {
-  layDanhSachXe, layDanhSachDonHang, layDanhSachTramTron,
+  layDanhSachDonHang, layDanhSachTramTron,
   layLichSanXuat, taoLichSanXuat, capNhatLichSanXuat,
   goTramKhoiLichSanXuat,
 } from '../../../shared/services/api';
-import { Xe, DonHang, LichSanXuat, TramTron } from '../../../shared/types';
+import { DonHang, LichSanXuat, TramTron } from '../../../shared/types';
 import { useToast } from '../../../shared/hooks';
 import { ConfirmModal } from '../../../shared/components/Common';
 import styles from './TaoLichSanXuatPage.module.css';
@@ -25,7 +25,6 @@ export default function TaoLichSanXuatPage() {
 
   const { toasts, showToast } = useToast();
 
-  const [xes, setXes] = useState<Xe[]>([]);
   const [tramTrons, setTramTrons] = useState<TramTron[]>([]);
   const [donHang, setDonHang] = useState<DonHang | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,11 +37,9 @@ export default function TaoLichSanXuatPage() {
   const [existingLichMap, setExistingLichMap] = useState<Map<number, number>>(new Map());
 
   const [form, setForm] = useState({
-    idXe: '', bienSoXe: '',
     idTramTron: '', tenTramTron: '',
     kyThuatCongTrinh: '', nguoiOmOng: '', nguoiBatOng: '',
     ghiChu: '',
-    ghiChuXe: '',
   });
 
   const [initialForm, setInitialForm] = useState(form);
@@ -62,11 +59,9 @@ export default function TaoLichSanXuatPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const [xeRes, tramRes] = await Promise.all([
-          layDanhSachXe(),
+        const [tramRes] = await Promise.all([
           layDanhSachTramTron(),
         ]);
-        setXes(xeRes);
         const uniqueTrams = tramRes.filter((t, idx, arr) =>
           arr.findIndex((x) => x.id === t.id) === idx
         );
@@ -107,26 +102,20 @@ export default function TaoLichSanXuatPage() {
             setExistingLichMap(lichMap);
 
             setForm({
-              idXe: lich.idXe ? String(lich.idXe) : '',
-              bienSoXe: lich.bienSoXe || '',
               idTramTron: lich.idTramTron ? String(lich.idTramTron) : '',
               tenTramTron: tram?.tenTram || '',
               kyThuatCongTrinh: lich.kyThuatCongTrinh || '',
               nguoiOmOng: lich.nguoiOmOng || '',
               nguoiBatOng: lich.nguoiBatOng || '',
               ghiChu: lich.ghiChu || '',
-              ghiChuXe: (lich as any).ghiChuXe || '',
             });
             setInitialForm({
-              idXe: lich.idXe ? String(lich.idXe) : '',
-              bienSoXe: lich.bienSoXe || '',
               idTramTron: lich.idTramTron ? String(lich.idTramTron) : '',
               tenTramTron: tram?.tenTram || '',
               kyThuatCongTrinh: lich.kyThuatCongTrinh || '',
               nguoiOmOng: lich.nguoiOmOng || '',
               nguoiBatOng: lich.nguoiBatOng || '',
               ghiChu: lich.ghiChu || '',
-              ghiChuXe: (lich as any).ghiChuXe || '',
             });
           } else {
             setSelectedTramIds([]);
@@ -186,11 +175,6 @@ export default function TaoLichSanXuatPage() {
     return () => clearInterval(interval);
   }, [idDonHang]);
 
-  const handleXeChange = (xeId: string) => {
-    const xe = xes.find((x) => x.id === parseInt(xeId));
-    setForm({ ...form, idXe: xeId, bienSoXe: xe?.bienSo || '' });
-  };
-
   const handleMultiTramToggle = (tramId: number) => {
     setSelectedTramIds((prev) => {
       if (prev.includes(tramId)) {
@@ -211,8 +195,6 @@ export default function TaoLichSanXuatPage() {
 
     setSubmitting(true);
     try {
-      const xe = xes.find((x) => x.id === parseInt(form.idXe));
-
       const existingTramIds = Array.from(existingLichMap.keys());
       const selectedSet = new Set(selectedTramIds);
 
@@ -229,8 +211,6 @@ export default function TaoLichSanXuatPage() {
             const payload: Partial<LichSanXuat> = {
               idDonHang: idDonHang!,
               idTramTron: tramId,
-              idXe: form.idXe ? parseInt(form.idXe) : null,
-              bienSoXe: xe?.bienSo || form.bienSoXe || null,
               kyThuatCongTrinh: form.kyThuatCongTrinh || null,
               nguoiOmOng: form.nguoiOmOng || null,
               nguoiBatOng: form.nguoiBatOng || null,
@@ -277,8 +257,6 @@ export default function TaoLichSanXuatPage() {
         updateTargets.map((tramId) => {
           const lichId = existingLichMap.get(tramId)!;
           const payload: Partial<LichSanXuat> = {
-            idXe: form.idXe ? parseInt(form.idXe) : null,
-            bienSoXe: xe?.bienSo || form.bienSoXe || null,
             kyThuatCongTrinh: form.kyThuatCongTrinh || null,
             nguoiOmOng: form.nguoiOmOng || null,
             nguoiBatOng: form.nguoiBatOng || null,
@@ -303,8 +281,6 @@ export default function TaoLichSanXuatPage() {
             const payload: Partial<LichSanXuat> = {
               idDonHang: idDonHang!,
               idTramTron: tramId,
-              idXe: form.idXe ? parseInt(form.idXe) : null,
-              bienSoXe: xe?.bienSo || form.bienSoXe || null,
               kyThuatCongTrinh: form.kyThuatCongTrinh || null,
               nguoiOmOng: form.nguoiOmOng || null,
               nguoiBatOng: form.nguoiBatOng || null,
@@ -477,41 +453,6 @@ export default function TaoLichSanXuatPage() {
           </div>
         )}
         <form onSubmit={handleSubmit}>
-          {existingLichMap.size > 0 && (
-            <>
-              <div className={styles.sectionTitle}>
-                <FiTruck size={15} /> Thông tin xe giao
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Xe giao hàng</label>
-                  <select
-                    className={styles.formSelect}
-                    value={form.idXe}
-                    onChange={(e) => handleXeChange(e.target.value)}
-                  >
-                    <option value="">— Chọn xe —</option>
-                    {xes.map((x) => (
-                      <option key={x.id} value={x.id}>
-                        {x.bienSo} — {x.tenTaiXe || 'Không có tài xế'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Biển số xe</label>
-                  <input
-                    className={styles.formInput}
-                    value={form.bienSoXe}
-                    onChange={(e) => setForm({ ...form, bienSoXe: e.target.value })}
-                    placeholder="VD: 59C1-12345"
-                  />
-                </div>
-              </div>
-              <div className={styles.formDivider} />
-            </>
-          )}
-
           <div className={styles.sectionTitle}>
             <FiHome size={15} /> Thông tin trạm trộn
           </div>

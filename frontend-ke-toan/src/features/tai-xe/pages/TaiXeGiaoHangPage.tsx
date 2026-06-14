@@ -19,6 +19,7 @@ import {
   layDonHangGiaoCuaToi,
   taiXeCapNhatTrangThaiGiao,
   taiXeTronLai,
+  xoaLichSanXuatTheoDonHang,
   layThongKeTaiXe,
 } from "../../../shared/services/api";
 import { DonHang } from "../../../shared/types";
@@ -153,12 +154,26 @@ export default function TaiXeGiaoHangPage() {
   // Xác nhận trộn lại
   const handleTronLai = async () => {
     if (!tronLaiTarget || !lyDoTronLai.trim()) return;
+    const idDonHang = tronLaiTarget.id;
     setTronLaiLoading(true);
     try {
-      await taiXeTronLai(tronLaiTarget.id, lyDoTronLai.trim());
-      showToast("Đã ghi nhận trộn lại. Đơn quay về bước tạo lịch sản xuất.");
+      // 1. Backend reset trạng thái đơn về "dang_san_xuat" + lưu lịch sử
+      await taiXeTronLai(idDonHang, lyDoTronLai.trim());
+      // 2. Xóa lịch sản xuất cũ để điều phối tạo lại từ đầu
+      try {
+        await xoaLichSanXuatTheoDonHang(idDonHang);
+      } catch (delErr) {
+        // Không chặn flow nếu xóa lịch lỗi - vẫn cho điều phối xử lý
+        console.error("Không xóa được lịch sản xuất cũ:", delErr);
+      }
+      showToast("Đã trộn lại. Đang chuyển sang trang điều phối lịch sản xuất.");
       setTronLaiModalOpen(false);
-      loadData();
+      setTronLaiTarget(null);
+      setLyDoTronLai("");
+      // 3. Chuyển sang trang lịch sản xuất để điều phối tạo lịch mới
+      navigate("/dieu-phoi/lich-san-xuat", {
+        state: { refresh: Date.now(), idDonHangTronLai: idDonHang },
+      });
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Lỗi trộn lại", "error");
     } finally {
@@ -481,7 +496,7 @@ export default function TaiXeGiaoHangPage() {
               color: "#ea580c",
             }}
           >
-            <strong>Lưu ý:</strong> Sau khi trộn lại, đơn hàng sẽ quay về bước điều phối để tạo lịch sản xuất mới.
+            <strong>Lưu ý:</strong> Lịch sản xuất hiện tại của đơn sẽ được xóa. Đơn hàng sẽ được chuyển sang trang điều phối để tạo lịch sản xuất mới.
           </div>
         </div>
       </Modal>

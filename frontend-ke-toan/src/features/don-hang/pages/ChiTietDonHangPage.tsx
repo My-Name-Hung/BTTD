@@ -336,11 +336,14 @@ export default function ChiTietDonHangPage() {
   // Dedup theo idTramTron - 1 trạm chỉ hiển thị 1 block.
   // Trường hợp DB có 2 bản ghi LichSanXuat cùng trạm (lịch cũ đã hoàn thành + tạo lại),
   // chỉ giữ bản ghi mới nhất (theo ngayTao/id desc) cho mỗi trạm.
+  // Bỏ qua các bản ghi không gắn trạm (idTramTron = null) vì đó là dữ liệu "treo" từ
+  // lần gỡ trạm trước đây/goTramKhoiLichSanXuat - không hiển thị như 1 trạm thật.
   // Đồng bộ với logic de-dup của KhoLichSanXuatPage.
   const lichSXsHienThi = useMemo(() => {
     const map = new Map<number, LichSanXuat>();
     for (const ls of lichSXs) {
-      const key = ls.idTramTron ?? -ls.id; // lịch không có idTramTron (dữ liệu cũ) thì group theo id
+      if (ls.idTramTron == null) continue; // bỏ qua bản ghi không có trạm
+      const key = ls.idTramTron;
       const existing = map.get(key);
       if (!existing) {
         map.set(key, ls);
