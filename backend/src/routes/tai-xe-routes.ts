@@ -35,13 +35,13 @@ router.get(
                   ls.khoiLuongGiaoThucTe,
                   ls.ngayXacNhanGiao,
                   tt.tenTram,
-                  tk.hoTen as tenTaiXe,
+                  nd.hoTen as tenTaiXe,
                   xe.bienSoXe as xeBienSoXe
              FROM DonHang dh
              INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang AND ls.idTramTron IS NOT NULL
              LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
              LEFT JOIN Xe xe ON ls.idXe = xe.id
-             LEFT JOIN TaiKhoan tk ON xe.idTaiKhoan = tk.id
+             LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
              WHERE dh.trangThaiDon = N'dang_giao'
              ORDER BY dh.ngayGiao DESC, ls.id ASC`,
           {}
@@ -59,13 +59,13 @@ router.get(
                   ls.khoiLuongGiaoThucTe,
                   ls.ngayXacNhanGiao,
                   tt.tenTram,
-                  tk.hoTen as tenTaiXe,
+                  nd.hoTen as tenTaiXe,
                   xe.bienSoXe as xeBienSoXe
              FROM DonHang dh
              INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang AND ls.idTramTron IS NOT NULL
              INNER JOIN Xe xe ON ls.idXe = xe.id
              LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
-             LEFT JOIN TaiKhoan tk ON xe.idTaiKhoan = tk.id
+             LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
              WHERE xe.idTaiKhoan = @idTaiXe
                AND dh.trangThaiDon = N'dang_giao'
              ORDER BY dh.ngayGiao DESC, ls.id ASC`,
@@ -190,7 +190,7 @@ router.get(
                   ls.khoiLuongGiaoThucTe,
                   ls.ngayXacNhanGiao,
                   tt.tenTram,
-                  tk.hoTen as tenTaiXe,
+                  nd.hoTen as tenTaiXe,
                   xe.bienSoXe as xeBienSoXe
              FROM DonHang dh
              INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
@@ -198,7 +198,7 @@ router.get(
                AND ls.trangThaiGiao = N'da_giao'
              LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
              LEFT JOIN Xe xe ON ls.idXe = xe.id
-             LEFT JOIN TaiKhoan tk ON xe.idTaiKhoan = tk.id
+             LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
              WHERE dh.trangThaiDon IN (N'da_giao', N'dang_giao', N'da_nghiem_thu', N'da_thanh_toan', N'hoan_thanh')
              ORDER BY ls.ngayXacNhanGiao DESC, dh.ngayGiao DESC, ls.id ASC`,
           {}
@@ -216,7 +216,7 @@ router.get(
                   ls.khoiLuongGiaoThucTe,
                   ls.ngayXacNhanGiao,
                   tt.tenTram,
-                  tk.hoTen as tenTaiXe,
+                  nd.hoTen as tenTaiXe,
                   xe.bienSoXe as xeBienSoXe
              FROM DonHang dh
              INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang
@@ -224,7 +224,7 @@ router.get(
                AND ls.trangThaiGiao = N'da_giao'
              INNER JOIN Xe xe ON ls.idXe = xe.id
              LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
-             LEFT JOIN TaiKhoan tk ON xe.idTaiKhoan = tk.id
+             LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
              WHERE xe.idTaiKhoan = @idTaiXe
                AND dh.trangThaiDon IN (N'da_giao', N'dang_giao', N'da_nghiem_thu', N'da_thanh_toan', N'hoan_thanh')
              ORDER BY ls.ngayXacNhanGiao DESC, dh.ngayGiao DESC, ls.id ASC`,
@@ -542,11 +542,11 @@ router.post(
       let idTramTron: number | null = null;
       if (idLichSanXuat != null) {
         const lsInfo = await query<any>(
-          `SELECT ls.idTramTron, ls.bienSoXe, tt.tenTram, tk.hoTen as tenTaiXe
+          `SELECT ls.idTramTron, ls.bienSoXe, tt.tenTram, nd.hoTen as tenTaiXe
              FROM LichSanXuat ls
              LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
              LEFT JOIN Xe xe ON ls.idXe = xe.id
-             LEFT JOIN TaiKhoan tk ON xe.idTaiKhoan = tk.id
+             LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
              WHERE ls.id = @idLichSanXuat AND ls.idDonHang = @idDonHang`,
           { idLichSanXuat, idDonHang }
         );
