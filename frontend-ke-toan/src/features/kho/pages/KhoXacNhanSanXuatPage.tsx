@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  FiArrowLeft,
-  FiCalendar,
-  FiCheck,
-  FiClock,
-  FiSave,
-  FiTruck,
-} from "react-icons/fi";
+import { FiArrowLeft, FiCalendar, FiCheck, FiTruck } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
@@ -14,10 +7,9 @@ import {
   layDanhSachXe,
   layDonHang,
   layLichSanXuat,
-  layLichSanXuatTramTron,
   xacNhanSanXuatXong,
 } from "../../../shared/services/api";
-import { DonHang, LichSanXuat, Xe } from "../../../shared/types";
+import { DonHang, LichSanXuat, NguoiDung, Xe } from "../../../shared/types";
 import styles from "./KhoXacNhanSanXuatPage.module.css";
 
 function formatDateTimeLocal(d: string | null | undefined): string {
@@ -87,15 +79,16 @@ export default function KhoXacNhanSanXuatPage() {
   const [ghiChuXe, setGhiChuXe] = useState("");
 
   // Lấy thông tin user từ localStorage
-  const userInfo = useMemo(() => {
+  const userInfo = useMemo<NguoiDung>(() => {
     try {
-      return JSON.parse(localStorage.getItem("bttd_user") || "{}");
+      return JSON.parse(localStorage.getItem("bttd_user") || "{}") as NguoiDung;
     } catch {
-      return {};
+      return {} as NguoiDung;
     }
   }, []);
   const isAdmin = userInfo.vaiTro === "admin";
   const isTramTron = userInfo.vaiTro === "tram_tron";
+  const userIdTramTron = userInfo.idTramTron ?? null;
 
   const loadData = useCallback(async () => {
     if (!idDonHang) return;
@@ -111,7 +104,9 @@ export default function KhoXacNhanSanXuatPage() {
       setXes(xesData);
 
       // Lấy thông tin lịch sản xuất theo trạm trộn
-      const tramLichs = (Array.isArray(lichs) ? lichs : [])
+      // User tram_tron: lọc chỉ lấy lịch của trạm được gán cho user (idTramTron từ userInfo)
+      // vì API layLichSanXuat trả về tất cả trạm của đơn (không lọc theo user)
+      const allTramLichs = (Array.isArray(lichs) ? lichs : [])
         .filter((l: any) => l.idTramTron && l.tenTram)
         .map((l: any) => ({
           id: l.id,
@@ -122,6 +117,10 @@ export default function KhoXacNhanSanXuatPage() {
           trangThai: l.trangThai,
           khoiLuongDaTron: l.khoiLuongDaTron ?? null,
         }));
+
+      const tramLichs = isTramTron && userIdTramTron
+        ? allTramLichs.filter((l) => l.idTramTron === userIdTramTron)
+        : allTramLichs;
       setLichTramTrons(tramLichs);
 
       // Auto-fill từ lịch sản xuất đầu tiên
@@ -142,9 +141,11 @@ export default function KhoXacNhanSanXuatPage() {
         }
       }
 
-      // User tram_tron: auto-fill cứng trạm của mình vào lịch trạm
-      // (backend đã lọc chỉ trả về lịch của trạm user) → luôn set idLichSanXuat
+      // User tram_tron: auto-fill cứng trạm của mình vào idLichSanXuat
       if (isTramTron && tramLichs.length > 0) {
+        setIdLichSanXuat(String(tramLichs[0].id));
+      } else if (tramLichs.length === 1) {
+        // Đơn chỉ có 1 trạm (admin nhìn thấy) → auto-fill luôn
         setIdLichSanXuat(String(tramLichs[0].id));
       }
     } catch {
@@ -152,7 +153,7 @@ export default function KhoXacNhanSanXuatPage() {
     } finally {
       setLoading(false);
     }
-  }, [idDonHang, showToast, isTramTron]);
+  }, [idDonHang, showToast, isTramTron, userIdTramTron]);
 
   useEffect(() => {
     loadData();
@@ -195,13 +196,25 @@ export default function KhoXacNhanSanXuatPage() {
       return;
     }
 
+    // User tram_tron: nếu đơn không có lịch của trạm mình → chặn
+    if (isTramTron && !idLichSanXuat) {
+      showToast(
+        "Đơn hàng này không có lịch sản xuất cho trạm của bạn",
+        "error",
+      );
+      return;
+    }
+
     if (!khoiLuongDaTron || parseFloat(khoiLuongDaTron) <= 0) {
       showToast("Vui lòng nhập số khối đã trộn", "error");
       return;
     }
 
     if (parseFloat(khoiLuongDaTron) > khoiLuongBanDau) {
-      showToast("Số khối đã trộn không được lớn hơn khối lượng đặt hàng", "error");
+      showToast(
+        "Số khối đã trộn không được lớn hơn khối lượng đặt hàng",
+        "error",
+      );
       return;
     }
 
@@ -270,13 +283,13 @@ export default function KhoXacNhanSanXuatPage() {
         <div className={styles.orderInfoGrid}>
           <div className={styles.orderInfoItem}>
             <span className={styles.orderInfoLabel}>Mác bê tông</span>
-            <span className={styles.orderInfoValue}>{donHang.tenMacBeTong}</span>
+            <span className={styles.orderInfoValue}>
+              {donHang.tenMacBeTong}
+            </span>
           </div>
           <div className={styles.orderInfoItem}>
             <span className={styles.orderInfoLabel}>Khối lượng đặt</span>
-            <span className={styles.orderInfoValue}>
-              {khoiLuongBanDau} m³
-            </span>
+            <span className={styles.orderInfoValue}>{khoiLuongBanDau} m³</span>
           </div>
           <div className={styles.orderInfoItem}>
             <span className={styles.orderInfoLabel}>Địa chỉ giao</span>
@@ -323,7 +336,8 @@ export default function KhoXacNhanSanXuatPage() {
                   ))}
                 </select>
                 <span className={styles.formHint}>
-                  Mỗi lần xác nhận chỉ ghi nhận khối lượng cho 1 trạm. Đơn có {soTram} trạm trộn.
+                  Mỗi lần xác nhận chỉ ghi nhận khối lượng cho 1 trạm. Đơn có{" "}
+                  {soTram} trạm trộn.
                 </span>
               </div>
             </div>
@@ -362,7 +376,9 @@ export default function KhoXacNhanSanXuatPage() {
               <span className={styles.formHint}>
                 Khối lượng đặt: {khoiLuongBanDau} m³ · Tổng đã trộn:{" "}
                 <strong>{tongKhoiLuongDaTron} m³</strong> · Còn lại:{" "}
-                <strong style={{ color: khoiLuongConLai > 0 ? "#f59e0b" : "#10b981" }}>
+                <strong
+                  style={{ color: khoiLuongConLai > 0 ? "#f59e0b" : "#10b981" }}
+                >
                   {khoiLuongConLai} m³
                 </strong>
               </span>
