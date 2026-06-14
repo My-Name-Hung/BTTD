@@ -25,6 +25,8 @@ router.get(
 
       if (isAdmin || isKyThuat || isGiamDoc) {
         // Admin/Kỹ thuật/GĐKD: xem tất cả đơn đang giao, 1 row / trạm
+        // Filter theo LichSanXuat.trangThaiGiao (theo từng trạm) thay vì chỉ DonHang.trangThaiDon
+        // vì 1 đơn có nhiều trạm, mỗi trạm có trạng thái giao riêng.
         data = await query<any>(
           `SELECT dh.*,
                   ls.id as idLichSanXuat,
@@ -43,6 +45,7 @@ router.get(
              LEFT JOIN Xe xe ON ls.idXe = xe.id
              LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
              WHERE dh.trangThaiDon = N'dang_giao'
+               AND (ls.trangThaiGiao = N'dang_giao' OR ls.trangThaiGiao IS NULL)
              ORDER BY dh.ngayGiao DESC, ls.id ASC`,
           {}
         );
@@ -68,6 +71,7 @@ router.get(
              LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
              WHERE xe.idTaiKhoan = @idTaiXe
                AND dh.trangThaiDon = N'dang_giao'
+               AND (ls.trangThaiGiao = N'dang_giao' OR ls.trangThaiGiao IS NULL)
              ORDER BY dh.ngayGiao DESC, ls.id ASC`,
           { idTaiXe }
         );

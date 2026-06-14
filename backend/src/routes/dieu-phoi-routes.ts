@@ -51,10 +51,31 @@ router.post('/', authMiddleware, requireRole('admin', 'dieu_phoi'), async (req: 
   }
 });
 
-router.get('/don-hang/:idDonHang', authMiddleware, requireRole('admin', 'dieu_phoi', 'ke_toan', 'tram_tron', 'lanh_dao', 'sales', 'sale'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.get('/don-hang/:idDonHang', authMiddleware, requireRole('admin', 'dieu_phoi', 'ke_toan', 'tram_tron', 'lanh_dao', 'sales', 'sale', 'tai_xe', 'ky_thuat'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.idDonHang, 10);
-    const data = await layLichSanXuatTheoDonHang(idDonHang);
+    const vaiTro = req.user?.vaiTro;
+    const userId = req.user?.id;
+    const dbModule = await import('../config/database');
+    let data: any[];
+
+    if (vaiTro === 'tai_xe' && userId) {
+      // Tài xế chỉ xem lịch sản xuất thuộc xe của mình
+      data = await dbModule.query<any[]>(
+        `SELECT ls.*,
+                nd.hoTen as tenTaiXe,
+                ISNULL(tt.tenTram, N'Không xác định') as tenTram
+           FROM LichSanXuat ls
+           LEFT JOIN NguoiDung nd ON ls.idTaiXe = nd.id
+           LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
+           INNER JOIN Xe xe ON ls.idXe = xe.id
+           WHERE ls.idDonHang = @idDonHang AND xe.idTaiKhoan = @userId
+           ORDER BY ls.ngayTao ASC`,
+        { idDonHang, userId }
+      );
+    } else {
+      data = await layLichSanXuatTheoDonHang(idDonHang);
+    }
     res.json({ success: true, message: 'Lấy lịch sản xuất thành công', data });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi lấy lịch sản xuất';
