@@ -19,10 +19,8 @@ import {
   layDonHangGiaoCuaToi,
   taiXeCapNhatTrangThaiGiao,
   taiXeTronLai,
-  xoaLichSanXuatTheoDonHang,
   layThongKeTaiXe,
 } from "../../../shared/services/api";
-import { DonHang } from "../../../shared/types";
 import styles from "./TaiXeGiaoHangPage.module.css";
 import { formatDateVN } from "../../../shared/utils/dateUtils";
 
@@ -35,6 +33,35 @@ function formatDate(d: string | null | undefined): string {
 
 type TabType = "dang_giao" | "da_giao";
 
+/**
+ * Mỗi row trong danh sách là 1 TRẠM (LichSanXuat) của 1 đơn hàng.
+ * API backend trả về 1 row / trạm vì đơn hàng có thể có nhiều trạm,
+ * mỗi trạm có 1 tài xế riêng và hành động (Đã giao / Trộn lại) độc lập.
+ */
+interface DonHangTheoTram {
+  // Các trường DonHang
+  id: number;
+  maDonHang: string;
+  tenKhachHang: string;
+  diaChiNhan: string;
+  soDienThoai: string;
+  tenMacBeTong: string | null;
+  khoiLuongDat: number;
+  khoiLuongThucTe: number | null;
+  thanhTien: number | null;
+  trangThaiDon: string;
+  ngayGiao: string | null;
+  // Trường lichSX bổ sung
+  idLichSanXuat: number;
+  idTramTron: number | null;
+  tenTram: string | null;
+  tenTaiXe: string | null;
+  bienSoXe: string | null;
+  trangThaiGiao: string | null;
+  khoiLuongGiaoThucTe: number | null;
+  ngayXacNhanGiao: string | null;
+}
+
 export default function TaiXeGiaoHangPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -42,8 +69,8 @@ export default function TaiXeGiaoHangPage() {
   const { toasts, showToast } = useToast();
   const isKyThuat = hasAnyRole(["ky_thuat"]);
 
-  const [allDangGiao, setAllDangGiao] = useState<DonHang[]>([]);
-  const [allDaGiao, setAllDaGiao] = useState<DonHang[]>([]);
+  const [allDangGiao, setAllDangGiao] = useState<DonHangTheoTram[]>([]);
+  const [allDaGiao, setAllDaGiao] = useState<DonHangTheoTram[]>([]);
   const [thongKe, setThongKe] = useState({ tongDon: 0, chuaGiao: 0, daGiao: 0 });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("dang_giao");
@@ -55,11 +82,11 @@ export default function TaiXeGiaoHangPage() {
 
   // Confirm state
   const [updating, setUpdating] = useState<number | null>(null);
-  const [confirmTarget, setConfirmTarget] = useState<DonHang | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<DonHangTheoTram | null>(null);
 
   // Trộn lại modal state
   const [tronLaiModalOpen, setTronLaiModalOpen] = useState(false);
-  const [tronLaiTarget, setTronLaiTarget] = useState<DonHang | null>(null);
+  const [tronLaiTarget, setTronLaiTarget] = useState<DonHangTheoTram | null>(null);
   const [lyDoTronLai, setLyDoTronLai] = useState("");
   const [tronLaiLoading, setTronLaiLoading] = useState(false);
 
@@ -71,8 +98,8 @@ export default function TaiXeGiaoHangPage() {
         layDonHangDaGiao(),
         layThongKeTaiXe(),
       ]);
-      setAllDangGiao(dangGiao);
-      setAllDaGiao(daGiao);
+      setAllDangGiao(dangGiao || []);
+      setAllDaGiao(daGiao || []);
       setThongKe(stats);
     } catch {
       showToast("Không tải được danh sách", "error");
@@ -102,17 +129,19 @@ export default function TaiXeGiaoHangPage() {
         !search ||
         d.maDonHang?.toLowerCase().includes(search.toLowerCase()) ||
         d.tenKhachHang?.toLowerCase().includes(search.toLowerCase()) ||
-        d.diaChiNhan?.toLowerCase().includes(search.toLowerCase());
+        d.diaChiNhan?.toLowerCase().includes(search.toLowerCase()) ||
+        d.tenTram?.toLowerCase().includes(search.toLowerCase()) ||
+        d.tenTaiXe?.toLowerCase().includes(search.toLowerCase());
       const matchKhachHang =
         !filterKhachHang || d.tenKhachHang === filterKhachHang;
       return matchSearch && matchKhachHang;
     });
   }, [activeTab, allDangGiao, allDaGiao, search, filterKhachHang]);
 
-  const handleXacNhanDangGiao = async (dh: DonHang) => {
-    setUpdating(dh.id);
+  const handleXacNhanDangGiao = async (row: DonHangTheoTram) => {
+    setUpdating(row.idLichSanXuat);
     try {
-      await taiXeCapNhatTrangThaiGiao(dh.id, "dang_giao");
+      await taiXeCapNhatTrangThaiGiao(row.id, "dang_giao", undefined, row.idLichSanXuat);
       showToast("Đã cập nhật trạng thái đang giao");
       loadData();
     } catch (err) {
@@ -125,18 +154,17 @@ export default function TaiXeGiaoHangPage() {
   const handleXacNhanDaGiao = async () => {
     if (!confirmTarget) return;
     const targetId = confirmTarget.id;
+    const idLichSanXuat = confirmTarget.idLichSanXuat;
 
-    // Optimistic: xóa khỏi danh sách "đang giao" ngay, không block UI
-    setAllDangGiao((prev) => prev.filter((d) => d.id !== targetId));
+    // Optimistic: xóa khỏi danh sách "đang giao" ngay
+    setAllDangGiao((prev) => prev.filter((d) => d.idLichSanXuat !== idLichSanXuat));
     setConfirmTarget(null);
 
     try {
-      await taiXeCapNhatTrangThaiGiao(targetId, "da_giao");
+      await taiXeCapNhatTrangThaiGiao(targetId, "da_giao", undefined, idLichSanXuat);
       showToast("Xác nhận giao hàng thành công");
-      // Reload nền sau khi xác nhận thành công
       loadData();
     } catch (err) {
-      // Rollback nếu lỗi
       loadData();
       showToast(err instanceof Error ? err.message : "Lỗi xác nhận giao", "error");
     } finally {
@@ -145,8 +173,8 @@ export default function TaiXeGiaoHangPage() {
   };
 
   // Mở modal trộn lại
-  const handleOpenTronLai = (dh: DonHang) => {
-    setTronLaiTarget(dh);
+  const handleOpenTronLai = (row: DonHangTheoTram) => {
+    setTronLaiTarget(row);
     setLyDoTronLai("");
     setTronLaiModalOpen(true);
   };
@@ -155,22 +183,15 @@ export default function TaiXeGiaoHangPage() {
   const handleTronLai = async () => {
     if (!tronLaiTarget || !lyDoTronLai.trim()) return;
     const idDonHang = tronLaiTarget.id;
+    const idLichSanXuat = tronLaiTarget.idLichSanXuat;
     setTronLaiLoading(true);
     try {
-      // 1. Backend reset trạng thái đơn về "dang_san_xuat" + lưu lịch sử
-      await taiXeTronLai(idDonHang, lyDoTronLai.trim());
-      // 2. Xóa lịch sản xuất cũ để điều phối tạo lại từ đầu
-      try {
-        await xoaLichSanXuatTheoDonHang(idDonHang);
-      } catch (delErr) {
-        // Không chặn flow nếu xóa lịch lỗi - vẫn cho điều phối xử lý
-        console.error("Không xóa được lịch sản xuất cũ:", delErr);
-      }
+      // Reset trạng thái đơn về "dang_san_xuat" + lưu lịch sử (theo trạm)
+      await taiXeTronLai(idDonHang, lyDoTronLai.trim(), idLichSanXuat);
       showToast("Đã trộn lại. Đang chuyển sang trang điều phối lịch sản xuất.");
       setTronLaiModalOpen(false);
       setTronLaiTarget(null);
       setLyDoTronLai("");
-      // 3. Chuyển sang trang lịch sản xuất để điều phối tạo lịch mới
       navigate("/dieu-phoi/lich-san-xuat", {
         state: { refresh: Date.now(), idDonHangTronLai: idDonHang },
       });
@@ -234,14 +255,13 @@ export default function TaiXeGiaoHangPage() {
         </button>
       </div>
 
-
       {/* Search + Filter bar */}
       <div className={styles.filterBar}>
         <div className={styles.searchWrap}>
           <FiSearch size={15} className={styles.searchIcon} />
           <input
             className={styles.searchInput}
-            placeholder="Tìm theo mã đơn, khách hàng, địa chỉ..."
+            placeholder="Tìm theo mã đơn, khách hàng, địa chỉ, trạm, tài xế..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -321,21 +341,22 @@ export default function TaiXeGiaoHangPage() {
         </div>
       ) : (
         <div className={styles.orderGrid}>
-          {filteredList.map((dh) => {
+          {filteredList.map((row) => {
             const isDangGiao = activeTab === "dang_giao";
             const sc = isDangGiao
-              ? statusColor(dh.trangThaiDon)
+              ? statusColor(row.trangThaiDon)
               : { bg: "#4caf5022", color: "#4caf50" };
             const label = isDangGiao
-              ? statusLabel(dh.trangThaiDon)
+              ? statusLabel(row.trangThaiDon)
               : "Đã giao";
 
             return (
-              <div key={dh.id} className={styles.orderCard}>
+              <div key={row.idLichSanXuat} className={styles.orderCard}>
+                {/* Card header: mã đơn + trạm + tài xế + trạng thái */}
                 <div className={styles.orderCardHeader}>
-                  <div>
-                    <div className={styles.orderMa}>{dh.maDonHang}</div>
-                    <div className={styles.orderKhach}>{dh.tenKhachHang}</div>
+                  <div className={styles.orderCardHeaderLeft}>
+                    <div className={styles.orderMa}>{row.maDonHang}</div>
+                    <div className={styles.orderKhach}>{row.tenKhachHang}</div>
                   </div>
                   <span
                     className={styles.orderStatus}
@@ -345,69 +366,87 @@ export default function TaiXeGiaoHangPage() {
                   </span>
                 </div>
 
+                {/* Trạm chip */}
+                <div className={styles.tramChipRow}>
+                  <span className={styles.tramChip}>
+                    <FiPackage size={12} />
+                    {row.tenTram || "Chưa gán trạm"}
+                  </span>
+                  {row.tenTaiXe && (
+                    <span className={styles.tramChip}>
+                      <FiTruck size={12} />
+                      {row.tenTaiXe}
+                      {row.bienSoXe ? ` · ${row.bienSoXe}` : ""}
+                    </span>
+                  )}
+                </div>
+
                 <div className={styles.infoRow}>
                   <FiMapPin size={14} />
-                  <span>{dh.diaChiNhan || "Chưa có địa chỉ"}</span>
+                  <span>{row.diaChiNhan || "Chưa có địa chỉ"}</span>
                 </div>
 
                 <div className={styles.infoRow}>
                   <FiPackage size={14} />
                   <span>
                     <strong>
-                      {dh.khoiLuongThucTe && dh.khoiLuongThucTe > 0
-                        ? `${dh.khoiLuongThucTe.toFixed(1)}/${(dh.khoiLuongDat || 0).toFixed(1)} m³`
-                        : `${(dh.khoiLuongDat || 0).toFixed(1)} m³`}
+                      {row.khoiLuongGiaoThucTe && row.khoiLuongGiaoThucTe > 0
+                        ? `${row.khoiLuongGiaoThucTe.toFixed(1)}/${(row.khoiLuongDat || 0).toFixed(1)} m³`
+                        : `${(row.khoiLuongDat || 0).toFixed(1)} m³`}
                     </strong>{" "}
-                    · {dh.tenMacBeTong || "—"}
+                    · {row.tenMacBeTong || "—"}
                   </span>
                 </div>
 
-                {dh.soDienThoai && (
+                {row.soDienThoai && (
                   <div className={styles.infoRow}>
                     <FiPhone size={14} />
                     <a
-                      href={`tel:${dh.soDienThoai}`}
+                      href={`tel:${row.soDienThoai}`}
                       className={styles.phoneLink}
                     >
-                      {dh.soDienThoai}
+                      {row.soDienThoai}
                     </a>
                   </div>
                 )}
 
                 <div className={styles.orderFooter}>
                   <span className={styles.orderDate}>
-                    Giao: {formatDate(dh.ngayGiao as unknown as string)}
+                    Giao: {formatDate(
+                      (row.ngayXacNhanGiao as unknown as string) ||
+                        (row.ngayGiao as unknown as string)
+                    )}
                   </span>
-                  {dh.thanhTien && (
+                  {row.thanhTien && (
                     <span className={styles.orderAmount}>
-                      {formatCurrency(dh.thanhTien)}
+                      {formatCurrency(row.thanhTien)}
                     </span>
                   )}
                 </div>
 
-                {/* Actions */}
+                {/* Actions - theo từng trạm (idLichSanXuat) */}
                 <div className={styles.actionRow}>
                   <button
                     className={styles.btnDetail}
-                    onClick={() => navigate(`/tai-xe/don-hang/${dh.id}`)}
+                    onClick={() => navigate(`/tai-xe/don-hang/${row.id}`)}
                   >
                     Chi tiết
                   </button>
-                  {isDangGiao && dh.trangThaiDon === "dang_giao" && (
+                  {isDangGiao && row.trangThaiDon === "dang_giao" && (
                     <>
                       <button
                         className={`${styles.btnDaGiao} ${styles.btnTronLai}`}
-                        onClick={() => handleOpenTronLai(dh)}
-                        disabled={updating === dh.id}
+                        onClick={() => handleOpenTronLai(row)}
+                        disabled={updating === row.idLichSanXuat}
                       >
                         <FiRefreshCw size={14} /> Trộn lại
                       </button>
                       <button
                         className={styles.btnDaGiao}
-                        onClick={() => setConfirmTarget(dh)}
-                        disabled={updating === dh.id}
+                        onClick={() => setConfirmTarget(row)}
+                        disabled={updating === row.idLichSanXuat}
                       >
-                        {updating === dh.id ? (
+                        {updating === row.idLichSanXuat ? (
                           "..."
                         ) : (
                           <>
@@ -428,7 +467,11 @@ export default function TaiXeGiaoHangPage() {
       <ConfirmModal
         isOpen={!!confirmTarget}
         title="Xác nhận đã giao"
-        message={`Xác nhận giao đơn ${confirmTarget?.maDonHang} cho ${confirmTarget?.tenKhachHang}?`}
+        message={
+          confirmTarget
+            ? `Xác nhận giao đơn ${confirmTarget.maDonHang} - ${confirmTarget.tenTram || "trạm"} (${confirmTarget.tenTaiXe || "tài xế"}) cho ${confirmTarget.tenKhachHang}?`
+            : ""
+        }
         confirmText="Xác nhận đã giao"
         cancelText="Hủy"
         onConfirm={handleXacNhanDaGiao}
@@ -440,7 +483,7 @@ export default function TaiXeGiaoHangPage() {
       <Modal
         isOpen={tronLaiModalOpen}
         onClose={() => setTronLaiModalOpen(false)}
-        title={`Trộn lại - ${tronLaiTarget?.maDonHang}`}
+        title={`Trộn lại - ${tronLaiTarget?.maDonHang}${tronLaiTarget?.tenTram ? ` (${tronLaiTarget.tenTram})` : ""}`}
         footer={
           <>
             <button
@@ -462,7 +505,8 @@ export default function TaiXeGiaoHangPage() {
       >
         <div style={{ marginBottom: 16 }}>
           <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 16 }}>
-            Đơn hàng sẽ được trả về bước <strong>tạo lịch sản xuất</strong>. Vui lòng nhập lý do trộn lại.
+            Trộm lại cho <strong>{tronLaiTarget?.tenTram || "trạm"}</strong> · Tài xế <strong>{tronLaiTarget?.tenTaiXe || "—"}</strong>.
+            Đơn hàng sẽ được trả về bước <strong>tạo lịch sản xuất</strong> để điều phối lên lịch lại cho trạm này.
           </p>
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>
@@ -496,7 +540,7 @@ export default function TaiXeGiaoHangPage() {
               color: "#ea580c",
             }}
           >
-            <strong>Lưu ý:</strong> Lịch sản xuất hiện tại của đơn sẽ được xóa. Đơn hàng sẽ được chuyển sang trang điều phối để tạo lịch sản xuất mới.
+            <strong>Lưu ý:</strong> Lịch sản xuất của trạm này sẽ được reset. Đơn hàng sẽ được chuyển sang trang điều phối để tạo lịch sản xuất mới cho trạm đó. Các trạm khác giữ nguyên trạng thái.
           </div>
         </div>
       </Modal>

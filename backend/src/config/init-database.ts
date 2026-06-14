@@ -861,6 +861,11 @@ async function initDatabase(): Promise<void> {
         CREATE TABLE LichSuTraLai (
           id INT IDENTITY(1,1) PRIMARY KEY,
           idDonHang INT NOT NULL,
+          idLichSanXuat INT NULL,
+          idTramTron INT NULL,
+          tenTram NVARCHAR(200) NULL,
+          tenTaiXe NVARCHAR(100) NULL,
+          bienSoXe NVARCHAR(50) NULL,
           lyDo NVARCHAR(500) NOT NULL,
           idNguoiTra INT,
           hoTen NVARCHAR(100),
@@ -968,6 +973,42 @@ async function initDatabase(): Promise<void> {
         console.log("  ➕ Đã thêm cột ghiChuXe vào LichSanXuat");
       } else {
         console.log("  ✅ Cột ghiChuXe đã tồn tại trong LichSanXuat");
+      }
+
+      // 7. LichSanXuat: thêm cột trangThaiGiao (trạng thái giao hàng theo từng trạm)
+      //    - 'dang_giao' (mặc định): trạm đang giao
+      //    - 'da_giao': tài xế trạm này đã xác nhận giao xong
+      //    - 'tron_lai': tài xế yêu cầu trộn lại cho trạm này
+      const colTrangThaiGiao = await migReq.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('LichSanXuat') AND name = 'trangThaiGiao'`
+      );
+      if (colTrangThaiGiao.recordset.length === 0) {
+        await migReq.query(`ALTER TABLE LichSanXuat ADD trangThaiGiao NVARCHAR(50) NULL`);
+        console.log("  ➕ Đã thêm cột trangThaiGiao vào LichSanXuat");
+      } else {
+        console.log("  ✅ Cột trangThaiGiao đã tồn tại trong LichSanXuat");
+      }
+
+      // 8. LichSanXuat: thêm cột khoiLuongGiaoThucTe (khối lượng thực tế giao của từng trạm)
+      const colKLGT = await migReq.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('LichSanXuat') AND name = 'khoiLuongGiaoThucTe'`
+      );
+      if (colKLGT.recordset.length === 0) {
+        await migReq.query(`ALTER TABLE LichSanXuat ADD khoiLuongGiaoThucTe DECIMAL(18,2) NULL`);
+        console.log("  ➕ Đã thêm cột khoiLuongGiaoThucTe vào LichSanXuat");
+      } else {
+        console.log("  ✅ Cột khoiLuongGiaoThucTe đã tồn tại trong LichSanXuat");
+      }
+
+      // 9. LichSanXuat: thêm cột ngayXacNhanGiao (ngày tài xế xác nhận đã giao của trạm)
+      const colNgayXNG = await migReq.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('LichSanXuat') AND name = 'ngayXacNhanGiao'`
+      );
+      if (colNgayXNG.recordset.length === 0) {
+        await migReq.query(`ALTER TABLE LichSanXuat ADD ngayXacNhanGiao DATETIME NULL`);
+        console.log("  ➕ Đã thêm cột ngayXacNhanGiao vào LichSanXuat");
+      } else {
+        console.log("  ✅ Cột ngayXacNhanGiao đã tồn tại trong LichSanXuat");
       }
 
       await migPool.close();

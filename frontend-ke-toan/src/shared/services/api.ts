@@ -1209,26 +1209,28 @@ export async function layDonHangDaGiao(): Promise<any[]> {
   return json.data || [];
 }
 
-// Tài xế cập nhật trạng thái giao
+// Tài xế cập nhật trạng thái giao theo từng trạm (idLichSanXuat)
 export async function taiXeCapNhatTrangThaiGiao(
   idDonHang: number,
   trangThai: "dang_giao" | "da_giao",
   khoiLuongThucTe?: number,
+  idLichSanXuat?: number,
 ): Promise<DonHang> {
   return request<DonHang>(`/tai-xe/cap-nhat-giao/${idDonHang}`, {
     method: "PUT",
-    body: JSON.stringify({ trangThai, khoiLuongThucTe }),
+    body: JSON.stringify({ trangThai, khoiLuongThucTe, idLichSanXuat: idLichSanXuat ?? null }),
   });
 }
 
-// Tài xế/kỹ thuật báo trộn lại - đơn quay về bước tạo lịch sản xuất
+// Tài xế/kỹ thuật báo trộn lại theo từng trạm (idLichSanXuat)
 export async function taiXeTronLai(
   idDonHang: number,
   lyDo: string,
+  idLichSanXuat?: number,
 ): Promise<DonHang> {
   return request<DonHang>(`/tai-xe/tron-lai/${idDonHang}`, {
     method: "POST",
-    body: JSON.stringify({ lyDo }),
+    body: JSON.stringify({ lyDo, idLichSanXuat: idLichSanXuat ?? null }),
   });
 }
 
@@ -1238,6 +1240,11 @@ export async function layLichSuTraLai(
 ): Promise<Array<{
   id: number;
   idDonHang: number;
+  idLichSanXuat?: number | null;
+  idTramTron?: number | null;
+  tenTram?: string | null;
+  tenTaiXe?: string | null;
+  bienSoXe?: string | null;
   lyDo: string;
   idNguoiTra: number;
   hoTen: string;

@@ -199,6 +199,11 @@ export default function ChiTietDonHangPage() {
   const [lichSuTraLai, setLichSuTraLai] = useState<Array<{
     id: number;
     idDonHang: number;
+    idLichSanXuat?: number | null;
+    idTramTron?: number | null;
+    tenTram?: string | null;
+    tenTaiXe?: string | null;
+    bienSoXe?: string | null;
     lyDo: string;
     idNguoiTra: number;
     hoTen: string;
@@ -1223,8 +1228,8 @@ export default function ChiTietDonHangPage() {
                   marginBottom: idx < lichSuTraLai.length - 1 ? 8 : 0,
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                  <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <span
                       style={{
                         display: "inline-flex",
@@ -1240,6 +1245,42 @@ export default function ChiTietDonHangPage() {
                     >
                       Lần trả {lichSuTraLai.length - idx}
                     </span>
+                    {item.tenTram && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "3px 10px",
+                          borderRadius: 20,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          background: "rgba(7, 60, 235, 0.08)",
+                          color: "var(--color-primary)",
+                          border: "1px solid rgba(7, 60, 235, 0.2)",
+                        }}
+                      >
+                        <FiTruck size={11} />
+                        {item.tenTram}
+                      </span>
+                    )}
+                    {item.bienSoXe && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: "3px 10px",
+                          borderRadius: 20,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          background: "white",
+                          color: "var(--color-text)",
+                          border: "1px solid var(--color-border)",
+                        }}
+                      >
+                        {item.bienSoXe}
+                      </span>
+                    )}
                   </div>
                   <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
                     {item.ngayTra ? new Date(item.ngayTra).toLocaleString("vi-VN") : ""}
@@ -1255,6 +1296,11 @@ export default function ChiTietDonHangPage() {
                   <span style={{ fontSize: 11, color: "var(--color-text-secondary)", marginLeft: 8 }}>
                     ({item.vaiTro === 'ky_thuat' ? 'Kỹ thuật' : item.vaiTro === 'tai_xe' ? 'Tài xế' : item.vaiTro || "—"})
                   </span>
+                  {item.tenTaiXe && item.tenTaiXe !== item.hoTen && (
+                    <span style={{ fontSize: 12, color: "var(--color-text-secondary)", marginLeft: 8 }}>
+                      · Tài xế trạm: <strong>{item.tenTaiXe}</strong>
+                    </span>
+                  )}
                 </div>
                 <div>
                   <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>

@@ -17,8 +17,11 @@ export async function runMigrations(): Promise<void> {
     // 3. Thêm cột giaNiemYet vào DonHang nếu chưa có
     await migrateDonHangGiaNiemYet();
 
-    // 4. Tạo bảng LichSuTraLai nếu chưa có
+      // 4. Tạo bảng LichSuTraLai nếu chưa có
     await migrateLichSuTraLai();
+
+    // 5. Thêm cột theo dõi trộn lại theo từng trạm (idLichSanXuat, idTramTron, tenTram, tenTaiXe, bienSoXe)
+    await migrateLichSuTraLaiPerTram();
 
     console.log('[Migration] Hoàn tất migrations.');
   } catch (error) {
@@ -133,5 +136,45 @@ async function migrateLichSuTraLai(): Promise<void> {
     }
   } catch (error) {
     console.error('[Migration] Lỗi migrate LichSuTraLai:', error);
+  }
+}
+
+/**
+ * Thêm các cột theo dõi trộn lại theo từng trạm vào LichSuTraLai
+ * (idLichSanXuat, idTramTron, tenTram, tenTaiXe, bienSoXe)
+ * Để lịch sử trộn lại hiển thị chính xác theo trạm + tài xế tương ứng.
+ */
+async function migrateLichSuTraLaiPerTram(): Promise<void> {
+  try {
+    const tables = await query<{ TABLE_NAME: string }>(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+       WHERE TABLE_NAME = 'LichSuTraLai'`
+    );
+    if (tables.length === 0) return;
+
+    const cols = [
+      { name: 'idLichSanXuat', ddl: 'INT NULL' },
+      { name: 'idTramTron', ddl: 'INT NULL' },
+      { name: 'tenTram', ddl: 'NVARCHAR(200) NULL' },
+      { name: 'tenTaiXe', ddl: 'NVARCHAR(100) NULL' },
+      { name: 'bienSoXe', ddl: 'NVARCHAR(50) NULL' },
+    ];
+
+    for (const col of cols) {
+      const existing = await query<{ COLUMN_NAME: string }>(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_NAME = 'LichSuTraLai' AND COLUMN_NAME = @c`,
+        { c: col.name }
+      );
+      if (existing.length === 0) {
+        console.log(`[Migration] Tạo cột ${col.name} trong LichSuTraLai...`);
+        await query(`ALTER TABLE LichSuTraLai ADD ${col.name} ${col.ddl}`);
+        console.log(`[Migration] Đã tạo cột ${col.name}.`);
+      } else {
+        console.log(`[Migration] Cột ${col.name} đã tồn tại trong LichSuTraLai.`);
+      }
+    }
+  } catch (error) {
+    console.error('[Migration] Lỗi migrate LichSuTraLai theo trạm:', error);
   }
 }
