@@ -614,7 +614,7 @@ router.post(
 
       // Reset đơn về trạng thái chờ tạo lịch sản xuất
       await query(
-        `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
+        `UPDATE DonHang SET trangThaiDon = N'da_duyet', ngayCapNhat = ${vnNow()} WHERE id = @id`,
         { id: idDonHang }
       );
 
@@ -622,7 +622,7 @@ router.post(
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
       await ghiNhatKy(req.user.id, 'TRON_LAI', 'DonHang', idDonHang,
         JSON.stringify({ trangThaiDon: 'dang_giao' }),
-        JSON.stringify({ trangThaiDon: 'dang_san_xuat', lyDo, idLichSanXuat, tenTram }),
+        JSON.stringify({ trangThaiDon: 'da_duyet', lyDo, idLichSanXuat, tenTram }),
         ip);
 
       // Thông báo cho điều phối
