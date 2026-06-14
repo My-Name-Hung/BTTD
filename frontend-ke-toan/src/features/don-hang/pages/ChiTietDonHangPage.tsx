@@ -447,13 +447,16 @@ export default function ChiTietDonHangPage() {
     });
   };
 
-  // Đóng form thông tin: thu hồi object URL ảnh
+  // Đóng form thông tin: thu hồi object URL ảnh, gọi loadAll() để refresh
+  // danh sách bằng chứng và hiển thị thông báo thành công
   const closeBangChungInfoModal = () => {
     setBangChungDanhSachFile((prev) => {
       prev.forEach((f) => f.preview && URL.revokeObjectURL(f.preview));
       return [];
     });
     setBangChungInfoModalOpen(false);
+    showToast("Đã hoàn thành tải lên bằng chứng");
+    loadAll();
   };
 
   // Camera: bật camera khi modal mở
@@ -1458,7 +1461,7 @@ export default function ChiTietDonHangPage() {
                       >
                         <FiExternalLink size={12} /> Xem
                       </a>
-                      {canUploadBangChung && (
+                      {isAdmin && (
                         <button
                           onClick={() => handleXoaBangChung(bc.id)}
                           style={{
