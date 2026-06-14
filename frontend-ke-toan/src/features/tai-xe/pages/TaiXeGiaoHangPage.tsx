@@ -58,6 +58,7 @@ interface DonHangTheoTram {
   tenTaiXe: string | null;
   bienSoXe: string | null;
   trangThaiGiao: string | null;
+  khoiLuongDaTron: number | null;
   khoiLuongGiaoThucTe: number | null;
   ngayXacNhanGiao: string | null;
 }
@@ -390,9 +391,17 @@ export default function TaiXeGiaoHangPage() {
                   <FiPackage size={14} />
                   <span>
                     <strong>
-                      {row.khoiLuongGiaoThucTe && row.khoiLuongGiaoThucTe > 0
-                        ? `${row.khoiLuongGiaoThucTe.toFixed(1)}/${(row.khoiLuongDat || 0).toFixed(1)} m³`
-                        : `${(row.khoiLuongDat || 0).toFixed(1)} m³`}
+                      {(() => {
+                        // Ưu tiên hiển thị KL thực tế đã giao > KL thực tế đã trộn > KL đặt ban đầu
+                        const klThucTe =
+                          (row.khoiLuongGiaoThucTe && row.khoiLuongGiaoThucTe > 0
+                            ? row.khoiLuongGiaoThucTe
+                            : null) ??
+                          (row.khoiLuongDaTron && row.khoiLuongDaTron > 0
+                            ? row.khoiLuongDaTron
+                            : null);
+                        return `${(klThucTe ?? row.khoiLuongDat ?? 0).toFixed(1)} m³`;
+                      })()}
                     </strong>{" "}
                     · {row.tenMacBeTong || "—"}
                   </span>
