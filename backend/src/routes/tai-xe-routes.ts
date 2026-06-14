@@ -539,10 +539,8 @@ router.post(
         return;
       }
 
-      // Lấy thông tin trạm + tài xế của LichSanXuat (nếu có)
+      // Lấy thông tin trạm của LichSanXuat (nếu có) - chỉ để hiển thị trong thông báo
       let tenTram: string | null = null;
-      let tenTaiXe: string | null = null;
-      let bienSoXe: string | null = null;
       let idTramTron: number | null = null;
       if (idLichSanXuat != null) {
         const lsInfo = await query<any>(
@@ -559,8 +557,6 @@ router.post(
           return;
         }
         tenTram = lsInfo[0].tenTram || null;
-        tenTaiXe = lsInfo[0].tenTaiXe || null;
-        bienSoXe = lsInfo[0].bienSoXe || null;
         idTramTron = lsInfo[0].idTramTron || null;
 
         // Kiểm tra quyền: tài xế chỉ trộn lại được trạm của mình
@@ -591,17 +587,15 @@ router.post(
         }
       }
 
-      // Lưu lịch sử trả lại
+      // Lưu lịch sử trả lại (ghi 1 bản ghi tổng quan cho cả đơn, idLichSanXuat = null
+      // vì trộn lại áp dụng cho toàn bộ đơn hàng, không phụ thuộc từng trạm)
       await query(
         `INSERT INTO LichSuTraLai (idDonHang, idLichSanXuat, idTramTron, tenTram, tenTaiXe, bienSoXe, lyDo, idNguoiTra, hoTen, vaiTro)
-         VALUES (@idDonHang, @idLichSanXuat, @idTramTron, @tenTram, @tenTaiXe, @bienSoXe, @lyDo, @idNguoiTra, @hoTen, @vaiTro)`,
+         VALUES (@idDonHang, NULL, @idTramTron, @tenTram, NULL, NULL, @lyDo, @idNguoiTra, @hoTen, @vaiTro)`,
         {
           idDonHang,
-          idLichSanXuat: idLichSanXuat ?? null,
           idTramTron,
           tenTram,
-          tenTaiXe,
-          bienSoXe,
           lyDo: lyDo.trim(),
           idNguoiTra: req.user.id,
           hoTen: req.user.hoTen,
@@ -609,14 +603,14 @@ router.post(
         }
       );
 
-      // Cập nhật trạng thái: LichSanXuat.trangThaiGiao = 'tron_lai' (chỉ trạm đó)
-      // và đơn về dang_san_xuat để điều phối lập lại lịch
-      if (idLichSanXuat != null) {
-        await query(
-          `UPDATE LichSanXuat SET trangThaiGiao = N'tron_lai' WHERE id = @idLichSanXuat`,
-          { idLichSanXuat }
-        );
-      }
+      // Trộn lại: xóa TẤT CẢ lịch sản xuất của đơn hàng (không phụ thuộc trạm)
+      // để điều phối tạo lịch sản xuất mới hoàn toàn cho cả đơn.
+      await query(
+        `DELETE FROM LichSanXuat WHERE idDonHang = @idDonHang`,
+        { idDonHang }
+      );
+
+      // Reset đơn về trạng thái chờ tạo lịch sản xuất
       await query(
         `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
         { id: idDonHang }
@@ -646,9 +640,7 @@ router.post(
 
       res.json({
         success: true,
-        message: tenTram
-          ? `Đã ghi nhận trộn lại cho ${tenTram}. Đơn hàng quay về bước tạo lịch sản xuất.`
-          : "Đã ghi nhận trộn lại. Đơn hàng quay về bước tạo lịch sản xuất.",
+        message: "Đã xóa toàn bộ lịch sản xuất của đơn hàng. Đơn hàng quay về bước tạo lịch sản xuất mới cho tất cả trạm.",
         data: updated,
       });
     } catch (error) {
