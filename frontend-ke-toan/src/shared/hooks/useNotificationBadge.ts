@@ -7,7 +7,7 @@ import { layThongBaoChuaDoc } from "../services/api";
  */
 export function useNotificationBadge() {
   const originalTitle = useRef(document.title);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const updateBadge = async () => {
     try {
