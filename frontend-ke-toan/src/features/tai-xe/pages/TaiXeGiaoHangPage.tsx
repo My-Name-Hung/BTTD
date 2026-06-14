@@ -344,11 +344,23 @@ export default function TaiXeGiaoHangPage() {
         <div className={styles.orderGrid}>
           {filteredList.map((row) => {
             const isDangGiao = activeTab === "dang_giao";
+            // Hiển thị trạng thái theo TỪNG TRẠM (LichSanXuat.trangThaiGiao),
+            // không dùng DonHang.trangThaiDon vì 1 đơn có thể có nhiều trạm với
+            // trạng thái giao khác nhau.
+            const perTram = row.trangThaiGiao;
             const sc = isDangGiao
-              ? statusColor(row.trangThaiDon)
+              ? perTram === "da_giao"
+                ? { bg: "#4caf5022", color: "#4caf50" }
+                : perTram === "tron_lai"
+                  ? { bg: "#ea580c22", color: "#ea580c" }
+                  : { bg: "#00968822", color: "#009688" } // dang_giao hoặc null (chưa bắt đầu giao)
               : { bg: "#4caf5022", color: "#4caf50" };
             const label = isDangGiao
-              ? statusLabel(row.trangThaiDon)
+              ? perTram === "da_giao"
+                ? "Đã giao"
+                : perTram === "tron_lai"
+                  ? "Trộn lại"
+                  : "Đang giao"
               : "Đã giao";
 
             return (
