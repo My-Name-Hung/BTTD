@@ -60,6 +60,7 @@ export default function KhoXacNhanSanXuatPage() {
   const [donHang, setDonHang] = useState<DonHang | null>(null);
   const [xes, setXes] = useState<Xe[]>([]);
   const [lichTramTrons, setLichTramTrons] = useState<LichSanXuatItem[]>([]);
+  const [allLichTramTrons, setAllLichTramTrons] = useState<LichSanXuatItem[]>([]);
 
   // Form state
   const [idLichSanXuat, setIdLichSanXuat] = useState<string>("");
@@ -122,6 +123,7 @@ export default function KhoXacNhanSanXuatPage() {
         ? allTramLichs.filter((l) => l.idTramTron === userIdTramTron)
         : allTramLichs;
       setLichTramTrons(tramLichs);
+      setAllLichTramTrons(allTramLichs);
 
       // Auto-fill từ lịch sản xuất đầu tiên
       if (Array.isArray(lichs) && lichs.length > 0) {
@@ -174,7 +176,10 @@ export default function KhoXacNhanSanXuatPage() {
   };
 
   // Tính tổng khối lượng đã trộn từ tất cả các lịch trạm (loại trừ lịch đang chọn nếu đã có giá trị)
-  const tongKhoiLuongDaTron = lichTramTrons.reduce((sum, l) => {
+  // Tổng KL đã trộn của CẢ ĐƠN HÀNG (tất cả trạm), không phải chỉ trạm user đang thao tác.
+  // Mục đích: hiển thị "Còn lại" = khoiLuongDat - tổng đã trộn → user biết đơn còn bao nhiêu khối chưa trộn xong.
+  // Tránh nhầm lẫn khi user tram_tron chỉ thấy lịch của 1 trạm (lichTramTrons đã bị filter).
+  const tongKhoiLuongDaTron = allLichTramTrons.reduce((sum, l) => {
     return sum + (l.khoiLuongDaTron || 0);
   }, 0);
 

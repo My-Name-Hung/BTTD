@@ -1129,12 +1129,22 @@ export default function ChiTietDonHangPage() {
             className={styles.infoRow}
             style={{ flexDirection: "column", gap: 4 }}
           >
-            <span className={styles.infoLabel}>Ghi chú</span>
+            <span className={styles.infoLabel}>Ghi chú lịch sản xuất</span>
             <span
               className={styles.infoValue}
-              style={{ textAlign: "left", fontSize: 13 }}
+              style={{ textAlign: "left", fontSize: 13, whiteSpace: "pre-wrap" }}
             >
-              {donHang.ghiChu || "—"}
+              {(() => {
+                // Ghi chú lịch sản xuất lấy từ LichSanXuat.ghiChu (nhập tại TaoLichSanXuatPage).
+                // Đơn có nhiều trạm → gộp ghi chú của từng trạm (nếu khác nhau).
+                const notes = lichSXsHienThi
+                  .map((l) => l.ghiChu)
+                  .filter((n): n is string => !!n && n.trim() !== "");
+                if (notes.length === 0) return "—";
+                // Loại trùng và hiển thị theo từng trạm
+                const uniqueNotes = Array.from(new Set(notes));
+                return uniqueNotes.join("\n• ");
+              })()}
             </span>
           </div>
         </div>
@@ -1231,8 +1241,12 @@ export default function ChiTietDonHangPage() {
                     <tr>
                       <th>Người bắt ống</th>
                       <td>{lichSX.nguoiBatOng || "—"}</td>
-                      <th>Phương án đổ</th>
-                      <td>{lichSX.phuongAnDo || "—"}</td>
+                      <th>Ngày giờ đổ</th>
+                      <td>
+                        {lichSX.thoiGianBatDauDo
+                          ? formatDateTime(lichSX.thoiGianBatDauDo)
+                          : "—"}
+                      </td>
                     </tr>
                     {lichSX.khoiLuongGiaoThucTe != null && (
                       <tr>
@@ -1248,10 +1262,10 @@ export default function ChiTietDonHangPage() {
                         </td>
                       </tr>
                     )}
-                    {lichSX.ghiChu && (
+                    {lichSX.ghiChuXe && (
                       <tr>
-                        <th>Ghi chú</th>
-                        <td colSpan={3}>{lichSX.ghiChu}</td>
+                        <th>Ghi chú xe giao</th>
+                        <td colSpan={3}>{lichSX.ghiChuXe}</td>
                       </tr>
                     )}
                   </tbody>
