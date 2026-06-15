@@ -361,6 +361,15 @@ export default function InHoaDonPage() {
     (sum, item) => sum + item.amount,
     0,
   );
+  // Tổng nghĩa vụ tài chính của đơn hàng = tongCong lần đầu tiên
+  // (do XuatHoaDonPage tính = tienBeTong + bv + pp - gt, lưu xuống DB).
+  // Dùng để tính "Dư" cuối cùng khi khách trả vượt (công nợ dư).
+  const tongNghiaVu = allHoaDons.length > 0
+    ? allHoaDons[0].tongCong || 0
+    : hd.tongCong || 0;
+  // Số tiền dư cuối cùng = tổng thực khách đã trả - tổng nghĩa vụ đơn hàng
+  // (chỉ > 0 khi loại thanh toán cuối cùng là "cong_no_du" / "tra_het_du")
+  const tienDuCuoi = Math.max(0, tongDaThanhToanToanBo - tongNghiaVu);
   // Số tiền đã thanh toán ở các lần hóa đơn TRƯỚC lần hiện tại
   // (công nợ lần 1, 2, ..., lần hiện tại - 1) — hiển thị "ĐÃ THANH TOÁN (các lần trước)"
   // trong bảng trước TỔNG CỘNG
@@ -700,14 +709,36 @@ export default function InHoaDonPage() {
                   ))}
                 </tbody>
                 <tfoot>
+                  {/* Tổng nghĩa vụ tài chính của đơn hàng (= tongCong lần đầu) */}
                   <tr className={styles.totalRow}>
                     <td colSpan={2} className={styles.tdRightBold}>
-                      TỔNG ĐÃ THANH TOÁN TOÀN BỘ
+                      TỔNG NGHĨA VỤ ĐƠN HÀNG
+                    </td>
+                    <td className={styles.tdRightBold}>
+                      {tongNghiaVu.toLocaleString("vi-VN")}
+                    </td>
+                  </tr>
+                  {/* Tổng thực khách đã trả (sum soTienThanhToan tất cả lần) */}
+                  <tr className={styles.totalRow}>
+                    <td colSpan={2} className={styles.tdRightBold}>
+                      TỔNG ĐÃ THANH TOÁN
                     </td>
                     <td className={styles.tdRightBold}>
                       {tongDaThanhToanToanBo.toLocaleString("vi-VN")}
                     </td>
                   </tr>
+                  {/* Số tiền dư cuối cùng — chỉ hiển thị khi > 0
+                      (= tổng thực trả - tổng nghĩa vụ đơn) */}
+                  {tienDuCuoi > 0 && (
+                    <tr className={styles.duRow}>
+                      <td colSpan={2} className={styles.tdRightBold}>
+                        DƯ (tiền thừa của khách)
+                      </td>
+                      <td className={styles.tdRightBold}>
+                        {tienDuCuoi.toLocaleString("vi-VN")}
+                      </td>
+                    </tr>
+                  )}
                 </tfoot>
               </table>
             </div>

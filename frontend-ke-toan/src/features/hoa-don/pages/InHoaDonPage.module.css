@@ -425,6 +425,14 @@
   padding: 8px 10px !important;
 }
 
+/* Row "DƯ" — tiền thừa khi khách trả vượt (công nợ dư / trả hết dư) */
+.duRow td {
+  background: #fff7ed !important;
+  color: #c2410c;
+  padding: 8px 10px !important;
+  font-size: 13px;
+}
+
 .soTienChu {
   font-size: 12px;
   font-weight: 600;
