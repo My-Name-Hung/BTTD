@@ -377,29 +377,54 @@ export default function InHoaDonPage() {
     label: `Lần ${index + 1}`,
     amount: item.soTienThanhToan || item.tongCong || 0,
   }));
+  // Tổng thực khách đã trả cho cả đơn hàng (tính cộng dồn tất cả hóa đơn).
+  // Tính từ danh sách hóa đơn (soTienThanhToan gốc của mỗi hóa đơn, KHÔNG clamp).
+  // KHÔNG dùng hd.donHangDaThanhToan vì backend có thể đã clamp tại tongNghiaVu
+  // (vd: trả 250k khi còn lại 200k → daThanhToan chỉ +200k, dư 50k mất → tienDuCuoi sai).
   const tongDaThanhToanToanBo = debtInvoiceSummary.reduce(
     (sum, item) => sum + item.amount,
     0,
   );
   // Tổng nghĩa vụ tài chính của đơn hàng = tổng tiền GỐC của đơn hàng
-  // (DonHang.thanhTien = khoiLuongDat * donGia, KHÔNG bao gồm bv/pp/gt).
+  // (= DonHang.thanhTien + bv/pp/gt lúc tạo đơn).
   // Đây là tổng "nghĩa vụ" mà khách phải trả cho cả đơn hàng, dùng để:
   // 1) Tính "Dư" cuối cùng khi khách trả vượt (công nợ dư)
   // 2) Quyết định hóa đơn công nợ đã "tất toán" hay chưa:
   //    công nợ tất toán khi soTienThanhToan >= (tongNghiaVu - daThanhToanTruoc)
-  // LƯU Ý: KHÔNG dùng allHoaDons[0].tongCong vì giá trị này đã bị backend
-  // chia tỷ lệ theo phần khách trả ở lần công nợ (vd: lần 1 trả 150k
-  // của tổng 3.440k thì tongCong = 150k, không phải 3.440k).
-  const tongNghiaVu = hd.thanhTien || hd.tongCong || 0;
+  // LƯU Ý:
+  // - KHÔNG dùng hd.thanhTien (field này JOIN từ DonHang.thanhTien nhưng backend
+  //   có thể đã trả về = conLai ở một số flow cũ → gây sai).
+  // - Ưu tiên hd.donHangThanhTien (alias rõ ràng từ backend, đảm bảo = gốc đơn).
+  // - KHÔNG dùng allHoaDons[0].tongCong vì giá trị này đã bị backend chia tỷ lệ
+  //   theo phần khách trả ở lần công nợ.
+  // Tổng nghĩa vụ = thanhTien (gốc, đã bao gồm bv/pp/gt lúc tạo đơn)
+  // theo logic don-hang-service.ts: data.thanhTien HOẶC (khoiLuongDat*donGia + bv + pp)
+  const tongNghiaVu =
+    (hd.donHangThanhTien ?? 0) ||
+    (hd.thanhTien ?? 0) ||
+    (hd.tongCong ?? 0);
   // Số tiền dư cuối cùng = tổng thực khách đã trả - tổng nghĩa vụ đơn hàng
   // (chỉ > 0 khi loại thanh toán cuối cùng là "cong_no_du" / "tra_het_du")
   const tienDuCuoi = Math.max(0, tongDaThanhToanToanBo - tongNghiaVu);
+  // Số tiền thực tế khách trả kỳ này (lưu trong HoaDon.soTienThanhToan).
+  // Khai báo sớm để dùng cho cả daThanhToanTruoc (fallback) lẫn phần
+  // tính toán hiển thị bên dưới.
+  const soTienTraKyNay = hd.soTienThanhToan || 0;
   // Số tiền đã thanh toán ở các lần hóa đơn TRƯỚC lần hiện tại
   // (công nợ lần 1, 2, ..., lần hiện tại - 1) — hiển thị "ĐÃ THANH TOÁN (các lần trước)"
-  // trong bảng trước TỔNG CỘNG
-  const daThanhToanTruoc = debtInvoiceSummary
+  // trong bảng trước TỔNG CỘNG.
+  // Ưu tiên tính từ danh sách hóa đơn (chính xác tuyệt đối). Fallback về
+  // hd.donHangDaThanhToan - soTienTraKyNay (tổng thực đã trên đơn trừ kỳ này)
+  // khi danh sách hóa đơn rỗng / không tải được.
+  const daThanhToanTruocFromList = debtInvoiceSummary
     .slice(0, currentDebtIndex >= 0 ? currentDebtIndex : 0)
     .reduce((sum, item) => sum + item.amount, 0);
+  const daThanhToanTruocFromDon =
+    Math.max(0, (hd.donHangDaThanhToan ?? 0) - soTienTraKyNay);
+  const daThanhToanTruoc =
+    daThanhToanTruocFromList > 0 || debtInvoiceSummary.length > 0
+      ? daThanhToanTruocFromList
+      : daThanhToanTruocFromDon;
 
   // ── SỐ TIỀN HIỂN THỊ TRÊN HÓA ĐƠN ──
   // - Công nợ chưa tất toán (lần đầu/giữa): TỔNG CỘNG = số tiền khách trả kỳ này
@@ -408,7 +433,7 @@ export default function InHoaDonPage() {
   // - Công nợ lần cuối (tất toán) / trả hết / trả hết dư: TỔNG CỘNG = tongNghiaVu,
   //   hiển thị đầy đủ Tiền bê tông + Bù vận chuyển + Chi phí phát sinh
   //   vì lúc này khách đã thanh toán đủ toàn bộ đơn hàng.
-  const soTienTraKyNay = hd.soTienThanhToan || 0;
+  // (soTienTraKyNay đã được khai báo ở trên, dùng cho cả daThanhToanTruoc fallback)
   // Hóa đơn công nợ CHƯA tất toán (soTienThanhToan < còn lại phải trả):
   // chỉ hiển thị số tiền trả, không tách thành phần bv/pp vì khách
   // mới trả 1 phần, chưa đủ tiền → tách chi tiết gây rối.
@@ -846,15 +871,7 @@ export default function InHoaDonPage() {
                   ))}
                 </tbody>
                 <tfoot>
-                  {/* Tổng nghĩa vụ tài chính của đơn hàng (= DonHang.thanhTien gốc) */}
-                  <tr className={styles.totalRow}>
-                    <td colSpan={2} className={styles.tdRightBold}>
-                      TỔNG NGHĨA VỤ ĐƠN HÀNG
-                    </td>
-                    <td className={styles.tdRightBold}>
-                      {tongNghiaVu.toLocaleString("vi-VN")}
-                    </td>
-                  </tr>
+
                   {/* Tổng thực khách đã trả (sum soTienThanhToan tất cả lần) */}
                   <tr className={styles.totalRow}>
                     <td colSpan={2} className={styles.tdRightBold}>

@@ -26,6 +26,12 @@ export interface HoaDon {
   hanTraCongNo: Date | null;
   nguoiTaoId: number | null;
   createdAt: Date;
+  // Tổng nghĩa vụ GỐC của đơn hàng (lúc tạo đơn) + đã thanh toán + bv/pp
+  // Alias rõ ràng từ DonHang, dùng để frontend tính công nợ chính xác
+  donHangThanhTien?: number;
+  donHangDaThanhToan?: number;
+  donHangBuVanChuyen?: number;
+  donHangChiPhiPhatSinh?: number;
 }
 
 interface TaoHoaDonInput {
@@ -408,7 +414,16 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
   const rows = (await query(
     `SELECT hd.*,
             dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong,
-            dh.khoiLuongDat, dh.donGia, dh.thanhTien, dh.ngayGiao, dh.conLai as donHangConLai,
+            dh.khoiLuongDat, dh.donGia, dh.ngayGiao, dh.conLai as donHangConLai,
+            -- Tổng nghĩa vụ GỐC của đơn hàng (= lúc tạo đơn) + đã thanh toán + bv/pp
+            -- để frontend tính "Công nợ còn lại" / "SỐ TIỀN TRẢ KỲ NÀY" / "DƯ" chính xác
+            -- ở mọi lần thanh toán, kể cả khi HoaDon.tongCong đã bị chia tỷ lệ.
+            -- LƯU Ý: KHÔNG select dh.thanhTien đè lên hd.thanhTien (HoaDon không có
+            -- cột này nhưng dùng alias rõ ràng để tránh nhầm lẫn).
+            dh.thanhTien as donHangThanhTien,
+            dh.daThanhToan as donHangDaThanhToan,
+            dh.buVanChuyen as donHangBuVanChuyen,
+            dh.chiPhiPhatSinh as donHangChiPhiPhatSinh,
             dh.hangMuc, dh.phuongPhapDo, dh.loaiBom, dh.chieuDaiBom, dh.kieuNoi, dh.chieuDaiNoi,
             ISNULL(tt.tenTram, '') as tenTramTron,
             ISNULL(tt.diaChi, '') as diaChiTramTron,
@@ -455,6 +470,11 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
     donGia: r.donGia,
     thanhTien: r.thanhTien,
     ngayGiao: r.ngayGiao,
+    // Tổng nghĩa vụ GỐC của đơn hàng (alias rõ ràng, không bị ghi đè bởi hd.*)
+    donHangThanhTien: r.donHangThanhTien,
+    donHangDaThanhToan: r.donHangDaThanhToan,
+    donHangBuVanChuyen: r.donHangBuVanChuyen,
+    donHangChiPhiPhatSinh: r.donHangChiPhiPhatSinh,
     tenTramTron: r.tenTramTron,
     diaChiTramTron: r.diaChiTramTron,
     bienSoXe: r.bienSoXe,
