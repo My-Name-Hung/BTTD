@@ -56,12 +56,12 @@ export const NOTIFICATION_MESSAGES: Record<
     noiDung: `Đơn hàng ${d.maDonHang || ""} đã được kế toán duyệt.`,
   }),
   ORDER_APPROVED_BY_GDKD: (d) => ({
-    tieuDe: "Đơn hàng đã được giám đốc kinh doanh duyệt",
-    noiDung: `Đơn hàng ${d.maDonHang || ""} đã được giám đốc kinh doanh duyệt lần 1. Đang chờ kế toán duyệt.`,
+    tieuDe: "Đơn hàng đã được giám đốc và Trưởng phòng kinh doanh duyệt",
+    noiDung: `Đơn hàng ${d.maDonHang || ""} đã được giám đốc và Trưởng phòng kinh doanh duyệt lần 1. Đang chờ kế toán duyệt.`,
   }),
   ORDER_REJECTED: (d) => ({
     tieuDe: "Đơn hàng bị từ chối",
-    noiDung: `Đơn hàng ${d.maDonHang || ""} đã bị giám đốc kinh doanh từ chối. Lý do: ${d.lyDo || "Không có"}`,
+    noiDung: `Đơn hàng ${d.maDonHang || ""} đã bị giám đốc và Trưởng phòng kinh doanh từ chối. Lý do: ${d.lyDo || "Không có"}`,
   }),
   PAYMENT_RECEIVED: (d) => ({
     tieuDe: "Khách hàng đã thanh toán",

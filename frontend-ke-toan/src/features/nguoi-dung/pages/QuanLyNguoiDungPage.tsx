@@ -38,7 +38,7 @@ const VAI_TRO_LABELS: Record<string, string> = {
   ke_toan: "Kế toán",
   dieu_phoi: "Điều phối",
   lanh_dao: "Lãnh đạo",
-  giam_doc_kinh_doanh: "Giám đốc kinh doanh",
+  giam_doc_kinh_doanh: "Giám đốc và Trưởng phòng kinh doanh",
   tram_tron: "Trạm trộn",
   sale: "Sales",
   tai_xe: "Tài xế",
@@ -234,7 +234,7 @@ export default function QuanLyNguoiDungPage() {
         ky_thuat: "Kỹ thuật",
         tram_tron: "Trạm trộn",
         lanh_dao: "Lãnh đạo",
-        giam_doc_kinh_doanh: "Giám đốc kinh doanh",
+        giam_doc_kinh_doanh: "Giám đốc và Trưởng phòng kinh doanh",
       };
 
       const headers: { key: string; label: string; width: number }[] = [
@@ -316,7 +316,7 @@ export default function QuanLyNguoiDungPage() {
             options={[
               { id: "admin", label: "Quản trị" },
               { id: "lanh_dao", label: "Lãnh đạo" },
-              { id: "giam_doc_kinh_doanh", label: "Giám đốc kinh doanh" },
+              { id: "giam_doc_kinh_doanh", label: "Giám đốc và Trưởng phòng kinh doanh" },
               { id: "ke_toan", label: "Kế toán" },
               { id: "dieu_phoi", label: "Điều phối" },
               { id: "tram_tron", label: "Trạm trộn" },
@@ -530,7 +530,7 @@ export default function QuanLyNguoiDungPage() {
             options={[
               { id: "admin", label: "Quản trị", subLabel: "Toàn quyền hệ thống" },
               { id: "lanh_dao", label: "Lãnh đạo", subLabel: "Xem KPI & báo cáo" },
-              { id: "giam_doc_kinh_doanh", label: "Giám đốc kinh doanh", subLabel: "Duyệt đơn & phê duyệt" },
+              { id: "giam_doc_kinh_doanh", label: "Giám đốc và Trưởng phòng kinh doanh", subLabel: "Duyệt đơn & phê duyệt" },
               { id: "ke_toan", label: "Kế toán", subLabel: "Duyệt đơn & thanh toán" },
               { id: "dieu_phoi", label: "Điều phối", subLabel: "Lên lịch & điều xe" },
               { id: "tram_tron", label: "Trạm trộn", subLabel: "Xác nhận sản xuất" },

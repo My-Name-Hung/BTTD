@@ -923,7 +923,7 @@ async function initDatabase(): Promise<void> {
         console.log("  ✅ Cột giamTru đã tồn tại trong DonHang");
       }
 
-      // 3. DonHang: thêm cột nguoiDuyetGDKDId (cho Giám đốc kinh doanh duyệt bước 1)
+      // 3. DonHang: thêm cột nguoiDuyetGDKDId (cho Giám đốc kinh doanh và Trưởng phòng duyệt bước 1)
       const colNguoiDuyetGDKD = await migReq.query<{ name: string }[]>(
         `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('DonHang') AND name = 'nguoiDuyetGDKDId'`
       );

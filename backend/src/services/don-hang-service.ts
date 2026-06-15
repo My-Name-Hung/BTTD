@@ -375,7 +375,7 @@ export async function duyetDonHang(
     throw new Error('Đơn hàng không ở trạng thái chờ duyệt');
   }
 
-  // Bước 1: Giám đốc kinh doanh duyệt - chuyển sang chờ kế toán duyệt
+  // Bước 1: Giám đốc kinh doanh và Trưởng phòng duyệt - chuyển sang chờ kế toán duyệt
   if (vaiTro === 'giam_doc_kinh_doanh') {
     if (donHangHienTai.trangThaiDon !== 'cho_duyet') {
       throw new Error('Đơn hàng không ở trạng thái chờ duyệt');
@@ -412,7 +412,7 @@ export async function duyetDonHang(
   // Bước 2: Kế toán duyệt - chuyển sang đã duyệt
   if (vaiTro === 'ke_toan') {
     if (donHangHienTai.trangThaiDon !== 'cho_ke_toan_duyet') {
-      throw new Error('Đơn hàng chưa được giám đốc kinh doanh duyệt');
+      throw new Error('Đơn hàng chưa được giám đốc và Trưởng phòng kinh doanh duyệt');
     }
     await query(
       `UPDATE DonHang SET

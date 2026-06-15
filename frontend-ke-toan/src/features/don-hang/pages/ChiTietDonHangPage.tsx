@@ -219,7 +219,7 @@ export default function ChiTietDonHangPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [lyDoTuChoi, setLyDoTuChoi] = useState("");
 
-  // Bằng chứng đơn hàng - modal states
+  // đính kèm đơn hàng - modal states
   const [bangChungOptionModalOpen, setBangChungOptionModalOpen] = useState(false);
   const [bangChungUploadModalOpen, setBangChungUploadModalOpen] = useState(false);
   const [bangChungCameraModalOpen, setBangChungCameraModalOpen] = useState(false);
@@ -300,7 +300,7 @@ export default function ChiTietDonHangPage() {
     ? (isStep1 ? "Duyệt lần 1" : isStep2 ? "Duyệt lần 2" : "Duyệt đơn")
     : "Duyệt đơn";
 
-  // Chặn upload bằng chứng ở 3 trạng thái đầu: chờ duyệt, chờ kế toán duyệt, từ chối
+  // Chặn upload đính kèm ở 3 trạng thái đầu: chờ duyệt, chờ kế toán duyệt, từ chối
   // Các trạng thái còn lại (đã duyệt / đang sản xuất / đang giao / đã giao /
   // nghiệm thu / đã thanh toán / hoàn thành) đều cho phép upload.
   const isDonHangHoanThanh = donHang?.trangThaiDon === "hoan_thanh" || donHang?.trangThaiDon === "da_thanh_toan";
@@ -410,7 +410,7 @@ export default function ChiTietDonHangPage() {
     }
   };
 
-  // === Bằng chứng đơn hàng handlers ===
+  // === đính kèm đơn hàng handlers ===
 
   const handleOpenBangChungOption = () => {
     setBangChungOptionModalOpen(true);
@@ -456,14 +456,14 @@ export default function ChiTietDonHangPage() {
   };
 
   // Đóng form thông tin: thu hồi object URL ảnh, gọi loadAll() để refresh
-  // danh sách bằng chứng và hiển thị thông báo thành công
+  // danh sách đính kèm và hiển thị thông báo thành công
   const closeBangChungInfoModal = () => {
     setBangChungDanhSachFile((prev) => {
       prev.forEach((f) => f.preview && URL.revokeObjectURL(f.preview));
       return [];
     });
     setBangChungInfoModalOpen(false);
-    showToast("Đã hoàn thành tải lên bằng chứng");
+    showToast("Đã hoàn thành tải lên đính kèm");
     loadAll();
   };
 
@@ -538,7 +538,7 @@ export default function ChiTietDonHangPage() {
         `Đã tải lên ${filesMoi.length} file. Có thể chụp thêm ảnh hoặc hoàn thành.`,
       );
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Lỗi tải bằng chứng", "error");
+      showToast(err instanceof Error ? err.message : "Lỗi tải đính kèm", "error");
     } finally {
       setBangChungUploadLoading(false);
     }
@@ -565,7 +565,7 @@ export default function ChiTietDonHangPage() {
       setBangChungInfoModalOpen(true);
       showToast(`Đã tải thêm ${filesMoi.length} file.`);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Lỗi tải bằng chứng", "error");
+      showToast(err instanceof Error ? err.message : "Lỗi tải đính kèm", "error");
     } finally {
       setBangChungUploadLoading(false);
     }
@@ -632,10 +632,10 @@ export default function ChiTietDonHangPage() {
   const handleXoaBangChung = async (bangChungId: number) => {
     try {
       await xoaBangChungDonHang(bangChungId);
-      showToast("Đã xóa bằng chứng");
+      showToast("Đã xóa đính kèm");
       loadAll();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Lỗi xóa bằng chứng", "error");
+      showToast(err instanceof Error ? err.message : "Lỗi xóa đính kèm", "error");
     }
   };
 
@@ -764,14 +764,14 @@ export default function ChiTietDonHangPage() {
                 <FiDollarSign /> Xuất hóa đơn
               </button>
             )}
-          {/* Nút tải lên bằng chứng - cho phép ở mọi trạng thái trừ chờ duyệt, chờ kế toán duyệt, từ chối (role admin/sale) */}
+          {/* Nút tải lên đính kèm - cho phép ở mọi trạng thái trừ chờ duyệt, chờ kế toán duyệt, từ chối (role admin/sale) */}
           {canUploadBangChung && (
             <button
               className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
               onClick={handleOpenBangChungOption}
-              title="Tải lên bằng chứng đơn hàng"
+              title="Tải lên đính kèm đơn hàng"
             >
-              <FiUpload /> Bằng chứng
+              <FiUpload /> Đính kèm
             </button>
           )}
         </div>
@@ -1107,12 +1107,12 @@ export default function ChiTietDonHangPage() {
               <span className={styles.infoLabel}>Đã từ chối bởi</span>
               <span className={`${styles.infoValue} ${styles.infoValueDanger}`}>
                 {donHang.buocTuChoi === 1
-                  ? "Giám đốc kinh doanh"
+                  ? "Giám đốc và Trưởng phòng kinh doanh"
                   : donHang.buocTuChoi === 2
                     ? "Kế toán"
                     : donHang.nguoiDuyetGDKDId
                       ? "Kế toán"
-                      : "Giám đốc kinh doanh"}
+                      : "Giám đốc và Trưởng phòng kinh doanh"}
                 {donHang.nguoiTuChoi && ` (${donHang.nguoiTuChoi})`}
               </span>
             </div>
@@ -1493,7 +1493,7 @@ export default function ChiTietDonHangPage() {
         </div>
       )}
 
-      {/* Bằng chứng đơn hàng */}
+      {/* đính kèm đơn hàng */}
       <div className={styles.sectionCard}>
         <div className={styles.sectionHeader}>
           <div className={styles.sectionTitle}>
@@ -1501,7 +1501,7 @@ export default function ChiTietDonHangPage() {
               className={`${styles.sectionAccent} ${styles.sectionAccentBlue}`}
             />
             <FiImage size={16} style={{ color: "var(--color-primary)" }} />
-            Bằng chứng đơn hàng
+            Đính kèm đơn hàng
             {bangChungs.length > 0 && (
               <span style={{ fontSize: 12, fontWeight: 400, color: "var(--color-text-secondary)", marginLeft: 4 }}>
                 ({bangChungs.length} tệp)
@@ -1521,7 +1521,7 @@ export default function ChiTietDonHangPage() {
               }}
             >
               <FiAlertCircle size={16} />
-              Chưa có bằng chứng đơn hàng
+              Chưa có đính kèm đơn hàng
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2490,14 +2490,14 @@ export default function ChiTietDonHangPage() {
         loading={deleteLoading}
       />
 
-      {/* ========== MODAL: Chọn tùy chọn bằng chứng ========== */}
+      {/* ========== MODAL: Chọn tùy chọn đính kèm ========== */}
       <Modal
         isOpen={bangChungOptionModalOpen}
         onClose={() => setBangChungOptionModalOpen(false)}
-        title={`Bằng chứng đơn hàng - ${donHang.maDonHang}`}
+        title={`đính kèm đơn hàng - ${donHang.maDonHang}`}
       >
         <p className={styles.bangChungHint} style={{ marginBottom: 20 }}>
-          Chọn hình thức ghi nhận bằng chứng cho đơn hàng này
+          Chọn hình thức ghi nhận đính kèm cho đơn hàng này
         </p>
         <div className={styles.bangChungOptions}>
           <button
@@ -2533,7 +2533,7 @@ export default function ChiTietDonHangPage() {
         </div>
       </Modal>
 
-      {/* ========== MODAL: Upload file bằng chứng ========== */}
+      {/* ========== MODAL: Upload file đính kèm ========== */}
       <Modal
         isOpen={bangChungUploadModalOpen}
         onClose={() => {
@@ -2547,8 +2547,8 @@ export default function ChiTietDonHangPage() {
         }}
         title={
           bangChungUploadInInfo
-            ? `Tải thêm bằng chứng - ${donHang.maDonHang}`
-            : `Tải lên bằng chứng - ${donHang.maDonHang}`
+            ? `Tải thêm đính kèm - ${donHang.maDonHang}`
+            : `Tải lên đính kèm - ${donHang.maDonHang}`
         }
         footer={
           <>
@@ -2678,7 +2678,7 @@ export default function ChiTietDonHangPage() {
         )}
       </Modal>
 
-      {/* ========== MODAL: Camera bằng chứng ========== */}
+      {/* ========== MODAL: Camera đính kèm ========== */}
       <Modal
         isOpen={bangChungCameraModalOpen}
         onClose={() => {
@@ -2694,8 +2694,8 @@ export default function ChiTietDonHangPage() {
         }}
         title={
           bangChungCaptureInInfo
-            ? `Chụp thêm ảnh bằng chứng - ${donHang.maDonHang}`
-            : `Chụp ảnh bằng chứng - ${donHang.maDonHang}`
+            ? `Chụp thêm ảnh đính kèm - ${donHang.maDonHang}`
+            : `Chụp ảnh đính kèm - ${donHang.maDonHang}`
         }
         footer={
           <>
@@ -2774,7 +2774,7 @@ export default function ChiTietDonHangPage() {
               </p>
               <img
                 src={capturedImage}
-                alt="Ảnh bằng chứng"
+                alt="Ảnh đính kèm"
                 className={styles.bangChungCameraPreview}
               />
             </>
@@ -2782,11 +2782,11 @@ export default function ChiTietDonHangPage() {
         </div>
       </Modal>
 
-      {/* ========== MODAL: Form thông tin bằng chứng (sau khi upload/chụp) ========== */}
+      {/* ========== MODAL: Form thông tin đính kèm (sau khi upload/chụp) ========== */}
       <Modal
         isOpen={bangChungInfoModalOpen}
         onClose={closeBangChungInfoModal}
-        title={`Bằng chứng đơn hàng - ${donHang.maDonHang}`}
+        title={`đính kèm đơn hàng - ${donHang.maDonHang}`}
         footer={
           <>
             <button className="btn btn-cancel" onClick={closeBangChungInfoModal}>
@@ -2806,7 +2806,7 @@ export default function ChiTietDonHangPage() {
         <div className={styles.bangChungInfoSection}>
           <div className={styles.bangChungInfoSectionHeader}>
             <span className={styles.bangChungInfoSectionTitle}>
-              Tệp bằng chứng ({bangChungDanhSachFile.length})
+              Tệp đính kèm ({bangChungDanhSachFile.length})
             </span>
             <div className={styles.bangChungInfoSectionActions}>
               <button

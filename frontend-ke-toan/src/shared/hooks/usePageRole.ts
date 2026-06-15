@@ -4,7 +4,7 @@ export type VaiTro = 'admin' | 'giam_doc_kinh_doanh' | 'ke_toan' | 'dieu_phoi' |
 
 export const ROLE_LABELS: Record<VaiTro, string> = {
   admin: 'Quản trị viên',
-  giam_doc_kinh_doanh: 'Giám đốc kinh doanh',
+  giam_doc_kinh_doanh: 'Giám đốc và Trưởng phòng kinh doanh',
   ke_toan: 'Kế toán',
   dieu_phoi: 'Điều phối',
   lanh_dao: 'Lãnh đạo',

@@ -104,7 +104,7 @@ router.get(
       const isGiamDoc = req.user.vaiTro === 'giam_doc_kinh_doanh';
 
       if (isAdmin || isKyThuat || isGiamDoc) {
-        // Admin, Kỹ thuật và Giám đốc kinh doanh xem tất cả thống kê
+        // Admin, Kỹ thuật và Giám đốc kinh doanh và Trưởng phòng xem tất cả thống kê
         const [tongRes, chuaGiaoRes, daGiaoRes] = await Promise.all([
           query<any>(`SELECT COUNT(*) as cnt FROM DonHang dh`, {}),
           query<any>(
@@ -265,7 +265,7 @@ router.get(
       let data;
 
       if (isAdmin || isGiamDoc) {
-        // Admin và Giám đốc kinh doanh xem tất cả lịch sử giao hàng - chỉ ĐÃ GIAO
+        // Admin và Giám đốc kinh doanh và Trưởng phòng xem tất cả lịch sử giao hàng - chỉ ĐÃ GIAO
         data = await query<any>(
           `SELECT dh.* FROM DonHang dh
            WHERE dh.trangThaiDon = N'da_giao'
