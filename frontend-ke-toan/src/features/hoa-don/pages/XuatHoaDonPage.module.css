@@ -970,3 +970,76 @@
 .btnXemHdSmall:hover {
   background: rgba(7, 60, 235, 0.06);
 }
+
+/* ── Danh sách xe theo từng trạm ── */
+.xeTheoTramList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.xeTheoTramEmpty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(100, 116, 139, 0.06);
+  border: 1px dashed rgba(100, 116, 139, 0.3);
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.xeTheoTramItem {
+  background: rgba(7, 60, 235, 0.04);
+  border: 1px solid rgba(7, 60, 235, 0.18);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.xeTheoTramHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.xeTheoTramLabel {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.xeTheoTramRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.xeTheoTramRow .formGroup {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* ── Badge trạng thái thanh toán ── */
+.trangThaiTTBadge {
+  margin-top: 10px;
+  padding: 8px 14px;
+  background: rgba(7, 60, 235, 0.05);
+  border: 1px solid rgba(7, 60, 235, 0.18);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.formLabelSub {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 12px;
+}

@@ -29,6 +29,19 @@ import {
 import styles from "./XuatHoaDonPage.module.css";
 
 type HinhThucThanhToan = "tra_het" | "cong_no";
+type PhuongThucTaoDon =
+  | "tra_het"
+  | "tra_het_du"
+  | "cong_no"
+  | "cong_no_du"
+  | null
+  | undefined;
+
+// Map phương thức tạo đơn → tab mặc định khi xuất hóa đơn
+function mapPhuongThucToTab(ptt: PhuongThucTaoDon): HinhThucThanhToan {
+  if (ptt === "cong_no" || ptt === "cong_no_du") return "cong_no";
+  return "tra_het";
+}
 
 function formatCurrency(v: number): string {
   return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
@@ -113,7 +126,6 @@ export default function XuatHoaDonPage() {
   const [phuongPhapDo, setPhuongPhapDo] = useState("");
   const [chieuDaiPhuongPhap, setChieuDaiPhuongPhap] = useState("");
   const [loaiXiMang, setLoaiXiMang] = useState("");
-  const [gioDo, setGioDo] = useState("");
   const [phuongThuc, setPhuongThuc] = useState("tien_mat");
   const [ghiChu, setGhiChu] = useState("");
 
@@ -128,20 +140,20 @@ export default function XuatHoaDonPage() {
   // Tổng cộng (tính = tienBeTong + buuVanChuyen + phiPhatSinh - giamTru)
   const [tongCong, setTongCong] = useState(0);
 
-  // Trả hết
+  // Số tiền khách trả (dùng chung cho cả 2 tab) — tự động tính dư/nợ còn lại
   const [soTienTra, setSoTienTra] = useState("");
-  const [soTienDu, setSoTienDu] = useState("");
 
-  // Công nợ
-  const [soTienTraTruoc, setSoTienTraTruoc] = useState("");
+  // Công nợ — hạn thanh toán (chỉ dùng cho tab công nợ)
   const [hanTraCongNo, setHanTraCongNo] = useState("");
-  const [soTienNoConLai, setSoTienNoConLai] = useState("");
 
-  // Nhân sự & xe
+  // Nhân sự & xe (mảng theo từng trạm)
   const [kySu, setKySu] = useState("");
   const [vanHanhBom, setVanHanhBom] = useState("");
   const [lapOng, setLapOng] = useState("");
-  const [xeTaiXe, setXeTaiXe] = useState("");
+  // Mỗi phần tử = 1 trạm: { tram, bienSo, taiXe }
+  const [xeTheoTram, setXeTheoTram] = useState<
+    { tram: string; bienSo: string; taiXe: string }[]
+  >([]);
 
   // Số hóa đơn
   const [soHoaDon] = useState(() => {
@@ -156,6 +168,41 @@ export default function XuatHoaDonPage() {
     const gt = parseCurrency(giamTru);
     setTongCong(Math.max(0, tienBeTong + bv + pp - gt));
   }, [buuVanChuyen, phiPhatSinh, giamTru, tienBeTong]);
+
+  // ── Tính tiền dư / nợ còn lại + tự động chuyển tab dựa trên 'Số tiền trả' ──
+  // Cả 2 tab (trả hết + công nợ) đều dùng chung input "Số tiền trả".
+  // - soTienTra == 0: giữ tab hiện tại (chưa nhập gì)
+  // - soTienTra < tongCong: tab "tra_het" → tự chuyển sang "cong_no"
+  // - soTienTra == tongCong: tab "tra_het", không dư
+  // - soTienTra > tongCong: status "tra_het_du" hoặc "cong_no_du" tùy tab hiện tại
+  const soTienTraNum = parseCurrency(soTienTra);
+  const chenhLech = soTienTraNum - tongCong;
+  const tienDu = chenhLech > 0 ? chenhLech : 0;
+  const noConLai = chenhLech < 0 ? -chenhLech : 0;
+  // Trạng thái thanh toán dựa trên tab hiện tại + chênh lệch
+  const trangThaiThanhToan: "tra_het" | "tra_het_du" | "cong_no" | "cong_no_du" =
+    hinhThuc === "tra_het"
+      ? chenhLech > 0
+        ? "tra_het_du"
+        : "tra_het"
+      : chenhLech > 0
+        ? "cong_no_du"
+        : chenhLech < 0
+          ? "cong_no"
+          : "cong_no";
+
+  // Tự động chuyển tab "tra_het" → "cong_no" khi khách trả thiếu
+  // (khi đang ở tab trả hết mà số tiền trả < tổng cộng, hệ thống tự ghi nhận làm công nợ)
+  useEffect(() => {
+    if (
+      hinhThuc === "tra_het" &&
+      tongCong > 0 &&
+      soTienTraNum > 0 &&
+      chenhLech < 0
+    ) {
+      setHinhThuc("cong_no");
+    }
+  }, [hinhThuc, tongCong, soTienTraNum, chenhLech]);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -199,36 +246,35 @@ export default function XuatHoaDonPage() {
         if (lichMoiNhat.nguoiOmOng) setVanHanhBom(lichMoiNhat.nguoiOmOng);
         if (lichMoiNhat.nguoiBatOng) setLapOng(lichMoiNhat.nguoiBatOng);
 
-        // Biển số + Tài xế: tìm row CÓ DỮ LIỆU đầu tiên
-        // (vì row mới nhất có thể chưa gán xe, nhưng row cũ hơn đã gán)
-        const lichCoXe = lichArr.find(
-          (ls) => ls.bienSoXe || ls.tenTaiXe
-        ) || lichMoiNhat;
-        const bienSo = lichCoXe.bienSoXe || "";
-        const taiXe = lichCoXe.tenTaiXe || "";
-        if (bienSo && taiXe) {
-          setXeTaiXe(`${bienSo} – ${taiXe}`);
-        } else if (bienSo) {
-          setXeTaiXe(bienSo);
-        } else if (taiXe) {
-          setXeTaiXe(taiXe);
+        // Xây danh sách tài xế + biển số theo từng trạm (1 row / trạm)
+        // Mỗi trạm trộn = 1 dòng hiển thị riêng để xuất hóa đơn đầy đủ
+        const tramMap = new Map<
+          number,
+          { tram: string; bienSo: string; taiXe: string }
+        >();
+        for (const ls of lichArr) {
+          if (ls.idTramTron == null) continue;
+          if (!tramMap.has(ls.idTramTron)) {
+            tramMap.set(ls.idTramTron, {
+              tram: ls.tenTram || `Trạm #${ls.idTramTron}`,
+              bienSo: "",
+              taiXe: "",
+            });
+          }
+          const entry = tramMap.get(ls.idTramTron)!;
+          // Ưu tiên row có dữ liệu xe (bienSoXe/tenTaiXe)
+          if (ls.bienSoXe && !entry.bienSo) entry.bienSo = ls.bienSoXe;
+          if (ls.tenTaiXe && !entry.taiXe) entry.taiXe = ls.tenTaiXe;
         }
-
-        // Giờ đổ - lấy từ row mới nhất
-        if (lichMoiNhat.thoiGianBatDauDo) {
-          const dt = new Date(lichMoiNhat.thoiGianBatDauDo);
-          const y = dt.getFullYear();
-          const m = String(dt.getMonth() + 1).padStart(2, "0");
-          const day = String(dt.getDate()).padStart(2, "0");
-          const h = String(dt.getHours()).padStart(2, "0");
-          const min = String(dt.getMinutes()).padStart(2, "0");
-          setGioDo(`${y}-${m}-${day}T${h}:${min}`);
-        }
+        setXeTheoTram(Array.from(tramMap.values()));
       }
 
       // Nếu đã có hóa đơn công nợ -> auto chọn công nợ
       if (existingCongNoHD.length > 0) {
         setHinhThuc("cong_no");
+      } else {
+        // Auto chọn tab theo phương thức thanh toán đã chọn lúc tạo đơn hàng
+        setHinhThuc(mapPhuongThucToTab(dh.phuongThucThanhToan));
       }
     } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
@@ -241,6 +287,21 @@ export default function XuatHoaDonPage() {
     loadData();
   }, [loadData]);
 
+  // Build phần ghi chú tự động từ danh sách xe theo trạm
+  // (API hiện chỉ nhận 1 trường ghiChu chung, nên ghép thông tin đa trạm vào đây)
+  const buildGhiChuXe = (): string => {
+    const parts: string[] = [];
+    if (xeTheoTram.length > 0) {
+      parts.push("Xe giao:");
+      xeTheoTram.forEach((xe, idx) => {
+        const bs = xe.bienSo || "(chưa có biển số)";
+        const tx = xe.taiXe || "(chưa có tài xế)";
+        parts.push(`  • Trạm ${idx + 1} (${xe.tram}): ${bs} – ${tx}`);
+      });
+    }
+    return parts.join("\n");
+  };
+
   const handleSubmit = async () => {
     if (!donHang) return;
 
@@ -249,25 +310,18 @@ export default function XuatHoaDonPage() {
       showToast("Vui lòng nhập hạn thanh toán công nợ", "error");
       return;
     }
+    if (tongCong > 0 && soTienTraNum === 0) {
+      showToast("Vui lòng nhập số tiền trả", "error");
+      return;
+    }
 
-    const soTienTraNum = parseCurrency(soTienTra);
-    const soTienDuNum = parseCurrency(soTienDu);
-    const soTienTraTruocNum = parseCurrency(soTienTraTruoc);
     const bvNum = parseCurrency(buuVanChuyen);
     const ppNum = parseCurrency(phiPhatSinh);
     const gtNum = parseCurrency(giamTru);
-    const noConLaiNum = parseCurrency(soTienNoConLai);
 
     setSubmitting(true);
     try {
-      const loaiTT: "tra_het" | "tra_het_du" | "cong_no" | "cong_no_du" =
-        hinhThuc === "tra_het"
-          ? soTienDuNum > 0
-            ? "tra_het_du"
-            : "tra_het"
-          : soTienDuNum > 0
-            ? "cong_no_du"
-            : "cong_no";
+      const loaiTT = trangThaiThanhToan;
 
       const hoaDon = await taoHoaDon({
         idDonHang: donHang.id,
@@ -281,20 +335,22 @@ export default function XuatHoaDonPage() {
         ngayLap: ngayLap,
         khachHang,
         loaiXiMang,
-        gioDo,
         phuongThucThanhToan: phuongThuc,
-        ghiChu,
+        ghiChu: [ghiChu, buildGhiChuXe()].filter(Boolean).join("\n\n"),
         hanTraCongNo: hinhThuc === "cong_no" ? hanTraCongNo : undefined,
-        soTienThanhToanTruoc:
-          hinhThuc === "cong_no" ? soTienTraTruocNum : soTienTraNum,
-        soTienDu: soTienDuNum,
+        soTienThanhToanTruoc: soTienTraNum,
+        soTienDu: tienDu,
         soTienDuSuDung: 0,
       });
 
       showToast(
         hinhThuc === "tra_het"
-          ? "Đã xác nhận thanh toán và xuất hóa đơn"
-          : "Đã ghi công nợ và xuất hóa đơn",
+          ? tienDu > 0
+            ? `Đã xác nhận trả hết dư ${formatCurrency(tienDu)} và xuất hóa đơn`
+            : "Đã xác nhận thanh toán và xuất hóa đơn"
+          : tienDu > 0
+            ? `Đã ghi công nợ dư ${formatCurrency(tienDu)} và xuất hóa đơn`
+            : "Đã ghi công nợ và xuất hóa đơn",
       );
 
       navigate(`/in-hoa-don/${hoaDon.id}`);
@@ -527,49 +583,55 @@ export default function XuatHoaDonPage() {
             <h3>Thông tin thanh toán</h3>
           </div>
 
-          {/* Trả hết */}
-          {hinhThuc === "tra_het" && (
-            <div className={styles.thanhToanGroup}>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Số tiền trả (đ)</label>
-                  <input
-                    className={styles.formInput}
-                    type="text"
-                    value={soTienTra}
-                    onChange={(e) => setSoTienTra(formatNumberInput(e.target.value))}
-                    placeholder={formatNumberInput(tongCong)}
-                  />
-                </div>
+          {/* Cả 2 tab (trả hết + công nợ) đều dùng chung input "Số tiền trả".
+              Khi nhập số tiền trả, hệ thống tự so với tổng cộng để:
+              - Số tiền trả >= Tổng cộng: hiển thị "Tiền dư" (auto-calc) + status _du
+              - Số tiền trả <  Tổng cộng: tự chuyển sang tab "Công nợ" + hiển thị "Nợ còn lại" */}
+          <div className={styles.thanhToanGroup}>
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Số tiền trả (đ)
+                  {hinhThuc === "cong_no" && (
+                    <span
+                      className={styles.formLabelSub}
+                      style={{ marginLeft: 6, fontWeight: 400, color: "#64748b" }}
+                    >
+                      (trả trước một phần)
+                    </span>
+                  )}
+                </label>
+                <input
+                  className={styles.formInput}
+                  type="text"
+                  value={soTienTra}
+                  onChange={(e) => setSoTienTra(formatNumberInput(e.target.value))}
+                  placeholder={formatNumberInput(tongCong)}
+                />
+                <span className={styles.formHint}>
+                  Tổng cộng phải trả: <strong>{formatCurrency(tongCong)}</strong>
+                </span>
+              </div>
+              {/* Tab trả hết + dư */}
+              {hinhThuc === "tra_het" && (
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Tiền trả dư (đ)</label>
                   <input
-                    className={styles.formInput}
+                    className={`${styles.formInput} ${styles.inputReadOnly}`}
                     type="text"
-                    value={soTienDu}
-                    onChange={(e) => setSoTienDu(formatNumberInput(e.target.value))}
+                    value={formatNumberInput(tienDu)}
+                    readOnly
                     placeholder="0"
                   />
-                  <span className={styles.formHint}>Khách trả vượt, ghi nhận dư</span>
+                  <span className={styles.formHint}>
+                    {tienDu > 0
+                      ? `Khách trả vượt ${formatCurrency(tienDu)} → trạng thái "Trả hết dư"`
+                      : "Số tiền trả ≥ tổng cộng sẽ ghi nhận dư"}
+                  </span>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Công nợ */}
-          {hinhThuc === "cong_no" && (
-            <div className={styles.thanhToanGroup}>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Số tiền trả trước (đ)</label>
-                  <input
-                    className={styles.formInput}
-                    type="text"
-                    value={soTienTraTruoc}
-                    onChange={(e) => setSoTienTraTruoc(formatNumberInput(e.target.value))}
-                    placeholder="0"
-                  />
-                </div>
+              )}
+              {/* Tab công nợ: hạn + nợ còn lại */}
+              {hinhThuc === "cong_no" && (
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Hạn thanh toán</label>
                   <input
@@ -579,24 +641,65 @@ export default function XuatHoaDonPage() {
                     onChange={(e) => setHanTraCongNo(e.target.value)}
                   />
                 </div>
-              </div>
+              )}
+            </div>
+            {/* Hàng phụ: nợ còn lại (công nợ) hoặc dư (công nợ dư) */}
+            {hinhThuc === "cong_no" && (
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Nợ còn lại (đ)</label>
                   <input
-                    className={styles.formInput}
+                    className={`${styles.formInput} ${styles.inputReadOnly}`}
                     type="text"
-                    value={soTienNoConLai}
-                    onChange={(e) => setSoTienNoConLai(formatNumberInput(e.target.value))}
+                    value={formatNumberInput(noConLai)}
+                    readOnly
                     placeholder="0"
                   />
                   <span className={styles.formHint}>
-                    = {formatCurrency(tongCong)} - {formatCurrency(parseCurrency(soTienTraTruoc))}
+                    {noConLai > 0
+                      ? `Còn nợ ${formatCurrency(noConLai)} → trạng thái "Công nợ"`
+                      : tienDu > 0
+                        ? `Trả vượt ${formatCurrency(tienDu)} → trạng thái "Công nợ dư"`
+                        : "Đã trả đủ tổng cộng"}
                   </span>
                 </div>
+                {tienDu > 0 && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Tiền dư (đ)</label>
+                    <input
+                      className={`${styles.formInput} ${styles.inputReadOnly}`}
+                      type="text"
+                      value={formatNumberInput(tienDu)}
+                      readOnly
+                      placeholder="0"
+                    />
+                    <span className={styles.formHint}>
+                      Khách trả vượt, ghi nhận dư
+                    </span>
+                  </div>
+                )}
               </div>
+            )}
+            {/* Trạng thái thanh toán hiện tại */}
+            <div className={styles.trangThaiTTBadge}>
+              {trangThaiThanhToan === "tra_het" && "Trạng thái: Trả hết"}
+              {trangThaiThanhToan === "tra_het_du" && (
+                <span style={{ color: "#0284c7" }}>
+                  Trạng thái: Trả hết dư ({formatCurrency(tienDu)})
+                </span>
+              )}
+              {trangThaiThanhToan === "cong_no" && (
+                <span style={{ color: "#d97706" }}>
+                  Trạng thái: Công nợ (còn nợ {formatCurrency(noConLai)})
+                </span>
+              )}
+              {trangThaiThanhToan === "cong_no_du" && (
+                <span style={{ color: "#dc2626" }}>
+                  Trạng thái: Công nợ dư (dư {formatCurrency(tienDu)})
+                </span>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* ── Thông tin hóa đơn ── */}
@@ -648,15 +751,6 @@ export default function XuatHoaDonPage() {
             </div>
           </div>
           <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Giờ đổ</label>
-              <input
-                className={styles.formInput}
-                type="datetime-local"
-                value={gioDo}
-                onChange={(e) => setGioDo(e.target.value)}
-              />
-            </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Phương thức TT</label>
               <select
@@ -722,16 +816,62 @@ export default function XuatHoaDonPage() {
                 placeholder="Tên người lắp ống"
               />
             </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Xe (Biển số – Tài xế)</label>
-              <input
-                className={styles.formInput}
-                type="text"
-                value={xeTaiXe}
-                onChange={(e) => setXeTaiXe(e.target.value)}
-                placeholder="VD: 59C1-12345 – Nguyễn Văn A"
-              />
-            </div>
+          </div>
+          {/* Danh sách xe + tài xế theo từng trạm (mỗi trạm 1 dòng đầy đủ) */}
+          <div className={styles.xeTheoTramList}>
+            {xeTheoTram.length === 0 ? (
+              <div className={styles.xeTheoTramEmpty}>
+                <FiTruck size={20} />
+                <span>Chưa có thông tin xe / tài xế (chưa phân công xe)</span>
+              </div>
+            ) : (
+              xeTheoTram.map((xe, idx) => (
+                <div key={`${xe.tram}-${idx}`} className={styles.xeTheoTramItem}>
+                  <div className={styles.xeTheoTramHeader}>
+                    <FiTruck size={16} />
+                    <span className={styles.xeTheoTramLabel}>
+                      Trạm {idx + 1}: {xe.tram}
+                    </span>
+                  </div>
+                  <div className={styles.xeTheoTramRow}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Biển số xe</label>
+                      <input
+                        className={styles.formInput}
+                        type="text"
+                        value={xe.bienSo}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setXeTheoTram((prev) =>
+                            prev.map((it, i) =>
+                              i === idx ? { ...it, bienSo: v } : it,
+                            ),
+                          );
+                        }}
+                        placeholder="VD: 59C1-12345"
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Tài xế</label>
+                      <input
+                        className={styles.formInput}
+                        type="text"
+                        value={xe.taiXe}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setXeTheoTram((prev) =>
+                            prev.map((it, i) =>
+                              i === idx ? { ...it, taiXe: v } : it,
+                            ),
+                          );
+                        }}
+                        placeholder="Tên tài xế"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
