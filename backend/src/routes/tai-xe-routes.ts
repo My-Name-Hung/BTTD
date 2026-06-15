@@ -605,17 +605,21 @@ router.post(
         }
       );
 
-      // Trộn lại: KHÔNG xóa lịch sản xuất, chỉ reset các cột sản xuất/giao
-      // của trạm được trộn lại về trạng thái "chưa sản xuất" để kho có thể SX lại.
-      // Các trạm khác (không bị trộn lại) giữ nguyên.
+      // Trộn lại: KHÔNG xóa lịch sản xuất, KHÔNG đổi trạng thái đơn hàng.
+      // Chỉ reset các cột SX/giao của trạm được trộn lại về "chưa sản xuất / chưa giao"
+      // để kho/điều phối xác nhận SX lại trên trạm đó.
+      // - Các trạm khác của đơn: giữ nguyên trạng thái.
+      // - DonHang.trangThaiDon: giữ nguyên (vẫn dang_giao/da_giao) để trạm khác
+      //   của đơn vẫn hiển thị bình thường trên UI tài xế.
       if (idLichSanXuat != null) {
         await query(
           `UPDATE LichSanXuat
               SET trangThai = N'chua_san_xuat',
-                  trangThaiGiao = NULL,
+                  trangThaiGiao = N'chua_giao',
                   khoiLuongDaTron = NULL,
                   thoiGianBatDauDo = NULL,
                   ngayXacNhanGiao = NULL,
+                  khoiLuongGiaoThucTe = NULL,
                   ghiChuXe = NULL,
                   idXe = NULL,
                   idTaiXe = NULL,
@@ -628,10 +632,11 @@ router.post(
         await query(
           `UPDATE LichSanXuat
               SET trangThai = N'chua_san_xuat',
-                  trangThaiGiao = NULL,
+                  trangThaiGiao = N'chua_giao',
                   khoiLuongDaTron = NULL,
                   thoiGianBatDauDo = NULL,
                   ngayXacNhanGiao = NULL,
+                  khoiLuongGiaoThucTe = NULL,
                   ghiChuXe = NULL,
                   idXe = NULL,
                   idTaiXe = NULL,
@@ -639,19 +644,19 @@ router.post(
             WHERE idDonHang = @idDonHang`,
           { idDonHang }
         );
+        // Reset cả trạng thái đơn vì mọi trạm đều reset
+        await query(
+          `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
+          { id: idDonHang }
+        );
       }
-
-      // Đặt trạng thái đơn về "đang sản xuất" để kho/điều phối xác nhận SX lại
-      await query(
-        `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
-        { id: idDonHang }
-      );
 
       // Ghi nhật ký
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
+      const newTrangThaiDon = idLichSanXuat == null ? 'dang_san_xuat' : donHang[0].trangThaiDon;
       await ghiNhatKy(req.user.id, 'TRON_LAI', 'DonHang', idDonHang,
-        JSON.stringify({ trangThaiDon: 'dang_giao' }),
-        JSON.stringify({ trangThaiDon: 'dang_san_xuat', lyDo, idLichSanXuat, tenTram }),
+        JSON.stringify({ trangThaiDon: donHang[0].trangThaiDon, idLichSanXuat }),
+        JSON.stringify({ trangThaiDon: newTrangThaiDon, idLichSanXuat, tenTram, lyDo }),
         ip);
 
       // Thông báo cho điều phối

@@ -692,6 +692,11 @@ export default function KhoLichSanXuatPage() {
                               bg = "rgba(0, 150, 136, 0.12)";
                               color = "#009688";
                               label = "Đang giao";
+                            } else if (giao === "chua_giao" && sx !== "da_xong") {
+                              // Trộn lại 1 trạm: trạm bị reset, chờ kho/điều phối SX lại
+                              bg = "rgba(234, 88, 12, 0.12)";
+                              color = "#ea580c";
+                              label = "Chờ SX lại";
                             } else if (sx === "da_xong") {
                               bg = "rgba(76, 175, 80, 0.12)";
                               color = "#4caf50";
@@ -792,9 +797,16 @@ export default function KhoLichSanXuatPage() {
                             const soTram = item.tramTrons.length;
                             const isMotTram = soTram <= 1;
 
-                            // Nếu đã trộn đủ (khoiLuongConLai = 0): không hiển thị nút hành động
-                            // vì đơn đã hoàn thành sản xuất đủ khối lượng ban đầu
-                            if (khoiLuongConLai === 0) {
+                            // Có còn trạm nào chưa SX (kể cả trạm bị trộn lại → chờ SX lại) không?
+                            const coTramChoSXLai = item.tramTrons.some(
+                              (t) =>
+                                (t as any).trangThai === "chua_san_xuat" &&
+                                (t as any).trangThaiGiao === "chua_giao",
+                            );
+
+                            // Nếu đã trộn đủ (khoiLuongConLai = 0) VÀ không có trạm chờ SX lại:
+                            // không hiển thị nút hành động vì đơn đã hoàn thành sản xuất đủ khối lượng.
+                            if (khoiLuongConLai === 0 && !coTramChoSXLai) {
                               return null;
                             }
 
@@ -811,6 +823,25 @@ export default function KhoLichSanXuatPage() {
                                   >
                                     <FiCheck size={14} />
                                     SX xong
+                                  </button>
+                                );
+                              }
+                              return null;
+                            }
+
+                            // Trường hợp: khoiLuongConLai = 0 nhưng còn trạm chờ SX lại
+                            // (trộn lại 1 trạm khi các trạm khác đã trộn đủ tổng khối lượng)
+                            // → vẫn cho admin/điều phối xác nhận SX lại trạm đó
+                            if (khoiLuongConLai === 0 && coTramChoSXLai) {
+                              if (coTheXacNhanSX) {
+                                return (
+                                  <button
+                                    className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
+                                    onClick={() => handleNavigateXacNhanSanXuat(item)}
+                                    title="Xác nhận sản xuất lại cho trạm đã trộn lại"
+                                  >
+                                    <FiCheck size={14} />
+                                    SX lại
                                   </button>
                                 );
                               }
