@@ -40,14 +40,14 @@ router.get(
                   tt.tenTram,
                   nd.hoTen as tenTaiXe,
                   xe.bienSo as xeBienSoXe
-             FROM DonHang dh
-             INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang AND ls.idTramTron IS NOT NULL
-             LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
-             LEFT JOIN Xe xe ON ls.idXe = xe.id
-             LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
-             WHERE dh.trangThaiDon = N'dang_giao'
-               AND (ls.trangThaiGiao = N'dang_giao' OR ls.trangThaiGiao IS NULL)
-             ORDER BY dh.ngayGiao DESC, ls.id ASC`,
+            FROM DonHang dh
+            INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang AND ls.idTramTron IS NOT NULL
+            LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
+            LEFT JOIN Xe xe ON ls.idXe = xe.id
+            LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
+            WHERE dh.trangThaiDon = N'dang_giao'
+              AND (ls.trangThaiGiao = N'dang_giao' OR ls.trangThaiGiao IS NULL OR ls.trangThaiGiao = N'chua_giao')
+            ORDER BY dh.ngayGiao DESC, ls.id ASC`,
           {}
         );
       } else {
@@ -67,14 +67,14 @@ router.get(
                   nd.hoTen as tenTaiXe,
                   xe.bienSo as xeBienSoXe
              FROM DonHang dh
-             INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang AND ls.idTramTron IS NOT NULL
-             INNER JOIN Xe xe ON ls.idXe = xe.id
-             LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
-             LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
-             WHERE xe.idTaiKhoan = @idTaiXe
-               AND dh.trangThaiDon = N'dang_giao'
-               AND (ls.trangThaiGiao = N'dang_giao' OR ls.trangThaiGiao IS NULL)
-             ORDER BY dh.ngayGiao DESC, ls.id ASC`,
+            INNER JOIN LichSanXuat ls ON dh.id = ls.idDonHang AND ls.idTramTron IS NOT NULL
+            INNER JOIN Xe xe ON ls.idXe = xe.id
+            LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
+            LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
+            WHERE xe.idTaiKhoan = @idTaiXe
+              AND dh.trangThaiDon = N'dang_giao'
+              AND (ls.trangThaiGiao = N'dang_giao' OR ls.trangThaiGiao IS NULL OR ls.trangThaiGiao = N'chua_giao')
+            ORDER BY dh.ngayGiao DESC, ls.id ASC`,
           { idTaiXe }
         );
       }
@@ -353,16 +353,26 @@ router.put(
         }
       }
 
-      // Tài xế xác nhận đang giao: dang_san_xuat -> dang_giao
+      // Tài xế xác nhận đang giao: chuyển trạng thái giao của lịch trạm sang "dang_giao"
+      // - Bình thường: đơn đang "dang_san_xuat" → chuyển sang "dang_giao"
+      // - Sau trộn lại 1 trạm: đơn giữ "dang_giao"/"da_giao" nhưng lịch trạm đó
+      //   đang "chua_giao" (reset do kho SX lại) → chỉ cập nhật lịch trạm, KHÔNG đổi trạng thái đơn
       if (req.body.trangThai === "dang_giao") {
-        if (donHang[0].trangThaiDon !== "dang_san_xuat") {
+        const isTramChoGiao =
+          idLichSanXuat != null &&
+          (donHang[0].trangThaiDon === "dang_giao" ||
+            donHang[0].trangThaiDon === "da_giao");
+        if (donHang[0].trangThaiDon !== "dang_san_xuat" && !isTramChoGiao) {
           res.status(400).json({ success: false, message: "Đơn hàng không ở trạng thái chờ giao" });
           return;
         }
-        await query(
-          `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
-          { id: idDonHang },
-        );
+        // Trường hợp bình thường: chuyển đơn sang "dang_giao"
+        if (!isTramChoGiao) {
+          await query(
+            `UPDATE DonHang SET trangThaiDon = N'dang_giao', ngayCapNhat = ${vnNow()} WHERE id = @id`,
+            { id: idDonHang },
+          );
+        }
         // Ghi nhận trạm này đang giao (nếu có idLichSanXuat)
         if (idLichSanXuat != null) {
           await query(
@@ -372,8 +382,11 @@ router.put(
         }
         const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
         await ghiNhatKy(req.user.id, 'XAC_NHAN', 'DonHang', idDonHang,
-          JSON.stringify({ trangThaiDon: 'dang_san_xuat' }),
-          JSON.stringify({ trangThaiDon: 'dang_giao', idLichSanXuat }),
+          JSON.stringify({ trangThaiDon: donHang[0].trangThaiDon, idLichSanXuat }),
+          JSON.stringify({
+            trangThaiDon: isTramChoGiao ? donHang[0].trangThaiDon : 'dang_giao',
+            idLichSanXuat,
+          }),
           ip);
         const updated = (
           await query<any>(`SELECT * FROM DonHang WHERE id = @id`, {

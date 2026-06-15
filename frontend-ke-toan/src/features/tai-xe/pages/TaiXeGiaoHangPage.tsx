@@ -352,7 +352,7 @@ export default function TaiXeGiaoHangPage() {
             const sc = isDangGiao
               ? perTram === "da_giao"
                 ? { bg: "#4caf5022", color: "#4caf50" }
-                : perTram === "tron_lai"
+                : perTram === "tron_lai" || perTram === "chua_giao"
                   ? { bg: "#ea580c22", color: "#ea580c" }
                   : { bg: "#00968822", color: "#009688" } // dang_giao hoặc null (chưa bắt đầu giao)
               : { bg: "#4caf5022", color: "#4caf50" };
@@ -361,7 +361,9 @@ export default function TaiXeGiaoHangPage() {
                 ? "Đã giao"
                 : perTram === "tron_lai"
                   ? "Trộn lại"
-                  : "Đang giao"
+                  : perTram === "chua_giao"
+                    ? "Chờ giao"
+                    : "Đang giao"
               : "Đã giao";
 
             return (

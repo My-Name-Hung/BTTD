@@ -181,7 +181,15 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
     }
 
     // Cập nhật các lịch sản xuất được chọn (chỉ lịch cụ thể, không ghi đè các trạm khác)
-    for (const lichCanCapNhat of lichCanCapNhatList) {
+    for (const lichCanCapNhatRaw of lichCanCapNhatList) {
+      const lichCanCapNhat = lichCanCapNhatRaw as any;
+      // Nếu lịch trạm đang ở trạng thái "chua_giao" (do trộn lại) → reset về NULL
+      // để tài xế thấy lại đơn và bấm "Đang giao" trên TaiXeGiaoHangPage.
+      // Còn lại giữ nguyên (NULL = chờ giao lần đầu).
+      const resetTrangThaiGiao =
+        lichCanCapNhat.trangThaiGiao === 'chua_giao'
+          ? null
+          : lichCanCapNhat.trangThaiGiao;
       await query(
         `UPDATE LichSanXuat SET
           khoiLuongDaTron = @khoiLuongDaTron,
@@ -191,6 +199,7 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
           ghiChuXe = @ghiChuXe,
           idTaiXe = @idTaiXe,
           trangThai = N'da_xong',
+          trangThaiGiao = @trangThaiGiao,
           ngayCapNhat = ${vnNow()}
          WHERE id = @id`,
         {
@@ -201,6 +210,7 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
           bienSoXe: bienSoXe || null,
           ghiChuXe: ghiChuXe || null,
           idTaiXe: idTaiXeValue,
+          trangThaiGiao: resetTrangThaiGiao,
         }
       );
     }
