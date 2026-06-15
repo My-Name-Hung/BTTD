@@ -113,9 +113,12 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       return;
     }
 
-    // Kiểm tra trạng thái phải là dang_san_xuat
-    if (donHang[0].trangThaiDon !== 'dang_san_xuat') {
-      res.status(400).json({ success: false, message: 'Chỉ có thể xác nhận sản xuất xong đơn hàng đang sản xuất' });
+    // Cho phép xác nhận SX khi:
+    // - Đơn đang "dang_san_xuat" (chưa giao), HOẶC
+    // - Đơn đang "dang_giao"/"da_giao" mà có lịch trạm đang "chua_san_xuat" (sau khi trộn lại 1 trạm)
+    const trangThaiHopLe = ['dang_san_xuat', 'dang_giao', 'da_giao'];
+    if (!trangThaiHopLe.includes(donHang[0].trangThaiDon)) {
+      res.status(400).json({ success: false, message: 'Chỉ có thể xác nhận sản xuất xong khi đơn đang sản xuất / đang giao / đã giao' });
       return;
     }
 

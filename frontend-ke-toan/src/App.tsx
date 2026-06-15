@@ -177,6 +177,10 @@ function App() {
                       element={<KhoLichSanXuatPage />}
                     />
                     <Route
+                      path="/kho/lich-san-xuat"
+                      element={<KhoLichSanXuatPage />}
+                    />
+                    <Route
                       path="/kho/xac-nhan-san-xuat/:id"
                       element={<KhoXacNhanSanXuatPage />}
                     />
