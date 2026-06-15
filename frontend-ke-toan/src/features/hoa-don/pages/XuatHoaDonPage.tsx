@@ -308,19 +308,9 @@ export default function XuatHoaDonPage() {
   }, [loadData]);
 
   // Build phần ghi chú tự động từ danh sách xe theo trạm
-  // (API hiện chỉ nhận 1 trường ghiChu chung, nên ghép thông tin đa trạm vào đây)
-  const buildGhiChuXe = (): string => {
-    const parts: string[] = [];
-    if (xeTheoTram.length > 0) {
-      parts.push("Xe giao:");
-      xeTheoTram.forEach((xe, idx) => {
-        const bs = xe.bienSo || "(chưa có biển số)";
-        const tx = xe.taiXe || "(chưa có tài xế)";
-        parts.push(`  • Trạm ${idx + 1} (${xe.tram}): ${bs} – ${tx}`);
-      });
-    }
-    return parts.join("\n");
-  };
+  // Thông tin xe giao theo từng trạm (xeTheoTram) chỉ phục vụ hiển thị UI trong form.
+  // Không ghép vào ghiChu lưu DB — dữ liệu xe đã có sẵn ở LichSanXuat và InHoaDonPage
+  // lấy trực tiếp từ đó để hiển thị trên hóa đơn in.
 
   const handleSubmit = async () => {
     if (!donHang) return;
@@ -356,7 +346,10 @@ export default function XuatHoaDonPage() {
         khachHang,
         loaiXiMang,
         phuongThucThanhToan: phuongThuc,
-        ghiChu: [ghiChu, buildGhiChuXe()].filter(Boolean).join("\n\n"),
+        // Ghi chú lưu DB = đúng ghi chú người dùng nhập trong textarea
+        // "Thông tin hóa đơn" ở trang XuatHoaDonPage. KHÔNG ghép thông tin xe giao
+        // vì thông tin xe đã có riêng ở LichSanXuat và InHoaDonPage hiển thị từ đó.
+        ghiChu: ghiChu,
         hanTraCongNo: hinhThuc === "cong_no" ? hanTraCongNo : undefined,
         soTienThanhToanTruoc: soTienTraNum,
         soTienDu: tienDu,
