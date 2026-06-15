@@ -666,18 +666,6 @@ export default function XuatHoaDonPage() {
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>
                   Số tiền trả (đ)
-                  {hinhThuc === "cong_no" && (
-                    <span
-                      className={styles.formLabelSub}
-                      style={{
-                        marginLeft: 6,
-                        fontWeight: 400,
-                        color: "#64748b",
-                      }}
-                    >
-                      (trả trước một phần)
-                    </span>
-                  )}
                 </label>
                 <input
                   className={styles.formInput}

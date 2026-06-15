@@ -22,6 +22,8 @@ export interface HoaDon {
   giamTru: number;
   tongCong: number;
   soTienThanhToan: number;
+  // Phần dư khi khách trả vượt nghĩa vụ (chỉ > 0 với HĐ trả hết dư / công nợ dư)
+  soTienDu: number;
   loaiThanhToan: "tra_het" | "tra_het_du" | "cong_no" | "cong_no_du";
   hanTraCongNo: Date | null;
   nguoiTaoId: number | null;
@@ -64,28 +66,79 @@ interface HoaDonPhanBo {
   tongCongHoaDon: number;
 }
 
-function tinhTongNghiaVuDonHang(dh: DonHang, data: TaoHoaDonInput): number {
-  // Tổng nghĩa vụ tài chính của đơn hàng = DonHang.thanhTien (gốc, đã bao gồm
-  // bv/pp/gt nếu có lúc tạo đơn). Đây là cơ sở để:
-  // 1) Phân bổ giá trị các thành phần (tiền bê tông, bù vận chuyển, ...)
-  // 2) Tính "dư" khi khách trả vượt
-  // 3) Quyết định đã tất toán hay chưa
-  // LƯU Ý: KHÔNG ưu tiên data.tienBeTong gửi từ frontend vì ở công nợ lần 2+
-  // frontend tự gán tienBeTong = donHang.conLai (số còn lại phải trả), không phải
-  // tổng gốc. Lấy dh.thanhTien đảm bảo mọi lần thanh toán đều dựa trên cùng 1
-  // mốc nghĩa vụ gốc.
+// Lấy bv/pp/gt GỐC của đơn từ HĐ lần đầu tiên (id nhỏ nhất) đã lưu trong DB.
+// Đây là nguồn chính xác nhất vì:
+// - Ở HĐ lần 1, kế toán có thể đã thêm bv/pp/gt tại form xuất HĐ
+//   (khi đó dh.thanhTien, dh.buVanChuyen, dh.chiPhiPhatSinh trên DonHang
+//   KHÔNG được cập nhật — chỉ HoaDon lưu).
+// - Ở HĐ lần 2+, frontend không gửi lại bv/pp/gt (form chỉ auto-fill
+//   tienBeTong = conLai, các trường bv/pp/gt để trống → gửi 0).
+//   Nếu lấy bv/pp/gt từ input/data sẽ trả về 0 → tongNghiaVu lần 2 sai
+//   (vd: gốc 600k = 500k tiền BT + 100k bv/pp, lần 2 backend tính 500k
+//   → dư cuối cùng báo sai 200k thay vì 50k).
+//
+// Thứ tự ưu tiên khi tính bv/pp/gt gốc:
+// 1) HĐ đầu tiên của đơn (id nhỏ nhất, đã lưu bv/pp/gt từ lúc tạo)
+// 2) Input từ frontend (data.buuVanChuyen / data.phiPhatSinh / data.giamTru)
+// 3) Fallback cuối: dh.buVanChuyen / dh.chiPhiPhatSinh
+async function layBvPpGtGocTuHoaDonDauTien(
+  idDonHang: number,
+): Promise<{ buuVanChuyen: number; phiPhatSinh: number; giamTru: number }> {
+  try {
+    const rows = await query<{
+      buuVanChuyen: number;
+      phiPhatSinh: number;
+      giamTru: number;
+    }>(
+      `SELECT TOP 1 buuVanChuyen, phiPhatSinh, giamTru
+       FROM HoaDon
+       WHERE idDonHang = @idDonHang
+       ORDER BY id ASC`,
+      { idDonHang },
+    );
+    if (rows.length > 0) {
+      return {
+        buuVanChuyen: Number(rows[0].buuVanChuyen) || 0,
+        phiPhatSinh: Number(rows[0].phiPhatSinh) || 0,
+        giamTru: Number(rows[0].giamTru) || 0,
+      };
+    }
+  } catch {
+    // ignore — fallback xuống các nguồn khác
+  }
+  return { buuVanChuyen: 0, phiPhatSinh: 0, giamTru: 0 };
+}
+
+async function tinhTongNghiaVuDonHang(
+  dh: DonHang,
+  data: TaoHoaDonInput,
+  bvPpGtGoc: { buuVanChuyen: number; phiPhatSinh: number; giamTru: number },
+): Promise<number> {
+  // Tổng nghĩa vụ tài chính của đơn hàng = tiền bê tông gốc + bv + pp - gt.
+  // Tiền bê tông gốc lấy từ DonHang.thanhTien (giá trị lúc tạo đơn, KHÔNG
+  // lấy từ data.tienBeTong vì ở công nợ lần 2+ frontend gán
+  // tienBeTong = donHang.conLai, không phải tổng gốc).
   const tienBeTongGoc = dh.thanhTien || 0;
-  // Vẫn dùng bv/pp/gt từ input để phân bổ đúng tỷ lệ thành phần, fallback về
-  // DonHang nếu frontend không gửi.
+  // bv/pp/gt lấy theo thứ tự ưu tiên:
+  // 1) bvPpGtGoc từ HĐ đầu tiên (đã có lưu trong DB) — nguồn chính xác nhất
+  // 2) Input từ frontend (nếu kế toán nhập tay ở lần hiện tại)
+  // 3) Fallback: dh.buVanChuyen / dh.chiPhiPhatSinh
+  const inputBv = data.buuVanChuyen || 0;
+  const inputPp = data.phiPhatSinh || 0;
+  const inputGt = data.giamTru || 0;
   const buuVanChuyen =
-    data.buuVanChuyen != null
-      ? data.buuVanChuyen
-      : dh.buVanChuyen || 0;
+    bvPpGtGoc.buuVanChuyen > 0
+      ? bvPpGtGoc.buuVanChuyen
+      : inputBv > 0
+        ? inputBv
+        : dh.buVanChuyen || 0;
   const phiPhatSinh =
-    data.phiPhatSinh != null
-      ? data.phiPhatSinh
-      : dh.chiPhiPhatSinh || 0;
-  const giamTru = data.giamTru || 0;
+    bvPpGtGoc.phiPhatSinh > 0
+      ? bvPpGtGoc.phiPhatSinh
+      : inputPp > 0
+        ? inputPp
+        : dh.chiPhiPhatSinh || 0;
+  const giamTru = bvPpGtGoc.giamTru > 0 ? bvPpGtGoc.giamTru : inputGt;
   return Math.max(0, tienBeTongGoc + buuVanChuyen + phiPhatSinh - giamTru);
 }
 
@@ -184,6 +237,11 @@ export async function taoHoaDon(
   const soHoaDon = `BBTD-${randomNum}-${dh.maDonHang}`;
   const maHoaDon = soHoaDon;
 
+  // Lấy bv/pp/gt gốc từ HĐ đầu tiên (id nhỏ nhất) đã lưu trong DB.
+  // Nguồn chính xác nhất để tính tongNghiaVu, vì ở lần xuất HĐ đầu tiên
+  // kế toán có thể đã thêm bv/pp/gt ngay tại form, mà các giá trị này
+  // KHÔNG được cập nhật ngược lên DonHang.
+  const bvPpGtGoc = await layBvPpGtGocTuHoaDonDauTien(data.idDonHang);
   // Ưu tiên tiền bê tông do frontend gửi lên (từ XuatHoaDonPage)
   // Fallback về khoiLuongDat * donGia nếu frontend không gửi
   const tienBeTongGoc =
@@ -193,7 +251,7 @@ export async function taoHoaDon(
   const buuVanChuyen = data.buuVanChuyen || 0;
   const phiPhatSinh = data.phiPhatSinh || 0;
   const giamTru = data.giamTru || 0;
-  const tongNghiaVu = tinhTongNghiaVuDonHang(dh, data);
+  const tongNghiaVu = await tinhTongNghiaVuDonHang(dh, data, bvPpGtGoc);
   const tongDaThanhToanTruocDo = Math.max(0, dh.daThanhToan || 0);
   const tongConLaiTruocKhiLap = Math.max(
     0,
@@ -249,12 +307,12 @@ export async function taoHoaDon(
     `INSERT INTO HoaDon (
       idDonHang, maHoaDon, soHoaDon, ngayLap, khachHang, loaiXiMang, gioDo,
       phuongThucThanhToan, ghiChu, tienBeTong, buuVanChuyen, phiPhatSinh,
-      giamTru, tongCong, soTienThanhToan, loaiThanhToan, hanTraCongNo, nguoiTaoId,
+      giamTru, tongCong, soTienThanhToan, soTienDu, loaiThanhToan, hanTraCongNo, nguoiTaoId,
       tongNghiaVuDon
     ) VALUES (
       @idDonHang, @maHoaDon, @soHoaDon, @ngayLap, @khachHang, @loaiXiMang, @gioDo,
       @phuongThucThanhToan, @ghiChu, @tienBeTong, @buuVanChuyen, @phiPhatSinh,
-      @giamTru, @tongCong, @soTienThanhToan, @loaiThanhToan, @hanTraCongNo, @nguoiTaoId,
+      @giamTru, @tongCong, @soTienThanhToan, @soTienDu, @loaiThanhToan, @hanTraCongNo, @nguoiTaoId,
       @tongNghiaVuDon
     );
     SELECT * FROM HoaDon WHERE id = SCOPE_IDENTITY();`,
@@ -274,6 +332,10 @@ export async function taoHoaDon(
       giamTru: phanBoHoaDon.giamTruHoaDon,
       tongCong: phanBoHoaDon.tongCongHoaDon,
       soTienThanhToan,
+      // Lưu phần dư riêng (chỉ > 0 với HĐ trả hết dư / công nợ dư)
+      // Frontend dùng để cộng dồn chính xác tổng "phần thực trừ nghĩa vụ"
+      // tránh tienDuCuoi báo sai.
+      soTienDu: soTienDu,
       loaiThanhToan: data.loaiThanhToan,
       hanTraCongNo: data.hanTraCongNo ? new Date(data.hanTraCongNo) : null,
       nguoiTaoId,
@@ -466,6 +528,7 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
     giamTru: r.giamTru,
     tongCong: r.tongCong,
     soTienThanhToan: r.soTienThanhToan,
+    soTienDu: r.soTienDu || 0,
     loaiThanhToan: r.loaiThanhToan,
     hanTraCongNo: r.hanTraCongNo,
     nguoiTaoId: r.nguoiTaoId,

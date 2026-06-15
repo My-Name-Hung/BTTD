@@ -119,6 +119,7 @@ interface HoaDonData {
   giamTru: number;
   tongCong: number;
   soTienThanhToan: number;
+  soTienDu?: number;
   loaiThanhToan: string;
   hanTraCongNo: string | null;
   nguoiTaoId: number | null;
@@ -375,11 +376,43 @@ export default function InHoaDonPage() {
     currentDebtIndex >= 0 ? `Thanh toán lần ${currentDebtIndex + 1}` : "";
   const isLastDebtInvoice =
     currentDebtIndex >= 0 && currentDebtIndex === debtHoaDons.length - 1;
-  const debtInvoiceSummary = debtHoaDons.map((item, index) => ({
-    id: item.id,
-    label: `Lần ${index + 1}`,
-    amount: item.soTienThanhToan || item.tongCong || 0,
-  }));
+  // Với HĐ loại _du (trả hết dư / công nợ dư), soTienThanhToan = tổng khách
+  // trả kỳ đó (gồm cả phần dư). Khi cộng dồn để tính "tổng thực khách đã
+  // trả cho nghĩa vụ đơn" thì phải TRỪ phần dư, nếu không tổng sẽ phình
+  // to và tienDuCuoi bị báo sai (vd: 1 HĐ trả hết dư 100k → amount phải
+  // tính là phần trừ nợ, không phải tổng khách đưa).
+  //
+  // Lấy soTienDu theo thứ tự ưu tiên:
+  // 1) Backend đã trả về trong item.soTienDu (nếu schema mới lưu)
+  // 2) Tính ngược: soTienThanhToan - tongCong (chỉ áp dụng cho HĐ loại _du)
+  //    - HĐ trả hết dư: tongCong = tongNghiaVu (= tổng đơn) → dư = soTienThanhToan - tongNghiaVu
+  //    - HĐ công nợ dư (lần cuối): tongCong = tongNghiaVu → dư = soTienThanhToan - tongNghiaVu
+  const debtInvoiceSummary = debtHoaDons.map((item, index) => {
+    const laLoaiDu =
+      item.loaiThanhToan === "tra_het_du" ||
+      item.loaiThanhToan === "cong_no_du";
+    const soTienThucTra = item.soTienThanhToan || item.tongCong || 0;
+    const soTienDuFromBackend = Number(item.soTienDu) || 0;
+    const soTienDuFromCalc =
+      item.soTienThanhToan != null && item.tongCong != null
+        ? Math.max(0, item.soTienThanhToan - item.tongCong)
+        : 0;
+    const soTienDu = laLoaiDu
+      ? (soTienDuFromBackend > 0 ? soTienDuFromBackend : soTienDuFromCalc)
+      : 0;
+    const phanTruNo = laLoaiDu
+      ? Math.max(0, soTienThucTra - soTienDu)
+      : soTienThucTra;
+    return {
+      id: item.id,
+      label: `Lần ${index + 1}`,
+      // amount = phần thực dùng để trừ nghĩa vụ (KHÔNG bao gồm dư)
+      amount: phanTruNo,
+      soTienThucTra,
+      soTienDu,
+      laLoaiDu,
+    };
+  });
   // Tổng thực khách đã trả cho cả đơn hàng (tính cộng dồn tất cả hóa đơn).
   // Tính từ danh sách hóa đơn (soTienThanhToan gốc của mỗi hóa đơn, KHÔNG clamp).
   // KHÔNG dùng hd.donHangDaThanhToan vì backend có thể đã clamp tại tongNghiaVu
@@ -409,9 +442,34 @@ export default function InHoaDonPage() {
   // (chỉ > 0 khi loại thanh toán cuối cùng là "cong_no_du" / "tra_het_du")
   const tienDuCuoi = Math.max(0, tongDaThanhToanToanBo - tongNghiaVu);
   // Số tiền thực tế khách trả kỳ này (lưu trong HoaDon.soTienThanhToan).
+  // Với HĐ trả hết dư / công nợ dư, soTienThanhToan = tổng khách trả GỒM CẢ DƯ.
   // Khai báo sớm để dùng cho cả daThanhToanTruoc (fallback) lẫn phần
   // tính toán hiển thị bên dưới.
   const soTienTraKyNay = hd.soTienThanhToan || 0;
+  // Số tiền dư riêng của KỲ NÀY (chỉ > 0 với HĐ trả hết dư / công nợ dư).
+  // Ưu tiên lấy từ hd.soTienDu (backend lưu riêng), fallback tính ngược từ
+  // soTienThanhToan - tongCong (chỉ áp dụng cho HĐ loại _du).
+  const laLoaiDuHienTai =
+    hd.loaiThanhToan === "tra_het_du" || hd.loaiThanhToan === "cong_no_du";
+  const soTienDuHienTaiBackend = Number(hd.soTienDu) || 0;
+  const soTienDuHienTaiCalc =
+    laLoaiDuHienTai &&
+    hd.soTienThanhToan != null &&
+    hd.tongCong != null
+      ? Math.max(0, hd.soTienThanhToan - hd.tongCong)
+      : 0;
+  const soTienDuKyNay = laLoaiDuHienTai
+    ? soTienDuHienTaiBackend > 0
+      ? soTienDuHienTaiBackend
+      : soTienDuHienTaiCalc
+    : 0;
+  // Phần khách trả kỳ này DÙNG ĐỂ TRỪ NGHĨA VỤ (= soTienThanhToan - soTienDu)
+  // Dùng để tính "SỐ TIỀN TRẢ KỲ NÀY" (chỉ phần trừ nợ) và "TIỀN DƯ".
+  // - Công nợ lần 2 dư: soTienThanhToan=400k, soTienDu=50k → phanTruNghiaVu=350k
+  //   → SỐ TIỀN TRẢ KỲ NÀY hiển thị 300k (phanConLaiCanTra), DƯ = 50k
+  // - Trả hết dư: soTienThanhToan=600k, soTienDu=100k → phanTruNghiaVu=500k
+  //   → TỔNG CỘNG hiển thị 500k (tongNghiaVu), DƯ = 100k
+  const phanTruNghiaVuKyNay = Math.max(0, soTienTraKyNay - soTienDuKyNay);
   // Số tiền đã thanh toán ở các lần hóa đơn TRƯỚC lần hiện tại
   // (công nợ lần 1, 2, ..., lần hiện tại - 1) — hiển thị "ĐÃ THANH TOÁN (các lần trước)"
   // trong bảng trước TỔNG CỘNG.
@@ -478,13 +536,16 @@ export default function InHoaDonPage() {
   // - Công nợ lần 2: phanConLaiCanTra = tongNghiaVu - daThanhToanTruoc
   const phanConLaiCanTra = Math.max(0, tongNghiaVu - daThanhToanTruoc);
   // Số tiền hiển thị ở dòng "SỐ TIỀN TRẢ KỲ NÀY"
-  // = phần khách trả kỳ này dùng để tất toán nghĩa vụ (= min(số trả, phần còn lại))
+  // = phần khách trả kỳ này dùng để tất toán nghĩa vụ
+  //   (= min(phanTruNghiaVuKyNay, phanConLaiCanTra))
   // - Trả đủ hoặc dư: hiển thị đúng phần còn lại (lấp đầy nghĩa vụ)
-  // - Trả thiếu: hiển thị toàn bộ số khách trả (= phanConLaiCanTra - 0)
-  const soTienTraTatToan = Math.min(soTienTraKyNay, phanConLaiCanTra);
+  // - Trả thiếu: hiển thị toàn bộ phần khách trả cho nghĩa vụ
+  const soTienTraTatToan = Math.min(phanTruNghiaVuKyNay, phanConLaiCanTra);
   // Tiền dư riêng của kỳ này = phần khách trả vượt nghĩa vụ còn lại
-  // (chỉ > 0 khi số tiền trả > phần còn lại phải trả)
-  const tienDuKyNay = Math.max(0, soTienTraKyNay - phanConLaiCanTra);
+  // (chỉ > 0 khi phanTruNghiaVuKyNay > phanConLaiCanTra)
+  // Dùng phanTruNghiaVuKyNay (không gồm dư) thay vì soTienTraKyNay
+  // (vì soTienTraKyNay = soTienThanhToan gồm cả soTienDu → sẽ cộng dồn dư 2 lần).
+  const tienDuKyNay = Math.max(0, phanTruNghiaVuKyNay - phanConLaiCanTra);
 
   const phuongThucText =
     hd.phuongThucThanhToan === "chuyen_khoan" ? "Chuyển khoản" : "Tiền mặt";
@@ -508,10 +569,10 @@ export default function InHoaDonPage() {
       ? soTienTraKyNay
       : tongCongHienThi;
   // Helper: số tiền ở dòng DƯ riêng
+  // - tra_het_du: lấy từ soTienDuKyNay (đã tính ở trên)
+  // - cong_no / cong_no_du: tienDuKyNay = phanTruNghiaVuKyNay - phanConLaiCanTra
   const soTienHienThiDu =
-    hd.loaiThanhToan === "tra_het_du"
-      ? Math.max(0, (hd.soTienThanhToan || 0) - (hd.tongCong || 0))
-      : tienDuKyNay;
+    hd.loaiThanhToan === "tra_het_du" ? soTienDuKyNay : tienDuKyNay;
 
   // Phương pháp đổ label
   const phuongPhapDoLabel = (() => {

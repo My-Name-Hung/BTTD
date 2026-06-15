@@ -684,6 +684,19 @@ async function initDatabase(): Promise<void> {
         `ALTER TABLE HoaDon ADD tongNghiaVuDon DECIMAL(18,2) DEFAULT 0`,
       );
     }
+    // Thêm cột soTienDu nếu chưa có (lưu phần dư khi khách trả vượt nghĩa vụ
+    // cho HĐ trả hết dư / công nợ dư. Tách riêng với soTienThanhToan để
+    // frontend cộng dồn tổng "phần thực trừ nghĩa vụ" chính xác ở mọi lần
+    // thanh toán, tránh tienDuCuoi bị báo sai do cộng cả dư).
+    const soTienDuCol = await db.query<{ name: string }[]>(
+      `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('HoaDon') AND name = 'soTienDu'`,
+    );
+    if (soTienDuCol.recordset.length === 0) {
+      console.log("  ➕ Thêm cột HoaDon.soTienDu...");
+      await db.query(
+        `ALTER TABLE HoaDon ADD soTienDu DECIMAL(18,2) DEFAULT 0`,
+      );
+    }
 
     // Tạo bảng ThanhToan
     const thanhToanExists = await db.query<{ name: string }[]>(
