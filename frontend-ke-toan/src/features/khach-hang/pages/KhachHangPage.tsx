@@ -274,7 +274,7 @@ export default function KhachHangPage() {
                         {canWriteKhachHang && (
                           <button
                             className={`${styles.actionBtn} ${styles.actionBtnView}`}
-                            onClick={() => navigate(`/quan-ly/cong-no?khachHang=${kh.maKhachHang || kh.tenKhachHang}`)}
+                            onClick={() => navigate(`/cong-no?khachHang=${kh.maKhachHang || kh.tenKhachHang}`)}
                             title="Xem công nợ"
                           >
                             <FiExternalLink size={14} />

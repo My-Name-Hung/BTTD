@@ -135,6 +135,10 @@ interface HoaDonData {
   chieuDaiBom?: number | null;
   kieuNoi?: "khong_dau" | "noi_dau" | "noi_dit" | null;
   chieuDaiNoi?: number | null;
+  // Tổng tiền gốc của đơn (thanhTien) và đã thanh toán (daThanhToan)
+  // để tính "ĐÃ THANH TOÁN (các lần trước)" ở công nợ
+  donHangThanhTien?: number;
+  donHangDaThanhToan?: number;
   [key: string]: any;
 }
 
@@ -151,6 +155,11 @@ interface NghiemThuData {
 
 interface LichSanXuatItem {
   id: number;
+  idTramTron?: number | null;
+  tenTram?: string | null;
+  thoiGianTron?: string | null;
+  thoiGianBatDauDo?: string | null;
+  trangThai?: string | null;
   bienSoXe: string | null;
   tenTaiXe: string | null;
   nguoiOmOng: string | null;
@@ -314,7 +323,25 @@ export default function InHoaDonPage() {
   }
 
   const hd = hoaDon;
-  const ls = Array.isArray(lichSX) && lichSX.length > 0 ? lichSX[0] : null;
+  // Danh sách trạm trộn của đơn (1 row / trạm) lấy từ lịch sản xuất
+  // Fallback: nếu không có lichSX thì tạo 1 row rỗng từ tenTramTron
+  const danhSachTram: LichSanXuatItem[] =
+    Array.isArray(lichSX) && lichSX.length > 0
+      ? lichSX
+      : hd.tenTramTron
+        ? [
+            {
+              id: 0,
+              idTramTron: 0,
+              tenTram: hd.tenTramTron,
+              bienSoXe: hd.bienSoXe ?? null,
+              tenTaiXe: hd.tenTaiXe ?? null,
+              nguoiOmOng: hd.nguoiOmOng ?? null,
+              nguoiBatOng: hd.nguoiBatOng ?? null,
+              kyThuatCongTrinh: hd.kyThuatCongTrinh ?? null,
+            },
+          ]
+        : [];
   const isCongNo = hd.loaiThanhToan === "cong_no" || hd.loaiThanhToan === "cong_no_du";
   const isCongNoDu = hd.loaiThanhToan === "cong_no_du";
   const debtHoaDons = sortHoaDonsByTime(
@@ -334,6 +361,12 @@ export default function InHoaDonPage() {
     (sum, item) => sum + item.amount,
     0,
   );
+  // Số tiền đã thanh toán ở các lần hóa đơn TRƯỚC lần hiện tại
+  // (công nợ lần 1, 2, ..., lần hiện tại - 1) — hiển thị "ĐÃ THANH TOÁN (các lần trước)"
+  // trong bảng trước TỔNG CỘNG
+  const daThanhToanTruoc = debtInvoiceSummary
+    .slice(0, currentDebtIndex >= 0 ? currentDebtIndex : 0)
+    .reduce((sum, item) => sum + item.amount, 0);
   // Tổng cộng hóa đơn (do XuatHoaDonPage tính và lưu) =
   // tienBeTong + buuVanChuyen + phiPhatSinh - giamTru
   // Tất cả các loại hóa đơn (trả hết / công nợ / công nợ dư) đều hiển thị cùng một tongCong.
@@ -465,18 +498,25 @@ export default function InHoaDonPage() {
                   </span>
                 </div>
               </div>
-              <div className={styles.infoCol}>
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Ngày giao hàng:</span>
-                  <span className={styles.infoValue}>
-                    {formatDate(hd.ngayGiao)}
-                  </span>
-                </div>
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Trạm trộn:</span>
-                  <span className={styles.infoValue}>{hd.tenTramTron || "—"}</span>
-                </div>
+            <div className={styles.infoCol}>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Ngày giao hàng:</span>
+                <span className={styles.infoValue}>
+                  {formatDate(hd.ngayGiao)}
+                </span>
               </div>
+              {/* Hiển thị đầy đủ các trạm trộn (1 row / trạm) */}
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Trạm trộn:</span>
+                <span className={styles.infoValue}>
+                  {danhSachTram.length === 0
+                    ? "—"
+                    : danhSachTram
+                        .map((t, i) => t.tenTram || `Trạm ${i + 1}`)
+                        .join(", ")}
+                </span>
+              </div>
+            </div>
             </div>
           </div>
 
@@ -522,10 +562,37 @@ export default function InHoaDonPage() {
                     {hd.khoiLuongDat || 0} m³
                   </span>
                 </div>
+                {/* Giờ đổ theo từng trạm, format: "Tên trạm - Thời gian đổ" */}
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Giờ đổ:</span>
                   <span className={styles.infoValue}>
-                    {hd.gioDo ? formatDateTime(hd.gioDo) : "—"}
+                    {(() => {
+                      // Lấy danh sách "tên trạm - thời gian" từ lịch sản xuất
+                      const lines: string[] = [];
+                      const seenTram = new Set<string>();
+                      danhSachTram.forEach((t, idx) => {
+                        const tramLabel = t.tenTram || `Trạm ${idx + 1}`;
+                        const tg =
+                          (t as any).thoiGianBatDauDo ||
+                          (t as any).thoiGianTron ||
+                          hd.gioDo;
+                        if (seenTram.has(tramLabel)) return;
+                        seenTram.add(tramLabel);
+                        if (tg) {
+                          lines.push(`${tramLabel} - ${formatDateTime(tg)}`);
+                        } else {
+                          lines.push(tramLabel);
+                        }
+                      });
+                      if (lines.length === 0) return "—";
+                      return (
+                        <div className={styles.gioDoList}>
+                          {lines.map((l, i) => (
+                            <div key={i}>{l}</div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </span>
                 </div>
               </div>
@@ -585,6 +652,16 @@ export default function InHoaDonPage() {
               )}
             </tbody>
             <tfoot>
+              {isCongNo && currentDebtIndex > 0 && (
+                <tr className={styles.paidRow}>
+                  <td colSpan={5} className={styles.tdRightBold}>
+                    ĐÃ THANH TOÁN (các lần trước)
+                  </td>
+                  <td className={styles.tdRightBold}>
+                    {daThanhToanTruoc.toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+              )}
               <tr className={styles.totalRow}>
                 <td colSpan={5} className={styles.tdRightBold}>
                   TỔNG CỘNG
@@ -671,71 +748,76 @@ export default function InHoaDonPage() {
             </div>
           </div>
 
-          {/* ── Thông tin nhân sự & xe ── */}
-          {(ls || nghiemThu || hd.bienSoXe || hd.tenTaiXe) && (
+          {/* ── Thông tin nhân sự & xe (hiển thị đầy đủ từng trạm) ── */}
+          {(danhSachTram.length > 0 || nghiemThu || hd.ngayNghiemThu) && (
             <div className={styles.section}>
               <div className={styles.sectionTitle}>
                 THÔNG TIN NHÂN SỰ &amp; XE
               </div>
-              <div className={styles.infoGrid}>
-                <div className={styles.infoCol}>
-                  {(hd.bienSoXe || ls?.bienSoXe) && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Xe (Biển số):</span>
-                      <span className={styles.infoValue}>
-                        {hd.bienSoXe || ls?.bienSoXe}
-                      </span>
+              {danhSachTram.map((t, idx) => (
+                <div key={t.id ?? idx} className={styles.tramNhanSuBlock}>
+                  <div className={styles.tramNhanSuHeader}>
+                    Trạm {idx + 1}: <strong>{t.tenTram || "—"}</strong>
+                  </div>
+                  <div className={styles.infoGrid}>
+                    <div className={styles.infoCol}>
+                      {(t.bienSoXe || hd.bienSoXe) && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Biển số xe:</span>
+                          <span className={styles.infoValue}>
+                            {t.bienSoXe || hd.bienSoXe}
+                          </span>
+                        </div>
+                      )}
+                      {(t.tenTaiXe || hd.tenTaiXe) && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Tài xế:</span>
+                          <span className={styles.infoValue}>
+                            {t.tenTaiXe || hd.tenTaiXe}
+                          </span>
+                        </div>
+                      )}
+                      {(t.nguoiOmOng || hd.nguoiOmOng) && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Vận hành bơm:</span>
+                          <span className={styles.infoValue}>
+                            {t.nguoiOmOng || hd.nguoiOmOng}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {(hd.tenTaiXe || ls?.tenTaiXe) && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Tài xế:</span>
-                      <span className={styles.infoValue}>
-                        {hd.tenTaiXe || ls?.tenTaiXe}
-                      </span>
+                    <div className={styles.infoCol}>
+                      {(t.nguoiBatOng || hd.nguoiBatOng) && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Lắp ống:</span>
+                          <span className={styles.infoValue}>
+                            {t.nguoiBatOng || hd.nguoiBatOng}
+                          </span>
+                        </div>
+                      )}
+                      {(t.kyThuatCongTrinh || hd.kyThuatCongTrinh) && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>
+                            Kỹ sư công trình:
+                          </span>
+                          <span className={styles.infoValue}>
+                            {t.kyThuatCongTrinh || hd.kyThuatCongTrinh}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {(hd.nguoiOmOng || ls?.nguoiOmOng) && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Vận hành bơm:</span>
-                      <span className={styles.infoValue}>
-                        {hd.nguoiOmOng || ls?.nguoiOmOng}
-                      </span>
-                    </div>
-                  )}
-                  {(hd.nguoiBatOng || ls?.nguoiBatOng) && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Lắp ống:</span>
-                      <span className={styles.infoValue}>
-                        {hd.nguoiBatOng || ls?.nguoiBatOng}
-                      </span>
-                    </div>
-                  )}
+                  </div>
                 </div>
-                <div className={styles.infoCol}>
-                  {(hd.kyThuatCongTrinh ||
-                    ls?.kyThuatCongTrinh) && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>
-                        Kỹ sư công trình:
-                      </span>
-                      <span className={styles.infoValue}>
-                        {hd.kyThuatCongTrinh ||
-                          ls?.kyThuatCongTrinh ||
-                          ""}
-                      </span>
-                    </div>
-                  )}
-                  {nghiemThu && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Ngày nghiệm thu:</span>
-                      <span className={styles.infoValue}>
-                        {formatDate(nghiemThu.ngayLapBienBan)}
-                      </span>
-                    </div>
-                  )}
+              ))}
+              {/* Ngày nghiệm thu: ưu tiên hd.ngayNghiemThu (từ DonHang), fallback nghiemThu.ngayLapBienBan */}
+              {(hd.ngayNghiemThu || nghiemThu?.ngayLapBienBan) && (
+                <div className={styles.infoRow} style={{ marginTop: 8 }}>
+                  <span className={styles.infoLabel}>Ngày nghiệm thu:</span>
+                  <span className={styles.infoValue}>
+                    {formatDate(hd.ngayNghiemThu || nghiemThu?.ngayLapBienBan)}
+                  </span>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

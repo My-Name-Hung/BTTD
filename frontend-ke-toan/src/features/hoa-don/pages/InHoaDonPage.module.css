@@ -418,6 +418,13 @@
   padding: 10px 10px !important;
 }
 
+/* Row "ĐÃ THANH TOÁN" cho công nợ */
+.paidRow td {
+  background: #ecfdf5 !important;
+  color: #047857;
+  padding: 8px 10px !important;
+}
+
 .soTienChu {
   font-size: 12px;
   font-weight: 600;
@@ -719,4 +726,34 @@
     border-bottom: 1px dashed #e0e0e0;
     padding-bottom: 20px;
   }
+}
+
+/* ── Block nhân sự theo từng trạm ── */
+.tramNhanSuBlock {
+  border: 1px solid #e0e6f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: #fafbff;
+}
+
+.tramNhanSuBlock:last-of-type {
+  margin-bottom: 0;
+}
+
+.tramNhanSuHeader {
+  font-size: 13px;
+  color: #073ceb;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #d4dcec;
+}
+
+/* Danh sách giờ đổ theo từng trạm */
+.gioDoList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.5;
 }

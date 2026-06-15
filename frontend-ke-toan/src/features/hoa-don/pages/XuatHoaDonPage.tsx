@@ -237,7 +237,15 @@ export default function XuatHoaDonPage() {
       setKhachHang(dh.tenKhachHang || "");
       setDiaChiNhan(dh.diaChiNhan || "");
       setHangMuc(dh.hangMuc || "");
-      setTienBeTong(dh.thanhTien || 0);
+      // Nếu đã có hóa đơn cũ → "Tiền bê tông" tự động = số tiền còn lại phải trả
+      // (thanhTien - daThanhToan) để TỔNG CỘNG khớp với số còn lại hiển thị ở ThanhToanPage
+      // Nếu chưa có hóa đơn cũ → dùng thanhTien gốc của đơn
+      const existingHDsArr = Array.isArray(existingHDs) ? existingHDs : [];
+      const tienBeTongKhoiTao =
+        existingHDsArr.length > 0 && dh.conLai != null && dh.conLai >= 0
+          ? dh.conLai
+          : dh.thanhTien || 0;
+      setTienBeTong(tienBeTongKhoiTao);
 
       // Phương pháp đổ
       if (dh.phuongPhapDo === "do_xa") {
