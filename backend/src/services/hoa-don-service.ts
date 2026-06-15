@@ -26,6 +26,9 @@ export interface HoaDon {
   hanTraCongNo: Date | null;
   nguoiTaoId: number | null;
   createdAt: Date;
+  // Tổng nghĩa vụ GỐC của đơn hàng tại thời điểm lập hóa đơn (= tienBeTongGoc + bv + pp - gt)
+  // Lưu vào DB để in hóa đơn hiển thị chính xác "TỔNG NGHĨA VỤ ĐƠN HÀNG"
+  tongNghiaVuDon?: number;
   // Tổng nghĩa vụ GỐC của đơn hàng (lúc tạo đơn) + đã thanh toán + bv/pp
   // Alias rõ ràng từ DonHang, dùng để frontend tính công nợ chính xác
   donHangThanhTien?: number;
@@ -246,11 +249,13 @@ export async function taoHoaDon(
     `INSERT INTO HoaDon (
       idDonHang, maHoaDon, soHoaDon, ngayLap, khachHang, loaiXiMang, gioDo,
       phuongThucThanhToan, ghiChu, tienBeTong, buuVanChuyen, phiPhatSinh,
-      giamTru, tongCong, soTienThanhToan, loaiThanhToan, hanTraCongNo, nguoiTaoId
+      giamTru, tongCong, soTienThanhToan, loaiThanhToan, hanTraCongNo, nguoiTaoId,
+      tongNghiaVuDon
     ) VALUES (
       @idDonHang, @maHoaDon, @soHoaDon, @ngayLap, @khachHang, @loaiXiMang, @gioDo,
       @phuongThucThanhToan, @ghiChu, @tienBeTong, @buuVanChuyen, @phiPhatSinh,
-      @giamTru, @tongCong, @soTienThanhToan, @loaiThanhToan, @hanTraCongNo, @nguoiTaoId
+      @giamTru, @tongCong, @soTienThanhToan, @loaiThanhToan, @hanTraCongNo, @nguoiTaoId,
+      @tongNghiaVuDon
     );
     SELECT * FROM HoaDon WHERE id = SCOPE_IDENTITY();`,
     {
@@ -272,6 +277,9 @@ export async function taoHoaDon(
       loaiThanhToan: data.loaiThanhToan,
       hanTraCongNo: data.hanTraCongNo ? new Date(data.hanTraCongNo) : null,
       nguoiTaoId,
+      // Lưu tổng nghĩa vụ GỐC của đơn tại thời điểm lập hóa đơn
+      // (dùng cho in hóa đơn, hiển thị "TỔNG NGHĨA VỤ ĐƠN HÀNG" chính xác)
+      tongNghiaVuDon: tongNghiaVu,
     },
   );
 
@@ -462,6 +470,9 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
     hanTraCongNo: r.hanTraCongNo,
     nguoiTaoId: r.nguoiTaoId,
     createdAt: r.createdAt,
+    // Tổng nghĩa vụ GỐC của đơn tại thời điểm lập hóa đơn (lưu trong HoaDon.tongNghiaVuDon)
+    // Đây là nguồn chính xác nhất cho "TỔNG NGHĨA VỤ ĐƠN HÀNG" hiển thị trên hóa đơn
+    tongNghiaVuDon: r.tongNghiaVuDon,
     maDonHang: r.maDonHang,
     tenKhachHang: r.tenKhachHang,
     diaChiNhan: r.diaChiNhan,

@@ -151,6 +151,9 @@ interface HoaDonData {
   // để tính "ĐÃ THANH TOÁN (các lần trước)" ở công nợ
   donHangThanhTien?: number;
   donHangDaThanhToan?: number;
+  // Tổng nghĩa vụ GỐC của đơn tại thời điểm lập hóa đơn (lưu trong HoaDon.tongNghiaVuDon)
+  // = tiền bê tông gốc + bv + pp - gt, đầy đủ cho mọi lần thanh toán
+  tongNghiaVuDon?: number;
   [key: string]: any;
 }
 
@@ -385,21 +388,20 @@ export default function InHoaDonPage() {
     (sum, item) => sum + item.amount,
     0,
   );
-  // Tổng nghĩa vụ tài chính của đơn hàng = tổng tiền GỐC của đơn hàng
-  // (= DonHang.thanhTien + bv/pp/gt lúc tạo đơn).
-  // Đây là tổng "nghĩa vụ" mà khách phải trả cho cả đơn hàng, dùng để:
+  // Tổng nghĩa vụ tài chính của đơn hàng = tổng phải trả GỐC của cả đơn
+  // (bao gồm tiền bê tông + bù vận chuyển + chi phí phát sinh - giảm trừ).
+  // Đây là tổng "nghĩa vụ" khách phải trả, dùng để:
   // 1) Tính "Dư" cuối cùng khi khách trả vượt (công nợ dư)
-  // 2) Quyết định hóa đơn công nợ đã "tất toán" hay chưa:
-  //    công nợ tất toán khi soTienThanhToan >= (tongNghiaVu - daThanhToanTruoc)
-  // LƯU Ý:
-  // - KHÔNG dùng hd.thanhTien (field này JOIN từ DonHang.thanhTien nhưng backend
-  //   có thể đã trả về = conLai ở một số flow cũ → gây sai).
-  // - Ưu tiên hd.donHangThanhTien (alias rõ ràng từ backend, đảm bảo = gốc đơn).
-  // - KHÔNG dùng allHoaDons[0].tongCong vì giá trị này đã bị backend chia tỷ lệ
-  //   theo phần khách trả ở lần công nợ.
-  // Tổng nghĩa vụ = thanhTien (gốc, đã bao gồm bv/pp/gt lúc tạo đơn)
-  // theo logic don-hang-service.ts: data.thanhTien HOẶC (khoiLuongDat*donGia + bv + pp)
+  // 2) Quyết định hóa đơn công nợ đã "tất toán" hay chưa
+  //
+  // Nguồn ưu tiên (theo độ chính xác):
+  // 1) hd.tongNghiaVuDon: backend lưu tổng nghĩa vụ gốc tại thời điểm lập hóa đơn
+  //    (tiền bê tông gốc + bv + pp - gt, đầy đủ kể cả khi bv/pp thêm ở lúc tạo HĐ).
+  //    Cùng giá trị cho mọi lần thanh toán của cùng đơn → hiển thị ổn định.
+  // 2) Nếu backend cũ chưa có cột → dùng donHangThanhTien (gốc đơn) + ước lượng
+  //    bv/pp từ lần đầu. Fallback cuối: hd.thanhTien / hd.tongCong.
   const tongNghiaVu =
+    (hd.tongNghiaVuDon ?? 0) ||
     (hd.donHangThanhTien ?? 0) ||
     (hd.thanhTien ?? 0) ||
     (hd.tongCong ?? 0);

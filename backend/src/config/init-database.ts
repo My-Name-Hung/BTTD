@@ -673,6 +673,17 @@ async function initDatabase(): Promise<void> {
     } else {
       console.log("  ✅ Bảng HoaDon đã tồn tại");
     }
+    // Thêm cột tongNghiaVuDon nếu chưa có (lưu tổng nghĩa vụ GỐC của đơn
+    // tại thời điểm lập hóa đơn, dùng để in hóa đơn chính xác ở mọi lần thanh toán)
+    const tongNghiaVuDonCol = await db.query<{ name: string }[]>(
+      `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('HoaDon') AND name = 'tongNghiaVuDon'`,
+    );
+    if (tongNghiaVuDonCol.recordset.length === 0) {
+      console.log("  ➕ Thêm cột HoaDon.tongNghiaVuDon...");
+      await db.query(
+        `ALTER TABLE HoaDon ADD tongNghiaVuDon DECIMAL(18,2) DEFAULT 0`,
+      );
+    }
 
     // Tạo bảng ThanhToan
     const thanhToanExists = await db.query<{ name: string }[]>(
