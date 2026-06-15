@@ -46,6 +46,7 @@ router.get(
             LEFT JOIN Xe xe ON ls.idXe = xe.id
             LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
             WHERE dh.trangThaiDon = N'dang_giao'
+              AND ls.trangThai = N'da_xong'
               AND (ls.trangThaiGiao = N'dang_giao' OR ls.trangThaiGiao IS NULL OR ls.trangThaiGiao = N'chua_giao')
             ORDER BY dh.ngayGiao DESC, ls.id ASC`,
           {}
@@ -73,6 +74,7 @@ router.get(
             LEFT JOIN NguoiDung nd ON xe.idTaiKhoan = nd.id
             WHERE xe.idTaiKhoan = @idTaiXe
               AND dh.trangThaiDon = N'dang_giao'
+              AND ls.trangThai = N'da_xong'
               AND (ls.trangThaiGiao = N'dang_giao' OR ls.trangThaiGiao IS NULL OR ls.trangThaiGiao = N'chua_giao')
             ORDER BY dh.ngayGiao DESC, ls.id ASC`,
           { idTaiXe }

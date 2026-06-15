@@ -137,7 +137,9 @@ export default function KhoXacNhanSanXuatPage() {
           }
         }
         if (firstLich.bienSoXe) setBienSoXe(firstLich.bienSoXe);
-        if (firstLich.ghiChu) setGhiChuXe(firstLich.ghiChu);
+        // KHÔNG autofill ghiChuXe từ firstLich.ghiChu: 2 ghi chú là tách biệt
+        // (ghiChu trên LichSanXuat là của điều phối lúc tạo lịch, còn ghiChuXe là
+        // ghi chú kho nhập riêng cho xe giao).
         if (firstLich.thoiGianBatDauDo) {
           setNgayGioDo(formatDateTimeLocal(firstLich.thoiGianBatDauDo));
         }
