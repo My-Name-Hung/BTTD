@@ -113,6 +113,18 @@ export default function XuatHoaDonPage() {
     ),
   );
 
+  // Tổng tiền KHÁCH ĐÃ THANH TOÁN ở các lần hóa đơn trước (công nợ lần 1, 2, ...)
+  // = sum soTienThanhToan của tất cả hóa đơn đã xuất cho đơn này.
+  // Hiển thị ở tab "Công nợ" để kế toán biết còn lại bao nhiêu cần trả tiếp.
+  const daThanhToanTruoc = allHoaDons.reduce(
+    (sum, h) => sum + (h.soTienThanhToan || 0),
+    0,
+  );
+  // Tổng gốc đã ghi nhận trên hóa đơn (tongCong của lần đầu, không đổi qua các lần)
+  // Dùng để auto-suggest tongCong khi tạo lần tiếp theo mà user chưa nhập chi phí
+  const tongCongGoc =
+    allHoaDons.length > 0 ? allHoaDons[0].tongCong || 0 : 0;
+
   // Tổng tiền gốc đơn hàng
   const tongTienGoc = donHang ? (donHang.thanhTien || 0) : 0;
 
@@ -570,9 +582,41 @@ export default function XuatHoaDonPage() {
               />
             </div>
           </div>
-          <div className={styles.tongCongRow}>
-            <span className={styles.tongCongLabel}>TỔNG CỘNG</span>
-            <span className={styles.tongCongValue}>{formatCurrency(tongCong)}</span>
+          <div className={styles.tongCongBlock}>
+            {/* Tab công nợ + đã có lần thanh toán trước: hiển thị
+                "ĐÃ THANH TOÁN" (các lần trước) trước "TỔNG CỘNG" */}
+            {hinhThuc === "cong_no" && daThanhToanTruoc > 0 && (
+              <div className={styles.tongCongSubRow}>
+                <span className={styles.tongCongSubLabel}>
+                  ĐÃ THANH TOÁN (các lần trước)
+                </span>
+                <span className={styles.tongCongSubValue}>
+                  {formatCurrency(daThanhToanTruoc)}
+                </span>
+              </div>
+            )}
+            <div className={styles.tongCongRow}>
+              <span className={styles.tongCongLabel}>TỔNG CỘNG</span>
+              <span className={styles.tongCongValue}>
+                {formatCurrency(tongCong)}
+              </span>
+            </div>
+            {/* Gợi ý khi tạo lần tiếp theo: tổng gốc (lần đầu) - đã thanh toán = còn lại */}
+            {hinhThuc === "cong_no" &&
+              allHoaDons.length > 0 &&
+              tongCong === 0 && (
+                <div className={styles.tongCongSuggest}>
+                  Tổng gốc lần 1: <strong>{formatCurrency(tongCongGoc)}</strong> ·
+                  Đã thanh toán:{" "}
+                  <strong>{formatCurrency(daThanhToanTruoc)}</strong> → Còn lại:{" "}
+                  <strong>
+                    {formatCurrency(
+                      Math.max(0, tongCongGoc - daThanhToanTruoc),
+                    )}
+                  </strong>
+                  . Nhập chi phí phía trên hoặc dùng số còn lại làm số tiền trả.
+                </div>
+              )}
           </div>
         </div>
 

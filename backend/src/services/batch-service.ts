@@ -153,6 +153,8 @@ export interface HoaDonBatchItem {
   loaiThanhToan: string | null;
   ngayTao: string;
   tenNguoiTao: string | null;
+  hanTraCongNo: string | null;
+  soTienThanhToan: number | null;
 }
 
 export interface BatchHoaDonResult {
@@ -178,6 +180,8 @@ export async function layHoaDonBatch(idDonHangs: number[]): Promise<BatchHoaDonR
        hd.tongCong,
        hd.giamTru,
        hd.loaiThanhToan,
+       hd.soTienThanhToan,
+       CONVERT(varchar, hd.hanTraCongNo, 23) as hanTraCongNo,
        CONVERT(varchar, hd.ngayTao, 120) as ngayTao,
        nd.hoTen as tenNguoiTao
      FROM HoaDon hd
@@ -202,6 +206,8 @@ export async function layHoaDonBatch(idDonHangs: number[]): Promise<BatchHoaDonR
       tongCong: r.tongCong,
       giamTru: r.giamTru,
       loaiThanhToan: r.loaiThanhToan,
+      soTienThanhToan: r.soTienThanhToan,
+      hanTraCongNo: r.hanTraCongNo,
       ngayTao: r.ngayTao,
       tenNguoiTao: r.tenNguoiTao,
     });

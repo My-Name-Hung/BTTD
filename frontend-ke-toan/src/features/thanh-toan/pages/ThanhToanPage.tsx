@@ -50,6 +50,7 @@ interface HoaDonItem {
   tongCong: number;
   loaiThanhToan: string;
   soTienDu?: number;
+  soTienThanhToan?: number;
   hanTraCongNo?: string | null;
 }
 
@@ -112,6 +113,7 @@ export default function ThanhToanPage() {
               tongCong: h.tongCong || 0,
               loaiThanhToan: h.loaiThanhToan || "tra_het",
               soTienDu: h.soTienDu || 0,
+              soTienThanhToan: h.soTienThanhToan || 0,
               hanTraCongNo: h.hanTraCongNo || null,
             }),
           );
@@ -506,35 +508,82 @@ export default function ThanhToanPage() {
                       {activeTab === "cong_no" && (
                         <td>
                           {(() => {
-                            const cnHD = hds.find(
-                              (h) =>
-                                h.loaiThanhToan === "cong_no" ||
-                                h.loaiThanhToan === "cong_no_du",
-                            );
+                            // Tìm tất cả hóa đơn công nợ, ưu tiên hóa đơn mới nhất (id lớn nhất)
+                            const cnHDs = hds
+                              .filter(
+                                (h) =>
+                                  h.loaiThanhToan === "cong_no" ||
+                                  h.loaiThanhToan === "cong_no_du",
+                              )
+                              .sort((a, b) => b.id - a.id);
+                            const cnHD = cnHDs[0];
                             if (!cnHD?.hanTraCongNo) return (
-                              <span style={{ color: "var(--color-text-secondary)" }}>
+                              <span
+                                style={{ color: "var(--color-text-secondary)" }}
+                              >
                                 —
                               </span>
                             );
+                            const hanDate = new Date(cnHD.hanTraCongNo!);
+                            const hanLabel = hanDate.toLocaleDateString("vi-VN");
+                            // Số ngày còn lại / quá hạn
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const diffDays = Math.ceil(
+                              (hanDate.getTime() - today.getTime()) /
+                                (1000 * 60 * 60 * 24),
+                            );
+                            const remainingLabel =
+                              diffDays > 0
+                                ? `còn ${diffDays} ngày`
+                                : diffDays === 0
+                                  ? "hôm nay"
+                                  : `quá ${Math.abs(diffDays)} ngày`;
+                            // Hiển thị thêm: nếu có nhiều hóa đơn công nợ → "Lần X"
+                            const lanText =
+                              cnHDs.length > 1
+                                ? ` (lần ${cnHDs.length})`
+                                : "";
                             return (
-                              <span
+                              <div
                                 style={{
-                                  color: isQuaHanOrder
-                                    ? "var(--color-danger)"
-                                    : "var(--color-text)",
-                                  fontWeight: isQuaHanOrder ? 700 : 500,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 2,
                                 }}
                               >
-                                {new Date(cnHD.hanTraCongNo!).toLocaleDateString(
-                                  "vi-VN",
-                                )}
-                                {isQuaHanOrder && (
-                                  <FiAlertTriangle
-                                    size={12}
-                                    style={{ marginLeft: 4, verticalAlign: "middle" }}
-                                  />
-                                )}
-                              </span>
+                                <span
+                                  style={{
+                                    color: isQuaHanOrder
+                                      ? "var(--color-danger)"
+                                      : "var(--color-text)",
+                                    fontWeight: isQuaHanOrder ? 700 : 500,
+                                  }}
+                                >
+                                  {hanLabel}
+                                  {isQuaHanOrder && (
+                                    <FiAlertTriangle
+                                      size={12}
+                                      style={{
+                                        marginLeft: 4,
+                                        verticalAlign: "middle",
+                                      }}
+                                    />
+                                  )}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    color: isQuaHanOrder
+                                      ? "var(--color-danger)"
+                                      : "var(--color-text-secondary)",
+                                    fontWeight: isQuaHanOrder ? 600 : 400,
+                                  }}
+                                >
+                                  {remainingLabel}
+                                  {lanText}
+                                </span>
+                              </div>
                             );
                           })()}
                         </td>

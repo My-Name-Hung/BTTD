@@ -893,6 +893,56 @@
   color: var(--color-text-secondary);
 }
 
+/* ── Tổng cộng block (gồm sub-row + main row) ── */
+.tongCongBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tongCongSubRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.06),
+    rgba(16, 185, 129, 0.1)
+  );
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 10px;
+}
+
+.tongCongSubLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #059669;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.tongCongSubValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #047857;
+}
+
+.tongCongSuggest {
+  font-size: 12px;
+  color: #64748b;
+  padding: 8px 12px;
+  background: rgba(7, 60, 235, 0.04);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 4px;
+  line-height: 1.5;
+}
+
+.tongCongSuggest strong {
+  color: var(--color-text);
+}
+
 /* ── Tổng cộng row ── */
 .tongCongRow {
   display: flex;
@@ -902,7 +952,7 @@
   background: linear-gradient(135deg, rgba(7, 60, 235, 0.06), rgba(7, 60, 235, 0.1));
   border: 1px solid rgba(7, 60, 235, 0.2);
   border-radius: 10px;
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 .tongCongLabel {
