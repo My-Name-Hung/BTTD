@@ -59,6 +59,7 @@ ChartJS.register(
 );
 
 type FilterPeriod = "ngay" | "tuan" | "thang";
+type DateFilterMode = "ngay" | "thang" | "nam";
 type TabKey = "tongquan" | "doanhthu" | "trangthai" | "thanhtoan" | "nghiemthu" | "tramtron";
 
 // Tabs theo vai trò
@@ -162,6 +163,29 @@ function getDateRange(period: FilterPeriod): { tuNgay: string; denNgay: string }
   }
 }
 
+// ── Helpers filter thời gian (ngày / tháng / năm) ──
+function getDateFilterKey(d: string): string {
+  if (!d) return "";
+  const cleaned = d.replace("Z", "").replace(/\.\d+$/, "");
+  const [datePart] = cleaned.split("T");
+  if (!datePart) return "";
+  return datePart.slice(0, 10);
+}
+function getMonthFilterKey(d: string): string {
+  if (!d) return "";
+  const cleaned = d.replace("Z", "").replace(/\.\d+$/, "");
+  const [datePart] = cleaned.split("T");
+  if (!datePart) return "";
+  return datePart.slice(0, 7);
+}
+function getYearFilterKey(d: string): string {
+  if (!d) return "";
+  const cleaned = d.replace("Z", "").replace(/\.\d+$/, "");
+  const [datePart] = cleaned.split("T");
+  if (!datePart) return "";
+  return datePart.slice(0, 4);
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const vaiTro = usePageRole().vaiTro;
@@ -172,6 +196,13 @@ export default function DashboardPage() {
   const [trangThai, setTrangThai] = useState<DonHangTheoTrangThai[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thang");
+
+  // Bộ lọc thời gian UI: Theo ngày / Theo tháng / Theo năm
+  const [dateFilterMode, setDateFilterMode] = useState<DateFilterMode>("thang");
+  const [dateFilterValue, setDateFilterValue] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   // Lấy tabs theo vai trò
   const roleTabs = TABS_BY_ROLE[vaiTro || "admin"] || TABS_BY_ROLE.admin;
@@ -254,19 +285,43 @@ export default function DashboardPage() {
   const isTaiXe = vaiTro === "tai_xe";
 
   // OPTIMIZED: Memoize expensive computations
-  const totalOrders = useMemo(() => 
-    trangThai.reduce((sum, d) => sum + d.soLuong, 0), 
-  [trangThai]);
+  const totalOrders = useMemo(() =>
+    trangThai.reduce((sum, d) => sum + d.soLuong, 0),
+    [trangThai]);
+
+  // Filter doanh thu & công nợ theo bộ lọc thời gian (client-side)
+  const doanhThuFiltered = useMemo(() => {
+    return doanhThu.filter((d) => {
+      const key = d.thang; // dạng "yyyy-MM"
+      if (!key) return false;
+      if (dateFilterMode === "nam") return key.slice(0, 4) === dateFilterValue;
+      if (dateFilterMode === "thang") return key === dateFilterValue;
+      // chế độ "ngay": dữ liệu doanh thu theo tháng nên lấy cả tháng chứa ngày đó
+      const [y, m] = dateFilterValue.split("-");
+      return key === `${y}-${m}`;
+    });
+  }, [doanhThu, dateFilterMode, dateFilterValue]);
+
+  const congNoFiltered = useMemo(() => {
+    return congNoThang.filter((c) => {
+      const key = c.thang;
+      if (!key) return false;
+      if (dateFilterMode === "nam") return key.slice(0, 4) === dateFilterValue;
+      if (dateFilterMode === "thang") return key === dateFilterValue;
+      const [y, m] = dateFilterValue.split("-");
+      return key === `${y}-${m}`;
+    });
+  }, [congNoThang, dateFilterMode, dateFilterValue]);
 
   // OPTIMIZED: Memoize chart data objects
   const revenueLineData = useMemo(() => ({
-    labels: doanhThu.map(d => {
+    labels: doanhThuFiltered.map(d => {
       const [y, m] = d.thang.split("-");
       return `T${m}/${y.slice(2)}`;
     }),
     datasets: [{
       label: "Doanh thu (triệu VNĐ)",
-      data: doanhThu.map(d => d.doanhThu / 1_000_000),
+      data: doanhThuFiltered.map(d => d.doanhThu / 1_000_000),
       borderColor: "#073ceb",
       backgroundColor: "rgba(7, 60, 235, 0.08)",
       fill: true,
@@ -275,39 +330,39 @@ export default function DashboardPage() {
       pointRadius: 5,
       pointHoverRadius: 7,
     }],
-  }), [doanhThu]);
+  }), [doanhThuFiltered]);
 
   const revenueBarData = useMemo(() => ({
-    labels: doanhThu.map(d => {
+    labels: doanhThuFiltered.map(d => {
       const [y, m] = d.thang.split("-");
       return `T${m}/${y.slice(2)}`;
     }),
     datasets: [{
       label: "Số đơn hàng",
-      data: doanhThu.map(d => d.soDonHang),
+      data: doanhThuFiltered.map(d => d.soDonHang),
       backgroundColor: "rgba(16, 185, 129, 0.85)",
       borderColor: "#10b981",
       borderWidth: 1,
       borderRadius: 8,
       barThickness: 36,
     }],
-  }), [doanhThu]);
+  }), [doanhThuFiltered]);
 
   const congNoBarData = useMemo(() => ({
-    labels: congNoThang.map(d => {
+    labels: congNoFiltered.map(d => {
       const [y, m] = d.thang.split("-");
       return `T${m}/${y.slice(2)}`;
     }),
     datasets: [{
       label: "Công nợ (triệu VNĐ)",
-      data: congNoThang.map(d => d.congNoCu / 1_000_000),
+      data: congNoFiltered.map(d => d.congNoCu / 1_000_000),
       backgroundColor: "rgba(239, 68, 68, 0.75)",
       borderColor: "#ef4444",
       borderWidth: 1,
       borderRadius: 8,
       barThickness: 32,
     }],
-  }), [congNoThang]);
+  }), [congNoFiltered]);
 
   // Chart font config
   const chartFont = { size: 12, weight: "bold" as const };
@@ -586,16 +641,88 @@ export default function DashboardPage() {
           <p className={styles.dashSubtitle}>{roleLabel} — Bảng điều khiển</p>
         </div>
         <div className={styles.dashHeaderRight}>
-          <div className={styles.filterTabs}>
-            {(Object.keys(FILTER_LABELS) as FilterPeriod[]).map((p) => (
-              <button
-                key={p}
-                className={`${styles.filterTab} ${filterPeriod === p ? styles.filterTabActive : ""}`}
-                onClick={() => setFilterPeriod(p)}
-              >
-                {FILTER_LABELS[p]}
-              </button>
-            ))}
+          {/* Bộ lọc thời gian: Theo ngày / Theo tháng / Theo năm */}
+          <div className={styles.dateFilterBar}>
+            <div className={styles.dateFilterModeGroup}>
+              {(["ngay", "thang", "nam"] as DateFilterMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  className={`${styles.dateFilterModeBtn} ${dateFilterMode === mode ? styles.dateFilterModeBtnActive : ""}`}
+                  onClick={() => {
+                    setDateFilterMode(mode);
+                    const now = new Date();
+                    if (mode === "ngay") {
+                      setDateFilterValue(
+                        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
+                      );
+                    } else if (mode === "thang") {
+                      setDateFilterValue(
+                        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
+                      );
+                    } else {
+                      setDateFilterValue(String(now.getFullYear()));
+                    }
+                  }}
+                >
+                  {mode === "ngay"
+                    ? "Theo ngày"
+                    : mode === "thang"
+                      ? "Theo tháng"
+                      : "Theo năm"}
+                </button>
+              ))}
+            </div>
+            <div className={styles.dateFilterValueWrap}>
+              {dateFilterMode === "ngay" && (
+                <input
+                  type="date"
+                  className={styles.dateFilterInput}
+                  value={dateFilterValue}
+                  onChange={(e) => setDateFilterValue(e.target.value)}
+                />
+              )}
+              {dateFilterMode === "thang" && (
+                <input
+                  type="month"
+                  className={styles.dateFilterInput}
+                  value={dateFilterValue}
+                  onChange={(e) => setDateFilterValue(e.target.value)}
+                />
+              )}
+              {dateFilterMode === "nam" && (
+                <div className={styles.yearInputWrap}>
+                  <button
+                    className={styles.yearStepBtn}
+                    onClick={() => {
+                      const y = parseInt(dateFilterValue) - 1;
+                      if (y >= 2000) setDateFilterValue(String(y));
+                    }}
+                    title="Năm trước"
+                  >
+                    ‹
+                  </button>
+                  <input
+                    type="number"
+                    className={styles.dateFilterInput}
+                    value={dateFilterValue}
+                    min={2000}
+                    max={2100}
+                    step={1}
+                    onChange={(e) => setDateFilterValue(e.target.value)}
+                  />
+                  <button
+                    className={styles.yearStepBtn}
+                    onClick={() => {
+                      const y = parseInt(dateFilterValue) + 1;
+                      if (y <= 2100) setDateFilterValue(String(y));
+                    }}
+                    title="Năm sau"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -725,7 +852,14 @@ export default function DashboardPage() {
             <div className={styles.chartCard}>
               <div className={styles.chartCardHeader}>
                 <h3 className={styles.chartCardTitle}>Doanh thu theo tháng</h3>
-                <p className={styles.chartCardDesc}>{FILTER_LABELS[filterPeriod]} · Đơn vị: triệu VNĐ</p>
+                <p className={styles.chartCardDesc}>
+                  {dateFilterMode === "ngay"
+                    ? `Ngày ${dateFilterValue}`
+                    : dateFilterMode === "thang"
+                      ? `Tháng ${dateFilterValue}`
+                      : `Năm ${dateFilterValue}`}
+                  {" · Đơn vị: triệu VNĐ"}
+                </p>
               </div>
               <div className={styles.chartArea}>
                 <Line data={revenueLineData} options={revenueLineOpts} />

@@ -765,3 +765,13 @@
   font-size: 12px;
   line-height: 1.5;
 }
+
+/* Dòng DƯ trong THÔNG TIN THANH TOÁN */
+.duLabel {
+  color: #c2410c;
+}
+
+.duValue {
+  color: #c2410c;
+  font-weight: 700;
+}

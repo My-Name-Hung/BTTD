@@ -1,18 +1,18 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { FiArrowLeft, FiPrinter, FiDownload } from "react-icons/fi";
-import { useReactToPrint } from "react-to-print";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FiArrowLeft, FiDownload, FiPrinter } from "react-icons/fi";
+import { useNavigate, useParams } from "react-router-dom";
+import { useReactToPrint } from "react-to-print";
+import logo from "../../../assets/Logo.png";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
-import logo from "../../../assets/Logo.png";
 import {
-  layHoaDon,
-  layNghiemThu,
-  layLichSanXuat,
-  layHoaDonTheoDonHang,
   layDanhSachMacBeTong,
+  layHoaDon,
+  layHoaDonTheoDonHang,
+  layLichSanXuat,
+  layNghiemThu,
 } from "../../../shared/services/api";
 import styles from "./InHoaDonPage.module.css";
 
@@ -51,7 +51,18 @@ function numberToVietnamese(n: number): string {
   if (n === 0) return "Không đồng";
   if (n < 0) return "Âm " + numberToVietnamese(-n);
   const units = ["", "nghìn", "triệu", "tỷ"];
-  const digits = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+  const digits = [
+    "không",
+    "một",
+    "hai",
+    "ba",
+    "bốn",
+    "năm",
+    "sáu",
+    "bảy",
+    "tám",
+    "chín",
+  ];
   function readThree(num: number): string {
     if (num === 0) return "";
     const hundred = Math.floor(num / 100);
@@ -59,7 +70,8 @@ function numberToVietnamese(n: number): string {
     const ten = Math.floor(rest / 10);
     const unit = rest % 10;
     let result = "";
-    if (hundred > 0) result += (hundred === 1 ? "một" : digits[hundred]) + " trăm";
+    if (hundred > 0)
+      result += (hundred === 1 ? "một" : digits[hundred]) + " trăm";
     if (rest > 0) {
       if (hundred > 0) result += " ";
       if (rest < 10) {
@@ -189,7 +201,9 @@ export default function InHoaDonPage() {
   const [allHoaDons, setAllHoaDons] = useState<HoaDonData[]>([]);
   const [nghiemThu, setNghiemThu] = useState<NghiemThuData | null>(null);
   const [lichSX, setLichSX] = useState<LichSanXuatItem[]>([]);
-  const [macBeTongs, setMacBeTongs] = useState<{ id: number; tenMac: string; donGia: number }[]>([]);
+  const [macBeTongs, setMacBeTongs] = useState<
+    { id: number; tenMac: string; donGia: number }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -252,7 +266,9 @@ export default function InHoaDonPage() {
         heightLeft -= pageHeight;
       }
 
-      const fileName = hoaDon ? `hoa-don-${hoaDon.maHoaDon}.pdf` : `hoa-don.pdf`;
+      const fileName = hoaDon
+        ? `hoa-don-${hoaDon.maHoaDon}.pdf`
+        : `hoa-don.pdf`;
       pdf.save(fileName);
     } catch {
       showToast("Lỗi tạo file PDF", "error");
@@ -342,16 +358,20 @@ export default function InHoaDonPage() {
             },
           ]
         : [];
-  const isCongNo = hd.loaiThanhToan === "cong_no" || hd.loaiThanhToan === "cong_no_du";
+  const isCongNo =
+    hd.loaiThanhToan === "cong_no" || hd.loaiThanhToan === "cong_no_du";
   const isCongNoDu = hd.loaiThanhToan === "cong_no_du";
   const debtHoaDons = sortHoaDonsByTime(
     allHoaDons.filter(
-      (item) => item.loaiThanhToan === "cong_no" || item.loaiThanhToan === "cong_no_du",
+      (item) =>
+        item.loaiThanhToan === "cong_no" || item.loaiThanhToan === "cong_no_du",
     ),
   );
   const currentDebtIndex = debtHoaDons.findIndex((item) => item.id === hd.id);
-  const debtStepLabel = currentDebtIndex >= 0 ? `Thanh toán lần ${currentDebtIndex + 1}` : "";
-  const isLastDebtInvoice = currentDebtIndex >= 0 && currentDebtIndex === debtHoaDons.length - 1;
+  const debtStepLabel =
+    currentDebtIndex >= 0 ? `Thanh toán lần ${currentDebtIndex + 1}` : "";
+  const isLastDebtInvoice =
+    currentDebtIndex >= 0 && currentDebtIndex === debtHoaDons.length - 1;
   const debtInvoiceSummary = debtHoaDons.map((item, index) => ({
     id: item.id,
     label: `Lần ${index + 1}`,
@@ -361,12 +381,16 @@ export default function InHoaDonPage() {
     (sum, item) => sum + item.amount,
     0,
   );
-  // Tổng nghĩa vụ tài chính của đơn hàng = tongCong lần đầu tiên
-  // (do XuatHoaDonPage tính = tienBeTong + bv + pp - gt, lưu xuống DB).
-  // Dùng để tính "Dư" cuối cùng khi khách trả vượt (công nợ dư).
-  const tongNghiaVu = allHoaDons.length > 0
-    ? allHoaDons[0].tongCong || 0
-    : hd.tongCong || 0;
+  // Tổng nghĩa vụ tài chính của đơn hàng = tổng tiền GỐC của đơn hàng
+  // (DonHang.thanhTien = khoiLuongDat * donGia, KHÔNG bao gồm bv/pp/gt).
+  // Đây là tổng "nghĩa vụ" mà khách phải trả cho cả đơn hàng, dùng để:
+  // 1) Tính "Dư" cuối cùng khi khách trả vượt (công nợ dư)
+  // 2) Quyết định hóa đơn công nợ đã "tất toán" hay chưa:
+  //    công nợ tất toán khi soTienThanhToan >= (tongNghiaVu - daThanhToanTruoc)
+  // LƯU Ý: KHÔNG dùng allHoaDons[0].tongCong vì giá trị này đã bị backend
+  // chia tỷ lệ theo phần khách trả ở lần công nợ (vd: lần 1 trả 150k
+  // của tổng 3.440k thì tongCong = 150k, không phải 3.440k).
+  const tongNghiaVu = hd.thanhTien || hd.tongCong || 0;
   // Số tiền dư cuối cùng = tổng thực khách đã trả - tổng nghĩa vụ đơn hàng
   // (chỉ > 0 khi loại thanh toán cuối cùng là "cong_no_du" / "tra_het_du")
   const tienDuCuoi = Math.max(0, tongDaThanhToanToanBo - tongNghiaVu);
@@ -376,12 +400,91 @@ export default function InHoaDonPage() {
   const daThanhToanTruoc = debtInvoiceSummary
     .slice(0, currentDebtIndex >= 0 ? currentDebtIndex : 0)
     .reduce((sum, item) => sum + item.amount, 0);
-  // Tổng cộng hóa đơn (do XuatHoaDonPage tính và lưu) =
-  // tienBeTong + buuVanChuyen + phiPhatSinh - giamTru
-  // Tất cả các loại hóa đơn (trả hết / công nợ / công nợ dư) đều hiển thị cùng một tongCong.
-  const tongCongHienThi = hd.tongCong || 0;
+
+  // ── SỐ TIỀN HIỂN THỊ TRÊN HÓA ĐƠN ──
+  // - Công nợ chưa tất toán (lần đầu/giữa): TỔNG CỘNG = số tiền khách trả kỳ này
+  //   (soTienThanhToan), KHÔNG hiển thị các thành phần bv/pp vì lúc này khách
+  //   mới trả 1 phần, chưa đủ tiền → tách chi tiết chỉ gây rối.
+  // - Công nợ lần cuối (tất toán) / trả hết / trả hết dư: TỔNG CỘNG = tongNghiaVu,
+  //   hiển thị đầy đủ Tiền bê tông + Bù vận chuyển + Chi phí phát sinh
+  //   vì lúc này khách đã thanh toán đủ toàn bộ đơn hàng.
+  const soTienTraKyNay = hd.soTienThanhToan || 0;
+  // Hóa đơn công nợ CHƯA tất toán (soTienThanhToan < còn lại phải trả):
+  // chỉ hiển thị số tiền trả, không tách thành phần bv/pp vì khách
+  // mới trả 1 phần, chưa đủ tiền → tách chi tiết gây rối.
+  // Hóa đơn công nợ ĐÃ tất toán (soTienThanhToan >= còn lại phải trả)
+  // hoặc TRẢ HẾT: hiển thị đầy đủ thành phần + tổng nghĩa vụ.
+  // Đánh dấu "đã tất toán" khi đạt/vượt tổng nghĩa vụ (kể cả khi
+  // loaiThanhToan="cong_no" nhưng khách trả đủ, hoặc "cong_no_du"/"tra_het_du").
+  const isDaTatToan =
+    hd.loaiThanhToan === "tra_het" ||
+    hd.loaiThanhToan === "tra_het_du" ||
+    hd.loaiThanhToan === "cong_no_du" ||
+    (isCongNo &&
+      soTienTraKyNay >= Math.max(0, tongNghiaVu - daThanhToanTruoc));
+  const isCongNoChuaTatToan = isCongNo && !isDaTatToan;
+  const tongCongHienThi = isCongNoChuaTatToan
+    ? soTienTraKyNay
+    : (hd.tongCong || 0);
+  // Tiền bê tông hiển thị: nếu là công nợ chưa tất toán → ẩn, dùng soTienTraKyNay;
+  // ngược lại hiển thị giá trị đầy đủ (lấy từ lần đầu nếu là lần cuối công nợ).
+  const tienBeTongHienThi = isCongNoChuaTatToan
+    ? soTienTraKyNay
+    : isLastDebtInvoice && allHoaDons.length > 0
+      ? allHoaDons[0].tienBeTong || 0
+      : hd.tienBeTong || 0;
+  const buuVanChuyenHienThi =
+    isCongNoChuaTatToan
+      ? 0
+      : isLastDebtInvoice && allHoaDons.length > 0
+        ? allHoaDons[0].buuVanChuyen || 0
+        : hd.buuVanChuyen || 0;
+  const phiPhatSinhHienThi =
+    isCongNoChuaTatToan
+      ? 0
+      : isLastDebtInvoice && allHoaDons.length > 0
+        ? allHoaDons[0].phiPhatSinh || 0
+        : hd.phiPhatSinh || 0;
+  // Phần nghĩa vụ tài chính CÒN LẠI cần trả để tất toán đơn hàng
+  // (= tổng tiền gốc đơn - tổng đã trả các lần trước)
+  // - Công nợ lần 1: phanConLaiCanTra = tongNghiaVu (= toàn bộ đơn)
+  // - Công nợ lần 2: phanConLaiCanTra = tongNghiaVu - daThanhToanTruoc
+  const phanConLaiCanTra = Math.max(0, tongNghiaVu - daThanhToanTruoc);
+  // Số tiền hiển thị ở dòng "SỐ TIỀN TRẢ KỲ NÀY"
+  // = phần khách trả kỳ này dùng để tất toán nghĩa vụ (= min(số trả, phần còn lại))
+  // - Trả đủ hoặc dư: hiển thị đúng phần còn lại (lấp đầy nghĩa vụ)
+  // - Trả thiếu: hiển thị toàn bộ số khách trả (= phanConLaiCanTra - 0)
+  const soTienTraTatToan = Math.min(soTienTraKyNay, phanConLaiCanTra);
+  // Tiền dư riêng của kỳ này = phần khách trả vượt nghĩa vụ còn lại
+  // (chỉ > 0 khi số tiền trả > phần còn lại phải trả)
+  const tienDuKyNay = Math.max(0, soTienTraKyNay - phanConLaiCanTra);
+
   const phuongThucText =
     hd.phuongThucThanhToan === "chuyen_khoan" ? "Chuyển khoản" : "Tiền mặt";
+
+  // Helper: xác định hóa đơn có hiển thị dòng DƯ riêng hay không
+  const coHienThiDu =
+    (isCongNoDu && tienDuKyNay > 0) ||
+    (isCongNo && isLastDebtInvoice && tienDuKyNay > 0) ||
+    (hd.loaiThanhToan === "tra_het_du" &&
+      (hd.soTienThanhToan || 0) > (hd.tongCong || 0));
+  // Helper: số tiền hiển thị ở dòng "SỐ TIỀN TRẢ KỲ NÀY" / "TỔNG CỘNG"
+  // - Trả hết dư: hiển thị tongCong (= 350.000), dư riêng = 50.000
+  // - Công nợ lần cuối dư: hiển thị phanConLaiCanTra (= 200.000), dư riêng = 100.000
+  // - Công nợ chưa tất toán: hiển thị soTienTraKyNay (= 150.000), không có dòng dư
+  // - Trả hết / tất toán đủ: hiển thị tongCong (= 350.000), không có dòng dư
+  const soTienHienThiTongCong = coHienThiDu
+    ? hd.loaiThanhToan === "tra_het_du"
+      ? hd.tongCong || 0
+      : soTienTraTatToan
+    : isCongNoChuaTatToan
+      ? soTienTraKyNay
+      : tongCongHienThi;
+  // Helper: số tiền ở dòng DƯ riêng
+  const soTienHienThiDu =
+    hd.loaiThanhToan === "tra_het_du"
+      ? Math.max(0, (hd.soTienThanhToan || 0) - (hd.tongCong || 0))
+      : tienDuKyNay;
 
   // Phương pháp đổ label
   const phuongPhapDoLabel = (() => {
@@ -433,17 +536,15 @@ export default function InHoaDonPage() {
           <div className={styles.invoiceHeader}>
             <div className={styles.headerLeft}>
               <div className={styles.companyLogo}>
-                <img
-                  src={logo}
-                  alt="Logo BTTD"
-                  className={styles.logoImg}
-                />
+                <img src={logo} alt="Logo BTTD" className={styles.logoImg} />
               </div>
               <div className={styles.companyDetails}>
                 <div className={styles.companyName}>{COMPANY.tenCongTy}</div>
                 <div className={styles.companyInfo}>
                   <span>Địa chỉ: {COMPANY.diaChi}</span>
-                  <span>ĐT: {COMPANY.dienThoai} – MST: {COMPANY.mst}</span>
+                  <span>
+                    ĐT: {COMPANY.dienThoai} – MST: {COMPANY.mst}
+                  </span>
                 </div>
               </div>
             </div>
@@ -454,7 +555,8 @@ export default function InHoaDonPage() {
             <p className={styles.titleSub}>VAT INVOICE</p>
             {debtStepLabel && (
               <p className={styles.titleSub}>
-                {debtStepLabel}{isLastDebtInvoice ? " · Lần tất toán cuối" : ""}
+                {debtStepLabel}
+                {isLastDebtInvoice ? " · Lần tất toán cuối" : ""}
               </p>
             )}
           </div>
@@ -469,14 +571,18 @@ export default function InHoaDonPage() {
               <div className={styles.metaRow}>
                 <span className={styles.metaLabel}>Mã đơn hàng:</span>
                 <span className={styles.metaValue}>
-                  {hd.maDonHang || hd.maHoaDon?.split("-").slice(1, -1).join("-") || ""}
+                  {hd.maDonHang ||
+                    hd.maHoaDon?.split("-").slice(1, -1).join("-") ||
+                    ""}
                 </span>
               </div>
             </div>
             <div className={styles.metaRight}>
               <div className={styles.metaRow}>
                 <span className={styles.metaLabel}>Ngày lập:</span>
-                <span className={styles.metaValue}>{formatDate(hd.ngayLap)}</span>
+                <span className={styles.metaValue}>
+                  {formatDate(hd.ngayLap)}
+                </span>
               </div>
               {isCongNo && hd.hanTraCongNo && (
                 <div className={styles.metaRow}>
@@ -507,31 +613,33 @@ export default function InHoaDonPage() {
                   </span>
                 </div>
               </div>
-            <div className={styles.infoCol}>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Ngày giao hàng:</span>
-                <span className={styles.infoValue}>
-                  {formatDate(hd.ngayGiao)}
-                </span>
+              <div className={styles.infoCol}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Ngày giao hàng:</span>
+                  <span className={styles.infoValue}>
+                    {formatDate(hd.ngayGiao)}
+                  </span>
+                </div>
+                {/* Hiển thị đầy đủ các trạm trộn (1 row / trạm) */}
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Trạm trộn:</span>
+                  <span className={styles.infoValue}>
+                    {danhSachTram.length === 0
+                      ? "—"
+                      : danhSachTram
+                          .map((t, i) => t.tenTram || `Trạm ${i + 1}`)
+                          .join(", ")}
+                  </span>
+                </div>
               </div>
-              {/* Hiển thị đầy đủ các trạm trộn (1 row / trạm) */}
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Trạm trộn:</span>
-                <span className={styles.infoValue}>
-                  {danhSachTram.length === 0
-                    ? "—"
-                    : danhSachTram
-                        .map((t, i) => t.tenTram || `Trạm ${i + 1}`)
-                        .join(", ")}
-                </span>
-              </div>
-            </div>
             </div>
           </div>
 
           {/* ── Thông tin sản phẩm ── */}
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>THÔNG TIN SẢN PHẨM / DỊCH VỤ</div>
+            <div className={styles.sectionTitle}>
+              THÔNG TIN SẢN PHẨM / DỊCH VỤ
+            </div>
             <div className={styles.infoGrid}>
               <div className={styles.infoCol}>
                 <div className={styles.infoRow}>
@@ -540,7 +648,8 @@ export default function InHoaDonPage() {
                     {hd.tenMacBeTong || "—"}
                     {donGiaMacCatalog() != null && (
                       <span className={styles.infoValueSub}>
-                        {" "}— {formatCurrency(donGiaMacCatalog() as number)}/m³
+                        {" "}
+                        — {formatCurrency(donGiaMacCatalog() as number)}/m³
                       </span>
                     )}
                   </span>
@@ -553,14 +662,18 @@ export default function InHoaDonPage() {
                 </div>
                 {hd.hangMuc && (
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Hạng mục / Cấu kiện:</span>
+                    <span className={styles.infoLabel}>
+                      Hạng mục / Cấu kiện:
+                    </span>
                     <span className={styles.infoValue}>{hd.hangMuc}</span>
                   </div>
                 )}
                 {hd.phuongPhapDo && (
                   <div className={styles.infoRow}>
                     <span className={styles.infoLabel}>Phương pháp đổ:</span>
-                    <span className={styles.infoValue}>{phuongPhapDoLabel}</span>
+                    <span className={styles.infoValue}>
+                      {phuongPhapDoLabel}
+                    </span>
                   </div>
                 )}
               </div>
@@ -623,17 +736,17 @@ export default function InHoaDonPage() {
             <tbody>
               <tr>
                 <td className={styles.tdCenter}>1</td>
-                <td>Bê tông thương phẩm ({hd.tenMacBeTong || ""})</td>
+                <td>{`Bê tông thương phẩm (${hd.tenMacBeTong || ""})`}</td>
                 <td className={styles.tdCenter}>m³</td>
                 <td className={styles.tdRight}>{hd.khoiLuongDat || 0}</td>
                 <td className={styles.tdRight}>
                   {(hd.donGia || 0).toLocaleString("vi-VN")}
                 </td>
                 <td className={styles.tdRight}>
-                  {(hd.tienBeTong || 0).toLocaleString("vi-VN")}
+                  {tienBeTongHienThi.toLocaleString("vi-VN")}
                 </td>
               </tr>
-              {(hd.buuVanChuyen || 0) > 0 && (
+              {!isCongNoChuaTatToan && buuVanChuyenHienThi > 0 && (
                 <tr>
                   <td className={styles.tdCenter}>2</td>
                   <td>Phí bù vận chuyển</td>
@@ -641,21 +754,21 @@ export default function InHoaDonPage() {
                   <td className={styles.tdRight}></td>
                   <td className={styles.tdRight}></td>
                   <td className={styles.tdRight}>
-                    {(hd.buuVanChuyen || 0).toLocaleString("vi-VN")}
+                    {buuVanChuyenHienThi.toLocaleString("vi-VN")}
                   </td>
                 </tr>
               )}
-              {(hd.phiPhatSinh || 0) > 0 && (
+              {!isCongNoChuaTatToan && phiPhatSinhHienThi > 0 && (
                 <tr>
                   <td className={styles.tdCenter}>
-                    {(hd.buuVanChuyen || 0) > 0 ? "3" : "2"}
+                    {buuVanChuyenHienThi > 0 ? "3" : "2"}
                   </td>
                   <td>Chi phí phát sinh</td>
                   <td className={styles.tdCenter}></td>
                   <td className={styles.tdRight}></td>
                   <td className={styles.tdRight}></td>
                   <td className={styles.tdRight}>
-                    {(hd.phiPhatSinh || 0).toLocaleString("vi-VN")}
+                    {phiPhatSinhHienThi.toLocaleString("vi-VN")}
                   </td>
                 </tr>
               )}
@@ -664,7 +777,7 @@ export default function InHoaDonPage() {
               {isCongNo && currentDebtIndex > 0 && (
                 <tr className={styles.paidRow}>
                   <td colSpan={5} className={styles.tdRightBold}>
-                    ĐÃ THANH TOÁN (các lần trước)
+                    ĐÃ THANH TOÁN
                   </td>
                   <td className={styles.tdRightBold}>
                     {daThanhToanTruoc.toLocaleString("vi-VN")}
@@ -673,16 +786,36 @@ export default function InHoaDonPage() {
               )}
               <tr className={styles.totalRow}>
                 <td colSpan={5} className={styles.tdRightBold}>
-                  TỔNG CỘNG
+                  {coHienThiDu
+                    ? hd.loaiThanhToan === "tra_het_du"
+                      ? "TỔNG CỘNG"
+                      : "SỐ TIỀN TRẢ KỲ NÀY"
+                    : isCongNoChuaTatToan
+                      ? currentDebtIndex === 0
+                        ? "SỐ TIỀN TRẢ"
+                        : "SỐ TIỀN TRẢ KỲ NÀY"
+                      : "TỔNG CỘNG"}
                 </td>
                 <td className={styles.tdRightBold}>
-                  {tongCongHienThi.toLocaleString("vi-VN")}
+                  {soTienHienThiTongCong.toLocaleString("vi-VN")}
                 </td>
               </tr>
+              {/* Dòng DƯ riêng khi khách trả vượt nghĩa vụ
+                  (công nợ lần cuối có dư, công nợ dư, hoặc trả hết dư) */}
+              {coHienThiDu && (
+                <tr className={styles.duRow}>
+                  <td colSpan={5} className={styles.tdRightBold}>
+                    SỐ TIỀN DƯ
+                  </td>
+                  <td className={styles.tdRightBold}>
+                    {soTienHienThiDu.toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+              )}
               <tr>
                 <td colSpan={6} className={styles.soTienChu}>
                   Số tiền bằng chữ:{" "}
-                  {numberToVietnamese(tongCongHienThi)}
+                  {numberToVietnamese(soTienHienThiTongCong)}
                 </td>
               </tr>
             </tfoot>
@@ -690,7 +823,9 @@ export default function InHoaDonPage() {
 
           {isLastDebtInvoice && debtInvoiceSummary.length > 1 && (
             <div className={styles.section}>
-              <div className={styles.sectionTitle}>TỔNG HỢP CÁC LẦN THANH TOÁN</div>
+              <div className={styles.sectionTitle}>
+                TỔNG HỢP CÁC LẦN THANH TOÁN
+              </div>
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -704,12 +839,14 @@ export default function InHoaDonPage() {
                     <tr key={item.id}>
                       <td className={styles.tdCenter}>{index + 1}</td>
                       <td>{item.label}</td>
-                      <td className={styles.tdRight}>{item.amount.toLocaleString("vi-VN")}</td>
+                      <td className={styles.tdRight}>
+                        {item.amount.toLocaleString("vi-VN")}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  {/* Tổng nghĩa vụ tài chính của đơn hàng (= tongCong lần đầu) */}
+                  {/* Tổng nghĩa vụ tài chính của đơn hàng (= DonHang.thanhTien gốc) */}
                   <tr className={styles.totalRow}>
                     <td colSpan={2} className={styles.tdRightBold}>
                       TỔNG NGHĨA VỤ ĐƠN HÀNG
@@ -732,7 +869,7 @@ export default function InHoaDonPage() {
                   {tienDuCuoi > 0 && (
                     <tr className={styles.duRow}>
                       <td colSpan={2} className={styles.tdRightBold}>
-                        DƯ (tiền thừa của khách)
+                        SỐ TIỀN DƯ
                       </td>
                       <td className={styles.tdRightBold}>
                         {tienDuCuoi.toLocaleString("vi-VN")}
@@ -754,9 +891,29 @@ export default function InHoaDonPage() {
                   <span className={styles.infoValue}>{phuongThucText}</span>
                 </div>
                 <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Khách thanh toán kỳ này:</span>
-                  <span className={styles.infoValue}>{formatCurrency(hd.soTienThanhToan || 0)}</span>
+                  <span className={styles.infoLabel}>
+                    Khách thanh toán kỳ này:
+                  </span>
+                  <span className={styles.infoValue}>
+                    {formatCurrency(soTienHienThiTongCong)}
+                  </span>
                 </div>
+                {/* Dòng DƯ riêng khi khách trả vượt nghĩa vụ
+                    (công nợ lần cuối có dư, công nợ dư, hoặc trả hết dư) */}
+                {coHienThiDu && (
+                  <div className={styles.infoRow}>
+                    <span
+                      className={`${styles.infoLabel} ${styles.duLabel}`}
+                    >
+                      Số tiền dư:
+                    </span>
+                    <span
+                      className={`${styles.infoValue} ${styles.duValue}`}
+                    >
+                      {formatCurrency(soTienHienThiDu)}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className={styles.infoCol}>
                 <div className={styles.infoRow}>
@@ -768,12 +925,26 @@ export default function InHoaDonPage() {
                         : styles.statusBadgeTraHet
                     }`}
                   >
-                    {isCongNo ? "CÔNG NỢ" : "TRẢ HẾT"}
+                    {isCongNo
+                      ? isDaTatToan
+                        ? tienDuKyNay > 0
+                          ? "CÔNG NỢ (dư)"
+                          : "CÔNG NỢ (tất toán)"
+                        : "CÔNG NỢ"
+                      : hd.loaiThanhToan === "tra_het_du"
+                        ? "TRẢ HẾT (dư)"
+                        : "TRẢ HẾT"}
                   </span>
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Công nợ còn lại:</span>
-                  <span className={styles.infoValue}>{formatCurrency(hd.donHangConLai || 0)}</span>
+                  <span className={styles.infoValue}>
+                    {formatCurrency(
+                      isCongNoChuaTatToan
+                        ? Math.max(0, hd.donHangConLai || 0)
+                        : 0,
+                    )}
+                  </span>
                 </div>
               </div>
             </div>
@@ -810,7 +981,9 @@ export default function InHoaDonPage() {
                       )}
                       {(t.nguoiOmOng || hd.nguoiOmOng) && (
                         <div className={styles.infoRow}>
-                          <span className={styles.infoLabel}>Vận hành bơm:</span>
+                          <span className={styles.infoLabel}>
+                            Vận hành bơm:
+                          </span>
                           <span className={styles.infoValue}>
                             {t.nguoiOmOng || hd.nguoiOmOng}
                           </span>

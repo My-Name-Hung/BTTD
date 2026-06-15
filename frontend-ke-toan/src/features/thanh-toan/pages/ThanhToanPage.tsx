@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  FiAlertTriangle,
+  FiClock,
   FiDollarSign,
   FiDownload,
   FiPrinter,
   FiSearch,
   FiX,
-  FiAlertTriangle,
-  FiClock,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import {
@@ -67,7 +67,10 @@ export default function ThanhToanPage() {
   const [tuKhoa, setTuKhoa] = useState("");
   const [activeTab, setActiveTab] = useState<TabFilter>("chua_tat_toan");
   const [exporting, setExporting] = useState(false);
-  const [selectedHoaDonIds, setSelectedHoaDonIds] = useState<Record<number, boolean>>({});
+  // Lưu đơn hàng đang mở modal xem danh sách hóa đơn (khi 1 đơn có nhiều HĐ)
+  const [modalDanhSachHoaDon, setModalDanhSachHoaDon] = useState<DonHang | null>(
+    null,
+  );
 
   const canCreate = hasPermission("thanhtoan.create");
 
@@ -97,26 +100,24 @@ export default function ThanhToanPage() {
         dhs.forEach((dh: DonHang) => {
           mapTT[dh.id] = batchTT[dh.id] || [];
           const hoaDonList = batchHD[dh.id] || [];
-          mapHD[dh.id] = hoaDonList.map(
-            (h: any) => ({
-              id: h.id,
-              maHoaDon: h.soHoaDon,
-              ngayLap: h.ngayTao,
-              khachHang: dh.tenKhachHang,
-              // tongCong đã được XuatHoaDonPage tính sẵn và lưu xuống DB
-              // = tienBeTong + buuVanChuyen + phiPhatSinh - giamTru
-              // Tuyệt đối KHÔNG tính ngược từ tongCong (sẽ trừ giamTru 2 lần)
-              tienBeTong: h.tienBeTong || 0,
-              buuVanChuyen: h.buuVanChuyen || 0,
-              phiPhatSinh: h.phiPhatSinh || 0,
-              giamTru: h.giamTru || 0,
-              tongCong: h.tongCong || 0,
-              loaiThanhToan: h.loaiThanhToan || "tra_het",
-              soTienDu: h.soTienDu || 0,
-              soTienThanhToan: h.soTienThanhToan || 0,
-              hanTraCongNo: h.hanTraCongNo || null,
-            }),
-          );
+          mapHD[dh.id] = hoaDonList.map((h: any) => ({
+            id: h.id,
+            maHoaDon: h.soHoaDon,
+            ngayLap: h.ngayTao,
+            khachHang: dh.tenKhachHang,
+            // tongCong đã được XuatHoaDonPage tính sẵn và lưu xuống DB
+            // = tienBeTong + buuVanChuyen + phiPhatSinh - giamTru
+            // Tuyệt đối KHÔNG tính ngược từ tongCong (sẽ trừ giamTru 2 lần)
+            tienBeTong: h.tienBeTong || 0,
+            buuVanChuyen: h.buuVanChuyen || 0,
+            phiPhatSinh: h.phiPhatSinh || 0,
+            giamTru: h.giamTru || 0,
+            tongCong: h.tongCong || 0,
+            loaiThanhToan: h.loaiThanhToan || "tra_het",
+            soTienDu: h.soTienDu || 0,
+            soTienThanhToan: h.soTienThanhToan || 0,
+            hanTraCongNo: h.hanTraCongNo || null,
+          }));
         });
         setThanhToans(mapTT);
         setHoaDons(mapHD);
@@ -136,13 +137,15 @@ export default function ThanhToanPage() {
     loadData();
   }, [loadData]);
 
+  // Đóng modal danh sách hóa đơn bằng phím ESC
   useEffect(() => {
-    const handleClickOutside = () => {
-      setSelectedHoaDonIds({});
+    if (!modalDanhSachHoaDon) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setModalDanhSachHoaDon(null);
     };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [modalDanhSachHoaDon]);
 
   // Kiểm tra đơn có được phép thanh toán (đã nghiệm thu với kết quả 'dat')
   const isChoPhepThanhToan = (dh: DonHang) => {
@@ -363,7 +366,9 @@ export default function ThanhToanPage() {
           <FiClock size={14} />
           Công nợ ({listCongNo.length})
           {soDonQuaHan > 0 && (
-            <span className={styles.tabBadgeWarning}>{soDonQuaHan} quá hạn</span>
+            <span className={styles.tabBadgeWarning}>
+              {soDonQuaHan} quá hạn
+            </span>
           )}
         </button>
         <button
@@ -431,12 +436,7 @@ export default function ThanhToanPage() {
                   </th>
                   <th style={{ minWidth: 80 }}>Còn lại</th>
                   {activeTab === "da_tat_toan" && (
-                    <th
-                      className={styles.hideOnMobile}
-                      style={{ minWidth: 80, textAlign: "right" }}
-                    >
-                      Tiền dư
-                    </th>
+                    <th className={styles.hideOnMobile}>Tiền dư</th>
                   )}
                   {activeTab === "cong_no" && (
                     <th style={{ minWidth: 90 }}>Hạn thanh toán</th>
@@ -451,7 +451,10 @@ export default function ThanhToanPage() {
                   const hds = hoaDons[dh.id] || [];
                   const daTatToanOrder = conLai <= 0;
                   const isQuaHanOrder = isQuaHan(dh);
-                  const tienDu = hds.reduce((sum, h) => sum + (h.soTienDu || 0), 0);
+                  const tienDu = hds.reduce(
+                    (sum, h) => sum + (h.soTienDu || 0),
+                    0,
+                  );
 
                   return (
                     <tr
@@ -495,11 +498,18 @@ export default function ThanhToanPage() {
                           className={`${styles.tableRight} ${styles.hideOnMobile}`}
                         >
                           {tienDu > 0 ? (
-                            <span style={{ color: "var(--color-success)", fontWeight: 600 }}>
+                            <span
+                              style={{
+                                color: "var(--color-success)",
+                                fontWeight: 600,
+                              }}
+                            >
                               +{formatCurrency(tienDu)}
                             </span>
                           ) : (
-                            <span style={{ color: "var(--color-text-secondary)" }}>
+                            <span
+                              style={{ color: "var(--color-text-secondary)" }}
+                            >
                               0 đ
                             </span>
                           )}
@@ -517,15 +527,19 @@ export default function ThanhToanPage() {
                               )
                               .sort((a, b) => b.id - a.id);
                             const cnHD = cnHDs[0];
-                            if (!cnHD?.hanTraCongNo) return (
-                              <span
-                                style={{ color: "var(--color-text-secondary)" }}
-                              >
-                                —
-                              </span>
-                            );
+                            if (!cnHD?.hanTraCongNo)
+                              return (
+                                <span
+                                  style={{
+                                    color: "var(--color-text-secondary)",
+                                  }}
+                                >
+                                  —
+                                </span>
+                              );
                             const hanDate = new Date(cnHD.hanTraCongNo!);
-                            const hanLabel = hanDate.toLocaleDateString("vi-VN");
+                            const hanLabel =
+                              hanDate.toLocaleDateString("vi-VN");
                             // Số ngày còn lại / quá hạn
                             const today = new Date();
                             today.setHours(0, 0, 0, 0);
@@ -541,9 +555,7 @@ export default function ThanhToanPage() {
                                   : `quá ${Math.abs(diffDays)} ngày`;
                             // Hiển thị thêm: nếu có nhiều hóa đơn công nợ → "Lần X"
                             const lanText =
-                              cnHDs.length > 1
-                                ? ` (lần ${cnHDs.length})`
-                                : "";
+                              cnHDs.length > 1 ? ` (lần ${cnHDs.length})` : "";
                             return (
                               <div
                                 style={{
@@ -632,63 +644,24 @@ export default function ThanhToanPage() {
                             </span>
                           )}
 
-                          {/* Xem hóa đơn đã xuất */}
+                          {/* Xem hóa đơn đã xuất — mở popup modal khi 1 đơn có nhiều hóa đơn */}
                           {hds.length > 0 && (
-                            <div className={styles.hoaDonDropdown}>
-                              <button
-                                className={styles.btnHoaDon}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedHoaDonIds((prev) => ({
-                                    ...prev,
-                                    [dh.id]: prev[dh.id] ? false : true,
-                                  }));
-                                }}
-                                title="Xem hóa đơn đã xuất"
-                              >
-                                <FiPrinter size={13} />
-                                HĐ {hds.length > 1 ? `(${hds.length})` : ""}
-                              </button>
-                              {selectedHoaDonIds[dh.id] && hds.length > 1 && (
-                                <div
-                                  className={styles.dropdownMenu}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {hds.map((hd) => (
-                                    <button
-                                      key={hd.id}
-                                      className={styles.dropdownItem}
-                                      onClick={() => {
-                                        handlePrintHD(hd.id);
-                                        setSelectedHoaDonIds((prev) => ({
-                                          ...prev,
-                                          [dh.id]: false,
-                                        }));
-                                      }}
-                                    >
-                                      <span>{hd.maHoaDon}</span>
-                                      <span className={styles.dropdownAmount}>
-                                        {formatCurrency(hd.tongCong)}
-                                      </span>
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                              {selectedHoaDonIds[dh.id] && hds.length === 1 && (
-                                <button
-                                  className={styles.btnPrintSingle}
-                                  onClick={() => {
-                                    handlePrintHD(hds[0].id);
-                                    setSelectedHoaDonIds((prev) => ({
-                                      ...prev,
-                                      [dh.id]: false,
-                                    }));
-                                  }}
-                                >
-                                  <FiPrinter size={12} /> Xem HĐ
-                                </button>
-                              )}
-                            </div>
+                            <button
+                              className={styles.btnHoaDon}
+                              onClick={() => {
+                                if (hds.length === 1) {
+                                  // Chỉ 1 hóa đơn → in trực tiếp
+                                  handlePrintHD(hds[0].id);
+                                } else {
+                                  // Nhiều hóa đơn → mở modal danh sách
+                                  setModalDanhSachHoaDon(dh);
+                                }
+                              }}
+                              title="Xem hóa đơn đã xuất"
+                            >
+                              <FiPrinter size={13} />
+                              HĐ {hds.length > 1 ? `(${hds.length})` : ""}
+                            </button>
                           )}
                         </div>
                       </td>
@@ -710,6 +683,137 @@ export default function ThanhToanPage() {
           />
         )}
       </div>
+
+      {/* ── Modal danh sách hóa đơn (khi 1 đơn có nhiều hóa đơn) ── */}
+      {modalDanhSachHoaDon && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setModalDanhSachHoaDon(null)}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <div className={styles.modalTitle}>
+                  <FiPrinter size={18} />
+                  Danh sách hóa đơn
+                </div>
+                <div className={styles.modalSubtitle}>
+                  Đơn hàng <strong>{modalDanhSachHoaDon.maDonHang}</strong> ·{" "}
+                  {modalDanhSachHoaDon.tenKhachHang}
+                </div>
+              </div>
+              <button
+                className={styles.modalClose}
+                onClick={() => setModalDanhSachHoaDon(null)}
+                title="Đóng (ESC)"
+                type="button"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              {(() => {
+                const modalHds = (hoaDons[modalDanhSachHoaDon.id] || []).slice(
+                  0,
+                );
+                // Sắp xếp theo thời gian lập (cũ → mới) để hiển thị "Lần 1, 2, 3..."
+                modalHds.sort((a, b) => {
+                  const aTime = a.ngayLap ? new Date(a.ngayLap).getTime() : 0;
+                  const bTime = b.ngayLap ? new Date(b.ngayLap).getTime() : 0;
+                  if (aTime !== bTime) return aTime - bTime;
+                  return a.id - b.id;
+                });
+                const tongTatCa = modalHds.reduce(
+                  (sum, h) => sum + (h.tongCong || 0),
+                  0,
+                );
+                return (
+                  <>
+                    <div className={styles.modalSummary}>
+                      <div className={styles.modalSummaryItem}>
+                        <span>Số hóa đơn</span>
+                        <strong>{modalHds.length}</strong>
+                      </div>
+                      <div className={styles.modalSummaryItem}>
+                        <span>Tổng tiền các HĐ</span>
+                        <strong className={styles.modalSummaryAmount}>
+                          {formatCurrency(tongTatCa)}
+                        </strong>
+                      </div>
+                    </div>
+                    <div className={styles.hoaDonList}>
+                      {modalHds.map((hd, idx) => {
+                        const isCongNoHD =
+                          hd.loaiThanhToan === "cong_no" ||
+                          hd.loaiThanhToan === "cong_no_du";
+                        return (
+                          <div key={hd.id} className={styles.hoaDonCard}>
+                            <div className={styles.hoaDonCardLeft}>
+                              <div className={styles.hoaDonCardLan}>
+                                Lần {idx + 1}
+                              </div>
+                              <div className={styles.hoaDonCardMa}>
+                                {hd.maHoaDon}
+                              </div>
+                              <div className={styles.hoaDonCardDate}>
+                                {hd.ngayLap
+                                  ? new Date(hd.ngayLap).toLocaleDateString(
+                                      "vi-VN",
+                                    )
+                                  : "—"}
+                              </div>
+                              <span
+                                className={`${styles.hoaDonCardBadge} ${
+                                  isCongNoHD
+                                    ? styles.badgeCongNo
+                                    : styles.badgeTraHet
+                                }`}
+                              >
+                                {isCongNoHD
+                                  ? hd.loaiThanhToan === "cong_no_du"
+                                    ? "Công nợ (dư)"
+                                    : "Công nợ"
+                                  : "Trả hết"}
+                              </span>
+                            </div>
+                            <div className={styles.hoaDonCardRight}>
+                              <span className={styles.hoaDonCardLabel}>
+                                Tổng cộng
+                              </span>
+                              <span className={styles.hoaDonCardTongCong}>
+                                {formatCurrency(hd.tongCong || 0)}
+                              </span>
+                              {(hd.soTienThanhToan || 0) > 0 && (
+                                <span className={styles.hoaDonCardDaTT}>
+                                  Khách trả:{" "}
+                                  {formatCurrency(hd.soTienThanhToan || 0)}
+                                </span>
+                              )}
+                              <button
+                                className={styles.hoaDonCardBtn}
+                                onClick={() => {
+                                  handlePrintHD(hd.id);
+                                  setModalDanhSachHoaDon(null);
+                                }}
+                                type="button"
+                              >
+                                <FiPrinter size={13} /> Xem & In
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className={styles.toastContainer}>
         {toasts.map((t) => (

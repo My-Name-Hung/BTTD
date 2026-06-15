@@ -214,6 +214,116 @@
   background: rgba(239, 68, 68, 0.04);
 }
 
+/* ── Bộ lọc thời gian (ngày / tháng / năm) ── */
+.filterModeGroup {
+  display: inline-flex;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.filterModeBtn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.filterModeBtn:hover {
+  color: #073ceb;
+  background: rgba(7, 60, 235, 0.04);
+}
+
+.filterModeBtnActive {
+  background: #ffffff;
+  color: #073ceb;
+  box-shadow: 0 1px 3px rgba(7, 60, 235, 0.15);
+}
+
+.filterValueWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 280px;
+}
+
+.filterDateInput {
+  flex: 1;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1e293b;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.filterDateInput:focus {
+  border-color: #073ceb;
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.12);
+}
+
+.yearInputWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.yearStepBtn {
+  width: 32px;
+  height: 38px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: #ffffff;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #073ceb;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.yearStepBtn:hover {
+  background: rgba(7, 60, 235, 0.06);
+  border-color: #073ceb;
+}
+
+.filterYearInput {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  font-family: inherit;
+  color: #1e293b;
+  background: #ffffff;
+  outline: none;
+  font-weight: 600;
+}
+
+.filterYearInput:focus {
+  border-color: #073ceb;
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.12);
+}
+
 /* ── Table ──────────────────────────────────────── */
 .tableWrap {
   overflow-x: auto;
@@ -508,6 +618,19 @@
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
+  }
+  .filterModeGroup {
+    width: 100%;
+  }
+  .filterModeBtn {
+    flex: 1;
+    text-align: center;
+    padding: 8px 8px;
+    font-size: 12px;
+  }
+  .filterValueWrap {
+    max-width: none;
+    width: 100%;
   }
   .filterBarLeft {
     flex-direction: row;

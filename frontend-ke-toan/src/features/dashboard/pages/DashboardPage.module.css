@@ -72,6 +72,100 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
+/* ── Date Filter Bar (Theo ngày / tháng / năm) ── */
+.dateFilterBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dateFilterModeGroup {
+  display: inline-flex;
+  background: var(--color-bg);
+  border-radius: 10px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.dateFilterModeBtn {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.dateFilterModeBtn:hover {
+  color: var(--color-primary);
+  background: rgba(7, 60, 235, 0.05);
+}
+
+.dateFilterModeBtnActive {
+  background: var(--color-white);
+  color: var(--color-primary);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(7, 60, 235, 0.15);
+}
+
+.dateFilterValueWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dateFilterInput {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1e293b;
+  background: var(--color-white);
+  outline: none;
+  min-width: 140px;
+  font-weight: 600;
+}
+
+.dateFilterInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(7, 60, 235, 0.12);
+}
+
+.yearInputWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.yearStepBtn {
+  width: 30px;
+  height: 36px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-white);
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.yearStepBtn:hover {
+  background: rgba(7, 60, 235, 0.06);
+  border-color: var(--color-primary);
+}
+
 /* ── Tab Navigation ── */
 .tabNav {
   display: flex;
@@ -320,6 +414,28 @@
   .filterTabs {
     width: 100%;
     overflow-x: auto;
+  }
+
+  .dateFilterBar {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dateFilterModeGroup {
+    width: 100%;
+  }
+  .dateFilterModeBtn {
+    flex: 1;
+    text-align: center;
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+  .dateFilterValueWrap {
+    width: 100%;
+  }
+  .dateFilterInput {
+    flex: 1;
+    min-width: 0;
   }
   
   .tabNav {

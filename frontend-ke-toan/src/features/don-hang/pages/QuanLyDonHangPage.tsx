@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FiCheck,
   FiDownload,
@@ -82,6 +82,39 @@ export default function QuanLyDonHangPage() {
   const [danhSachNguoiTao, setDanhSachNguoiTao] = useState<{id: number; hoTen: string; tenDangNhap: string}[]>([]);
   const [trangThaiFilter, setTrangThaiFilter] = useState<string>("");
 
+  // Bộ lọc thời gian theo ngày/tháng/năm (client-side dựa trên ngayTaoDon)
+  const [filterMode, setFilterMode] = useState<"ngay" | "thang" | "nam">("thang");
+  const [filterValue, setFilterValue] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  // ── Helpers filter thời gian ──
+  function parseDateKey(d: string): { y: number; m: number; day: number } | null {
+    if (!d) return null;
+    const cleaned = d.replace("Z", "").replace(/\.\d+$/, "");
+    const [datePart] = cleaned.split("T");
+    if (!datePart) return null;
+    const [y, mo, day] = datePart.split("-").map(Number);
+    if (!y || !mo || !day) return null;
+    return { y, m: mo, day };
+  }
+  function getDateKey(d: string): string {
+    const p = parseDateKey(d);
+    if (!p) return "";
+    return `${p.y}-${String(p.m).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+  }
+  function getMonthKey(d: string): string {
+    const p = parseDateKey(d);
+    if (!p) return "";
+    return `${p.y}-${String(p.m).padStart(2, "0")}`;
+  }
+  function getYearKey(d: string): string {
+    const p = parseDateKey(d);
+    if (!p) return "";
+    return String(p.y);
+  }
+
   // Lấy các trạng thái có trong dữ liệu
   const activeStatuses = data.data?.length
     ? Array.from(new Set(data.data.map(d => d.trangThaiDon)))
@@ -153,24 +186,36 @@ export default function QuanLyDonHangPage() {
     loadData();
   }, [loadData]);
 
-  // KPI: dùng thongKe nếu không filter, ngược lại đếm từ data.data
+  // ── Dữ liệu sau khi lọc thời gian (client-side) ──
+  const dataFiltered = useMemo(() => {
+    const items = data.data || [];
+    return items.filter((dh: any) => {
+      const d = (dh as any).ngayTaoDon || "";
+      if (!d) return true;
+      if (filterMode === "ngay") return getDateKey(d) === filterValue;
+      if (filterMode === "thang") return getMonthKey(d) === filterValue;
+      return getYearKey(d) === filterValue;
+    });
+  }, [data.data, filterMode, filterValue]);
+
+  // KPI: dùng thongKe nếu không filter, ngược lại đếm từ dataFiltered (đã áp dụng filter thời gian)
   const kpiTotal = thongKe && !trangThai && !tuKhoa
     ? thongKe.tongDon
-    : (data.data?.length || 0);
+    : (dataFiltered.length || 0);
   const kpiChoDuyet = thongKe && !trangThai && !tuKhoa
     ? thongKe.choDuyet
-    : (data.data?.filter((d) => d.trangThaiDon === "cho_duyet").length || 0);
+    : (dataFiltered.filter((d: any) => d.trangThaiDon === "cho_duyet").length || 0);
   const kpiChoKeToanDuyet = thongKe && !trangThai && !tuKhoa
     ? (thongKe as any)?.choKeToanDuyet || 0
-    : (data.data?.filter((d) => d.trangThaiDon === "cho_ke_toan_duyet").length || 0);
+    : (dataFiltered.filter((d: any) => d.trangThaiDon === "cho_ke_toan_duyet").length || 0);
   const kpiDangXL = thongKe && !trangThai && !tuKhoa
     ? (thongKe.daDuyet + thongKe.dangSanXuat + thongKe.dangGiao + thongKe.daGiao + thongKe.nghiemThu)
-    : (data.data?.filter((d) =>
+    : (dataFiltered.filter((d: any) =>
         ["da_duyet", "dang_san_xuat", "dang_giao", "da_giao", "nghiem_thu", "da_nghiem_thu"].includes(d.trangThaiDon),
       ).length || 0);
   const kpiHoanThanh = thongKe && !trangThai && !tuKhoa
     ? (thongKe.hoanThanh + thongKe.daThanhToan)
-    : (data.data?.filter((d) =>
+    : (dataFiltered.filter((d: any) =>
         ["hoan_thanh", "da_thanh_toan"].includes(d.trangThaiDon)
       ).length || 0);
 
@@ -228,6 +273,11 @@ export default function QuanLyDonHangPage() {
     setTuKhoa("");
     setTrangThai("");
     setNguoiTaoId(undefined);
+    const now = new Date();
+    setFilterMode("thang");
+    setFilterValue(
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
+    );
     resetPage();
   };
 
@@ -436,6 +486,92 @@ export default function QuanLyDonHangPage() {
         )}
       </div>
 
+      {/* Filter Bar thời gian: ngày / tháng / năm */}
+      <div className={styles.filterBar}>
+        <div className={styles.filterModeGroup}>
+          {(["ngay", "thang", "nam"] as const).map((mode) => (
+            <button
+              key={mode}
+              className={`${styles.filterModeBtn} ${filterMode === mode ? styles.filterModeBtnActive : ""}`}
+              onClick={() => {
+                setFilterMode(mode);
+                const now = new Date();
+                if (mode === "ngay") {
+                  setFilterValue(
+                    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
+                  );
+                } else if (mode === "thang") {
+                  setFilterValue(
+                    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
+                  );
+                } else {
+                  setFilterValue(String(now.getFullYear()));
+                }
+                resetPage();
+              }}
+            >
+              {mode === "ngay"
+                ? "Theo ngày"
+                : mode === "thang"
+                  ? "Theo tháng"
+                  : "Theo năm"}
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.filterValueWrap}>
+          {filterMode === "ngay" && (
+            <input
+              type="date"
+              className={styles.filterDateInput}
+              value={filterValue}
+              onChange={(e) => setFilterValue(e.target.value)}
+            />
+          )}
+          {filterMode === "thang" && (
+            <input
+              type="month"
+              className={styles.filterDateInput}
+              value={filterValue}
+              onChange={(e) => setFilterValue(e.target.value)}
+            />
+          )}
+          {filterMode === "nam" && (
+            <div className={styles.yearInputWrap}>
+              <button
+                className={styles.yearStepBtn}
+                onClick={() => {
+                  const y = parseInt(filterValue) - 1;
+                  if (y >= 2000) setFilterValue(String(y));
+                }}
+                title="Năm trước"
+              >
+                ‹
+              </button>
+              <input
+                type="number"
+                className={styles.filterYearInput}
+                value={filterValue}
+                min={2000}
+                max={2100}
+                step={1}
+                onChange={(e) => setFilterValue(e.target.value)}
+              />
+              <button
+                className={styles.yearStepBtn}
+                onClick={() => {
+                  const y = parseInt(filterValue) + 1;
+                  if (y <= 2100) setFilterValue(String(y));
+                }}
+                title="Năm sau"
+              >
+                ›
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Filter bar */}
       <div className={styles.filterBar}>
         <div className={styles.filterBarLeft}>
@@ -502,6 +638,8 @@ export default function QuanLyDonHangPage() {
               <Loading />
             ) : data.data?.length === 0 ? (
               <EmptyState text="Không có đơn hàng nào" />
+            ) : dataFiltered.length === 0 ? (
+              <EmptyState text="Không có đơn hàng nào trong khoảng thời gian đã chọn" />
             ) : (
               <table className={styles.saleTable}>
                 <thead>
@@ -528,7 +666,7 @@ export default function QuanLyDonHangPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.data?.map((dh) => (
+                  {dataFiltered.map((dh: any) => (
                     <tr key={dh.id}>
                       <td>
                         <span className={styles.tableCodeWrap}>
@@ -649,6 +787,8 @@ export default function QuanLyDonHangPage() {
               <Loading />
             ) : data.data?.length === 0 ? (
               <EmptyState text="Không có đơn hàng nào" />
+            ) : dataFiltered.length === 0 ? (
+              <EmptyState text="Không có đơn hàng nào trong khoảng thời gian đã chọn" />
             ) : (
               <table className={styles.table}>
                 <thead>
@@ -693,7 +833,7 @@ export default function QuanLyDonHangPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.data?.map((dh) => (
+                  {dataFiltered.map((dh: any) => (
                     <tr key={dh.id}>
                       <td>
                         <strong className={styles.tableCode}>

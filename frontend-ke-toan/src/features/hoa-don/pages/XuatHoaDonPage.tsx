@@ -6,26 +6,20 @@ import {
   FiClock,
   FiDollarSign,
   FiFileText,
-  FiPrinter,
-  FiUser,
   FiTruck,
+  FiUser,
 } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
 import {
-  layDonHang,
-  layLichSanXuat,
-  layHoaDonTheoDonHang,
-  taoHoaDon,
   layDanhSachMacBeTong,
+  layDonHang,
+  layHoaDonTheoDonHang,
+  layLichSanXuat,
+  taoHoaDon,
 } from "../../../shared/services/api";
-import {
-  DonHang,
-  HoaDon,
-  LichSanXuat,
-  MacBeTong,
-} from "../../../shared/types";
+import { DonHang, HoaDon, LichSanXuat, MacBeTong } from "../../../shared/types";
 import styles from "./XuatHoaDonPage.module.css";
 
 type HinhThucThanhToan = "tra_het" | "cong_no";
@@ -75,9 +69,17 @@ function sortHoaDonsByTime(items: HoaDon[]) {
   });
 }
 
-const LOAI_HINH_THUC: { value: HinhThucThanhToan; label: string; desc: string }[] = [
+const LOAI_HINH_THUC: {
+  value: HinhThucThanhToan;
+  label: string;
+  desc: string;
+}[] = [
   { value: "tra_het", label: "Trả hết", desc: "Thanh toán đầy đủ 1 lần" },
-  { value: "cong_no", label: "Công nợ", desc: "Thanh toán trước một phần, còn lại ghi nợ" },
+  {
+    value: "cong_no",
+    label: "Công nợ",
+    desc: "Thanh toán trước một phần, còn lại ghi nợ",
+  },
 ];
 
 export default function XuatHoaDonPage() {
@@ -122,11 +124,10 @@ export default function XuatHoaDonPage() {
   );
   // Tổng gốc đã ghi nhận trên hóa đơn (tongCong của lần đầu, không đổi qua các lần)
   // Dùng để auto-suggest tongCong khi tạo lần tiếp theo mà user chưa nhập chi phí
-  const tongCongGoc =
-    allHoaDons.length > 0 ? allHoaDons[0].tongCong || 0 : 0;
+  const tongCongGoc = allHoaDons.length > 0 ? allHoaDons[0].tongCong || 0 : 0;
 
   // Tổng tiền gốc đơn hàng
-  const tongTienGoc = donHang ? (donHang.thanhTien || 0) : 0;
+  const tongTienGoc = donHang ? donHang.thanhTien || 0 : 0;
 
   // ── Form fields (tất cả nhập thủ công) ──
   const [ngayLap, setNgayLap] = useState(() =>
@@ -192,7 +193,11 @@ export default function XuatHoaDonPage() {
   const tienDu = chenhLech > 0 ? chenhLech : 0;
   const noConLai = chenhLech < 0 ? -chenhLech : 0;
   // Trạng thái thanh toán dựa trên tab hiện tại + chênh lệch
-  const trangThaiThanhToan: "tra_het" | "tra_het_du" | "cong_no" | "cong_no_du" =
+  const trangThaiThanhToan:
+    | "tra_het"
+    | "tra_het_du"
+    | "cong_no"
+    | "cong_no_du" =
     hinhThuc === "tra_het"
       ? chenhLech > 0
         ? "tra_het_du"
@@ -228,7 +233,11 @@ export default function XuatHoaDonPage() {
       ]);
 
       setDonHang(dh);
-      const lichArr: LichSanXuat[] = Array.isArray(lsArr) ? lsArr : (lsArr ? [lsArr] : []);
+      const lichArr: LichSanXuat[] = Array.isArray(lsArr)
+        ? lsArr
+        : lsArr
+          ? [lsArr]
+          : [];
       setLichSXs(lichArr);
       setAllHoaDons(Array.isArray(existingHDs) ? existingHDs : []);
       setMacBeTongs(Array.isArray(macList) ? macList : []);
@@ -418,7 +427,8 @@ export default function XuatHoaDonPage() {
         <div className={styles.headerBadge}>
           <FiFileText size={16} />
           {hinhThuc === "tra_het" ? "Trả hết" : "Công nợ"}
-          {existingCongNoHD.length > 0 && ` · Lần ${existingCongNoHD.length + 1}`}
+          {existingCongNoHD.length > 0 &&
+            ` · Lần ${existingCongNoHD.length + 1}`}
         </div>
       </div>
 
@@ -432,11 +442,15 @@ export default function XuatHoaDonPage() {
           <div className={styles.orderInfoGrid}>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Khách hàng</span>
-              <span className={styles.orderInfoValue}>{donHang.tenKhachHang}</span>
+              <span className={styles.orderInfoValue}>
+                {donHang.tenKhachHang}
+              </span>
             </div>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Địa chỉ giao</span>
-              <span className={styles.orderInfoValue}>{donHang.diaChiNhan || "—"}</span>
+              <span className={styles.orderInfoValue}>
+                {donHang.diaChiNhan || "—"}
+              </span>
             </div>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Mác bê tông</span>
@@ -446,7 +460,8 @@ export default function XuatHoaDonPage() {
                   const gia = getDonGiaMacCatalog();
                   return gia != null ? (
                     <span className={styles.orderInfoValueSub}>
-                      {" "}— {formatCurrency(gia)}/m³
+                      {" "}
+                      — {formatCurrency(gia)}/m³
                     </span>
                   ) : null;
                 })()}
@@ -454,7 +469,9 @@ export default function XuatHoaDonPage() {
             </div>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Khối lượng đặt</span>
-              <span className={styles.orderInfoValue}>{donHang.khoiLuongDat} m³</span>
+              <span className={styles.orderInfoValue}>
+                {donHang.khoiLuongDat} m³
+              </span>
             </div>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Đơn giá</span>
@@ -468,7 +485,8 @@ export default function XuatHoaDonPage() {
                       className={styles.orderInfoValueSub}
                       title="Đơn giá hiện tại trong bảng mác bê tông"
                     >
-                      {" "}(catalog: {formatCurrency(gia)}/m³)
+                      {" "}
+                      (catalog: {formatCurrency(gia)}/m³)
                     </span>
                   );
                 })()}
@@ -476,7 +494,9 @@ export default function XuatHoaDonPage() {
             </div>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Thành tiền</span>
-              <span className={styles.orderInfoValue}>{formatCurrency(donHang.thanhTien || 0)}</span>
+              <span className={styles.orderInfoValue}>
+                {formatCurrency(donHang.thanhTien || 0)}
+              </span>
             </div>
             <div className={styles.orderInfoItem}>
               <span className={styles.orderInfoLabel}>Hạng mục / Cấu kiện</span>
@@ -487,8 +507,13 @@ export default function XuatHoaDonPage() {
               <span className={styles.orderInfoValue}>{phuongPhapDoLabel}</span>
             </div>
             {existingCongNoHD.length > 0 && (
-              <div className={styles.orderInfoItem} style={{ gridColumn: "1 / -1" }}>
-                <span className={styles.orderInfoLabel}>Hóa đơn công nợ đã xuất</span>
+              <div
+                className={styles.orderInfoItem}
+                style={{ gridColumn: "1 / -1" }}
+              >
+                <span className={styles.orderInfoLabel}>
+                  Hóa đơn công nợ đã xuất
+                </span>
                 <div className={styles.congNoDaXuat}>
                   {existingCongNoHD.map((hd, i) => (
                     <div key={hd.id} className={styles.congNoItem}>
@@ -556,7 +581,9 @@ export default function XuatHoaDonPage() {
                 className={styles.formInput}
                 type="text"
                 value={buuVanChuyen}
-                onChange={(e) => setBuuVanChuyen(formatNumberInput(e.target.value))}
+                onChange={(e) =>
+                  setBuuVanChuyen(formatNumberInput(e.target.value))
+                }
                 placeholder="0"
               />
             </div>
@@ -568,7 +595,9 @@ export default function XuatHoaDonPage() {
                 className={styles.formInput}
                 type="text"
                 value={phiPhatSinh}
-                onChange={(e) => setPhiPhatSinh(formatNumberInput(e.target.value))}
+                onChange={(e) =>
+                  setPhiPhatSinh(formatNumberInput(e.target.value))
+                }
                 placeholder="0"
               />
             </div>
@@ -607,8 +636,8 @@ export default function XuatHoaDonPage() {
               allHoaDons.length > 0 &&
               tongCong === 0 && (
                 <div className={styles.tongCongSuggest}>
-                  Tổng gốc lần 1: <strong>{formatCurrency(tongCongGoc)}</strong> ·
-                  Đã thanh toán:{" "}
+                  Tổng gốc lần 1: <strong>{formatCurrency(tongCongGoc)}</strong>{" "}
+                  · Đã thanh toán:{" "}
                   <strong>{formatCurrency(daThanhToanTruoc)}</strong> → Còn lại:{" "}
                   <strong>
                     {formatCurrency(
@@ -640,7 +669,11 @@ export default function XuatHoaDonPage() {
                   {hinhThuc === "cong_no" && (
                     <span
                       className={styles.formLabelSub}
-                      style={{ marginLeft: 6, fontWeight: 400, color: "#64748b" }}
+                      style={{
+                        marginLeft: 6,
+                        fontWeight: 400,
+                        color: "#64748b",
+                      }}
                     >
                       (trả trước một phần)
                     </span>
@@ -650,11 +683,14 @@ export default function XuatHoaDonPage() {
                   className={styles.formInput}
                   type="text"
                   value={soTienTra}
-                  onChange={(e) => setSoTienTra(formatNumberInput(e.target.value))}
+                  onChange={(e) =>
+                    setSoTienTra(formatNumberInput(e.target.value))
+                  }
                   placeholder={formatNumberInput(tongCong)}
                 />
                 <span className={styles.formHint}>
-                  Tổng cộng phải trả: <strong>{formatCurrency(tongCong)}</strong>
+                  Tổng cộng phải trả:{" "}
+                  <strong>{formatCurrency(tongCong)}</strong>
                 </span>
               </div>
               {/* Tab trả hết + dư */}
@@ -871,7 +907,10 @@ export default function XuatHoaDonPage() {
               </div>
             ) : (
               xeTheoTram.map((xe, idx) => (
-                <div key={`${xe.tram}-${idx}`} className={styles.xeTheoTramItem}>
+                <div
+                  key={`${xe.tram}-${idx}`}
+                  className={styles.xeTheoTramItem}
+                >
                   <div className={styles.xeTheoTramHeader}>
                     <FiTruck size={16} />
                     <span className={styles.xeTheoTramLabel}>
