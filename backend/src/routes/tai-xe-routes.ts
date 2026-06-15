@@ -534,12 +534,12 @@ router.post(
         return;
       }
 
-      // Kiểm tra đơn đang ở trạng thái đang giao hoặc chờ giao
+      // Kiểm tra đơn đang ở trạng thái đang giao hoặc đã giao (tài xế trộn lại khi đang/đã giao)
       if (
         donHang[0].trangThaiDon !== "dang_giao" &&
-        donHang[0].trangThaiDon !== "dang_san_xuat"
+        donHang[0].trangThaiDon !== "da_giao"
       ) {
-        res.status(400).json({ success: false, message: "Chỉ có thể trộn lại khi đơn đang ở trạng thái đang giao hoặc chờ giao" });
+        res.status(400).json({ success: false, message: "Chỉ có thể trộn lại khi đơn đang giao hoặc đã giao" });
         return;
       }
 
@@ -605,16 +605,45 @@ router.post(
         }
       );
 
-      // Trộn lại: xóa TẤT CẢ lịch sản xuất của đơn hàng (không phụ thuộc trạm)
-      // để điều phối tạo lịch sản xuất mới hoàn toàn cho cả đơn.
-      await query(
-        `DELETE FROM LichSanXuat WHERE idDonHang = @idDonHang`,
-        { idDonHang }
-      );
+      // Trộn lại: KHÔNG xóa lịch sản xuất, chỉ reset các cột sản xuất/giao
+      // của trạm được trộn lại về trạng thái "chưa sản xuất" để kho có thể SX lại.
+      // Các trạm khác (không bị trộn lại) giữ nguyên.
+      if (idLichSanXuat != null) {
+        await query(
+          `UPDATE LichSanXuat
+              SET trangThai = N'chua_san_xuat',
+                  trangThaiGiao = NULL,
+                  khoiLuongDaTron = NULL,
+                  thoiGianBatDauDo = NULL,
+                  ngayXacNhanGiao = NULL,
+                  ghiChuXe = NULL,
+                  idXe = NULL,
+                  idTaiXe = NULL,
+                  bienSoXe = NULL
+            WHERE id = @idLichSanXuat AND idDonHang = @idDonHang`,
+          { idLichSanXuat, idDonHang }
+        );
+      } else {
+        // Backward compat: không truyền idLichSanXuat → reset toàn bộ lịch của đơn
+        await query(
+          `UPDATE LichSanXuat
+              SET trangThai = N'chua_san_xuat',
+                  trangThaiGiao = NULL,
+                  khoiLuongDaTron = NULL,
+                  thoiGianBatDauDo = NULL,
+                  ngayXacNhanGiao = NULL,
+                  ghiChuXe = NULL,
+                  idXe = NULL,
+                  idTaiXe = NULL,
+                  bienSoXe = NULL
+            WHERE idDonHang = @idDonHang`,
+          { idDonHang }
+        );
+      }
 
-      // Reset đơn về trạng thái chờ tạo lịch sản xuất
+      // Đặt trạng thái đơn về "đang sản xuất" để kho/điều phối xác nhận SX lại
       await query(
-        `UPDATE DonHang SET trangThaiDon = N'da_duyet', ngayCapNhat = ${vnNow()} WHERE id = @id`,
+        `UPDATE DonHang SET trangThaiDon = N'dang_san_xuat', ngayCapNhat = ${vnNow()} WHERE id = @id`,
         { id: idDonHang }
       );
 
@@ -622,7 +651,7 @@ router.post(
       const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
       await ghiNhatKy(req.user.id, 'TRON_LAI', 'DonHang', idDonHang,
         JSON.stringify({ trangThaiDon: 'dang_giao' }),
-        JSON.stringify({ trangThaiDon: 'da_duyet', lyDo, idLichSanXuat, tenTram }),
+        JSON.stringify({ trangThaiDon: 'dang_san_xuat', lyDo, idLichSanXuat, tenTram }),
         ip);
 
       // Thông báo cho điều phối
@@ -642,7 +671,7 @@ router.post(
 
       res.json({
         success: true,
-        message: "Đã xóa toàn bộ lịch sản xuất của đơn hàng. Đơn hàng quay về bước tạo lịch sản xuất mới cho tất cả trạm.",
+        message: "Đã trộn lại. Lịch sản xuất của trạm này được reset để kho/điều phối xác nhận sản xuất lại.",
         data: updated,
       });
     } catch (error) {

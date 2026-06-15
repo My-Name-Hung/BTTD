@@ -27,7 +27,7 @@ interface LichSanXuatWithDonHang extends LichSanXuat {
 router.get(
   "/lich-san-xuat",
   authMiddleware,
-  requireRole("tram_tron", "admin", "giam_doc_kinh_doanh"),
+  requireRole("tram_tron", "admin", "giam_doc_kinh_doanh", "dieu_phoi"),
   async (req: AuthRequest, res: Response) => {
     try {
       const page = parseInt(String(req.query.page || "1"), 10);
@@ -36,13 +36,14 @@ router.get(
 
       const isAdmin = req.user?.vaiTro === "admin";
       const isGiamDoc = req.user?.vaiTro === "giam_doc_kinh_doanh";
+      const isDieuPhoi = req.user?.vaiTro === "dieu_phoi";
       const idTram = req.user?.idTramTron ?? null;
 
       let whereClause = "";
       let params: Record<string, any> = { offset, limit };
 
-      // Admin và Giám đốc kinh doanh xem tất cả trạm, không yêu cầu idTramTron
-      const xemTatCa = isAdmin || isGiamDoc;
+      // Admin, Giám đốc kinh doanh, Điều phối: xem tất cả trạm, không yêu cầu idTramTron
+      const xemTatCa = isAdmin || isGiamDoc || isDieuPhoi;
       if (!xemTatCa && !idTram) {
         res
           .status(403)

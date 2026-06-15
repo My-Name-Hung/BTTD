@@ -200,6 +200,28 @@
   color: var(--color-text-secondary);
 }
 
+/* Inline error cho input vượt ngưỡng */
+.formInputError,
+.formInputError:focus {
+  border-color: #f44336;
+  background: #fff5f5;
+  box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.12);
+}
+
+.formError {
+  font-size: 12px;
+  color: #f44336;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.formError::before {
+  content: "⚠";
+  font-size: 13px;
+}
+
 /* ── Trạm trộn read-only (user tram_tron) ── */
 .tramTronReadonly {
   display: flex;

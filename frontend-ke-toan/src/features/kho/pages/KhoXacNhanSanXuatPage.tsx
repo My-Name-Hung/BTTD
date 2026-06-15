@@ -187,6 +187,11 @@ export default function KhoXacNhanSanXuatPage() {
   const khoiLuongBanDau = donHang?.khoiLuongDat || 0;
   const khoiLuongDaTronSo = parseFloat(khoiLuongDaTron) || 0;
   const khoiLuongConLai = Math.max(0, khoiLuongBanDau - tongKhoiLuongDaTron);
+  // Inline validation: số khối nhập vượt quá số khối còn lại
+  const khoiLuongVuot =
+    khoiLuongDaTronSo > 0 && khoiLuongDaTronSo > khoiLuongConLai
+      ? khoiLuongDaTronSo - khoiLuongConLai
+      : 0;
 
   // Chỉ admin mới được phép chọn trạm (khi đơn có nhiều trạm).
   // User tram_tron thì trạm đã được auto-fill cứng → không hiển thị select.
@@ -215,9 +220,12 @@ export default function KhoXacNhanSanXuatPage() {
       return;
     }
 
-    if (parseFloat(khoiLuongDaTron) > khoiLuongBanDau) {
+    if (
+      khoiLuongDaTronSo > 0 &&
+      khoiLuongDaTronSo > khoiLuongConLai
+    ) {
       showToast(
-        "Số khối đã trộn không được lớn hơn khối lượng đặt hàng",
+        `Số khối đã trộn vượt quá số khối còn lại (${khoiLuongConLai} m³)`,
         "error",
       );
       return;
@@ -368,7 +376,9 @@ export default function KhoXacNhanSanXuatPage() {
                 Số khối đã trộn (m³) <span className={styles.required}>*</span>
               </label>
               <input
-                className={styles.formInput}
+                className={`${styles.formInput} ${
+                  khoiLuongVuot > 0 ? styles.formInputError : ""
+                }`}
                 type="number"
                 value={khoiLuongDaTron}
                 onChange={(e) => setKhoiLuongDaTron(e.target.value)}
@@ -377,16 +387,26 @@ export default function KhoXacNhanSanXuatPage() {
                 max={khoiLuongConLai || khoiLuongBanDau}
                 step="0.5"
                 disabled={canChonTram && !idLichSanXuat}
+                aria-invalid={khoiLuongVuot > 0}
               />
-              <span className={styles.formHint}>
-                Khối lượng đặt: {khoiLuongBanDau} m³ · Tổng đã trộn:{" "}
-                <strong>{tongKhoiLuongDaTron} m³</strong> · Còn lại:{" "}
-                <strong
-                  style={{ color: khoiLuongConLai > 0 ? "#f59e0b" : "#10b981" }}
-                >
-                  {khoiLuongConLai} m³
-                </strong>
-              </span>
+              {khoiLuongVuot > 0 ? (
+                <span className={styles.formError}>
+                  Số khối đã nhập vượt quá số khối còn lại{" "}
+                  <strong>
+                    (vượt {khoiLuongVuot} m³, tối đa {khoiLuongConLai} m³)
+                  </strong>
+                </span>
+              ) : (
+                <span className={styles.formHint}>
+                  Khối lượng đặt: {khoiLuongBanDau} m³ · Tổng đã trộn:{" "}
+                  <strong>{tongKhoiLuongDaTron} m³</strong> · Còn lại:{" "}
+                  <strong
+                    style={{ color: khoiLuongConLai > 0 ? "#f59e0b" : "#10b981" }}
+                  >
+                    {khoiLuongConLai} m³
+                  </strong>
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -481,7 +501,7 @@ export default function KhoXacNhanSanXuatPage() {
             type="button"
             className={styles.btnSubmit}
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || khoiLuongVuot > 0}
           >
             {submitting ? (
               <Loading text="Đang xử lý..." />

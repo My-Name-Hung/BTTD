@@ -187,13 +187,14 @@ export default function TaiXeGiaoHangPage() {
     const idLichSanXuat = tronLaiTarget.idLichSanXuat;
     setTronLaiLoading(true);
     try {
-      // Reset trạng thái đơn về "dang_san_xuat" + lưu lịch sử (theo trạm)
+      // Giữ lại lịch sản xuất, reset SX của trạm này, đơn về "đang sản xuất"
+      // → kho/điều phối xác nhận SX lại tại trang lịch sản xuất
       await taiXeTronLai(idDonHang, lyDoTronLai.trim(), idLichSanXuat);
-      showToast("Đã trộn lại. Đang chuyển sang trang điều phối lịch sản xuất.");
+      showToast("Đã trộn lại. Đang chuyển sang trang lịch sản xuất để kho/điều phối xác nhận sản xuất lại.");
       setTronLaiModalOpen(false);
       setTronLaiTarget(null);
       setLyDoTronLai("");
-      navigate("/dieu-phoi/lich-san-xuat", {
+      navigate("/kho/lich-san-xuat", {
         state: { refresh: Date.now(), idDonHangTronLai: idDonHang },
       });
     } catch (err) {
@@ -527,7 +528,7 @@ export default function TaiXeGiaoHangPage() {
         <div style={{ marginBottom: 16 }}>
           <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 16 }}>
             Trộm lại cho <strong>{tronLaiTarget?.tenTram || "trạm"}</strong> · Tài xế <strong>{tronLaiTarget?.tenTaiXe || "—"}</strong>.
-            Đơn hàng sẽ được trả về bước <strong>tạo lịch sản xuất</strong> để điều phối lên lịch lại cho trạm này.
+            Lịch sản xuất của trạm này sẽ được reset về <strong>chưa sản xuất</strong>. Đơn hàng chuyển sang trạng thái <strong>đang sản xuất</strong> để kho/điều phối xác nhận sản xuất lại. Các trạm khác giữ nguyên.
           </p>
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>
@@ -561,7 +562,7 @@ export default function TaiXeGiaoHangPage() {
               color: "#ea580c",
             }}
           >
-            <strong>Lưu ý:</strong> Lịch sản xuất của trạm này sẽ được reset. Đơn hàng sẽ được chuyển sang trang điều phối để tạo lịch sản xuất mới cho trạm đó. Các trạm khác giữ nguyên trạng thái.
+            <strong>Lưu ý:</strong> Lịch sản xuất của trạm này sẽ được reset. Đơn hàng sẽ ở trạng thái <strong>đang sản xuất</strong> để kho/điều phối xác nhận SX lại tại trang lịch sản xuất. Các trạm khác giữ nguyên trạng thái.
           </div>
         </div>
       </Modal>

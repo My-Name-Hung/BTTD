@@ -68,7 +68,7 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron', '
 });
 
 // Lấy chi tiết đơn hàng - đơn có lịch sản xuất (bất kỳ trạng thái nào)
-router.get('/don-hang/:id', authMiddleware, requireRole('admin', 'tram_tron'), async (req: AuthRequest, res: Response<ApiResponse>) => {
+router.get('/don-hang/:id', authMiddleware, requireRole('admin', 'tram_tron', 'dieu_phoi'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const idDonHang = parseInt(req.params.id, 10);
 

@@ -206,6 +206,9 @@ export default function KhoLichSanXuatPage() {
   // Xác định vai trò user
   const isAdmin = userInfo.vaiTro === "admin";
   const isTramTron = userInfo.vaiTro === "tram_tron";
+  const isDieuPhoi = userInfo.vaiTro === "dieu_phoi";
+  // User có quyền xác nhận SX (admin/trạm trộn/điều phối)
+  const coTheXacNhanSX = isAdmin || isTramTron || isDieuPhoi;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -796,9 +799,10 @@ export default function KhoLichSanXuatPage() {
                             }
 
                             // Nếu chưa trộn gì (khoiLuongDaTron = 0): luôn hiển thị nút "SX xong"
-                            // (bất kể 1 trạm hay nhiều trạm - đây là lần xác nhận đầu tiên)
+                            // (bất kể 1 trạm hay nhiều trạm - đây là lần xác nhận đầu tiên
+                            // hoặc sau khi trộn lại)
                             if (khoiLuongDaTron === 0) {
-                              if (isAdmin || isTramTron) {
+                              if (coTheXacNhanSX) {
                                 return (
                                   <button
                                     className={`${styles.actionBtn} ${styles.actionBtnSuccess}`}
