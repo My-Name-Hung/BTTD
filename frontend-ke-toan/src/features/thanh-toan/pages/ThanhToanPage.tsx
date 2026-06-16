@@ -726,22 +726,12 @@ export default function ThanhToanPage() {
                   if (aTime !== bTime) return aTime - bTime;
                   return a.id - b.id;
                 });
-                const tongTatCa = modalHds.reduce(
-                  (sum, h) => sum + (h.tongCong || 0),
-                  0,
-                );
                 return (
                   <>
                     <div className={styles.modalSummary}>
                       <div className={styles.modalSummaryItem}>
                         <span>Số hóa đơn</span>
                         <strong>{modalHds.length}</strong>
-                      </div>
-                      <div className={styles.modalSummaryItem}>
-                        <span>Tổng tiền các HĐ</span>
-                        <strong className={styles.modalSummaryAmount}>
-                          {formatCurrency(tongTatCa)}
-                        </strong>
                       </div>
                     </div>
                     <div className={styles.hoaDonList}>
@@ -780,18 +770,6 @@ export default function ThanhToanPage() {
                               </span>
                             </div>
                             <div className={styles.hoaDonCardRight}>
-                              <span className={styles.hoaDonCardLabel}>
-                                Tổng cộng
-                              </span>
-                              <span className={styles.hoaDonCardTongCong}>
-                                {formatCurrency(hd.tongCong || 0)}
-                              </span>
-                              {(hd.soTienThanhToan || 0) > 0 && (
-                                <span className={styles.hoaDonCardDaTT}>
-                                  Khách trả:{" "}
-                                  {formatCurrency(hd.soTienThanhToan || 0)}
-                                </span>
-                              )}
                               <button
                                 className={styles.hoaDonCardBtn}
                                 onClick={() => {

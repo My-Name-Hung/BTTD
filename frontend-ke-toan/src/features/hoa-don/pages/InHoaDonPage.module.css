@@ -402,6 +402,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+.thanhTienNote {
+  font-size: 11px;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 2px;
+}
+
 .tdRightBold {
   text-align: right !important;
   font-weight: 700;

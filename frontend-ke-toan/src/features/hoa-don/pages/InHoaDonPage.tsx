@@ -445,9 +445,7 @@ export default function InHoaDonPage() {
     const soTienDu = laLoaiDu ? soTienDuFromBackend : 0;
     return {
       id: item.id,
-      label: `Lần ${
-        debtHoaDons.findIndex((d) => d.id === item.id) + 1
-      }`,
+      label: `Lần ${debtHoaDons.findIndex((d) => d.id === item.id) + 1}`,
       // amount = tổng KH trả trong lần (gồm dư nếu có)
       amount: soTienThucTra,
       soTienThucTra,
@@ -464,9 +462,15 @@ export default function InHoaDonPage() {
     0,
   );
   // (tongNghiaVu đã được tính ở trên, dùng cho cả tienDuCuoi lẫn phần hiển thị)
-  // Số tiền dư cuối cùng = tổng thực khách đã trả - tổng nghĩa vụ đơn hàng
-  // (chỉ > 0 khi loại thanh toán cuối cùng là "cong_no_du" / "tra_het_du")
-  const tienDuCuoi = Math.max(0, tongDaThanhToanToanBo - tongNghiaVu);
+  // Số tiền dư cuối cùng = lấy thẳng từ hd.soTienDu (HĐ hiện tại) để đảm bảo
+  // khớp tuyệt đối với dòng "Số tiền dư" trong THÔNG TIN THANH TOÁN của cùng hóa đơn.
+  // Lý do không dùng "tongDaThanhToanToanBo - tongNghiaVu":
+  //   tongNghiaVu ở trên có thể = tongNghiaVuTinhTuThanhPhan (MAX các thành phần)
+  //   và nếu HĐ lần đầu bị backend lưu tienBeTong theo phân bổ tỷ lệ (chia nhỏ),
+  //   MAX tienBeTong sẽ ra con số chia tỷ lệ → tienDuCuoi bị sai lớn.
+  // Đồng thời tổng kết chỉ hiển thị 1 dòng "SỐ TIỀN DƯ" duy nhất từ HĐ cuối
+  // (vì dư chỉ phát sinh khi tất toán), nên dùng hd.soTienDu là chính xác.
+  const tienDuCuoi = Math.max(0, Number(hd.soTienDu) || 0);
   // Số tiền thực tế khách trả kỳ này (lưu trong HoaDon.soTienThanhToan).
   // Với HĐ trả hết dư / công nợ dư, soTienThanhToan = tổng khách trả GỒM CẢ DƯ.
   // Khai báo sớm để dùng cho cả daThanhToanTruoc (fallback) lẫn phần
@@ -500,8 +504,10 @@ export default function InHoaDonPage() {
   const daThanhToanTruocFromList = debtInvoiceSummary
     .slice(0, currentDebtIndex >= 0 ? currentDebtIndex : 0)
     .reduce((sum, item) => sum + item.amount, 0);
-  const daThanhToanTruocFromDon =
-    Math.max(0, (hd.donHangDaThanhToan ?? 0) - phanTruNghiaVuKyNay);
+  const daThanhToanTruocFromDon = Math.max(
+    0,
+    (hd.donHangDaThanhToan ?? 0) - phanTruNghiaVuKyNay,
+  );
   const daThanhToanTruoc =
     daThanhToanTruocFromList > 0 || debtInvoiceSummary.length > 0
       ? daThanhToanTruocFromList
@@ -543,12 +549,11 @@ export default function InHoaDonPage() {
     hd.loaiThanhToan === "tra_het" ||
     hd.loaiThanhToan === "tra_het_du" ||
     hd.loaiThanhToan === "cong_no_du" ||
-    (isCongNo &&
-      soTienTraKyNay >= Math.max(0, tongNghiaVu - daThanhToanTruoc));
+    (isCongNo && soTienTraKyNay >= Math.max(0, tongNghiaVu - daThanhToanTruoc));
   const isCongNoChuaTatToan = isCongNo && !isDaTatToan;
   const tongCongHienThi = isCongNoChuaTatToan
     ? soTienTraKyNay
-    : (hd.tongCong || 0);
+    : hd.tongCong || 0;
   // Tiền bê tông hiển thị: nếu là công nợ chưa tất toán → ẩn, dùng soTienTraKyNay;
   // ngược lại hiển thị giá trị đầy đủ.
   // Ưu tiên: donHang.thanhTien (giá gốc đơn) > allHoaDons[0].tienBeTong (HĐ đầu)
@@ -591,8 +596,7 @@ export default function InHoaDonPage() {
   // chính — đã tách rõ với phần trừ nghĩa vụ. Cũ hiển thị tienDuKyNay
   // (= phanTruNghiaVu - phanConLaiCanTra) sẽ = 0 với HĐ đã tất toán
   // đúng bằng phanConLaiCanTra, che mất phần dư user thực sự nhập.
-  const coHienThiDu =
-    laLoaiDuHienTai && soTienDuKyNay > 0;
+  const coHienThiDu = laLoaiDuHienTai && soTienDuKyNay > 0;
 
   // Helper: số tiền hiển thị ở dòng "SỐ TIỀN TRẢ KỲ NÀY" / "TỔNG CỘNG"
   // - Trả hết dư (tra_het_du): hiển thị tongNghiaVu (= 1.150.000), dư riêng = 50.000
@@ -904,8 +908,7 @@ export default function InHoaDonPage() {
               </tr>
               <tr>
                 <td colSpan={6} className={styles.soTienChu}>
-                  Số tiền bằng chữ:{" "}
-                  {numberToVietnamese(soTienHienThiTongCong)}
+                  Số tiền bằng chữ: {numberToVietnamese(soTienHienThiTongCong)}
                 </td>
               </tr>
             </tfoot>
@@ -936,7 +939,6 @@ export default function InHoaDonPage() {
                   ))}
                 </tbody>
                 <tfoot>
-
                   {/* Tổng thực khách đã trả (sum soTienThanhToan tất cả lần) */}
                   <tr className={styles.totalRow}>
                     <td colSpan={2} className={styles.tdRightBold}>
@@ -984,14 +986,10 @@ export default function InHoaDonPage() {
                     (công nợ lần cuối có dư, công nợ dư, hoặc trả hết dư) */}
                 {coHienThiDu && (
                   <div className={styles.infoRow}>
-                    <span
-                      className={`${styles.infoLabel} ${styles.duLabel}`}
-                    >
+                    <span className={`${styles.infoLabel} ${styles.duLabel}`}>
                       Số tiền dư:
                     </span>
-                    <span
-                      className={`${styles.infoValue} ${styles.duValue}`}
-                    >
+                    <span className={`${styles.infoValue} ${styles.duValue}`}>
                       {formatCurrency(soTienHienThiDu)}
                     </span>
                   </div>
@@ -1023,7 +1021,16 @@ export default function InHoaDonPage() {
                   <span className={styles.infoValue}>
                     {formatCurrency(
                       isCongNoChuaTatToan
-                        ? Math.max(0, hd.donHangConLai || 0)
+                        ? Math.max(
+                            0,
+                            hd.donHangConLai ||
+                              Math.max(
+                                0,
+                                tongNghiaVu -
+                                  (daThanhToanTruoc + soTienTraKyNay),
+                              ) ||
+                              0,
+                          )
                         : 0,
                     )}
                   </span>
