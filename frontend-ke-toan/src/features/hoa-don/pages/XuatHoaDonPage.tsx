@@ -342,6 +342,17 @@ export default function XuatHoaDonPage() {
     try {
       const loaiTT = trangThaiThanhToan;
 
+      // Tách rõ phần khách trả cho NGHĨA VỤ và phần DƯ riêng:
+      // - soTienThanhToanTruoc = phần thực tế dùng để trừ nghĩa vụ
+      //   (= min(soTienTra, tongCong)). Nếu khách trả vượt, phần vượt
+      //   sẽ thành dư, KHÔNG cộng dồn vào soTienThanhToanTruoc.
+      // - soTienDu = phần vượt còn lại (chỉ > 0 khi soTienTra > tongCong)
+      //   Lưu riêng để khi in hóa đơn và tính "tổng đã thanh toán" cho
+      //   cả đơn hàng, frontend cộng dồn chính xác tổng "phần thực trừ
+      //   nghĩa vụ" (không gồm dư) → tienDuCuoi khớp với thực tế khách trả.
+      const phanTruNghiaVu = Math.min(soTienTraNum, tongCong);
+      const phanDuRieng = Math.max(0, soTienTraNum - tongCong);
+
       const hoaDon = await taoHoaDon({
         idDonHang: donHang.id,
         loaiThanhToan: loaiTT,
@@ -360,8 +371,10 @@ export default function XuatHoaDonPage() {
         // vì thông tin xe đã có riêng ở LichSanXuat và InHoaDonPage hiển thị từ đó.
         ghiChu: ghiChu,
         hanTraCongNo: hinhThuc === "cong_no" ? hanTraCongNo : undefined,
-        soTienThanhToanTruoc: soTienTraNum,
-        soTienDu: tienDu,
+        // Phần thực trừ nghĩa vụ (đã trừ dư) — KHÔNG gồm phần vượt
+        soTienThanhToanTruoc: phanTruNghiaVu,
+        // Phần dư riêng khi khách trả vượt tổng cộng
+        soTienDu: phanDuRieng,
         soTienDuSuDung: 0,
       });
 

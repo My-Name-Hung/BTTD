@@ -480,7 +480,7 @@ export default function InHoaDonPage() {
     .slice(0, currentDebtIndex >= 0 ? currentDebtIndex : 0)
     .reduce((sum, item) => sum + item.amount, 0);
   const daThanhToanTruocFromDon =
-    Math.max(0, (hd.donHangDaThanhToan ?? 0) - soTienTraKyNay);
+    Math.max(0, (hd.donHangDaThanhToan ?? 0) - phanTruNghiaVuKyNay);
   const daThanhToanTruoc =
     daThanhToanTruocFromList > 0 || debtInvoiceSummary.length > 0
       ? daThanhToanTruocFromList
@@ -551,28 +551,30 @@ export default function InHoaDonPage() {
     hd.phuongThucThanhToan === "chuyen_khoan" ? "Chuyển khoản" : "Tiền mặt";
 
   // Helper: xác định hóa đơn có hiển thị dòng DƯ riêng hay không
+  // Dùng soTienDuKyNay (phần dư user nhập riêng từ form xuất HĐ) làm nguồn
+  // chính — đã tách rõ với phần trừ nghĩa vụ. Cũ hiển thị tienDuKyNay
+  // (= phanTruNghiaVu - phanConLaiCanTra) sẽ = 0 với HĐ đã tất toán
+  // đúng bằng phanConLaiCanTra, che mất phần dư user thực sự nhập.
   const coHienThiDu =
-    (isCongNoDu && tienDuKyNay > 0) ||
-    (isCongNo && isLastDebtInvoice && tienDuKyNay > 0) ||
-    (hd.loaiThanhToan === "tra_het_du" &&
-      (hd.soTienThanhToan || 0) > (hd.tongCong || 0));
+    laLoaiDuHienTai && soTienDuKyNay > 0;
+
   // Helper: số tiền hiển thị ở dòng "SỐ TIỀN TRẢ KỲ NÀY" / "TỔNG CỘNG"
-  // - Trả hết dư: hiển thị tongCong (= 350.000), dư riêng = 50.000
-  // - Công nợ lần cuối dư: hiển thị phanConLaiCanTra (= 200.000), dư riêng = 100.000
-  // - Công nợ chưa tất toán: hiển thị soTienTraKyNay (= 150.000), không có dòng dư
-  // - Trả hết / tất toán đủ: hiển thị tongCong (= 350.000), không có dòng dư
+  // - Trả hết dư: hiển thị tongNghiaVu (= 500.000), dư riêng = 100.000
+  // - Công nợ lần cuối dư: hiển thị phanConLaiCanTra (= 400.000), dư riêng = 100.000
+  // - Công nợ chưa tất toán: hiển thị soTienTraKyNay (= 200.000), không có dòng dư
+  // - Trả hết / tất toán đủ (không dư): hiển thị tongCong (= 600.000), không có dòng dư
   const soTienHienThiTongCong = coHienThiDu
     ? hd.loaiThanhToan === "tra_het_du"
-      ? hd.tongCong || 0
-      : soTienTraTatToan
+      ? tongNghiaVu
+      : phanConLaiCanTra
     : isCongNoChuaTatToan
       ? soTienTraKyNay
       : tongCongHienThi;
   // Helper: số tiền ở dòng DƯ riêng
-  // - tra_het_du: lấy từ soTienDuKyNay (đã tính ở trên)
-  // - cong_no / cong_no_du: tienDuKyNay = phanTruNghiaVuKyNay - phanConLaiCanTra
-  const soTienHienThiDu =
-    hd.loaiThanhToan === "tra_het_du" ? soTienDuKyNay : tienDuKyNay;
+  // Lấy từ soTienDuKyNay (phần dư user nhập riêng) — KHÔNG dùng tienDuKyNay
+  // (= phanTruNghiaVu - phanConLaiCanTra) vì giá trị này = 0 khi khách
+  // trả đúng bằng phanConLaiCanTra dù thực tế có dư.
+  const soTienHienThiDu = soTienDuKyNay;
 
   // Phương pháp đổ label
   const phuongPhapDoLabel = (() => {
