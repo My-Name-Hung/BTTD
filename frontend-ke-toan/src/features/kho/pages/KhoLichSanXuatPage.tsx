@@ -115,6 +115,9 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
     }
 
       // Thêm trạm trộn vào danh sách - mỗi dòng LichSanXuat là 1 trạm
+    // Lọc bỏ các dòng đã bị gỡ khỏi đơn (idTramTron = NULL) - những dòng này
+    // không còn thuộc đơn nữa, hiển thị sẽ gây nhiễu (vd: trạm "chưa giao"
+    // dù đã gỡ).
     if (item.idTramTron && item.tenTram) {
       // Tránh trùng lặp trạm
       if (!group.tramTrons.find(t => t.id === item.idTramTron)) {

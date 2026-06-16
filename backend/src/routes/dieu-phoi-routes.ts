@@ -12,6 +12,7 @@ import {
   xacNhanDaGiao,
 } from '../services/dieu-phoi-service';
 import { ghiNhatKy } from '../services/access-history-service';
+import { guiThongBao } from '../services/thong-bao-service';
 import { query, vnNow } from '../config/database';
 
 const router = Router();
@@ -142,9 +143,16 @@ router.delete('/:id', authMiddleware, requireRole('admin', 'dieu_phoi'), async (
   }
 });
 
-/** Gỡ trạm trộn khỏi lịch sản xuất - giữ nguyên record, chỉ set idTramTron = NULL
- *  Dùng khi sửa lịch: bỏ chọn trạm khỏi đơn nhưng không muốn mất lịch sản xuất
- *  Giữ nguyên tài xế, xe, biển số, các thông tin khác
+/**
+ * Gỡ trạm trộn khỏi lịch sản xuất - reset sạch cờ giao/SX của trạm và
+ * tự động tổng hợp lại trạng thái đơn hàng cho khớp với các trạm còn lại.
+ *
+ * Lý do reset sạch (không chỉ set idTramTron = NULL):
+ *   - Trước đây chỉ set idTramTron = NULL, giữ nguyên trangThaiGiao/trangThai
+ *     → frontend vẫn coi trạm là "đang giao" / "đã giao" → đơn kẹt ở "đang giao"
+ *     dù các trạm khác đã giao xong (vd: A 5m³ + B 5m³ = đủ 10m³, C bị gỡ).
+ *   - Sau khi gỡ, trạm đó không còn thuộc đơn nữa, phải xóa sạch mọi dấu vết
+ *     giao hàng/SX để không ảnh hưởng đến việc tổng hợp và hiển thị.
  */
 router.post('/go-tram-tron/:id', authMiddleware, requireRole('admin', 'dieu_phoi', 'giam_doc_kinh_doanh'), async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
@@ -154,23 +162,111 @@ router.post('/go-tram-tron/:id', authMiddleware, requireRole('admin', 'dieu_phoi
       return;
     }
     // Lấy thông tin lịch cũ trước khi gỡ
-    const [ls] = await query<{ idDonHang: number; idTramTron: number | null }>(
-      `SELECT idDonHang, idTramTron FROM LichSanXuat WHERE id = @id`,
+    const [ls] = await query<{ idDonHang: number; idTramTron: number | null; trangThaiGiao: string | null; khoiLuongDaTron: number | null; khoiLuongGiaoThucTe: number | null }>(
+      `SELECT idDonHang, idTramTron, trangThaiGiao, khoiLuongDaTron, khoiLuongGiaoThucTe FROM LichSanXuat WHERE id = @id`,
       { id },
     );
     if (!ls) {
       res.status(404).json({ success: false, message: 'Không tìm thấy lịch sản xuất' });
       return;
     }
-    // Chỉ set idTramTron = NULL - giữ nguyên tài xế, xe, biển số và các thông tin khác
+
+    // Lưu lại KL đã giao của trạm bị gỡ (nếu có) - dùng cho tổng hợp lại đơn
+    const klGiaoCuaTramBiGo = ls.khoiLuongGiaoThucTe || 0;
+    const tramBiGoDaGiao = ls.trangThaiGiao === 'da_giao';
+
+    // Reset sạch cờ giao/SX của trạm bị gỡ
     await query(
-      `UPDATE LichSanXuat SET idTramTron = NULL, ngayCapNhat = ${vnNow()} WHERE id = @id`,
+      `UPDATE LichSanXuat SET
+         idTramTron = NULL,
+         trangThai = N'chua_san_xuat',
+         trangThaiGiao = NULL,
+         khoiLuongDaTron = NULL,
+         khoiLuongGiaoThucTe = NULL,
+         ngayXacNhanGiao = NULL,
+         ngayCapNhat = ${vnNow()}
+       WHERE id = @id`,
       { id },
     );
+
+    // Tổng hợp lại trạng thái đơn hàng sau khi gỡ trạm
+    // (logic dùng chung - copy y hệt trong tai-xe-routes và kho-routes)
+    let trangThaiDonMoi: string | null = null;
+    try {
+      const tramStatus = await query<{ tongTram: number; tramDaGiao: number; tramDaXong: number; tongKLGiao: number; tongKLDat: number }>(
+        `SELECT
+            (SELECT COUNT(*) FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron IS NOT NULL) as tongTram,
+            (SELECT COUNT(*) FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron IS NOT NULL AND trangThaiGiao = N'da_giao') as tramDaGiao,
+            (SELECT COUNT(*) FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron IS NOT NULL AND trangThai = N'da_xong') as tramDaXong,
+            (SELECT ISNULL(SUM(khoiLuongGiaoThucTe), 0) FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron IS NOT NULL AND trangThaiGiao = N'da_giao') as tongKLGiao,
+            (SELECT ISNULL(khoiLuongDat, 0) FROM DonHang WHERE id = @idDonHang) as tongKLDat`,
+        { idDonHang: ls.idDonHang },
+      );
+      const ts = tramStatus[0];
+      const tongTramConLai = ts?.tongTram || 0;
+      const tramDaGiao = ts?.tramDaGiao || 0;
+      const tramDaXong = ts?.tramDaXong || 0;
+      const tongKLGiao = ts?.tongKLGiao || 0;
+      const tongKLDat = ts?.tongKLDat || 0;
+
+      // Đếm tổng KL đã giao thực tế = các trạm còn lại + trạm vừa bị gỡ (nếu nó đã giao)
+      const tongKLGiaoTinhCaTramBiGo = tongKLGiao + (tramBiGoDaGiao ? klGiaoCuaTramBiGo : 0);
+
+      if (tongTramConLai === 0) {
+        // Không còn trạm nào gắn với đơn
+        if (tramBiGoDaGiao && tongKLGiaoTinhCaTramBiGo >= tongKLDat && tongKLDat > 0) {
+          // Trạm bị gỡ đã giao đủ KL đơn → đơn đã giao
+          trangThaiDonMoi = 'da_giao';
+        } else if (tramDaXong === 0) {
+          // Chưa có trạm nào SX xong → về đang sản xuất
+          trangThaiDonMoi = 'dang_san_xuat';
+        }
+        // Ngược lại: giữ nguyên (an toàn, không ép)
+      } else if (tramDaGiao >= tongTramConLai) {
+        // Tất cả trạm còn lại đều đã giao
+        trangThaiDonMoi = 'da_giao';
+      }
+      // Ngược lại: giữ nguyên trạng thái đơn (có thể là dang_giao hoặc da_giao)
+
+      if (trangThaiDonMoi) {
+        const setExtras: string[] = [`trangThaiDon = N'${trangThaiDonMoi}'`, `ngayCapNhat = ${vnNow()}`];
+        if (trangThaiDonMoi === 'da_giao') {
+          setExtras.push(`khoiLuongThucTe = @kl`, `ngayGiao = ${vnNow()}`);
+        }
+        await query(
+          `UPDATE DonHang SET ${setExtras.join(', ')} WHERE id = @idDonHang`,
+          {
+            idDonHang: ls.idDonHang,
+            kl: tongKLGiaoTinhCaTramBiGo || null,
+          },
+        );
+        const [don] = await query<{ maDonHang: string }>(
+          `SELECT maDonHang FROM DonHang WHERE id = @id`,
+          { id: ls.idDonHang },
+        );
+        if (don) {
+          guiThongBao("ORDER_STATUS_CHANGED", {
+            id: ls.idDonHang,
+            maDonHang: don.maDonHang,
+            trangThai: trangThaiDonMoi,
+            trangThaiLabel: trangThaiDonMoi === 'da_giao' ? 'Đã giao' : 'Đang sản xuất',
+          });
+        }
+      }
+    } catch (tongHopErr) {
+      // Lỗi tổng hợp không chặn response - gỡ trạm vẫn thành công
+      console.error('[go-tram-tron] Lỗi tổng hợp trạng thái đơn:', tongHopErr);
+    }
+
     res.json({
       success: true,
-      message: 'Đã gỡ trạm trộn khỏi lịch sản xuất (giữ nguyên lịch, giữ nguyên tài xế)',
-      data: { id, idDonHang: ls.idDonHang, idTramTronCu: ls.idTramTron },
+      message: 'Đã gỡ trạm trộn khỏi lịch sản xuất và tổng hợp lại trạng thái đơn',
+      data: {
+        id,
+        idDonHang: ls.idDonHang,
+        idTramTronCu: ls.idTramTron,
+        trangThaiDonMoi,
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi gỡ trạm trộn khỏi lịch sản xuất';

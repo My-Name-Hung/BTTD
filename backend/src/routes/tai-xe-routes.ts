@@ -440,12 +440,20 @@ router.put(
         const tramStatus = await query<any>(
           `SELECT
               (SELECT COUNT(*) FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron IS NOT NULL) as tongTram,
-              (SELECT COUNT(*) FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron IS NOT NULL AND trangThaiGiao = N'da_giao') as tramDaGiao`,
+              (SELECT COUNT(*) FROM LichSanXuat WHERE idDonHang = @idDonHang AND idTramTron IS NOT NULL AND trangThaiGiao = N'da_giao') as tramDaGiao,
+              (SELECT ISNULL(khoiLuongDat, 0) FROM DonHang WHERE id = @idDonHang) as khoiLuongDatDH`,
           { idDonHang }
         );
         const tongTram = tramStatus[0]?.tongTram || 0;
         const tramDaGiao = tramStatus[0]?.tramDaGiao || 0;
-        const tatCaTramDaGiao = tongTram > 0 && tramDaGiao >= tongTram;
+        const khoiLuongDatDH = Number(tramStatus[0]?.khoiLuongDatDH) || 0;
+        // Đơn hoàn tất giao khi:
+        //   - Có trạm và TẤT CẢ trạm còn lại đã giao, HOẶC
+        //   - Không còn trạm nào (đã gỡ hết) nhưng tổng KL đã giao >= KL đặt
+        //     (trường hợp điều phối gỡ trạm không giao, chỉ giữ trạm đã giao đủ)
+        const tatCaTramDaGiao =
+          (tongTram > 0 && tramDaGiao >= tongTram) ||
+          (tongTram === 0 && khoiLuongDatDH > 0 && (tongKLTong || 0) >= khoiLuongDatDH);
 
         // 4. Cập nhật DonHang theo kết quả tổng hợp
         if (tatCaTramDaGiao) {
