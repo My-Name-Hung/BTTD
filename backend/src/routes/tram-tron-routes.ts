@@ -321,6 +321,29 @@ router.put(
 
       const newTrangThai = conLai > 0 ? "dang_san_xuat" : "dang_giao";
 
+      // Nếu đơn đã sản xuất đủ khối lượng: tự động xóa các lịch sản xuất
+      // của các trạm chưa trộn gì (khoiLuongDaTron = 0 hoặc NULL) để đơn có thể
+      // chuyển sang giao hàng / nghiệm thu mà không bị kẹt bởi các trạm thừa.
+      let dsLichDaXoa: LichSanXuat[] = [];
+      if (conLai <= 0) {
+        dsLichDaXoa = await query<LichSanXuat[]>(
+          `SELECT * FROM LichSanXuat
+           WHERE idDonHang = @idDonHang
+             AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)
+             AND trangThai <> N'da_xong'`,
+          { idDonHang },
+        );
+        if (dsLichDaXoa.length > 0) {
+          await query(
+            `DELETE FROM LichSanXuat
+             WHERE idDonHang = @idDonHang
+               AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)
+               AND trangThai <> N'da_xong'`,
+            { idDonHang },
+          );
+        }
+      }
+
       await query(
         `UPDATE DonHang SET trangThaiDon = @trangThai, ngayCapNhat = ${vnNow()} WHERE id = @id`,
         { id: idDonHang, trangThai: newTrangThai },
@@ -346,12 +369,29 @@ router.put(
         ip,
       );
 
+      // Ghi nhật ký cho từng lịch sản xuất bị tự động xóa do đã đủ khối lượng
+      if (dsLichDaXoa.length > 0) {
+        for (const ls of dsLichDaXoa) {
+          await ghiNhatKy(
+            req.user?.id ?? 0,
+            "XOA",
+            "LichSanXuat",
+            ls.id,
+            JSON.stringify(ls),
+            JSON.stringify({ lyDo: "Đã đủ khối lượng đơn hàng - tự động xóa lịch thừa" }),
+            ip,
+          );
+        }
+      }
+
       res.json({
         success: true,
         message:
           conLai > 0
             ? `Đã xác nhận sản xuất xong. Còn lại ${conLai} m³, đơn tiếp tục ở trạng thái đang sản xuất.`
-            : "Xác nhận sản xuất xong thành công",
+            : dsLichDaXoa.length > 0
+              ? `Xác nhận sản xuất xong thành công. Đã tự động xóa ${dsLichDaXoa.length} lịch trạm thừa.`
+              : "Xác nhận sản xuất xong thành công",
         data: updatedDonHang,
       });
     } catch (error) {

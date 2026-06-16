@@ -117,6 +117,7 @@ interface LichSanXuatData {
   trangThaiGiao?: string | null;
   khoiLuongGiaoThucTe?: number | null;
   ngayXacNhanGiao?: string | null;
+  ghiChuXe?: string | null;
 }
 
 export default function KhoDonHangPage() {
@@ -460,6 +461,24 @@ export default function KhoDonHangPage() {
                       <span className={styles.tramRowLabel}>Giờ xuất bến:</span>
                       <span className={styles.tramRowValue}>{formatDateTime(ls.thoiGianXuatBen || "") || "—"}</span>
                     </div>
+                    <div className={styles.tramRow}>
+                      <span className={styles.tramRowLabel}>Khối lượng giao thực tế:</span>
+                      <span className={styles.tramRowValue}>
+                        {ls.khoiLuongGiaoThucTe ? `${ls.khoiLuongGiaoThucTe.toFixed(1)} m³` : "—"}
+                      </span>
+                    </div>
+                    <div className={styles.tramRow}>
+                      <span className={styles.tramRowLabel}>Ngày xác nhận giao:</span>
+                      <span className={styles.tramRowValue}>
+                        {formatDateTime(ls.ngayXacNhanGiao || "") || "—"}
+                      </span>
+                    </div>
+                    {ls.ghiChuXe && (
+                      <div className={`${styles.tramRow} ${styles.tramRowFull}`}>
+                        <span className={styles.tramRowLabel}>Ghi chú xe:</span>
+                        <span className={styles.tramRowValue}>{ls.ghiChuXe}</span>
+                      </div>
+                    )}
                     {ls.ghiChu && (
                       <div className={`${styles.tramRow} ${styles.tramRowFull}`}>
                         <span className={styles.tramRowLabel}>Ghi chú:</span>
