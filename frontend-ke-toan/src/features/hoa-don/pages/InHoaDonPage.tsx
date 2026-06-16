@@ -148,9 +148,11 @@ interface HoaDonData {
   chieuDaiBom?: number | null;
   kieuNoi?: "khong_dau" | "noi_dau" | "noi_dit" | null;
   chieuDaiNoi?: number | null;
-  // Tổng tiền gốc của đơn (thanhTien) và đã thanh toán (daThanhToan)
-  // để tính "ĐÃ THANH TOÁN (các lần trước)" ở công nợ
+  // Tổng tiền gốc của đơn (thanhTien), đơn giá gốc, đã thanh toán (daThanhToan)
+  // để hiển thị đúng "Thành tiền" bê tông gốc ở mọi lần HĐ (không bị
+  // phân bổ tỷ lệ nhỏ khi khách trả một phần).
   donHangThanhTien?: number;
+  donHangDonGia?: number;
   donHangDaThanhToan?: number;
   // Tổng nghĩa vụ GỐC của đơn tại thời điểm lập hóa đơn (lưu trong HoaDon.tongNghiaVuDon)
   // = tiền bê tông gốc + bv + pp - gt, đầy đủ cho mọi lần thanh toán
@@ -427,43 +429,27 @@ export default function InHoaDonPage() {
     (hd.donHangThanhTien ?? 0) ||
     (hd.thanhTien ?? 0) ||
     (hd.tongCong ?? 0);
-  // Tính lũy kế số tiền đã trừ nghĩa vụ qua từng lần HĐ, làm cơ sở
-  // xác định phanConLaiCanTruocKhiLap cho từng HĐ.
-  // Vì tongNghiaVu được tính từ MAX các thành phần (ổn định giữa các lần),
-  // nên ta dùng giá trị này làm chuẩn cho cả tính toán lũy kế.
-  const tongNghiaVuChuan = tongNghiaVu;
-  let luyKeDaTru = 0;
-  const debtInvoiceSummary = debtHoaDons.map((item, index) => {
+  // Tính bảng tổng hợp các lần thanh toán.
+  // amount = tổng tiền khách THỰC TRẢ trong lần đó (gồm cả dư nếu có).
+  // Đây là cách hiển thị "đã trả" cho từng lần, khớp với form xuất HĐ
+  // (Khách trả: 700.000 → bảng TỔNG HỢP Lần 2 = 700.000).
+  // SỐ TIỀN DƯ cuối cùng = tổng thực trả - tổng nghĩa vụ (chỉ > 0 khi dư).
+  const debtInvoiceSummary = debtHoaDons.map((item) => {
     const laLoaiDu =
       item.loaiThanhToan === "tra_het_du" ||
       item.loaiThanhToan === "cong_no_du";
     const soTienThucTra = item.soTienThanhToan || item.tongCong || 0;
     const soTienDuFromBackend = Number(item.soTienDu) || 0;
-    // Phần nghĩa vụ còn lại cần trả TRƯỚC khi lập HĐ này
-    // (= tongNghiaVu - lũy kế đã trừ nợ từ các HĐ trước).
-    const phanConLaiTruocKhiLap = Math.max(0, tongNghiaVuChuan - luyKeDaTru);
-    // soTienDu: ưu tiên backend, fallback tính từ soTienThucTra - phanConLaiTruocKhiLap
-    // (công thức chính xác cho cả HĐ cũ lẫn mới, vì phanConLaiTruocKhiLap
-    // = số tiền còn lại cần trả để tất toán, khách trả vượt phần này = dư).
-    const soTienDuFromCalc =
-      laLoaiDu && phanConLaiTruocKhiLap > 0
-        ? Math.max(0, soTienThucTra - phanConLaiTruocKhiLap)
-        : 0;
-    const soTienDu = laLoaiDu
-      ? (soTienDuFromBackend > 0 ? soTienDuFromBackend : soTienDuFromCalc)
-      : 0;
-    // Phần thực dùng để trừ nghĩa vụ = soTienThucTra - soTienDu
-    // (clamp tối đa bằng phanConLaiTruocKhiLap để tránh trường hợp
-    // khách trả nhiều hơn nghĩa vụ còn lại + đã có dư = bất thường).
-    const phanTruNo = laLoaiDu
-      ? Math.max(0, soTienThucTra - soTienDu)
-      : Math.min(soTienThucTra, phanConLaiTruocKhiLap);
-    luyKeDaTru += phanTruNo;
+    // Phần dư thực của lần này: ưu tiên backend, fallback = 0
+    // (công thức tienDuCuoi ở dưới sẽ tính dư cuối cùng tổng thể).
+    const soTienDu = laLoaiDu ? soTienDuFromBackend : 0;
     return {
       id: item.id,
-      label: `Lần ${index + 1}`,
-      // amount = phần thực dùng để trừ nghĩa vụ (KHÔNG bao gồm dư)
-      amount: phanTruNo,
+      label: `Lần ${
+        debtHoaDons.findIndex((d) => d.id === item.id) + 1
+      }`,
+      // amount = tổng KH trả trong lần (gồm dư nếu có)
+      amount: soTienThucTra,
       soTienThucTra,
       soTienDu,
       laLoaiDu,
@@ -564,24 +550,22 @@ export default function InHoaDonPage() {
     ? soTienTraKyNay
     : (hd.tongCong || 0);
   // Tiền bê tông hiển thị: nếu là công nợ chưa tất toán → ẩn, dùng soTienTraKyNay;
-  // ngược lại hiển thị giá trị đầy đủ (lấy từ lần đầu nếu là lần cuối công nợ).
+  // ngược lại hiển thị giá trị đầy đủ.
+  // Ưu tiên: donHang.thanhTien (giá gốc đơn) > allHoaDons[0].tienBeTong (HĐ đầu)
+  // > hd.tienBeTong (HĐ hiện tại, có thể đã chia tỷ lệ).
+  // Lý do: HĐ sau thường lưu tienBeTong theo phân bổ tỷ lệ (vd: lần 1 trả 200k
+  // của đơn 500k → tienBeTong = 434.782,61 thay vì 500.000). Lấy từ donHang
+  // hoặc HĐ đầu sẽ ra con số GỐC đúng.
+  const tienBeTongGoc =
+    hd.donHangThanhTien ||
+    (isLastDebtInvoice && allHoaDons.length > 0
+      ? allHoaDons[0].tienBeTong
+      : 0) ||
+    hd.tienBeTong ||
+    0;
   const tienBeTongHienThi = isCongNoChuaTatToan
     ? soTienTraKyNay
-    : isLastDebtInvoice && allHoaDons.length > 0
-      ? allHoaDons[0].tienBeTong || 0
-      : hd.tienBeTong || 0;
-  const buuVanChuyenHienThi =
-    isCongNoChuaTatToan
-      ? 0
-      : isLastDebtInvoice && allHoaDons.length > 0
-        ? allHoaDons[0].buuVanChuyen || 0
-        : hd.buuVanChuyen || 0;
-  const phiPhatSinhHienThi =
-    isCongNoChuaTatToan
-      ? 0
-      : isLastDebtInvoice && allHoaDons.length > 0
-        ? allHoaDons[0].phiPhatSinh || 0
-        : hd.phiPhatSinh || 0;
+    : tienBeTongGoc;
   // Phần nghĩa vụ tài chính CÒN LẠI cần trả để tất toán đơn hàng
   // (= tổng tiền gốc đơn - tổng đã trả các lần trước)
   // - Công nợ lần 1: phanConLaiCanTra = tongNghiaVu (= toàn bộ đơn)
@@ -611,14 +595,16 @@ export default function InHoaDonPage() {
     laLoaiDuHienTai && soTienDuKyNay > 0;
 
   // Helper: số tiền hiển thị ở dòng "SỐ TIỀN TRẢ KỲ NÀY" / "TỔNG CỘNG"
-  // - Trả hết dư: hiển thị tongNghiaVu (= 500.000), dư riêng = 100.000
-  // - Công nợ lần cuối dư: hiển thị phanConLaiCanTra (= 400.000), dư riêng = 100.000
+  // - Trả hết dư (tra_het_du): hiển thị tongNghiaVu (= 1.150.000), dư riêng = 50.000
+  // - Công nợ lần cuối dư (cong_no_du): hiển thị soTienTraKyNay (= 700.000)
+  //   là TỔNG tiền khách trả kỳ này (gồm dư), dư riêng = 50.000
+  //   → "Khách thanh toán kỳ này" cũng = 700.000 cho khớp
   // - Công nợ chưa tất toán: hiển thị soTienTraKyNay (= 200.000), không có dòng dư
-  // - Trả hết / tất toán đủ (không dư): hiển thị tongCong (= 600.000), không có dòng dư
+  // - Trả hết / tất toán đủ (không dư): hiển thị tongCong (= 1.150.000), không có dòng dư
   const soTienHienThiTongCong = coHienThiDu
     ? hd.loaiThanhToan === "tra_het_du"
       ? tongNghiaVu
-      : phanConLaiCanTra
+      : soTienTraKyNay
     : isCongNoChuaTatToan
       ? soTienTraKyNay
       : tongCongHienThi;
@@ -882,38 +868,12 @@ export default function InHoaDonPage() {
                 <td className={styles.tdCenter}>m³</td>
                 <td className={styles.tdRight}>{hd.khoiLuongDat || 0}</td>
                 <td className={styles.tdRight}>
-                  {(hd.donGia || 0).toLocaleString("vi-VN")}
+                  {(hd.donHangDonGia || hd.donGia || 0).toLocaleString("vi-VN")}
                 </td>
                 <td className={styles.tdRight}>
                   {tienBeTongHienThi.toLocaleString("vi-VN")}
                 </td>
               </tr>
-              {!isCongNoChuaTatToan && buuVanChuyenHienThi > 0 && (
-                <tr>
-                  <td className={styles.tdCenter}>2</td>
-                  <td>Phí bù vận chuyển</td>
-                  <td className={styles.tdCenter}></td>
-                  <td className={styles.tdRight}></td>
-                  <td className={styles.tdRight}></td>
-                  <td className={styles.tdRight}>
-                    {buuVanChuyenHienThi.toLocaleString("vi-VN")}
-                  </td>
-                </tr>
-              )}
-              {!isCongNoChuaTatToan && phiPhatSinhHienThi > 0 && (
-                <tr>
-                  <td className={styles.tdCenter}>
-                    {buuVanChuyenHienThi > 0 ? "3" : "2"}
-                  </td>
-                  <td>Chi phí phát sinh</td>
-                  <td className={styles.tdCenter}></td>
-                  <td className={styles.tdRight}></td>
-                  <td className={styles.tdRight}></td>
-                  <td className={styles.tdRight}>
-                    {phiPhatSinhHienThi.toLocaleString("vi-VN")}
-                  </td>
-                </tr>
-              )}
             </tbody>
             <tfoot>
               {isCongNo && currentDebtIndex > 0 && (
@@ -942,18 +902,6 @@ export default function InHoaDonPage() {
                   {soTienHienThiTongCong.toLocaleString("vi-VN")}
                 </td>
               </tr>
-              {/* Dòng DƯ riêng khi khách trả vượt nghĩa vụ
-                  (công nợ lần cuối có dư, công nợ dư, hoặc trả hết dư) */}
-              {coHienThiDu && (
-                <tr className={styles.duRow}>
-                  <td colSpan={5} className={styles.tdRightBold}>
-                    SỐ TIỀN DƯ
-                  </td>
-                  <td className={styles.tdRightBold}>
-                    {soTienHienThiDu.toLocaleString("vi-VN")}
-                  </td>
-                </tr>
-              )}
               <tr>
                 <td colSpan={6} className={styles.soTienChu}>
                   Số tiền bằng chữ:{" "}

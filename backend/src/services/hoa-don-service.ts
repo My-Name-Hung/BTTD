@@ -34,6 +34,7 @@ export interface HoaDon {
   // Tổng nghĩa vụ GỐC của đơn hàng (lúc tạo đơn) + đã thanh toán + bv/pp
   // Alias rõ ràng từ DonHang, dùng để frontend tính công nợ chính xác
   donHangThanhTien?: number;
+  donHangDonGia?: number;
   donHangDaThanhToan?: number;
   donHangBuVanChuyen?: number;
   donHangChiPhiPhatSinh?: number;
@@ -559,6 +560,9 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
     tenMacBeTong: r.tenMacBeTong,
     khoiLuongDat: r.khoiLuongDat,
     donGia: r.donGia,
+    // Đơn giá GỐC của đơn hàng (dh.donGia) — dùng để hiển thị "Đơn giá" trên
+    // hóa đơn ổn định giữa các lần, không bị phân bổ tỷ lệ.
+    donHangDonGia: r.donGia,
     thanhTien: r.thanhTien,
     ngayGiao: r.ngayGiao,
     // Tổng nghĩa vụ GỐC của đơn hàng (alias rõ ràng, không bị ghi đè bởi hd.*)
