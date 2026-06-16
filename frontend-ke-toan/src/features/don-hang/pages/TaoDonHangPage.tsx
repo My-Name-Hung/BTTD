@@ -298,8 +298,17 @@ export default function TaoDonHangPage() {
         moTa: newMacBeTong.moTa.trim() || null,
       });
       setMacBeTongs((prev) => [created, ...prev]);
-      // Tự động chọn mác vừa tạo
-      handleMacChange(String(created.id));
+      // Tự động chọn mác vừa tạo - dùng `created` trực tiếp vì setState
+      // ở trên là async, macBeTongs trong handleMacChange vẫn còn list cũ
+      // khiến find() không thấy mác mới và set tenMacBeTong = ''.
+      setForm((prev) => ({
+        ...prev,
+        idMacBeTong: String(created.id),
+        tenMacBeTong: created.tenMac || '',
+        donGia: created.donGia
+          ? Number(created.donGia).toLocaleString('vi-VN')
+          : '',
+      }));
       setShowMacBeTongModal(false);
       setNewMacBeTong({ tenMac: '', donGia: '', moTa: '' });
       showToast('Thêm mác bê tông thành công');

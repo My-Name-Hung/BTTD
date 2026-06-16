@@ -454,23 +454,9 @@ export default function KhoDonHangPage() {
                       <span className={styles.tramRowValue}>{ls.phuongAnDo || "—"}</span>
                     </div>
                     <div className={styles.tramRow}>
-                      <span className={styles.tramRowLabel}>Giờ trộn:</span>
-                      <span className={styles.tramRowValue}>{formatDateTime(ls.thoiGianTron || "") || "—"}</span>
-                    </div>
-                    <div className={styles.tramRow}>
-                      <span className={styles.tramRowLabel}>Giờ xuất bến:</span>
-                      <span className={styles.tramRowValue}>{formatDateTime(ls.thoiGianXuatBen || "") || "—"}</span>
-                    </div>
-                    <div className={styles.tramRow}>
                       <span className={styles.tramRowLabel}>Khối lượng giao thực tế:</span>
                       <span className={styles.tramRowValue}>
                         {ls.khoiLuongGiaoThucTe ? `${ls.khoiLuongGiaoThucTe.toFixed(1)} m³` : "—"}
-                      </span>
-                    </div>
-                    <div className={styles.tramRow}>
-                      <span className={styles.tramRowLabel}>Ngày xác nhận giao:</span>
-                      <span className={styles.tramRowValue}>
-                        {formatDateTime(ls.ngayXacNhanGiao || "") || "—"}
                       </span>
                     </div>
                     {ls.ghiChuXe && (
