@@ -101,6 +101,7 @@ router.post('/mac-be-tong', authMiddleware, requireRole('admin', 'giam_doc_kinh_
     const ip = req.ip || req.headers['x-forwarded-for'] as string || '';
     await ghiNhatKy(req.user.id, 'TAO', 'MacBeTong', mac.id, undefined,
       JSON.stringify(req.body), ip);
+    invalidateDanhMucCache();
     res.status(201).json({ success: true, message: 'Tạo mác bê tông thành công', data: mac });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi tạo mác bê tông';
@@ -118,6 +119,7 @@ router.put('/mac-be-tong/:id', authMiddleware, requireRole('admin', 'giam_doc_ki
       JSON.stringify(macCu),
       JSON.stringify(req.body),
       ip);
+    invalidateDanhMucCache();
     res.json({ success: true, message: 'Cập nhật mác bê tông thành công', data: mac });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi cập nhật mác bê tông';
@@ -278,6 +280,7 @@ router.delete('/mac-be-tong/:id', authMiddleware, requireRole('admin', 'dieu_pho
     await ghiNhatKy(req.user.id, 'XOA', 'MacBeTong', id,
       JSON.stringify(macCu), undefined, ip);
     await query('DELETE FROM MacBeTong WHERE id = @id', { id });
+    invalidateDanhMucCache();
     res.json({ success: true, message: 'Xóa mác bê tông thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xóa mác bê tông';

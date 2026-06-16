@@ -350,10 +350,6 @@ export default function KhoXacNhanSanXuatPage() {
                     </option>
                   ))}
                 </select>
-                <span className={styles.formHint}>
-                  Mỗi lần xác nhận chỉ ghi nhận khối lượng cho 1 trạm. Đơn có{" "}
-                  {soTram} trạm trộn.
-                </span>
               </div>
             </div>
           ) : (
@@ -436,10 +432,6 @@ export default function KhoXacNhanSanXuatPage() {
                     );
                   })()}
                   <br />
-                  <span style={{ fontSize: 12, color: "#64748b" }}>
-                    Nhập số khối của LẦN TRỘN NÀY (hệ thống tự cộng dồn vào
-                    tổng khối lượng đã trộn của trạm).
-                  </span>
                 </span>
               )}
             </div>
