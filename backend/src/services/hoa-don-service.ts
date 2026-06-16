@@ -66,7 +66,7 @@ interface HoaDonPhanBo {
   tongCongHoaDon: number;
 }
 
-// Lấy bv/pp/gt GỐC của đơn từ HĐ lần đầu tiên (id nhỏ nhất) đã lưu trong DB.
+// Lấy thông tin GỐC của đơn từ HĐ lần đầu tiên (id nhỏ nhất) đã lưu trong DB.
 // Đây là nguồn chính xác nhất vì:
 // - Ở HĐ lần 1, kế toán có thể đã thêm bv/pp/gt tại form xuất HĐ
 //   (khi đó dh.thanhTien, dh.buVanChuyen, dh.chiPhiPhatSinh trên DonHang
@@ -77,20 +77,35 @@ interface HoaDonPhanBo {
 //   (vd: gốc 600k = 500k tiền BT + 100k bv/pp, lần 2 backend tính 500k
 //   → dư cuối cùng báo sai 200k thay vì 50k).
 //
-// Thứ tự ưu tiên khi tính bv/pp/gt gốc:
-// 1) HĐ đầu tiên của đơn (id nhỏ nhất, đã lưu bv/pp/gt từ lúc tạo)
-// 2) Input từ frontend (data.buuVanChuyen / data.phiPhatSinh / data.giamTru)
-// 3) Fallback cuối: dh.buVanChuyen / dh.chiPhiPhatSinh
-async function layBvPpGtGocTuHoaDonDauTien(
+// QUAN TRỌNG — nguồn tongNghiaVu phải ỔN ĐỊNH giữa các lần thanh toán:
+// Mỗi đơn hàng chỉ có MỘT tongNghiaVuDon chuẩn, áp dụng cho mọi lần thanh toán.
+// Nếu lần 1 lưu tongNghiaVuDon = 400k (chưa có bv/pp), và ở lần 2 kế toán
+// muốn thêm bv 100k → tongNghiaVuDon lần 2 = 500k, mâu thuẫn với lần 1.
+// Giải pháp: lấy tongNghiaVuDon từ HĐ đầu tiên làm CHUẨN, áp dụng cho
+// mọi lần sau. Nếu cần thay đổi nghĩa vụ, kế toán phải xóa HĐ cũ hoặc
+// chỉnh sửa qua nghiệp vụ khác (vd: tạo đơn mới).
+//
+// Thứ tự ưu tiên khi tính tongNghiaVu:
+// 1) tongNghiaVuDon từ HĐ đầu tiên (nếu có) — đảm bảo ổn định giữa các lần
+// 2) Tính từ dh.thanhTien + bv/pp input + dh.buVanChuyen/dh.chiPhiPhatSinh
+//    (chỉ áp dụng khi tạo HĐ lần đầu)
+async function layTongNghiaVuVaBvPpGtGoc(
   idDonHang: number,
-): Promise<{ buuVanChuyen: number; phiPhatSinh: number; giamTru: number }> {
+): Promise<{
+  tongNghiaVuGoc: number | null;
+  buuVanChuyen: number;
+  phiPhatSinh: number;
+  giamTru: number;
+  coHoaDonDauTien: boolean;
+}> {
   try {
     const rows = await query<{
+      tongNghiaVuDon: number;
       buuVanChuyen: number;
       phiPhatSinh: number;
       giamTru: number;
     }>(
-      `SELECT TOP 1 buuVanChuyen, phiPhatSinh, giamTru
+      `SELECT TOP 1 tongNghiaVuDon, buuVanChuyen, phiPhatSinh, giamTru
        FROM HoaDon
        WHERE idDonHang = @idDonHang
        ORDER BY id ASC`,
@@ -98,47 +113,50 @@ async function layBvPpGtGocTuHoaDonDauTien(
     );
     if (rows.length > 0) {
       return {
+        tongNghiaVuGoc: Number(rows[0].tongNghiaVuDon) || 0,
         buuVanChuyen: Number(rows[0].buuVanChuyen) || 0,
         phiPhatSinh: Number(rows[0].phiPhatSinh) || 0,
         giamTru: Number(rows[0].giamTru) || 0,
+        coHoaDonDauTien: true,
       };
     }
   } catch {
-    // ignore — fallback xuống các nguồn khác
+    // ignore — fallback xuống tính từ dh.thanhTien + input
   }
-  return { buuVanChuyen: 0, phiPhatSinh: 0, giamTru: 0 };
+  return {
+    tongNghiaVuGoc: null,
+    buuVanChuyen: 0,
+    phiPhatSinh: 0,
+    giamTru: 0,
+    coHoaDonDauTien: false,
+  };
 }
 
 async function tinhTongNghiaVuDonHang(
   dh: DonHang,
   data: TaoHoaDonInput,
-  bvPpGtGoc: { buuVanChuyen: number; phiPhatSinh: number; giamTru: number },
+  goc: {
+    tongNghiaVuGoc: number | null;
+    buuVanChuyen: number;
+    phiPhatSinh: number;
+    giamTru: number;
+    coHoaDonDauTien: boolean;
+  },
 ): Promise<number> {
-  // Tổng nghĩa vụ tài chính của đơn hàng = tiền bê tông gốc + bv + pp - gt.
-  // Tiền bê tông gốc lấy từ DonHang.thanhTien (giá trị lúc tạo đơn, KHÔNG
-  // lấy từ data.tienBeTong vì ở công nợ lần 2+ frontend gán
-  // tienBeTong = donHang.conLai, không phải tổng gốc).
+  // Nếu đã có HĐ đầu tiên → dùng tongNghiaVuDon của HĐ đầu làm CHUẨN
+  // để mọi lần thanh toán hiển thị cùng 1 tổng nghĩa vụ (tránh trường hợp
+  // lần 1 lưu 400k, lần 2 lưu 500k gây ra tienDuCuoi sai).
+  if (goc.coHoaDonDauTien && goc.tongNghiaVuGoc != null) {
+    return Math.max(0, goc.tongNghiaVuGoc);
+  }
+  // Tạo HĐ lần đầu: tính từ dh.thanhTien + bv/pp input + dh fallback
   const tienBeTongGoc = dh.thanhTien || 0;
-  // bv/pp/gt lấy theo thứ tự ưu tiên:
-  // 1) bvPpGtGoc từ HĐ đầu tiên (đã có lưu trong DB) — nguồn chính xác nhất
-  // 2) Input từ frontend (nếu kế toán nhập tay ở lần hiện tại)
-  // 3) Fallback: dh.buVanChuyen / dh.chiPhiPhatSinh
   const inputBv = data.buuVanChuyen || 0;
   const inputPp = data.phiPhatSinh || 0;
   const inputGt = data.giamTru || 0;
-  const buuVanChuyen =
-    bvPpGtGoc.buuVanChuyen > 0
-      ? bvPpGtGoc.buuVanChuyen
-      : inputBv > 0
-        ? inputBv
-        : dh.buVanChuyen || 0;
-  const phiPhatSinh =
-    bvPpGtGoc.phiPhatSinh > 0
-      ? bvPpGtGoc.phiPhatSinh
-      : inputPp > 0
-        ? inputPp
-        : dh.chiPhiPhatSinh || 0;
-  const giamTru = bvPpGtGoc.giamTru > 0 ? bvPpGtGoc.giamTru : inputGt;
+  const buuVanChuyen = inputBv > 0 ? inputBv : dh.buVanChuyen || 0;
+  const phiPhatSinh = inputPp > 0 ? inputPp : dh.chiPhiPhatSinh || 0;
+  const giamTru = inputGt;
   return Math.max(0, tienBeTongGoc + buuVanChuyen + phiPhatSinh - giamTru);
 }
 
@@ -237,13 +255,12 @@ export async function taoHoaDon(
   const soHoaDon = `BBTD-${randomNum}-${dh.maDonHang}`;
   const maHoaDon = soHoaDon;
 
-  // Lấy bv/pp/gt gốc từ HĐ đầu tiên (id nhỏ nhất) đã lưu trong DB.
-  // Nguồn chính xác nhất để tính tongNghiaVu, vì ở lần xuất HĐ đầu tiên
-  // kế toán có thể đã thêm bv/pp/gt ngay tại form, mà các giá trị này
-  // KHÔNG được cập nhật ngược lên DonHang.
-  const bvPpGtGoc = await layBvPpGtGocTuHoaDonDauTien(data.idDonHang);
-  // Ưu tiên tiền bê tông do frontend gửi lên (từ XuatHoaDonPage)
-  // Fallback về khoiLuongDat * donGia nếu frontend không gửi
+  // Lấy tongNghiaVuDon + bv/pp/gt gốc từ HĐ đầu tiên (id nhỏ nhất) đã lưu trong DB.
+  // Nguồn chính xác nhất để đảm bảo tongNghiaVu ỔN ĐỊNH giữa các lần thanh toán
+  // (tránh tình trạng lần 1 lưu 400k, lần 2 lưu 500k do kế toán thêm bv/pp
+  // ở lần 2 nhưng HĐ đầu đã chốt ở 400k).
+  const goc = await layTongNghiaVuVaBvPpGtGoc(data.idDonHang);
+  // Tiền bê tông: lấy từ bvPpGtGoc nếu có, fallback từ data/dh
   const tienBeTongGoc =
     data.tienBeTong != null
       ? data.tienBeTong
@@ -251,7 +268,7 @@ export async function taoHoaDon(
   const buuVanChuyen = data.buuVanChuyen || 0;
   const phiPhatSinh = data.phiPhatSinh || 0;
   const giamTru = data.giamTru || 0;
-  const tongNghiaVu = await tinhTongNghiaVuDonHang(dh, data, bvPpGtGoc);
+  const tongNghiaVu = await tinhTongNghiaVuDonHang(dh, data, goc);
   const tongDaThanhToanTruocDo = Math.max(0, dh.daThanhToan || 0);
   const tongConLaiTruocKhiLap = Math.max(
     0,

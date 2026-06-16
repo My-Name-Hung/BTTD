@@ -376,33 +376,89 @@ export default function InHoaDonPage() {
     currentDebtIndex >= 0 ? `Thanh toán lần ${currentDebtIndex + 1}` : "";
   const isLastDebtInvoice =
     currentDebtIndex >= 0 && currentDebtIndex === debtHoaDons.length - 1;
-  // Với HĐ loại _du (trả hết dư / công nợ dư), soTienThanhToan = tổng khách
-  // trả kỳ đó (gồm cả phần dư). Khi cộng dồn để tính "tổng thực khách đã
-  // trả cho nghĩa vụ đơn" thì phải TRỪ phần dư, nếu không tổng sẽ phình
-  // to và tienDuCuoi bị báo sai (vd: 1 HĐ trả hết dư 100k → amount phải
-  // tính là phần trừ nợ, không phải tổng khách đưa).
+  // Tổng nghĩa vụ tài chính của đơn hàng = tổng phải trả GỐC của cả đơn
+  // (bao gồm tiền bê tông + bù vận chuyển + chi phí phát sinh - giảm trừ).
+  // Đây là tổng "nghĩa vụ" khách phải trả, dùng để:
+  // 1) Tính "Dư" cuối cùng khi khách trả vượt (công nợ dư)
+  // 2) Quyết định hóa đơn công nợ đã "tất toán" hay chưa
   //
-  // Lấy soTienDu theo thứ tự ưu tiên:
-  // 1) Backend đã trả về trong item.soTienDu (nếu schema mới lưu)
-  // 2) Tính ngược: soTienThanhToan - tongCong (chỉ áp dụng cho HĐ loại _du)
-  //    - HĐ trả hết dư: tongCong = tongNghiaVu (= tổng đơn) → dư = soTienThanhToan - tongNghiaVu
-  //    - HĐ công nợ dư (lần cuối): tongCong = tongNghiaVu → dư = soTienThanhToan - tongNghiaVu
+  // Nguồn ưu tiên (theo độ chính xác):
+  // 1) Tính tổng từ MAX(tienBeTong) + MAX(buuVanChuyen) + MAX(phiPhatSinh)
+  //    - MAX(tienBeTong): tiền bê tông đầy đủ (lúc tạo đơn, hoặc HĐ đầu
+  //      chia tỷ lệ thì lấy MAX để có giá trị gốc).
+  //    - MAX(buuVanChuyen) / MAX(phiPhatSinh): bv/pp có thể thêm ở lần
+  //      sau nên lấy MAX qua tất cả HĐ để có tổng đầy đủ.
+  // 2) tongNghiaVuDon của HĐ đầu tiên (nếu không có data bv/pp/tienBeTong)
+  // 3) donHangThanhTien (gốc đơn) + ước lượng bv/pp từ lần đầu
+  // 4) Fallback cuối: hd.thanhTien / hd.tongCong
+  const maxTienBeTong = Math.max(
+    0,
+    ...debtHoaDons.map((d) => Number(d.tienBeTong) || 0),
+    Number(hd.tienBeTong) || 0,
+  );
+  const maxBuuVanChuyen = Math.max(
+    0,
+    ...debtHoaDons.map((d) => Number(d.buuVanChuyen) || 0),
+    Number(hd.buuVanChuyen) || 0,
+  );
+  const maxPhiPhatSinh = Math.max(
+    0,
+    ...debtHoaDons.map((d) => Number(d.phiPhatSinh) || 0),
+    Number(hd.phiPhatSinh) || 0,
+  );
+  const maxGiamTru = Math.max(
+    0,
+    ...debtHoaDons.map((d) => Number(d.giamTru) || 0),
+    Number(hd.giamTru) || 0,
+  );
+  const tongNghiaVuTinhTuThanhPhan =
+    maxTienBeTong + maxBuuVanChuyen + maxPhiPhatSinh - maxGiamTru;
+  const tongNghiaVuHoaDonDau =
+    debtHoaDons.length > 0 && debtHoaDons[0].tongNghiaVuDon != null
+      ? Number(debtHoaDons[0].tongNghiaVuDon) || 0
+      : 0;
+  // Ưu tiên 1: tổng từ thành phần (chính xác nhất, ổn định qua các lần)
+  // Ưu tiên 2: tongNghiaVuDon của HĐ đầu (nếu thành phần = 0)
+  // Ưu tiên 3: các fallback khác
+  const tongNghiaVu =
+    (tongNghiaVuTinhTuThanhPhan > 0 ? tongNghiaVuTinhTuThanhPhan : 0) ||
+    tongNghiaVuHoaDonDau ||
+    (hd.tongNghiaVuDon ?? 0) ||
+    (hd.donHangThanhTien ?? 0) ||
+    (hd.thanhTien ?? 0) ||
+    (hd.tongCong ?? 0);
+  // Tính lũy kế số tiền đã trừ nghĩa vụ qua từng lần HĐ, làm cơ sở
+  // xác định phanConLaiCanTruocKhiLap cho từng HĐ.
+  // Vì tongNghiaVu được tính từ MAX các thành phần (ổn định giữa các lần),
+  // nên ta dùng giá trị này làm chuẩn cho cả tính toán lũy kế.
+  const tongNghiaVuChuan = tongNghiaVu;
+  let luyKeDaTru = 0;
   const debtInvoiceSummary = debtHoaDons.map((item, index) => {
     const laLoaiDu =
       item.loaiThanhToan === "tra_het_du" ||
       item.loaiThanhToan === "cong_no_du";
     const soTienThucTra = item.soTienThanhToan || item.tongCong || 0;
     const soTienDuFromBackend = Number(item.soTienDu) || 0;
+    // Phần nghĩa vụ còn lại cần trả TRƯỚC khi lập HĐ này
+    // (= tongNghiaVu - lũy kế đã trừ nợ từ các HĐ trước).
+    const phanConLaiTruocKhiLap = Math.max(0, tongNghiaVuChuan - luyKeDaTru);
+    // soTienDu: ưu tiên backend, fallback tính từ soTienThucTra - phanConLaiTruocKhiLap
+    // (công thức chính xác cho cả HĐ cũ lẫn mới, vì phanConLaiTruocKhiLap
+    // = số tiền còn lại cần trả để tất toán, khách trả vượt phần này = dư).
     const soTienDuFromCalc =
-      item.soTienThanhToan != null && item.tongCong != null
-        ? Math.max(0, item.soTienThanhToan - item.tongCong)
+      laLoaiDu && phanConLaiTruocKhiLap > 0
+        ? Math.max(0, soTienThucTra - phanConLaiTruocKhiLap)
         : 0;
     const soTienDu = laLoaiDu
       ? (soTienDuFromBackend > 0 ? soTienDuFromBackend : soTienDuFromCalc)
       : 0;
+    // Phần thực dùng để trừ nghĩa vụ = soTienThucTra - soTienDu
+    // (clamp tối đa bằng phanConLaiTruocKhiLap để tránh trường hợp
+    // khách trả nhiều hơn nghĩa vụ còn lại + đã có dư = bất thường).
     const phanTruNo = laLoaiDu
       ? Math.max(0, soTienThucTra - soTienDu)
-      : soTienThucTra;
+      : Math.min(soTienThucTra, phanConLaiTruocKhiLap);
+    luyKeDaTru += phanTruNo;
     return {
       id: item.id,
       label: `Lần ${index + 1}`,
@@ -421,23 +477,7 @@ export default function InHoaDonPage() {
     (sum, item) => sum + item.amount,
     0,
   );
-  // Tổng nghĩa vụ tài chính của đơn hàng = tổng phải trả GỐC của cả đơn
-  // (bao gồm tiền bê tông + bù vận chuyển + chi phí phát sinh - giảm trừ).
-  // Đây là tổng "nghĩa vụ" khách phải trả, dùng để:
-  // 1) Tính "Dư" cuối cùng khi khách trả vượt (công nợ dư)
-  // 2) Quyết định hóa đơn công nợ đã "tất toán" hay chưa
-  //
-  // Nguồn ưu tiên (theo độ chính xác):
-  // 1) hd.tongNghiaVuDon: backend lưu tổng nghĩa vụ gốc tại thời điểm lập hóa đơn
-  //    (tiền bê tông gốc + bv + pp - gt, đầy đủ kể cả khi bv/pp thêm ở lúc tạo HĐ).
-  //    Cùng giá trị cho mọi lần thanh toán của cùng đơn → hiển thị ổn định.
-  // 2) Nếu backend cũ chưa có cột → dùng donHangThanhTien (gốc đơn) + ước lượng
-  //    bv/pp từ lần đầu. Fallback cuối: hd.thanhTien / hd.tongCong.
-  const tongNghiaVu =
-    (hd.tongNghiaVuDon ?? 0) ||
-    (hd.donHangThanhTien ?? 0) ||
-    (hd.thanhTien ?? 0) ||
-    (hd.tongCong ?? 0);
+  // (tongNghiaVu đã được tính ở trên, dùng cho cả tienDuCuoi lẫn phần hiển thị)
   // Số tiền dư cuối cùng = tổng thực khách đã trả - tổng nghĩa vụ đơn hàng
   // (chỉ > 0 khi loại thanh toán cuối cùng là "cong_no_du" / "tra_het_du")
   const tienDuCuoi = Math.max(0, tongDaThanhToanToanBo - tongNghiaVu);
@@ -448,20 +488,15 @@ export default function InHoaDonPage() {
   const soTienTraKyNay = hd.soTienThanhToan || 0;
   // Số tiền dư riêng của KỲ NÀY (chỉ > 0 với HĐ trả hết dư / công nợ dư).
   // Ưu tiên lấy từ hd.soTienDu (backend lưu riêng), fallback tính ngược từ
-  // soTienThanhToan - tongCong (chỉ áp dụng cho HĐ loại _du).
+  // soTienThanhToan - phanConLaiCanTruocKhiLap (áp dụng cho HĐ cũ chưa lưu
+  // đúng soTienDu, hoặc HĐ loại _du).
   const laLoaiDuHienTai =
     hd.loaiThanhToan === "tra_het_du" || hd.loaiThanhToan === "cong_no_du";
   const soTienDuHienTaiBackend = Number(hd.soTienDu) || 0;
-  const soTienDuHienTaiCalc =
-    laLoaiDuHienTai &&
-    hd.soTienThanhToan != null &&
-    hd.tongCong != null
-      ? Math.max(0, hd.soTienThanhToan - hd.tongCong)
-      : 0;
-  const soTienDuKyNay = laLoaiDuHienTai
+  let soTienDuKyNay = laLoaiDuHienTai
     ? soTienDuHienTaiBackend > 0
       ? soTienDuHienTaiBackend
-      : soTienDuHienTaiCalc
+      : 0
     : 0;
   // Phần khách trả kỳ này DÙNG ĐỂ TRỪ NGHĨA VỤ (= soTienThanhToan - soTienDu)
   // Dùng để tính "SỐ TIỀN TRẢ KỲ NÀY" (chỉ phần trừ nợ) và "TIỀN DƯ".
@@ -469,7 +504,7 @@ export default function InHoaDonPage() {
   //   → SỐ TIỀN TRẢ KỲ NÀY hiển thị 300k (phanConLaiCanTra), DƯ = 50k
   // - Trả hết dư: soTienThanhToan=600k, soTienDu=100k → phanTruNghiaVu=500k
   //   → TỔNG CỘNG hiển thị 500k (tongNghiaVu), DƯ = 100k
-  const phanTruNghiaVuKyNay = Math.max(0, soTienTraKyNay - soTienDuKyNay);
+  let phanTruNghiaVuKyNay = Math.max(0, soTienTraKyNay - soTienDuKyNay);
   // Số tiền đã thanh toán ở các lần hóa đơn TRƯỚC lần hiện tại
   // (công nợ lần 1, 2, ..., lần hiện tại - 1) — hiển thị "ĐÃ THANH TOÁN (các lần trước)"
   // trong bảng trước TỔNG CỘNG.
@@ -485,6 +520,23 @@ export default function InHoaDonPage() {
     daThanhToanTruocFromList > 0 || debtInvoiceSummary.length > 0
       ? daThanhToanTruocFromList
       : daThanhToanTruocFromDon;
+  // Số tiền nghĩa vụ còn lại cần trả để tất toán đơn hàng TẠI THỜI ĐIỂM TRƯỚC
+  // khi lập hóa đơn kỳ này (= tongNghiaVu - đã thanh toán các lần trước).
+  // Dùng để tính số tiền dư kỳ này từ dữ liệu cũ (HĐ chưa lưu soTienDu đúng).
+  const phanConLaiCanTruocKhiLap = Math.max(0, tongNghiaVu - daThanhToanTruoc);
+  // Fallback tính soTienDu cho HĐ cũ (DB chưa có soTienDu) dựa trên
+  // phanConLaiCanTruocKhiLap. Áp dụng khi: laLoaiDuHienTai và soTienThanhToan
+  // > phanConLaiCanTruocKhiLap (tức là khách trả vượt nghĩa vụ còn lại).
+  if (
+    laLoaiDuHienTai &&
+    soTienDuKyNay === 0 &&
+    hd.soTienThanhToan != null &&
+    phanConLaiCanTruocKhiLap > 0
+  ) {
+    soTienDuKyNay = Math.max(0, hd.soTienThanhToan - phanConLaiCanTruocKhiLap);
+    // Cập nhật lại phanTruNghiaVuKyNay cho phản ánh soTienDuKyNay mới
+    phanTruNghiaVuKyNay = Math.max(0, soTienTraKyNay - soTienDuKyNay);
+  }
 
   // ── SỐ TIỀN HIỂN THỊ TRÊN HÓA ĐƠN ──
   // - Công nợ chưa tất toán (lần đầu/giữa): TỔNG CỘNG = số tiền khách trả kỳ này
