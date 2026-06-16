@@ -180,6 +180,47 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       }
     }
 
+    // Validate tổng KL sau khi cộng dồn không vượt quá KL đặt của đơn
+    // - Tính tổng KL đã trộn của CÁC LỊCH KHÁC (không thuộc danh sách update)
+    // - Tính tổng KL cộng dồn của các lịch được update (cũ + mới)
+    // - Tổng 2 phần này phải <= KL đặt
+    if (khoiLuongDaTron != null && khoiLuongDaTron > 0) {
+      const idLichParams: Record<string, number> = {};
+      const idLichInClause = lichCanCapNhatList.length > 0
+        ? lichCanCapNhatList.map((l, i) => {
+            idLichParams[`idLich_${i}`] = l.id;
+            return `@idLich_${i}`;
+          }).join(',')
+        : '0';
+      const validateTong = await query<{ tongKhoiLuongCacLichKhac: number; khoiLuongDat: number }>(
+        `SELECT
+          (SELECT ISNULL(SUM(khoiLuongDaTron), 0) FROM LichSanXuat
+            WHERE idDonHang = @idDonHang
+              AND trangThai = N'da_xong'
+              AND khoiLuongDaTron IS NOT NULL
+              AND id NOT IN (${idLichInClause})) as tongKhoiLuongCacLichKhac,
+          (SELECT ISNULL(khoiLuongDat, 0) FROM DonHang WHERE id = @idDonHang) as khoiLuongDat`,
+        { idDonHang, ...idLichParams },
+      );
+      const tongCacLichKhac = validateTong[0]?.tongKhoiLuongCacLichKhac || 0;
+      const khoiLuongDatDH = validateTong[0]?.khoiLuongDat || 0;
+      const tongLichChonCu = lichCanCapNhatList.reduce(
+        (sum, l: any) => sum + (l.khoiLuongDaTron || 0),
+        0,
+      );
+      const tongSauKhiUpdate =
+        tongCacLichKhac + tongLichChonCu + khoiLuongDaTron;
+      const maxChoPhepLanNay =
+        Math.max(0, khoiLuongDatDH - tongCacLichKhac - tongLichChonCu);
+      if (khoiLuongDatDH > 0 && tongSauKhiUpdate > khoiLuongDatDH) {
+        res.status(400).json({
+          success: false,
+          message: `Tổng khối lượng sau khi cộng dồn (${tongSauKhiUpdate} m³) vượt quá khối lượng đặt (${khoiLuongDatDH} m³). Lần trộn này chỉ được nhập tối đa ${maxChoPhepLanNay} m³.`,
+        });
+        return;
+      }
+    }
+
     // Cập nhật các lịch sản xuất được chọn (chỉ lịch cụ thể, không ghi đè các trạm khác)
     for (const lichCanCapNhatRaw of lichCanCapNhatList) {
       const lichCanCapNhat = lichCanCapNhatRaw as any;
@@ -190,6 +231,13 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
         lichCanCapNhat.trangThaiGiao === 'chua_giao'
           ? null
           : lichCanCapNhat.trangThaiGiao;
+      // Cho phép cùng 1 trạm trộn nhiều lần: cộng dồn khoiLuongDaTron
+      // thay vì ghi đè. VD: trạm A trộn 2m³, sau đó trộn tiếp 3m³
+      // → khoiLuongDaTron = 2 + 3 = 5m³.
+      // - Nếu lần đầu hoặc giá trị cũ NULL → SET bằng giá trị mới
+      // - Nếu đã có giá trị → cộng dồn
+      const khoiLuongDaTronCu = lichCanCapNhat.khoiLuongDaTron || 0;
+      const khoiLuongDaTronMoi = (khoiLuongDaTronCu + (khoiLuongDaTron || 0));
       await query(
         `UPDATE LichSanXuat SET
           khoiLuongDaTron = @khoiLuongDaTron,
@@ -204,7 +252,7 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
          WHERE id = @id`,
         {
           id: lichCanCapNhat.id,
-          khoiLuongDaTron: khoiLuongDaTron != null ? khoiLuongDaTron : null,
+          khoiLuongDaTron: khoiLuongDaTron != null ? khoiLuongDaTronMoi : lichCanCapNhat.khoiLuongDaTron,
           thoiGianBatDauDo: ngayGioDo || null,
           idXe: idXe || null,
           bienSoXe: bienSoXe || null,

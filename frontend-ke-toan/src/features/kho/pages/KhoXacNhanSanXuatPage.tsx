@@ -345,7 +345,7 @@ export default function KhoXacNhanSanXuatPage() {
                     <option key={l.id} value={l.id}>
                       {l.tenTram}
                       {l.khoiLuongDaTron != null
-                        ? ` (đã trộn: ${l.khoiLuongDaTron} m³)`
+                        ? ` (đã trộn: ${l.khoiLuongDaTron} m³ - trộn tiếp sẽ cộng dồn)`
                         : " (chưa trộn)"}
                     </option>
                   ))}
@@ -375,7 +375,8 @@ export default function KhoXacNhanSanXuatPage() {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>
-                Số khối đã trộn (m³) <span className={styles.required}>*</span>
+                Số khối trộn lần này (m³){" "}
+                <span className={styles.required}>*</span>
               </label>
               <input
                 className={`${styles.formInput} ${
@@ -407,6 +408,38 @@ export default function KhoXacNhanSanXuatPage() {
                   >
                     {khoiLuongConLai} m³
                   </strong>
+                  {khoiLuongDaTronSo > 0 && idLichSanXuat && (() => {
+                    const lichDangChon = lichTramTrons.find(
+                      (l) => String(l.id) === idLichSanXuat,
+                    );
+                    if (!lichDangChon) return null;
+                    const klCu = lichDangChon.khoiLuongDaTron || 0;
+                    const klMoiCuaTram = klCu + khoiLuongDaTronSo;
+                    const tongMoi = tongKhoiLuongDaTron + khoiLuongDaTronSo;
+                    return (
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 6,
+                          padding: "6px 10px",
+                          background: "rgba(7, 60, 235, 0.08)",
+                          borderLeft: "3px solid #073ceb",
+                          fontSize: 13,
+                          color: "#1e293b",
+                        }}
+                      >
+                        Trạm <strong>{lichDangChon.tenTram}</strong>:{" "}
+                        {klCu} m³ + {khoiLuongDaTronSo} m³ ={" "}
+                        <strong>{klMoiCuaTram} m³</strong>. Tổng đơn sau
+                        khi cộng dồn: <strong>{tongMoi} m³</strong>.
+                      </span>
+                    );
+                  })()}
+                  <br />
+                  <span style={{ fontSize: 12, color: "#64748b" }}>
+                    Nhập số khối của LẦN TRỘN NÀY (hệ thống tự cộng dồn vào
+                    tổng khối lượng đã trộn của trạm).
+                  </span>
                 </span>
               )}
             </div>
