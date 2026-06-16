@@ -329,16 +329,14 @@ router.put(
         dsLichDaXoa = await query<LichSanXuat[]>(
           `SELECT * FROM LichSanXuat
            WHERE idDonHang = @idDonHang
-             AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)
-             AND trangThai <> N'da_xong'`,
+             AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)`,
           { idDonHang },
         );
         if (dsLichDaXoa.length > 0) {
           await query(
             `DELETE FROM LichSanXuat
              WHERE idDonHang = @idDonHang
-               AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)
-               AND trangThai <> N'da_xong'`,
+               AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)`,
             { idDonHang },
           );
         }
@@ -468,6 +466,23 @@ router.put(
         return;
       }
 
+      // Cleanup: xóa các lịch trạm thừa có khoiLuongDaTron = 0 (chưa trộn gì).
+      let dsLichDaXoa: LichSanXuat[] = [];
+      dsLichDaXoa = await query<LichSanXuat[]>(
+        `SELECT * FROM LichSanXuat
+         WHERE idDonHang = @idDonHang
+           AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)`,
+        { idDonHang },
+      );
+      if (dsLichDaXoa.length > 0) {
+        await query(
+          `DELETE FROM LichSanXuat
+           WHERE idDonHang = @idDonHang
+             AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)`,
+          { idDonHang },
+        );
+      }
+
       const updatedDonHang = await xacNhanGiaoThanhCong(
         idDonHang,
         khoiLuongThucTe,
@@ -490,9 +505,29 @@ router.put(
         ip,
       );
 
+      // Ghi nhật ký cho từng lịch trạm thừa bị tự động xóa
+      if (dsLichDaXoa.length > 0) {
+        for (const ls of dsLichDaXoa) {
+          await ghiNhatKy(
+            req.user?.id ?? 0,
+            "XOA",
+            "LichSanXuat",
+            ls.id,
+            JSON.stringify(ls),
+            JSON.stringify({ lyDo: "Lịch trạm thừa khoiLuongDaTron = 0 - tự động xóa khi xác nhận giao" }),
+            ip,
+          );
+        }
+      }
+
+      let message = "Xác nhận giao hàng thành công";
+      if (dsLichDaXoa.length > 0) {
+        message += ` (đã xóa ${dsLichDaXoa.length} lịch trạm thừa)`;
+      }
+
       res.json({
         success: true,
-        message: "Xác nhận giao hàng thành công",
+        message,
         data: updatedDonHang,
       });
     } catch (error) {

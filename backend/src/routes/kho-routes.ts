@@ -277,9 +277,30 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
     // - Nếu tổng đã trộn >= khối lượng đặt: chuyển sang "đang giao"
     // - Nếu tổng đã trộn < khối lượng đặt: giữ nguyên "đang sản xuất" để trạm khác tiếp tục trộn
     const newTrangThai = conLai > 0 ? 'dang_san_xuat' : 'dang_giao';
-    const message = conLai > 0
+    let message = conLai > 0
       ? `Đã xác nhận sản xuất xong ${khoiLuongDaTron} m³. Còn lại ${conLai} m³, đơn tiếp tục ở trạng thái đang sản xuất.`
       : 'Đã xác nhận sản xuất xong. Đơn hàng chuyển sang trạng thái đang giao.';
+
+    // Nếu đơn đã sản xuất đủ khối lượng: tự động xóa các lịch sản xuất
+    // của các trạm chưa trộn gì (khoiLuongDaTron = 0 hoặc NULL) để đơn có
+    // thể chuyển sang giao hàng / nghiệm thu mà không bị kẹt bởi trạm thừa.
+    let dsLichDaXoa: LichSanXuat[] = [];
+    if (conLai <= 0) {
+      dsLichDaXoa = await query<LichSanXuat[]>(
+        `SELECT * FROM LichSanXuat
+         WHERE idDonHang = @idDonHang
+           AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)`,
+        { idDonHang },
+      );
+      if (dsLichDaXoa.length > 0) {
+        await query(
+          `DELETE FROM LichSanXuat
+           WHERE idDonHang = @idDonHang
+             AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)`,
+          { idDonHang },
+        );
+      }
+    }
 
     await query(
       `UPDATE DonHang SET trangThaiDon = @trangThai, ngayCapNhat = ${vnNow()} WHERE id = @id`,
@@ -300,6 +321,22 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       JSON.stringify({ khoiLuongDaTron }),
       JSON.stringify({ trangThai: newTrangThai, tongDaTron }),
       ip);
+
+    // Ghi nhật ký cho từng lịch sản xuất bị tự động xóa do đã đủ khối lượng
+    if (dsLichDaXoa.length > 0) {
+      for (const ls of dsLichDaXoa) {
+        await ghiNhatKy(
+          req.user?.id ?? 0,
+          'XOA',
+          'LichSanXuat',
+          ls.id,
+          JSON.stringify(ls),
+          JSON.stringify({ lyDo: 'Đã đủ khối lượng đơn hàng - tự động xóa lịch thừa' }),
+          ip,
+        );
+      }
+      message += ` Đã tự động xóa ${dsLichDaXoa.length} lịch trạm thừa.`;
+    }
 
     res.json({
       success: true,
@@ -349,6 +386,38 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('admin', 'tr
       return;
     }
 
+    // Tính tổng khối lượng giao thực tế của các trạm đã xác nhận giao
+    const tongGiaoResult = await query<{ tong: number; khoiLuongDat: number }>(
+      `SELECT
+        (SELECT ISNULL(SUM(khoiLuongGiaoThucTe), 0) FROM LichSanXuat
+          WHERE idDonHang = @idDonHang
+            AND khoiLuongGiaoThucTe IS NOT NULL
+            AND (trangThaiGiao = N'da_giao' OR trangThaiGiao = N'dang_giao')) as tong,
+        (SELECT khoiLuongDat FROM DonHang WHERE id = @idDonHang) as khoiLuongDat`,
+      { idDonHang },
+    );
+    const tongDaGiao = tongGiaoResult[0]?.tong || 0;
+    const khoiLuongDat = tongGiaoResult[0]?.khoiLuongDat || 0;
+
+    // Cleanup: xóa các lịch trạm thừa có khoiLuongDaTron = 0 (chưa trộn gì).
+    // Thực hiện ở đây để xử lý cả các đơn đã chuyển sang dang_giao từ trước
+    // mà lịch thừa vẫn còn (do logic cleanup chưa có ở các phiên bản trước).
+    let dsLichDaXoa: LichSanXuat[] = [];
+    dsLichDaXoa = await query<LichSanXuat[]>(
+      `SELECT * FROM LichSanXuat
+       WHERE idDonHang = @idDonHang
+         AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)`,
+      { idDonHang },
+    );
+    if (dsLichDaXoa.length > 0) {
+      await query(
+        `DELETE FROM LichSanXuat
+         WHERE idDonHang = @idDonHang
+           AND (khoiLuongDaTron IS NULL OR khoiLuongDaTron = 0)`,
+        { idDonHang },
+      );
+    }
+
     const updatedDonHang = await xacNhanGiaoThanhCong(idDonHang, khoiLuongThucTe);
 
     // Thông báo cho điều phối: kho đã giao thành công
@@ -364,7 +433,27 @@ router.put('/xac-nhan-giao/:idDonHang', authMiddleware, requireRole('admin', 'tr
       JSON.stringify({ trangThaiDon: 'da_giao', khoiLuongThucTe }),
       ip);
 
-    res.json({ success: true, message: 'Xác nhận giao hàng thành công', data: updatedDonHang });
+    // Ghi nhật ký cho từng lịch trạm thừa bị tự động xóa
+    if (dsLichDaXoa.length > 0) {
+      for (const ls of dsLichDaXoa) {
+        await ghiNhatKy(
+          req.user?.id ?? 0,
+          'XOA',
+          'LichSanXuat',
+          ls.id,
+          JSON.stringify(ls),
+          JSON.stringify({ lyDo: 'Lịch trạm thừa khoiLuongDaTron = 0 - tự động xóa khi xác nhận giao' }),
+          ip,
+        );
+      }
+    }
+
+    let message = 'Xác nhận giao hàng thành công';
+    if (dsLichDaXoa.length > 0) {
+      message += ` (đã xóa ${dsLichDaXoa.length} lịch trạm thừa)`;
+    }
+
+    res.json({ success: true, message, data: updatedDonHang });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi xác nhận giao hàng';
     res.status(400).json({ success: false, message });
