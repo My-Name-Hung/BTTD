@@ -304,6 +304,11 @@ export default function ChiTietDonHangPage() {
   // Các trạng thái còn lại (đã duyệt / đang sản xuất / đang giao / đã giao /
   // nghiệm thu / đã thanh toán / hoàn thành) đều cho phép upload.
   const isDonHangHoanThanh = donHang?.trangThaiDon === "hoan_thanh" || donHang?.trangThaiDon === "da_thanh_toan";
+  // Đơn đã hoàn thành xác nhận nghiệm thu trở đi mới cho phép in hóa đơn / in tạm tính
+  const isNghiemThuXong =
+    donHang?.trangThaiDon === "da_nghiem_thu" ||
+    donHang?.trangThaiDon === "da_thanh_toan" ||
+    donHang?.trangThaiDon === "hoan_thanh";
   const isChuaChoPhepBangChung = donHang
     ? ["cho_duyet", "cho_ke_toan_duyet", "tu_choi"].includes(donHang.trangThaiDon)
     : true;
@@ -1743,25 +1748,27 @@ export default function ChiTietDonHangPage() {
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button
-                    onClick={() => navigate(`/in-tam-tinh/${donHang.id}`)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "5px 10px",
-                      border: "1.5px solid var(--color-primary)",
-                      borderRadius: 7,
-                      background: "transparent",
-                      color: "var(--color-primary)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    <FiPrinter size={12} /> In tạm tính
-                  </button>
+                  {isNghiemThuXong && (
+                    <button
+                      onClick={() => navigate(`/in-tam-tinh/${donHang.id}`)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "5px 10px",
+                        border: "1.5px solid var(--color-primary)",
+                        borderRadius: 7,
+                        background: "transparent",
+                        color: "var(--color-primary)",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      <FiPrinter size={12} /> In tạm tính
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -2090,44 +2097,48 @@ export default function ChiTietDonHangPage() {
                       )}
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button
-                        onClick={() => navigate(`/in-hoa-don/${hd.id}`)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
-                          padding: "5px 10px",
-                          border: "1.5px solid var(--color-primary)",
-                          borderRadius: 7,
-                          background: "transparent",
-                          color: "var(--color-primary)",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        <FiPrinter size={12} /> In
-                      </button>
-                      <button
-                        onClick={() => navigate(`/in-hoa-don/${hd.id}`)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
-                          padding: "5px 10px",
-                          border: "1.5px solid var(--color-border)",
-                          borderRadius: 7,
-                          background: "transparent",
-                          color: "var(--color-text-secondary)",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        <FiDownload size={12} /> Tải
-                      </button>
+                      {isNghiemThuXong && (
+                        <>
+                          <button
+                            onClick={() => navigate(`/in-hoa-don/${hd.id}`)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              padding: "5px 10px",
+                              border: "1.5px solid var(--color-primary)",
+                              borderRadius: 7,
+                              background: "transparent",
+                              color: "var(--color-primary)",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                            }}
+                          >
+                            <FiPrinter size={12} /> In
+                          </button>
+                          <button
+                            onClick={() => navigate(`/in-hoa-don/${hd.id}`)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              padding: "5px 10px",
+                              border: "1.5px solid var(--color-border)",
+                              borderRadius: 7,
+                              background: "transparent",
+                              color: "var(--color-text-secondary)",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                            }}
+                          >
+                            <FiDownload size={12} /> Tải
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
