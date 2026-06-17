@@ -145,6 +145,13 @@
   white-space: nowrap;
 }
 
+/* Gom các cặp tài xế - biển số của cùng 1 trạm thành nhiều dòng */
+.tramTagGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 /* ── Row Actions ── */
 .rowActions {
   display: flex;

@@ -630,8 +630,7 @@ export default function KhoLichSanXuatPage() {
                   <th>Còn lại</th>
                   <th>Trạng thái trạm</th>
                   <th className={styles.hideOnMobile}>Trạm trộn</th>
-                  <th className={styles.hideOnMobile}>Biển số xe</th>
-                  <th className={styles.hideOnMobile}>Tài xế</th>
+                  <th className={styles.hideOnMobile}>Tài xế - Biển số xe</th>
                   <th>Ngày tạo lịch</th>
                   <th>Hành động</th>
                 </tr>
@@ -786,53 +785,63 @@ export default function KhoLichSanXuatPage() {
                       <td className={styles.hideOnMobile}>
                         <div className={styles.tramTagsWrap}>
                           {item.tramTrons.map((tram) => {
+                            // Gộp tài xế + biển số từ các lần trộn.
+                            // Mỗi lần trộn hiển thị 1 dòng "Tên tài xế - Biển số xe".
+                            // Nếu đơn có nhiều lần trộn khác tài xế/biển số → nhiều dòng.
                             const srcItem = data.find((d) => d.id === tram.idLichSanXuat);
                             const lanTronList = srcItem?.danhSachLanTron || [];
-                            const dsBienSo = lanTronList.length > 0
-                              ? Array.from(new Set(lanTronList.map((lt) => lt.bienSoXe).filter(Boolean)))
-                              : (tram.bienSoXe ? [tram.bienSoXe] : []);
-                            return (
-                              <span
-                                key={tram.id}
-                                className={styles.tramTag}
-                                title={
-                                  dsBienSo.length > 0
-                                    ? `${tram.tenTram} - ${dsBienSo.join(", ")}`
-                                    : tram.tenTram
+
+                            const capTaiXeBienSo: { taiXe: string; bienSo: string }[] = [];
+                            if (lanTronList.length > 0) {
+                              for (const lt of lanTronList) {
+                                const tx = (lt.tenTaiXe || "").trim();
+                                const bs = (lt.bienSoXe || "").trim();
+                                if (!tx && !bs) continue;
+                                if (!capTaiXeBienSo.some((c) => c.taiXe === tx && c.bienSo === bs)) {
+                                  capTaiXeBienSo.push({ taiXe: tx, bienSo: bs });
                                 }
-                              >
-                                {dsBienSo.length > 0 ? dsBienSo.join(", ") : "—"}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </td>
-                      <td className={styles.hideOnMobile}>
-                        <div className={styles.tramTagsWrap}>
-                          {item.tramTrons.map((tram) => {
-                            // Gộp tài xế/biển số từ các lần trộn để hiển thị đầy đủ
-                            // Nếu có danhSachLanTron → dùng danh sách đó (đầy đủ)
-                            // Nếu không có (lịch mới chưa có lần trộn) → dùng giá trị hiện tại
-                            const srcItem = data.find((d) => d.id === tram.idLichSanXuat);
-                            const lanTronList = srcItem?.danhSachLanTron || [];
-                            const dsTaiXe = lanTronList.length > 0
-                              ? Array.from(new Set(lanTronList.map((lt) => lt.tenTaiXe).filter(Boolean)))
-                              : (tram.tenTaiXe ? [tram.tenTaiXe] : []);
-                            const dsBienSo = lanTronList.length > 0
-                              ? Array.from(new Set(lanTronList.map((lt) => lt.bienSoXe).filter(Boolean)))
-                              : (tram.bienSoXe ? [tram.bienSoXe] : []);
+                              }
+                            }
+                            // Fallback: lịch mới chưa có lần trộn → lấy từ lịch chính
+                            if (capTaiXeBienSo.length === 0 && (tram.tenTaiXe || tram.bienSoXe)) {
+                              capTaiXeBienSo.push({
+                                taiXe: (tram.tenTaiXe || "").trim(),
+                                bienSo: (tram.bienSoXe || "").trim(),
+                              });
+                            }
+
+                            if (capTaiXeBienSo.length === 0) {
+                              return (
+                                <span
+                                  key={tram.id}
+                                  className={styles.tramTag}
+                                  title={tram.tenTram}
+                                >
+                                  —
+                                </span>
+                              );
+                            }
+
                             return (
-                              <span
+                              <div
                                 key={tram.id}
-                                className={styles.tramTag}
-                                title={
-                                  dsTaiXe.length > 0
-                                    ? `${tram.tenTram} - ${dsTaiXe.join(", ")}`
-                                    : tram.tenTram
-                                }
+                                className={styles.tramTagGroup}
+                                title={tram.tenTram}
                               >
-                                {dsTaiXe.length > 0 ? dsTaiXe.join(", ") : "—"}
-                              </span>
+                                {capTaiXeBienSo.map((cap, idx) => (
+                                  <span
+                                    key={`${tram.id}-${idx}`}
+                                    className={styles.tramTag}
+                                  >
+                                    {[
+                                      cap.taiXe || "—",
+                                      cap.bienSo ? cap.bienSo : "",
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" - ")}
+                                  </span>
+                                ))}
+                              </div>
                             );
                           })}
                         </div>
