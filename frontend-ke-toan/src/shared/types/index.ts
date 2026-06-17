@@ -168,9 +168,22 @@ export interface LichSanXuat {
   driveLink: string | null;
   trangThai: "chua_san_xuat" | "dang_san_xuat" | "da_xong";
   trangThaiGiao?: "dang_giao" | "da_giao" | "tron_lai" | null;
+  khoiLuongDaTron?: number | null;
   khoiLuongGiaoThucTe?: number | null;
   ngayXacNhanGiao?: string | null;
   ngayTao?: string | null;
+  // Danh sách các lần trộn riêng biệt (xe/tài xế/khối lượng) - từ LichSanXuatLanTron
+  lanTrons?: Array<{
+    id: number;
+    idXe?: number | null;
+    idTaiXe?: number | null;
+    tenTaiXe?: string | null;
+    bienSoXe?: string | null;
+    khoiLuongTron?: number | null;
+    ngayTron?: string | null;
+    thoiGianBatDauDo?: string | null;
+    ghiChuXe?: string | null;
+  }>;
 }
 
 export interface NghiemThu {

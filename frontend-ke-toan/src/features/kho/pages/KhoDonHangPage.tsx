@@ -118,6 +118,18 @@ interface LichSanXuatData {
   khoiLuongGiaoThucTe?: number | null;
   ngayXacNhanGiao?: string | null;
   ghiChuXe?: string | null;
+  // Danh sách các lần trộn riêng biệt (xe/tài xế/khối lượng) của trạm này
+  lanTrons?: Array<{
+    id: number;
+    idXe?: number | null;
+    idTaiXe?: number | null;
+    tenTaiXe?: string | null;
+    bienSoXe?: string | null;
+    khoiLuongTron?: number | null;
+    ngayTron?: string | null;
+    thoiGianBatDauDo?: string | null;
+    ghiChuXe?: string | null;
+  }>;
 }
 
 export default function KhoDonHangPage() {
@@ -437,6 +449,60 @@ export default function KhoDonHangPage() {
                       <span className={styles.tramRowLabel}>Tài xế:</span>
                       <span className={styles.tramRowValue}>{ls.tenTaiXe || "—"}</span>
                     </div>
+
+                    {/* Hiển thị chi tiết từng lần trộn riêng biệt nếu có > 1 lần */}
+                    {ls.lanTrons && ls.lanTrons.length > 1 && (
+                      <div className={`${styles.tramRow} ${styles.tramRowFull}`}>
+                        <span className={styles.tramRowLabel}>
+                          Chi tiết {ls.lanTrons.length} lần trộn:
+                        </span>
+                        <div className={styles.tramRowValue} style={{ width: "100%" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                            <thead>
+                              <tr style={{ background: "rgba(7,60,235,0.06)" }}>
+                                <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Lần
+                                </th>
+                                <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Thời gian
+                                </th>
+                                <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Biển số xe
+                                </th>
+                                <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Tài xế
+                                </th>
+                                <th style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Khối lượng
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {ls.lanTrons.map((lt, ltIdx) => (
+                                <tr key={lt.id}>
+                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                                    {ltIdx + 1}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                                    {formatDateTime(lt.thoiGianBatDauDo || lt.ngayTron || "") || "—"}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                                    {lt.bienSoXe || "—"}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                                    {lt.tenTaiXe || "—"}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid rgba(0,0,0,0.05)", fontWeight: 600 }}>
+                                    {lt.khoiLuongTron ? `${lt.khoiLuongTron.toFixed(1)} m³` : "—"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
                     <div className={styles.tramRow}>
                       <span className={styles.tramRowLabel}>Kỹ thuật:</span>
                       <span className={styles.tramRowValue}>{ls.kyThuatCongTrinh || "—"}</span>

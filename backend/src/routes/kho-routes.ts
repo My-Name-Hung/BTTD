@@ -44,6 +44,14 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron', '
         ls.id, ls.idTramTron, ls.trangThai, ls.trangThaiGiao, ls.thoiGianTron, ls.thoiGianBatDauDo, ls.khoiLuongDaTron, ls.khoiLuongGiaoThucTe, ls.ngayXacNhanGiao, ls.ghiChuXe,
         ISNULL(tt.tenTram, N'Không xác định') as tenTram,
         nd.hoTen as tenTaiXe, ls.bienSoXe,
+        -- Tổng hợp các lần trộn (xe/tài xế) cho mỗi lịch sản xuất - danh sách JSON
+        (SELECT lt.id, lt.idXe, lt.bienSoXe, lt.khoiLuongTron, lt.thoiGianBatDauDo, lt.ngayTron,
+                ndt.hoTen as tenTaiXe
+           FROM LichSanXuatLanTron lt
+           LEFT JOIN NguoiDung ndt ON lt.idTaiXe = ndt.id
+          WHERE lt.idLichSanXuat = ls.id
+          ORDER BY lt.ngayTron ASC, lt.id ASC
+          FOR JSON PATH) as danhSachLanTron,
         -- Tính tổng số khối đã trộn của tất cả trạm cho đơn này
         (SELECT ISNULL(SUM(ls2.khoiLuongDaTron), 0) FROM LichSanXuat ls2 WHERE ls2.idDonHang = dh.id AND ls2.trangThai = N'da_xong') as tongKhoiLuongDaTron
        FROM LichSanXuat ls
@@ -54,6 +62,19 @@ router.get('/lich-san-xuat', authMiddleware, requireRole('admin', 'tram_tron', '
        ORDER BY dh.ngayTao DESC`,
       {}
     );
+
+    // Parse JSON các lần trộn (SQL Server FOR JSON PATH trả về chuỗi JSON)
+    for (const row of data) {
+      if (row.danhSachLanTron && typeof row.danhSachLanTron === 'string') {
+        try {
+          row.danhSachLanTron = JSON.parse(row.danhSachLanTron);
+        } catch {
+          row.danhSachLanTron = [];
+        }
+      } else {
+        row.danhSachLanTron = row.danhSachLanTron || [];
+      }
+    }
 
     res.json({
       success: true,
@@ -87,9 +108,29 @@ router.get('/don-hang/:id', authMiddleware, requireRole('admin', 'tram_tron', 'd
       return;
     }
 
+    // Lấy danh sách TỪNG LẦN TRỘN cho mỗi lịch sản xuất (kèm tên tài xế)
+    const lanTronList = await query<any>(
+      `SELECT lt.*, nd.hoTen as tenTaiXe
+       FROM LichSanXuatLanTron lt
+       LEFT JOIN NguoiDung nd ON lt.idTaiXe = nd.id
+       WHERE lt.idDonHang = @idDonHang
+       ORDER BY lt.ngayTron ASC, lt.id ASC`,
+      { idDonHang }
+    );
+
+    // Gắn các lần trộn vào từng lịch sản xuất
+    const lichSanXuatWithLanTron = lichSanXuatList.map((ls) => ({
+      ...ls,
+      lanTrons: lanTronList.filter((lt) => lt.idLichSanXuat === ls.id),
+    }));
+
     const donHang = await layDonHangTheoId(idDonHang);
 
-    res.json({ success: true, message: 'Lấy chi tiết đơn hàng thành công', data: { donHang, lichSanXuat: lichSanXuatList[0] } });
+    res.json({
+      success: true,
+      message: 'Lấy chi tiết đơn hàng thành công',
+      data: { donHang, lichSanXuat: lichSanXuatWithLanTron },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Lỗi lấy chi tiết đơn hàng';
     res.status(500).json({ success: false, message });
@@ -238,6 +279,36 @@ router.put('/xac-nhan-san-xuat-xong/:idDonHang', authMiddleware, requireRole('ad
       // - Nếu đã có giá trị → cộng dồn
       const khoiLuongDaTronCu = lichCanCapNhat.khoiLuongDaTron || 0;
       const khoiLuongDaTronMoi = (khoiLuongDaTronCu + (khoiLuongDaTron || 0));
+
+      // Ghi nhận TỪNG LẦN TRỘN vào bảng LichSanXuatLanTron để lưu đầy đủ
+      // thông tin xe/tài xế/khối lượng/ngày giờ cho mỗi lần. Khi 1 trạm trộn
+      // nhiều lần với các xe/tài xế khác nhau, dữ liệu vẫn được bảo toàn.
+      if (khoiLuongDaTron != null && khoiLuongDaTron > 0) {
+        await query(
+          `INSERT INTO LichSanXuatLanTron (
+             idLichSanXuat, idDonHang, idTramTron, idXe, idTaiXe,
+             bienSoXe, khoiLuongTron, ngayTron, thoiGianBatDauDo,
+             ghiChuXe, idNguoiTao
+           ) VALUES (
+             @idLichSanXuat, @idDonHang, @idTramTron, @idXe, @idTaiXe,
+             @bienSoXe, @khoiLuongTron, ${vnNow()}, @thoiGianBatDauDo,
+             @ghiChuXe, @idNguoiTao
+           )`,
+          {
+            idLichSanXuat: lichCanCapNhat.id,
+            idDonHang: lichCanCapNhat.idDonHang,
+            idTramTron: lichCanCapNhat.idTramTron ?? null,
+            idXe: idXe || null,
+            idTaiXe: idTaiXeValue,
+            bienSoXe: bienSoXe || null,
+            khoiLuongTron: khoiLuongDaTron,
+            thoiGianBatDauDo: ngayGioDo || null,
+            ghiChuXe: ghiChuXe || null,
+            idNguoiTao: req.user?.id ?? null,
+          }
+        );
+      }
+
       await query(
         `UPDATE LichSanXuat SET
           khoiLuongDaTron = @khoiLuongDaTron,

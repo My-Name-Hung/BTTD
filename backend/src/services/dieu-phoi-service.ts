@@ -103,7 +103,7 @@ export async function taoLichSanXuat(
 export async function layLichSanXuatTheoDonHang(
   idDonHang: number,
 ): Promise<any[]> {
-  return await query<any[]>(
+  const rows = await query<any[]>(
     `SELECT ls.*,
             nd.hoTen as tenTaiXe,
             ISNULL(tt.tenTram, N'Không xác định') as tenTram
@@ -114,6 +114,21 @@ export async function layLichSanXuatTheoDonHang(
      ORDER BY ls.ngayTao ASC`,
     { idDonHang },
   );
+
+  // Lấy danh sách các lần trộn (xe/tài xế) cho từng lịch sản xuất
+  const lanTronRows = await query<any[]>(
+    `SELECT lt.*, ndt.hoTen as tenTaiXe
+     FROM LichSanXuatLanTron lt
+     LEFT JOIN NguoiDung ndt ON lt.idTaiXe = ndt.id
+     WHERE lt.idDonHang = @idDonHang
+     ORDER BY lt.ngayTron ASC, lt.id ASC`,
+    { idDonHang },
+  );
+
+  return rows.map((ls) => ({
+    ...ls,
+    lanTrons: lanTronRows.filter((lt) => lt.idLichSanXuat === ls.id),
+  }));
 }
 
 export async function layTatCaLichSanXuat(

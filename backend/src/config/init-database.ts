@@ -1056,6 +1056,38 @@ async function initDatabase(): Promise<void> {
         }
       }
 
+      // 11. Tạo bảng LichSanXuatLanTron: lưu từng LẦN TRỘN riêng biệt của mỗi trạm
+      //     Mỗi khi kho xác nhận trộn 1 đợt (có thể trộn nhiều lần cùng 1 trạm) → 1 dòng mới
+      //     với thông tin xe, tài xế, khối lượng riêng. Cho phép tra cứu đầy đủ các lần trộn.
+      const lichSanXuatLanTronExists = await migReq.query<{ name: string }[]>(
+        `SELECT name FROM sys.tables WHERE name = 'LichSanXuatLanTron'`
+      );
+      if (lichSanXuatLanTronExists.recordset.length === 0) {
+        await migReq.query(`
+          CREATE TABLE LichSanXuatLanTron (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            idLichSanXuat INT NOT NULL,
+            idDonHang INT NOT NULL,
+            idTramTron INT NULL,
+            idXe INT NULL,
+            idTaiXe INT NULL,
+            bienSoXe NVARCHAR(50) NULL,
+            khoiLuongTron DECIMAL(18,2) NULL,
+            ngayTron DATETIME NULL,
+            thoiGianBatDauDo DATETIME NULL,
+            ghiChuXe NVARCHAR(MAX) NULL,
+            idNguoiTao INT NULL,
+            ngayTao DATETIME DEFAULT GETDATE()
+          )
+        `);
+        console.log("  ➕ Đã tạo bảng LichSanXuatLanTron");
+        await migReq.query(`CREATE NONCLUSTERED INDEX IX_LichSanXuatLanTron_idLichSanXuat ON LichSanXuatLanTron(idLichSanXuat)`);
+        await migReq.query(`CREATE NONCLUSTERED INDEX IX_LichSanXuatLanTron_idDonHang ON LichSanXuatLanTron(idDonHang)`);
+        console.log("  ➕ Đã tạo index cho LichSanXuatLanTron");
+      } else {
+        console.log("  ✅ Bảng LichSanXuatLanTron đã tồn tại");
+      }
+
       await migPool.close();
       console.log("  ✅ Migrations hoàn tất!");
     } catch (error) {

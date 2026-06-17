@@ -31,6 +31,17 @@ interface LichSanXuatItem {
   khoiLuongDaTron?: number;
   // Tổng số khối đã trộn của TẤT CẢ trạm cho đơn này (từ backend subquery)
   tongKhoiLuongDaTron?: number;
+  // Danh sách các lần trộn riêng biệt (xe/tài xế) của trạm này - từ LichSanXuatLanTron
+  danhSachLanTron?: Array<{
+    id: number;
+    idXe?: number | null;
+    idTaiXe?: number | null;
+    tenTaiXe?: string | null;
+    bienSoXe?: string | null;
+    khoiLuongTron?: number | null;
+    ngayTron?: string | null;
+    thoiGianBatDauDo?: string | null;
+  }>;
 }
 
 // Group nhiều trạm trộn vào 1 dòng theo idDonHang
@@ -61,6 +72,15 @@ interface GroupedLichSanXuat {
     ngayXacNhanGiao?: string | null;
     bienSoXe?: string;
     tenTaiXe?: string;
+    // Danh sách các lần trộn riêng biệt - mỗi lần có xe/tài xế riêng
+    lanTrons?: Array<{
+      id: number;
+      tenTaiXe?: string | null;
+      bienSoXe?: string | null;
+      khoiLuongTron?: number | null;
+      thoiGianBatDauDo?: string | null;
+      ngayTron?: string | null;
+    }>;
   }[];
 }
 
@@ -133,6 +153,7 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
           ngayXacNhanGiao: (item as any).ngayXacNhanGiao ?? null,
           bienSoXe: item.bienSoXe,
           tenTaiXe: item.tenTaiXe,
+          lanTrons: item.danhSachLanTron || [],
         });
       }
     }
@@ -764,28 +785,57 @@ export default function KhoLichSanXuatPage() {
                       </td>
                       <td className={styles.hideOnMobile}>
                         <div className={styles.tramTagsWrap}>
-                          {item.tramTrons.map((tram) => (
-                            <span
-                              key={tram.id}
-                              className={styles.tramTag}
-                              title={tram.tenTram}
-                            >
-                              {tram.bienSoXe || "—"}
-                            </span>
-                          ))}
+                          {item.tramTrons.map((tram) => {
+                            const srcItem = data.find((d) => d.id === tram.idLichSanXuat);
+                            const lanTronList = srcItem?.danhSachLanTron || [];
+                            const dsBienSo = lanTronList.length > 0
+                              ? Array.from(new Set(lanTronList.map((lt) => lt.bienSoXe).filter(Boolean)))
+                              : (tram.bienSoXe ? [tram.bienSoXe] : []);
+                            return (
+                              <span
+                                key={tram.id}
+                                className={styles.tramTag}
+                                title={
+                                  dsBienSo.length > 0
+                                    ? `${tram.tenTram} - ${dsBienSo.join(", ")}`
+                                    : tram.tenTram
+                                }
+                              >
+                                {dsBienSo.length > 0 ? dsBienSo.join(", ") : "—"}
+                              </span>
+                            );
+                          })}
                         </div>
                       </td>
                       <td className={styles.hideOnMobile}>
                         <div className={styles.tramTagsWrap}>
-                          {item.tramTrons.map((tram) => (
-                            <span
-                              key={tram.id}
-                              className={styles.tramTag}
-                              title={tram.tenTram}
-                            >
-                              {tram.tenTaiXe || "—"}
-                            </span>
-                          ))}
+                          {item.tramTrons.map((tram) => {
+                            // Gộp tài xế/biển số từ các lần trộn để hiển thị đầy đủ
+                            // Nếu có danhSachLanTron → dùng danh sách đó (đầy đủ)
+                            // Nếu không có (lịch mới chưa có lần trộn) → dùng giá trị hiện tại
+                            const srcItem = data.find((d) => d.id === tram.idLichSanXuat);
+                            const lanTronList = srcItem?.danhSachLanTron || [];
+                            const dsTaiXe = lanTronList.length > 0
+                              ? Array.from(new Set(lanTronList.map((lt) => lt.tenTaiXe).filter(Boolean)))
+                              : (tram.tenTaiXe ? [tram.tenTaiXe] : []);
+                            const dsBienSo = lanTronList.length > 0
+                              ? Array.from(new Set(lanTronList.map((lt) => lt.bienSoXe).filter(Boolean)))
+                              : (tram.bienSoXe ? [tram.bienSoXe] : []);
+                            return (
+                              <span
+                                key={tram.id}
+                                className={styles.tramTag}
+                                title={
+                                  dsTaiXe.length > 0
+                                    ? `${tram.tenTram} - ${dsTaiXe.join(", ")}`
+                                    : tram.tenTram
+                                }
+                              >
+                                {dsTaiXe.length > 0 ? dsTaiXe.join(", ") : "—"}
+                                {dsBienSo.length > 0 ? ` (${dsBienSo.join(", ")})` : ""}
+                              </span>
+                            );
+                          })}
                         </div>
                       </td>
                       <td>

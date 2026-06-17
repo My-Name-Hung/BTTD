@@ -1232,6 +1232,58 @@ export default function ChiTietDonHangPage() {
                       <th style={{ width: 160 }}>Tài xế</th>
                       <td>{lichSX.tenTaiXe || "—"}</td>
                     </tr>
+
+                    {/* Hiển thị chi tiết từng lần trộn riêng biệt nếu có > 1 lần */}
+                    {lichSX.lanTrons && lichSX.lanTrons.length > 1 && (
+                      <tr>
+                        <th>Chi tiết {lichSX.lanTrons.length} lần trộn</th>
+                        <td colSpan={3}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                            <thead>
+                              <tr style={{ background: "rgba(7,60,235,0.06)" }}>
+                                <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Lần
+                                </th>
+                                <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Thời gian đổ
+                                </th>
+                                <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Biển số xe
+                                </th>
+                                <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Tài xế
+                                </th>
+                                <th style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Khối lượng
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {lichSX.lanTrons.map((lt, ltIdx) => (
+                                <tr key={lt.id}>
+                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                                    {ltIdx + 1}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                                    {formatDateTime(lt.thoiGianBatDauDo || lt.ngayTron || "") || "—"}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                                    {lt.bienSoXe || "—"}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                                    {lt.tenTaiXe || "—"}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid rgba(0,0,0,0.05)", fontWeight: 600 }}>
+                                    {lt.khoiLuongTron ? `${lt.khoiLuongTron.toFixed(1)} m³` : "—"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    )}
+
                     <tr>
                       <th>Kỹ thuật</th>
                       <td>{lichSX.kyThuatCongTrinh || "—"}</td>
@@ -1709,36 +1761,6 @@ export default function ChiTietDonHangPage() {
                     }}
                   >
                     <FiPrinter size={12} /> In tạm tính
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (navigator.share) {
-                        navigator.share({
-                          title: "Hóa đơn tạm tính",
-                          text: `Hóa đơn tạm tính ${donHang.maDonHang} - ${formatCurrency(donHang.thanhTien || 0)}`,
-                        });
-                      } else {
-                        navigator.clipboard.writeText(
-                          `Hóa đơn tạm tính ${donHang.maDonHang}: ${formatCurrency(donHang.thanhTien || 0)}`,
-                        );
-                      }
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "5px 10px",
-                      border: "1.5px solid var(--color-border)",
-                      borderRadius: 7,
-                      background: "transparent",
-                      color: "var(--color-text-secondary)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    <FiDownload size={12} /> Gửi khách
                   </button>
                 </div>
               </div>
