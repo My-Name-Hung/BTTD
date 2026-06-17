@@ -238,12 +238,28 @@ router.get(
           return;
         }
 
+        // Lấy danh sách TỪNG LẦN TRỘN cho từng lịch sản xuất (kèm tên tài xế)
+        // để frontend KhoDonHangPage / ChiTietDonHangPage hiển thị đầy đủ thông tin
+        // từng xe/tài xế riêng biệt khi 1 trạm trộn nhiều chuyến.
+        const lanTronList = await query<any>(
+          `SELECT lt.*, nd.hoTen as tenTaiXe
+           FROM LichSanXuatLanTron lt
+           LEFT JOIN NguoiDung nd ON lt.idTaiXe = nd.id
+           WHERE lt.idDonHang = @idDonHang
+           ORDER BY lt.ngayTron ASC, lt.id ASC`,
+          { idDonHang },
+        );
+        const lichSanXuatWithLanTron = lichSanXuatList.map((ls) => ({
+          ...ls,
+          lanTrons: lanTronList.filter((lt) => lt.idLichSanXuat === ls.id),
+        }));
+
         const donHang = await layDonHangTheoId(idDonHang);
         // Trả về tất cả lịch sản xuất của trạm này cho đơn hàng
         res.json({
           success: true,
           message: "Lấy chi tiết đơn hàng thành công",
-          data: { donHang, lichSanXuat: lichSanXuatList },
+          data: { donHang, lichSanXuat: lichSanXuatWithLanTron },
         });
         return;
       }
@@ -270,11 +286,25 @@ router.get(
         return;
       }
 
+      // Lấy danh sách TỪNG LẦN TRỘN cho từng lịch sản xuất (kèm tên tài xế)
+      const lanTronList = await query<any>(
+        `SELECT lt.*, nd.hoTen as tenTaiXe
+         FROM LichSanXuatLanTron lt
+         LEFT JOIN NguoiDung nd ON lt.idTaiXe = nd.id
+         WHERE lt.idDonHang = @idDonHang
+         ORDER BY lt.ngayTron ASC, lt.id ASC`,
+        { idDonHang },
+      );
+      const lichSanXuatWithLanTron = lichSanXuatList.map((ls) => ({
+        ...ls,
+        lanTrons: lanTronList.filter((lt) => lt.idLichSanXuat === ls.id),
+      }));
+
       const donHang = await layDonHangTheoId(idDonHang);
       res.json({
         success: true,
         message: "Lấy chi tiết đơn hàng thành công",
-        data: { donHang, lichSanXuat: lichSanXuatList },
+        data: { donHang, lichSanXuat: lichSanXuatWithLanTron },
       });
     } catch (error) {
       const message =
