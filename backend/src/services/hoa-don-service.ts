@@ -42,6 +42,8 @@ export interface HoaDon {
   donHangDaThanhToan?: number;
   donHangBuVanChuyen?: number;
   donHangChiPhiPhatSinh?: number;
+  // Còn lại (chưa thanh toán) của đơn tại thời điểm query — alias từ DonHang.conLai
+  donHangConLai?: number;
 }
 
 interface TaoHoaDonInput {
@@ -547,10 +549,69 @@ export async function taoHoaDon(
 }
 
 export async function layHoaDonTheoDonHang(idDonHang: number): Promise<any[]> {
-  return (await query(
-    `SELECT * FROM HoaDon WHERE idDonHang = @idDonHang ORDER BY id DESC`,
+  // JOIN thêm các field từ DonHang + snapshot từ HoaDon (tongNghiaVuDon, congNoConLai)
+  // để frontend (ChiTietDonHangPage, dashboard...) hiển thị bảng hóa đơn đầy đủ
+  // giống trang InHoaDonPage, không cần gọi thêm API cho từng hóa đơn.
+  const rows = (await query(
+    `SELECT hd.*,
+            dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong,
+            dh.khoiLuongDat, dh.donGia, dh.ngayGiao, dh.conLai as donHangConLai,
+            dh.thanhTien as donHangThanhTien,
+            dh.daThanhToan as donHangDaThanhToan,
+            dh.buVanChuyen as donHangBuVanChuyen,
+            dh.chiPhiPhatSinh as donHangChiPhiPhatSinh,
+            dh.hangMuc, dh.phuongPhapDo, dh.loaiBom, dh.chieuDaiBom, dh.kieuNoi, dh.chieuDaiNoi
+     FROM HoaDon hd
+     INNER JOIN DonHang dh ON hd.idDonHang = dh.id
+     WHERE hd.idDonHang = @idDonHang
+     ORDER BY hd.id ASC`,
     { idDonHang },
   )) as any[];
+  return rows.map((r) => ({
+    id: r.id,
+    idDonHang: r.idDonHang,
+    maHoaDon: r.maHoaDon,
+    soHoaDon: r.soHoaDon,
+    ngayLap: r.ngayLap,
+    khachHang: r.khachHang,
+    loaiXiMang: r.loaiXiMang,
+    gioDo: r.gioDo,
+    phuongThucThanhToan: r.phuongThucThanhToan,
+    ghiChu: r.ghiChu,
+    tienBeTong: r.tienBeTong,
+    buuVanChuyen: r.buuVanChuyen,
+    phiPhatSinh: r.phiPhatSinh,
+    giamTru: r.giamTru,
+    tongCong: r.tongCong,
+    soTienThanhToan: r.soTienThanhToan,
+    soTienDu: r.soTienDu || 0,
+    loaiThanhToan: r.loaiThanhToan,
+    hanTraCongNo: r.hanTraCongNo,
+    nguoiTaoId: r.nguoiTaoId,
+    createdAt: r.createdAt,
+    tongNghiaVuDon: r.tongNghiaVuDon,
+    congNoConLai: r.congNoConLai || 0,
+    maDonHang: r.maDonHang,
+    tenKhachHang: r.tenKhachHang,
+    diaChiNhan: r.diaChiNhan,
+    tenMacBeTong: r.tenMacBeTong,
+    khoiLuongDat: r.khoiLuongDat,
+    donGia: r.donGia,
+    donHangDonGia: r.donGia,
+    thanhTien: r.thanhTien,
+    ngayGiao: r.ngayGiao,
+    donHangThanhTien: r.donHangThanhTien,
+    donHangDaThanhToan: r.donHangDaThanhToan,
+    donHangBuVanChuyen: r.donHangBuVanChuyen,
+    donHangChiPhiPhatSinh: r.donHangChiPhiPhatSinh,
+    hangMuc: r.hangMuc,
+    phuongPhapDo: r.phuongPhapDo,
+    loaiBom: r.loaiBom,
+    chieuDaiBom: r.chieuDaiBom,
+    kieuNoi: r.kieuNoi,
+    chieuDaiNoi: r.chieuDaiNoi,
+    donHangConLai: r.donHangConLai,
+  }));
 }
 
 export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {

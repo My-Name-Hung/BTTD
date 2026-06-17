@@ -279,6 +279,7 @@ export interface HoaDon {
   giamTru: number;
   tongCong: number;
   soTienThanhToan: number;
+  soTienDu?: number;
   loaiThanhToan: 'tra_het' | 'tra_het_du' | 'cong_no' | 'cong_no_du';
   hanTraCongNo: string | null;
   maDonHang?: string;
@@ -289,6 +290,24 @@ export interface HoaDon {
   createdAt?: string;
   tenKhachHang?: string;
   donHangConLai?: number;
+  // Field JOIN từ DonHang + snapshot lưu trong HoaDon
+  diaChiNhan?: string;
+  ngayGiao?: string | null;
+  donHangThanhTien?: number;
+  donHangDonGia?: number;
+  donHangDaThanhToan?: number;
+  donHangBuVanChuyen?: number;
+  donHangChiPhiPhatSinh?: number;
+  // Snapshot cứng lưu trong HoaDon
+  tongNghiaVuDon?: number;
+  congNoConLai?: number;
+  // Hạng mục / phương pháp đổ
+  hangMuc?: string | null;
+  phuongPhapDo?: 'do_xa' | 'do_bom' | null;
+  loaiBom?: 'bom_ngang' | 'bom_can' | null;
+  chieuDaiBom?: number | null;
+  kieuNoi?: 'khong_dau' | 'noi_dau' | 'noi_dit' | null;
+  chieuDaiNoi?: number | null;
 }
 
 export interface CongNoKhachHang {

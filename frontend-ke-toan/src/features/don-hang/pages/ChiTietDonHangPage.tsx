@@ -2009,6 +2009,58 @@ export default function ChiTietDonHangPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {sortedHoaDons.map((hd, idx) => {
                 const debtLabel = getDebtInvoiceStepLabel(sortedHoaDons, hd.id);
+                // === Tính toán các giá trị hiển thị giống trang InHoaDonPage ===
+                // Tổng nghĩa vụ: ưu tiên tongNghiaVuDon (snapshot lưu cứng trong HĐ),
+                // fallback donHangThanhTien / hd.tongCong.
+                const tongNghiaVu =
+                  hd.tongNghiaVuDon || hd.donHangThanhTien || hd.tongCong || 0;
+                // Đơn giá hiển thị: lấy từ đơn hàng gốc (donHangDonGia / donGia),
+                // không bị phân bổ tỷ lệ giữa các lần HĐ.
+                const donGiaHienThi = hd.donHangDonGia || hd.donGia || 0;
+                // Khối lượng hiển thị: lấy từ đơn hàng.
+                const khoiLuongHienThi = hd.khoiLuongDat || 0;
+                const hdIsCongNo =
+                  hd.loaiThanhToan === "cong_no" ||
+                  hd.loaiThanhToan === "cong_no_du";
+                // Danh sách HĐ công nợ + vị trí của HĐ hiện tại trong danh sách
+                const debtHoaDons = sortedHoaDons.filter(
+                  (it) =>
+                    it.loaiThanhToan === "cong_no" ||
+                    it.loaiThanhToan === "cong_no_du",
+                );
+                const currentDebtIndex = debtHoaDons.findIndex(
+                  (it) => it.id === hd.id,
+                );
+                // Tổng đã thanh toán các lần TRƯỚC lần hiện tại
+                const daThanhToanTruoc = debtHoaDons
+                  .slice(0, currentDebtIndex >= 0 ? currentDebtIndex : 0)
+                  .reduce((sum, it) => sum + (it.soTienThanhToan || 0), 0);
+                const soTienTraKyNay = hd.soTienThanhToan || 0;
+                // HĐ đã tất toán: loại trả hết / trả hết dư / công nợ dư,
+                // hoặc công nợ thường mà kỳ này trả đủ/vượt nghĩa vụ còn lại
+                const phanConLaiCanTra = Math.max(
+                  0,
+                  tongNghiaVu - daThanhToanTruoc,
+                );
+                const isDaTatToan =
+                  hd.loaiThanhToan === "tra_het" ||
+                  hd.loaiThanhToan === "tra_het_du" ||
+                  hd.loaiThanhToan === "cong_no_du" ||
+                  (hdIsCongNo && soTienTraKyNay >= phanConLaiCanTra);
+                const isCongNoChuaTatToan = hdIsCongNo && !isDaTatToan;
+                // Tiền bê tông hiển thị: HĐ công nợ chưa tất toán hiển thị
+                // số tiền khách trả kỳ này (giống InHoaDonPage).
+                const tienBeTongHienThi = isCongNoChuaTatToan
+                  ? soTienTraKyNay
+                  : hd.tienBeTong || 0;
+                // Tổng cộng hiển thị: ưu tiên tongNghiaVuDon (snapshot chuẩn)
+                const tongCongHienThi = isCongNoChuaTatToan
+                  ? soTienTraKyNay
+                  : tongNghiaVu || hd.tongCong || 0;
+                // Công nợ còn lại: ưu tiên snapshot congNoConLai (lưu cứng)
+                const congNoConLaiHienThi = isCongNoChuaTatToan
+                  ? Math.max(0, hd.congNoConLai || 0)
+                  : 0;
                 return (
                 <div
                   key={hd.id}
@@ -2265,6 +2317,16 @@ export default function ChiTietDonHangPage() {
                               fontSize: 11,
                             }}
                           >
+                            Khối lượng
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 700,
+                              fontSize: 11,
+                            }}
+                          >
                             Đơn giá
                           </th>
                           <th
@@ -2286,12 +2348,23 @@ export default function ChiTietDonHangPage() {
                           }}
                         >
                           <td style={{ padding: "6px 8px" }}>
-                            Bê tông thương phẩm
+                            Bê tông thương phẩm ({hd.tenMacBeTong || ""})
                           </td>
                           <td
-                            style={{ padding: "6px 8px", textAlign: "right" }}
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                            }}
                           >
-                            {hd.tienBeTong?.toLocaleString("vi-VN")} đ
+                            {khoiLuongHienThi.toLocaleString("vi-VN")} m³
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                            }}
+                          >
+                            {formatCurrency(donGiaHienThi)}
                           </td>
                           <td
                             style={{
@@ -2300,7 +2373,7 @@ export default function ChiTietDonHangPage() {
                               fontWeight: 600,
                             }}
                           >
-                            {hd.tienBeTong?.toLocaleString("vi-VN")} đ
+                            {formatCurrency(tienBeTongHienThi)}
                           </td>
                         </tr>
                         {(hd.buuVanChuyen || 0) > 0 && (
@@ -2317,6 +2390,9 @@ export default function ChiTietDonHangPage() {
                             >
                               Bù vận chuyển
                             </td>
+                            <td
+                              style={{ padding: "6px 8px", textAlign: "right" }}
+                            ></td>
                             <td
                               style={{ padding: "6px 8px", textAlign: "right" }}
                             ></td>
@@ -2349,6 +2425,9 @@ export default function ChiTietDonHangPage() {
                               style={{ padding: "6px 8px", textAlign: "right" }}
                             ></td>
                             <td
+                              style={{ padding: "6px 8px", textAlign: "right" }}
+                            ></td>
+                            <td
                               style={{
                                 padding: "6px 8px",
                                 textAlign: "right",
@@ -2377,6 +2456,9 @@ export default function ChiTietDonHangPage() {
                               style={{ padding: "6px 8px", textAlign: "right" }}
                             ></td>
                             <td
+                              style={{ padding: "6px 8px", textAlign: "right" }}
+                            ></td>
+                            <td
                               style={{
                                 padding: "6px 8px",
                                 textAlign: "right",
@@ -2390,9 +2472,37 @@ export default function ChiTietDonHangPage() {
                         )}
                       </tbody>
                       <tfoot>
+                        {/* Dòng "ĐÃ THANH TOÁN" nếu là HĐ lần 2+ của công nợ */}
+                        {hdIsCongNo && currentDebtIndex > 0 && (
+                          <tr style={{ background: "#f8fafc" }}>
+                            <td
+                              colSpan={3}
+                              style={{
+                                padding: "6px 8px",
+                                textAlign: "right",
+                                fontWeight: 600,
+                                fontSize: 12,
+                                color: "var(--color-text-secondary)",
+                              }}
+                            >
+                              ĐÃ THANH TOÁN (các lần trước)
+                            </td>
+                            <td
+                              style={{
+                                padding: "6px 8px",
+                                textAlign: "right",
+                                fontWeight: 600,
+                                fontSize: 12,
+                                color: "var(--color-text-secondary)",
+                              }}
+                            >
+                              {daThanhToanTruoc.toLocaleString("vi-VN")} đ
+                            </td>
+                          </tr>
+                        )}
                         <tr style={{ background: "#f0f4ff" }}>
                           <td
-                            colSpan={2}
+                            colSpan={3}
                             style={{
                               padding: "7px 8px",
                               textAlign: "right",
@@ -2400,7 +2510,13 @@ export default function ChiTietDonHangPage() {
                               fontSize: 13,
                             }}
                           >
-                            TỔNG CỘNG
+                            {hdIsCongNo
+                              ? isDaTatToan
+                                ? "TỔNG CỘNG"
+                                : currentDebtIndex === 0
+                                  ? "SỐ TIỀN TRẢ"
+                                  : "SỐ TIỀN TRẢ KỲ NÀY"
+                              : "TỔNG CỘNG"}
                           </td>
                           <td
                             style={{
@@ -2411,11 +2527,32 @@ export default function ChiTietDonHangPage() {
                               color: "var(--color-primary)",
                             }}
                           >
-                            {hd.tongCong?.toLocaleString("vi-VN")} đ
+                            {tongCongHienThi.toLocaleString("vi-VN")} đ
                           </td>
                         </tr>
                       </tfoot>
                     </table>
+
+                    {/* Công nợ còn lại (chỉ HĐ công nợ) */}
+                    {hdIsCongNo && (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          padding: "6px 10px",
+                          background: isCongNoChuaTatToan
+                            ? "#fff7ed"
+                            : "#f0fdf4",
+                          border: `1px solid ${isCongNoChuaTatToan ? "#fdba74" : "#86efac"}`,
+                          borderRadius: 6,
+                          color: isCongNoChuaTatToan ? "#9a3412" : "#15803d",
+                          fontWeight: 600,
+                          marginTop: 4,
+                        }}
+                      >
+                        Công nợ còn lại:{" "}
+                        {formatCurrency(congNoConLaiHienThi)}
+                      </div>
+                    )}
 
                     {/* Ghi chú */}
                     {hd.ghiChu && (
