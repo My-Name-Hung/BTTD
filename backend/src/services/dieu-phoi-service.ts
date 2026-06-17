@@ -103,7 +103,7 @@ export async function taoLichSanXuat(
 export async function layLichSanXuatTheoDonHang(
   idDonHang: number,
 ): Promise<any[]> {
-  const rows = await query<any[]>(
+  const rows: any[] = await query<any>(
     `SELECT ls.*,
             nd.hoTen as tenTaiXe,
             ISNULL(tt.tenTram, N'Không xác định') as tenTram
@@ -116,7 +116,7 @@ export async function layLichSanXuatTheoDonHang(
   );
 
   // Lấy danh sách các lần trộn (xe/tài xế) cho từng lịch sản xuất
-  const lanTronRows = await query<any[]>(
+  const lanTronRows: any[] = await query<any>(
     `SELECT lt.*, ndt.hoTen as tenTaiXe
      FROM LichSanXuatLanTron lt
      LEFT JOIN NguoiDung ndt ON lt.idTaiXe = ndt.id
@@ -155,7 +155,15 @@ export async function layTatCaLichSanXuat(
     `SELECT ls.*,
             dh.maDonHang, dh.tenKhachHang, dh.diaChiNhan, dh.tenMacBeTong, dh.khoiLuongDat, dh.trangThaiDon,
             ISNULL(tt.tenTram, N'Không xác định') as tenTram,
-            nd.hoTen as tenTaiXe
+            nd.hoTen as tenTaiXe,
+            -- Danh sách các lần trộn (xe/tài xế) cho mỗi lịch sản xuất - JSON
+            (SELECT lt.id, lt.idXe, lt.bienSoXe, lt.khoiLuongTron, lt.thoiGianBatDauDo, lt.ngayTron,
+                    ndt.hoTen as tenTaiXe
+               FROM LichSanXuatLanTron lt
+               LEFT JOIN NguoiDung ndt ON lt.idTaiXe = ndt.id
+              WHERE lt.idLichSanXuat = ls.id
+              ORDER BY lt.ngayTron ASC, lt.id ASC
+              FOR JSON PATH) as danhSachLanTron
      FROM LichSanXuat ls
      LEFT JOIN DonHang dh ON ls.idDonHang = dh.id
      LEFT JOIN TramTron tt ON ls.idTramTron = tt.id
@@ -165,6 +173,19 @@ export async function layTatCaLichSanXuat(
      OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
     params,
   );
+
+  // Parse JSON các lần trộn (SQL Server FOR JSON PATH trả về chuỗi JSON)
+  for (const row of data) {
+    if (row.danhSachLanTron && typeof row.danhSachLanTron === "string") {
+      try {
+        row.danhSachLanTron = JSON.parse(row.danhSachLanTron);
+      } catch {
+        row.danhSachLanTron = [];
+      }
+    } else {
+      row.danhSachLanTron = row.danhSachLanTron || [];
+    }
+  }
 
   return { data, total };
 }

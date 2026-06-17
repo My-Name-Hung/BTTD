@@ -30,6 +30,17 @@ interface LichSanXuatItem {
   nguoiOmOng?: string;
   nguoiBatOng?: string;
   ghiChu?: string;
+  // Danh sách các lần trộn riêng biệt (xe/tài xế) của trạm này - từ LichSanXuatLanTron
+  danhSachLanTron?: Array<{
+    id: number;
+    idXe?: number | null;
+    idTaiXe?: number | null;
+    tenTaiXe?: string | null;
+    bienSoXe?: string | null;
+    khoiLuongTron?: number | null;
+    ngayTron?: string | null;
+    thoiGianBatDauDo?: string | null;
+  }>;
 }
 
 // Group nhiều trạm trộn vào 1 dòng theo idDonHang
@@ -50,6 +61,7 @@ interface GroupedLichSanXuat {
     idLichSanXuat: number;
     thoiGianTron?: string;
     trangThai?: string;
+    khoiLuongDaTron?: number;
   }[];
 }
 
@@ -103,6 +115,7 @@ function groupByDonHang(items: LichSanXuatItem[]): GroupedLichSanXuat[] {
           idLichSanXuat: item.id,
           thoiGianTron: item.thoiGianTron,
           trangThai: item.trangThai,
+          khoiLuongDaTron: (item as any).khoiLuongDaTron,
         });
       }
     }
@@ -548,22 +561,72 @@ export default function DieuPhoiLichSanXuatPage() {
                       </td>
                       <td className={styles.hideOnMobile}>
                         <div className={styles.tramTagsWrap}>
-                          {item.tramTrons.map((tram) => (
-                            <span key={tram.id} className={styles.tramTag}>
-                              {tram.tenTram}
-                            </span>
-                          ))}
+                          {item.tramTrons.map((tram) => {
+                            const klTram = tram.khoiLuongDaTron || 0;
+                            return (
+                              <span
+                                key={tram.id}
+                                className={styles.tramTag}
+                                title={tram.tenTram}
+                              >
+                                {tram.tenTram}
+                                {klTram > 0
+                                  ? ` - ${klTram.toFixed(1)}/${(item.khoiLuongDat || 0).toFixed(1)} m³`
+                                  : ""}
+                              </span>
+                            );
+                          })}
                         </div>
                       </td>
                       <td className={styles.hideOnMobile}>
-                        <span className={styles.tableXe}>
-                          {item.bienSoXe || "—"}
-                        </span>
+                        <div className={styles.tramTagsWrap}>
+                          {item.tramTrons.map((tram) => {
+                            // Gộp biển số từ các lần trộn để hiển thị đầy đủ
+                            const srcItem = data.find((d) => d.id === tram.idLichSanXuat);
+                            const lanTronList = srcItem?.danhSachLanTron || [];
+                            const dsBienSo = lanTronList.length > 0
+                              ? Array.from(new Set(lanTronList.map((lt) => lt.bienSoXe).filter(Boolean)))
+                              : (tram.tenTram && srcItem?.bienSoXe ? [srcItem.bienSoXe] : []);
+                            return (
+                              <span
+                                key={tram.id}
+                                className={styles.tramTag}
+                                title={
+                                  dsBienSo.length > 0
+                                    ? `${tram.tenTram} - ${dsBienSo.join(", ")}`
+                                    : tram.tenTram
+                                }
+                              >
+                                {dsBienSo.length > 0 ? dsBienSo.join(", ") : "—"}
+                              </span>
+                            );
+                          })}
+                        </div>
                       </td>
                       <td className={styles.hideOnMobile}>
-                        <span className={styles.tableTaiXe}>
-                          {item.tenTaiXe || "—"}
-                        </span>
+                        <div className={styles.tramTagsWrap}>
+                          {item.tramTrons.map((tram) => {
+                            // Gộp tài xế từ các lần trộn để hiển thị đầy đủ
+                            const srcItem = data.find((d) => d.id === tram.idLichSanXuat);
+                            const lanTronList = srcItem?.danhSachLanTron || [];
+                            const dsTaiXe = lanTronList.length > 0
+                              ? Array.from(new Set(lanTronList.map((lt) => lt.tenTaiXe).filter(Boolean)))
+                              : (tram.tenTram && srcItem?.tenTaiXe ? [srcItem.tenTaiXe] : []);
+                            return (
+                              <span
+                                key={tram.id}
+                                className={styles.tramTag}
+                                title={
+                                  dsTaiXe.length > 0
+                                    ? `${tram.tenTram} - ${dsTaiXe.join(", ")}`
+                                    : tram.tenTram
+                                }
+                              >
+                                {dsTaiXe.length > 0 ? dsTaiXe.join(", ") : "—"}
+                              </span>
+                            );
+                          })}
+                        </div>
                       </td>
                       <td>
                         <span className={styles.tableDate}>
