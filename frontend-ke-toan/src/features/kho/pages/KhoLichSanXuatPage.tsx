@@ -832,7 +832,6 @@ export default function KhoLichSanXuatPage() {
                                 }
                               >
                                 {dsTaiXe.length > 0 ? dsTaiXe.join(", ") : "—"}
-                                {dsBienSo.length > 0 ? ` (${dsBienSo.join(", ")})` : ""}
                               </span>
                             );
                           })}

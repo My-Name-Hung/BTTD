@@ -31,6 +31,10 @@ export interface HoaDon {
   // Tổng nghĩa vụ GỐC của đơn hàng tại thời điểm lập hóa đơn (= tienBeTongGoc + bv + pp - gt)
   // Lưu vào DB để in hóa đơn hiển thị chính xác "TỔNG NGHĨA VỤ ĐƠN HÀNG"
   tongNghiaVuDon?: number;
+  // Snapshot cứng "Công nợ còn lại" tại thời điểm lập hóa đơn
+  // Ưu tiên dùng để in "Công nợ còn lại" trên hóa đơn, giữ nguyên giá trị
+  // của thời điểm lập dù DonHang.conLai có thay đổi sau này.
+  congNoConLai?: number;
   // Tổng nghĩa vụ GỐC của đơn hàng (lúc tạo đơn) + đã thanh toán + bv/pp
   // Alias rõ ràng từ DonHang, dùng để frontend tính công nợ chính xác
   donHangThanhTien?: number;
@@ -276,6 +280,15 @@ export async function taoHoaDon(
     tongNghiaVu - tongDaThanhToanTruocDo,
   );
 
+  // Đếm số hóa đơn đã có cho đơn này để xác định HĐ hiện tại có phải lần đầu
+  // (HĐ đầu tiên mới được phép tự động cập nhật DonHang.phuongThucThanhToan
+  // theo loại hóa đơn thực tế; các lần sau giữ nguyên giá trị đã chốt từ lần 1).
+  const soHoaDonHienCo = await query<{ soLuong: number }>(
+    `SELECT COUNT(*) as soLuong FROM HoaDon WHERE idDonHang = @idDonHang`,
+    { idDonHang: data.idDonHang },
+  );
+  const laHoaDonDauTien = (soHoaDonHienCo[0]?.soLuong || 0) === 0;
+
   const soTienThanhToanTruoc = Math.max(0, data.soTienThanhToanTruoc || 0);
   const soTienDu = Math.max(0, data.soTienDu || 0);
   const duCuoiCoHienTai = await layDuCuoiCoKhachHang({
@@ -321,17 +334,30 @@ export async function taoHoaDon(
   // tongCong = soTienThuMoi (số tiền thực nhận), không bị giới hạn bởi tongThanhToanHieuLuc
   const soTienThanhToan = soTienThuMoi;
 
+  // Snapshot cứng "Công nợ còn lại" tại thời điểm lập hóa đơn này.
+  // Lưu riêng trên HĐ để in lại hóa đơn cũ vẫn hiển thị đúng số nợ của
+  // thời điểm đó, không bị ảnh hưởng bởi DonHang.conLai khi khách trả hết.
+  // - tra_het / tra_het_du: đã tất toán → congNoConLai = 0
+  // - cong_no: còn lại = tongNghiaVu - (đã trả trước + phần hiệu lực kỳ này)
+  //   = tongNghiaVu - (tongDaThanhToanTruocDo + tongThanhToanHieuLuc)
+  // - cong_no_du: khách trả vượt → có thể âm (nhưng clamp về 0)
+  const tongDaThanhToanSauKyNay = tongDaThanhToanTruocDo + tongThanhToanHieuLuc;
+  const congNoConLaiSnapshot = Math.max(
+    0,
+    tongNghiaVu - tongDaThanhToanSauKyNay,
+  );
+
   const result = await query<HoaDon>(
     `INSERT INTO HoaDon (
       idDonHang, maHoaDon, soHoaDon, ngayLap, khachHang, loaiXiMang, gioDo,
       phuongThucThanhToan, ghiChu, tienBeTong, buuVanChuyen, phiPhatSinh,
       giamTru, tongCong, soTienThanhToan, soTienDu, loaiThanhToan, hanTraCongNo, nguoiTaoId,
-      tongNghiaVuDon
+      tongNghiaVuDon, congNoConLai
     ) VALUES (
       @idDonHang, @maHoaDon, @soHoaDon, @ngayLap, @khachHang, @loaiXiMang, @gioDo,
       @phuongThucThanhToan, @ghiChu, @tienBeTong, @buuVanChuyen, @phiPhatSinh,
       @giamTru, @tongCong, @soTienThanhToan, @soTienDu, @loaiThanhToan, @hanTraCongNo, @nguoiTaoId,
-      @tongNghiaVuDon
+      @tongNghiaVuDon, @congNoConLai
     );
     SELECT * FROM HoaDon WHERE id = SCOPE_IDENTITY();`,
     {
@@ -360,6 +386,9 @@ export async function taoHoaDon(
       // Lưu tổng nghĩa vụ GỐC của đơn tại thời điểm lập hóa đơn
       // (dùng cho in hóa đơn, hiển thị "TỔNG NGHĨA VỤ ĐƠN HÀNG" chính xác)
       tongNghiaVuDon: tongNghiaVu,
+      // Snapshot "Công nợ còn lại" tại thời điểm lập hóa đơn này
+      // (in lại hóa đơn cũ vẫn hiển thị đúng số nợ của thời điểm đó)
+      congNoConLai: congNoConLaiSnapshot,
     },
   );
 
@@ -393,6 +422,19 @@ export async function taoHoaDon(
         daThanhToan: tongNghiaVu,
       },
     );
+
+    // Auto cập nhật phương thức thanh toán của đơn hàng theo loại HĐ thực tế
+    // (chỉ áp dụng cho HĐ đầu tiên - các lần sau giữ nguyên giá trị đã chốt
+    // từ lần đầu, tránh ghi đè khi kế toán lập thêm HĐ bổ sung).
+    if (laHoaDonDauTien) {
+      const phuongThucMoi =
+        data.loaiThanhToan === "tra_het_du" ? "tra_het_du" : "tra_het";
+      await query(
+        `UPDATE DonHang SET phuongThucThanhToan = @phuongThucThanhToan
+         WHERE id = @id`,
+        { id: data.idDonHang, phuongThucThanhToan: phuongThucMoi },
+      );
+    }
 
     await dongBoCongNoKhachHangTheoPhatSinh({
       idKhachHang: dh.idKhachHang || null,
@@ -441,6 +483,19 @@ export async function taoHoaDon(
         daTatToan: daTatToan ? 1 : 0,
       },
     );
+
+    // Auto cập nhật phương thức thanh toán của đơn hàng theo loại HĐ thực tế
+    // (chỉ áp dụng cho HĐ đầu tiên - các lần sau giữ nguyên giá trị đã chốt
+    // từ lần đầu, tránh ghi đè khi kế toán lập thêm HĐ bổ sung).
+    if (laHoaDonDauTien) {
+      const phuongThucMoi =
+        data.loaiThanhToan === "cong_no_du" ? "cong_no_du" : "cong_no";
+      await query(
+        `UPDATE DonHang SET phuongThucThanhToan = @phuongThucThanhToan
+         WHERE id = @id`,
+        { id: data.idDonHang, phuongThucThanhToan: phuongThucMoi },
+      );
+    }
 
     await query(
       `IF EXISTS (SELECT * FROM CongNo WHERE idDonHang = @idDonHang)
@@ -554,6 +609,10 @@ export async function layHoaDonTheoId(id: number): Promise<HoaDon | null> {
     // Tổng nghĩa vụ GỐC của đơn tại thời điểm lập hóa đơn (lưu trong HoaDon.tongNghiaVuDon)
     // Đây là nguồn chính xác nhất cho "TỔNG NGHĨA VỤ ĐƠN HÀNG" hiển thị trên hóa đơn
     tongNghiaVuDon: r.tongNghiaVuDon,
+    // Snapshot "Công nợ còn lại" tại thời điểm lập hóa đơn (lưu trong HoaDon.congNoConLai)
+    // Ưu tiên dùng để in "Công nợ còn lại" trên hóa đơn, giữ nguyên giá trị của
+    // thời điểm lập dù DonHang.conLai có thay đổi sau này khi khách thanh toán hết.
+    congNoConLai: r.congNoConLai || 0,
     maDonHang: r.maDonHang,
     tenKhachHang: r.tenKhachHang,
     diaChiNhan: r.diaChiNhan,

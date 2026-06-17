@@ -697,6 +697,19 @@ async function initDatabase(): Promise<void> {
         `ALTER TABLE HoaDon ADD soTienDu DECIMAL(18,2) DEFAULT 0`,
       );
     }
+    // Thêm cột congNoConLai nếu chưa có (snapshot cứng "công nợ còn lại"
+    // tại thời điểm lập hóa đơn, dùng để in lại hóa đơn cũ vẫn hiển thị
+    // đúng số nợ của thời điểm đó, không bị ảnh hưởng bởi DonHang.conLai
+    // sau này khi khách thanh toán hết).
+    const congNoConLaiCol = await db.query<{ name: string }[]>(
+      `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('HoaDon') AND name = 'congNoConLai'`,
+    );
+    if (congNoConLaiCol.recordset.length === 0) {
+      console.log("  ➕ Thêm cột HoaDon.congNoConLai...");
+      await db.query(
+        `ALTER TABLE HoaDon ADD congNoConLai DECIMAL(18,2) DEFAULT 0`,
+      );
+    }
 
     // Tạo bảng ThanhToan
     const thanhToanExists = await db.query<{ name: string }[]>(

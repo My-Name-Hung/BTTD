@@ -157,6 +157,11 @@ interface HoaDonData {
   // Tổng nghĩa vụ GỐC của đơn tại thời điểm lập hóa đơn (lưu trong HoaDon.tongNghiaVuDon)
   // = tiền bê tông gốc + bv + pp - gt, đầy đủ cho mọi lần thanh toán
   tongNghiaVuDon?: number;
+  // Snapshot cứng "Công nợ còn lại" tại thời điểm lập hóa đơn này
+  // (lưu trong HoaDon.congNoConLai). Ưu tiên dùng để in "Công nợ còn lại"
+  // trên hóa đơn, giữ nguyên giá trị của thời điểm lập dù DonHang.conLai
+  // có thay đổi sau này khi khách thanh toán hết các lần sau.
+  congNoConLai?: number;
   [key: string]: any;
 }
 
@@ -1020,15 +1025,23 @@ export default function InHoaDonPage() {
                   <span className={styles.infoLabel}>Công nợ còn lại:</span>
                   <span className={styles.infoValue}>
                     {formatCurrency(
+                      // Ưu tiên dùng snapshot congNoConLai (lưu cứng trong HĐ
+                      // tại thời điểm lập) để in lại hóa đơn cũ vẫn hiển thị
+                      // đúng số nợ của thời điểm đó, không bị ảnh hưởng bởi
+                      // DonHang.conLai sau này khi khách thanh toán hết.
+                      // Fallback: tính từ tongNghiaVu - (đã trả + kỳ này) nếu
+                      // HĐ cũ chưa có field snapshot này.
                       isCongNoChuaTatToan
                         ? Math.max(
                             0,
-                            hd.donHangConLai ||
+                            (hd.congNoConLai != null
+                              ? Number(hd.congNoConLai)
+                              : NaN) ??
                               Math.max(
                                 0,
                                 tongNghiaVu -
                                   (daThanhToanTruoc + soTienTraKyNay),
-                              ) ||
+                              ) ??
                               0,
                           )
                         : 0,
