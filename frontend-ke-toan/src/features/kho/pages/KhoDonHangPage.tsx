@@ -443,15 +443,52 @@ export default function KhoDonHangPage() {
                   <div className={styles.tramBlockBody}>
                     <div className={styles.tramRow}>
                       <span className={styles.tramRowLabel}>Biển số xe:</span>
-                      <span className={styles.tramRowValue}>{ls.bienSoXe || "—"}</span>
+                      <span className={styles.tramRowValue}>
+                        {(() => {
+                          // Ưu tiên gộp biển số từ các lần trộn (nếu có)
+                          // để hiển thị đầy đủ khi 1 trạm trộn nhiều xe khác nhau.
+                          const dsBienSo =
+                            ls.lanTrons && ls.lanTrons.length > 0
+                              ? Array.from(
+                                  new Set(
+                                    ls.lanTrons
+                                      .map((lt) => lt.bienSoXe)
+                                      .filter(Boolean),
+                                  ),
+                                )
+                              : [];
+                          if (dsBienSo.length > 0) {
+                            return dsBienSo.join(", ");
+                          }
+                          return ls.bienSoXe || "—";
+                        })()}
+                      </span>
                     </div>
                     <div className={styles.tramRow}>
                       <span className={styles.tramRowLabel}>Tài xế:</span>
-                      <span className={styles.tramRowValue}>{ls.tenTaiXe || "—"}</span>
+                      <span className={styles.tramRowValue}>
+                        {(() => {
+                          const dsTaiXe =
+                            ls.lanTrons && ls.lanTrons.length > 0
+                              ? Array.from(
+                                  new Set(
+                                    ls.lanTrons
+                                      .map((lt) => lt.tenTaiXe)
+                                      .filter(Boolean),
+                                  ),
+                                )
+                              : [];
+                          if (dsTaiXe.length > 0) {
+                            return dsTaiXe.join(", ");
+                          }
+                          return ls.tenTaiXe || "—";
+                        })()}
+                      </span>
                     </div>
 
-                    {/* Hiển thị chi tiết từng lần trộn riêng biệt nếu có > 1 lần */}
-                    {ls.lanTrons && ls.lanTrons.length > 1 && (
+                    {/* Hiển thị chi tiết từng lần trộn (luôn hiển thị kể cả 1 lần,
+                        giống ChiTietDonHangPage để user kho thấy đầy đủ thông tin) */}
+                    {ls.lanTrons && ls.lanTrons.length > 0 && (
                       <div className={`${styles.tramRow} ${styles.tramRowFull}`}>
                         <span className={styles.tramRowLabel}>
                           Chi tiết {ls.lanTrons.length} lần trộn:
@@ -464,7 +501,7 @@ export default function KhoDonHangPage() {
                                   Lần
                                 </th>
                                 <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
-                                  Thời gian
+                                  Thời gian đổ
                                 </th>
                                 <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
                                   Biển số xe
