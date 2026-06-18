@@ -450,12 +450,12 @@ export default function TaiXeGiaoHangPage() {
 
                 {/* Actions - theo từng trạm (idLichSanXuat) */}
                 <div className={styles.actionRow}>
-                  <button
+                  {/* <button
                     className={styles.btnDetail}
                     onClick={() => navigate(`/tai-xe/don-hang/${row.id}`)}
                   >
                     Chi tiết
-                  </button>
+                  </button> */}
                   {isDangGiao && row.trangThaiDon === "dang_giao" && (
                     <>
                       <button

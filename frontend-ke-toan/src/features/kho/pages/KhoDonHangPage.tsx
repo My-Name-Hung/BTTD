@@ -512,13 +512,16 @@ export default function KhoDonHangPage() {
                                 <th style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
                                   Khối lượng
                                 </th>
+                                <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid var(--color-border)", fontWeight: 600 }}>
+                                  Ghi chú xe
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
                               {ls.lanTrons.map((lt, ltIdx) => (
                                 <tr key={lt.id}>
-                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-                                    {ltIdx + 1}
+                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)", fontWeight: 600, color: "var(--color-primary)" }}>
+                                    Lần {ltIdx + 1}
                                   </td>
                                   <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
                                     {formatDateTime(lt.thoiGianBatDauDo || lt.ngayTron || "") || "—"}
@@ -531,6 +534,9 @@ export default function KhoDonHangPage() {
                                   </td>
                                   <td style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid rgba(0,0,0,0.05)", fontWeight: 600 }}>
                                     {lt.khoiLuongTron ? `${lt.khoiLuongTron.toFixed(1)} m³` : "—"}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(0,0,0,0.05)", fontSize: 12, color: "#475569" }}>
+                                    {lt.ghiChuXe || "—"}
                                   </td>
                                 </tr>
                               ))}
@@ -552,22 +558,6 @@ export default function KhoDonHangPage() {
                       <span className={styles.tramRowLabel}>Người bắt ống:</span>
                       <span className={styles.tramRowValue}>{ls.nguoiBatOng || "—"}</span>
                     </div>
-                    <div className={styles.tramRow}>
-                      <span className={styles.tramRowLabel}>Phương án đổ:</span>
-                      <span className={styles.tramRowValue}>{ls.phuongAnDo || "—"}</span>
-                    </div>
-                    <div className={styles.tramRow}>
-                      <span className={styles.tramRowLabel}>Khối lượng giao thực tế:</span>
-                      <span className={styles.tramRowValue}>
-                        {ls.khoiLuongGiaoThucTe ? `${ls.khoiLuongGiaoThucTe.toFixed(1)} m³` : "—"}
-                      </span>
-                    </div>
-                    {ls.ghiChuXe && (
-                      <div className={`${styles.tramRow} ${styles.tramRowFull}`}>
-                        <span className={styles.tramRowLabel}>Ghi chú xe:</span>
-                        <span className={styles.tramRowValue}>{ls.ghiChuXe}</span>
-                      </div>
-                    )}
                     {ls.ghiChu && (
                       <div className={`${styles.tramRow} ${styles.tramRowFull}`}>
                         <span className={styles.tramRowLabel}>Ghi chú:</span>

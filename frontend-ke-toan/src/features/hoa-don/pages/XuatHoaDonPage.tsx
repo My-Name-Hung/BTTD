@@ -707,7 +707,7 @@ export default function XuatHoaDonPage() {
                   />
                   <span className={styles.formHint}>
                     {tienDu > 0
-                      ? `Khách trả vượt ${formatCurrency(tienDu)} → trạng thái "Trả hết dư"`
+                      ? `Khách trả vượt ${formatCurrency(tienDu)} → trạng thái "Trả hết"`
                       : "Số tiền trả ≥ tổng cộng sẽ ghi nhận dư"}
                   </span>
                 </div>
@@ -741,7 +741,7 @@ export default function XuatHoaDonPage() {
                     {noConLai > 0
                       ? `Còn nợ ${formatCurrency(noConLai)} → trạng thái "Công nợ"`
                       : tienDu > 0
-                        ? `Trả vượt ${formatCurrency(tienDu)} → trạng thái "Công nợ dư"`
+                        ? `Trả vượt ${formatCurrency(tienDu)} → trạng thái "Công nợ"`
                         : "Đã trả đủ tổng cộng"}
                   </span>
                 </div>
@@ -762,22 +762,21 @@ export default function XuatHoaDonPage() {
                 )}
               </div>
             )}
-            {/* Trạng thái thanh toán hiện tại */}
+            {/* Trạng thái thanh toán hiện tại
+                - "tra_het" / "tra_het_du" (khách trả dư) → đều hiển thị "Trả hết"
+                - "cong_no" / "cong_no_du" (khách trả dư nhưng vẫn còn công nợ cũ) → đều hiển thị "Công nợ"
+                Không hiển thị chữ "(dư)" theo yêu cầu nghiệp vụ */}
             <div className={styles.trangThaiTTBadge}>
-              {trangThaiThanhToan === "tra_het" && "Trạng thái: Trả hết"}
-              {trangThaiThanhToan === "tra_het_du" && (
-                <span style={{ color: "#0284c7" }}>
-                  Trạng thái: Trả hết dư ({formatCurrency(tienDu)})
+              {(trangThaiThanhToan === "tra_het" ||
+                trangThaiThanhToan === "tra_het_du") && (
+                <span style={{ color: "#16a34a" }}>
+                  Trạng thái: Trả hết
                 </span>
               )}
-              {trangThaiThanhToan === "cong_no" && (
+              {(trangThaiThanhToan === "cong_no" ||
+                trangThaiThanhToan === "cong_no_du") && (
                 <span style={{ color: "#d97706" }}>
-                  Trạng thái: Công nợ (còn nợ {formatCurrency(noConLai)})
-                </span>
-              )}
-              {trangThaiThanhToan === "cong_no_du" && (
-                <span style={{ color: "#dc2626" }}>
-                  Trạng thái: Công nợ dư (dư {formatCurrency(tienDu)})
+                  Trạng thái: Công nợ
                 </span>
               )}
             </div>

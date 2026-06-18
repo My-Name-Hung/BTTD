@@ -398,8 +398,18 @@ export default function InHoaDonPage() {
   // 2) tongNghiaVuDon của HĐ đầu tiên (nếu không có data bv/pp/tienBeTong)
   // 3) donHangThanhTien (gốc đơn) + ước lượng bv/pp từ lần đầu
   // 4) Fallback cuối: hd.thanhTien / hd.tongCong
+  // Lấy max tienBeTông từ:
+  // 1) hd.donHangThanhTien (giá gốc đơn - LUÔN đúng, ưu tiên cao nhất)
+  // 2) tất cả debtHoaDons[i].tienBeTông (có thể đã chia tỷ lệ)
+  // 3) hd.tienBeTông (HĐ hiện tại, có thể đã chia tỷ lệ)
+  // Lý do: nếu HĐ hiện tại là HĐ công nợ lần 1 và lưu tienBeTông = phân bổ
+  // tỷ lệ của khoản khách trả (vd: 1tr/2tr → tienBeTông = 1tr thay vì 2tr),
+  // lấy MAX chỉ giữa các HĐ sẽ ra 1tr → tính nhầm "đã tất toán".
+  // → Phải đưa hd.donHangThanhTien (giá gốc đơn) vào MAX để ra 2tr.
+  const donHangThanhTienNum = Number(hd.donHangThanhTien) || 0;
   const maxTienBeTong = Math.max(
     0,
+    donHangThanhTienNum,
     ...debtHoaDons.map((d) => Number(d.tienBeTong) || 0),
     Number(hd.tienBeTong) || 0,
   );
@@ -426,14 +436,20 @@ export default function InHoaDonPage() {
       : 0;
   // Ưu tiên 1: tổng từ thành phần (chính xác nhất, ổn định qua các lần)
   // Ưu tiên 2: tongNghiaVuDon của HĐ đầu (nếu thành phần = 0)
-  // Ưu tiên 3: các fallback khác
+  // Ưu tiên 3: tongNghiaVuDon của HĐ hiện tại (snapshot tại thời điểm lập)
+  // Ưu tiên 4: donHangThanhTien (giá gốc đơn - LUÔN đúng với mọi HĐ)
+  // Ưu tiên 5: hd.thanhTien
+  // Lưu ý: hd.tongCong ở mỗi HĐ công nợ chỉ = số tiền khách trả kỳ đó
+  // (chia tỷ lệ), KHÔNG phải tổng nghĩa vụ đơn. Nên KHÔNG fallback về
+  // hd.tongCong vì sẽ khiến "đã tất toán" bị nhầm khi mới trả 1 phần
+  // (vd: đơn 2tr, trả kỳ 1 = 1tr → tongNghiaVu = 1tr → isDaTatToan=true
+  //  → công nợ còn lại = 0 thay vì 1tr).
   const tongNghiaVu =
     (tongNghiaVuTinhTuThanhPhan > 0 ? tongNghiaVuTinhTuThanhPhan : 0) ||
     tongNghiaVuHoaDonDau ||
     (hd.tongNghiaVuDon ?? 0) ||
     (hd.donHangThanhTien ?? 0) ||
-    (hd.thanhTien ?? 0) ||
-    (hd.tongCong ?? 0);
+    (hd.thanhTien ?? 0);
   // Tính bảng tổng hợp các lần thanh toán.
   // amount = tổng tiền khách THỰC TRẢ trong lần đó (gồm cả dư nếu có).
   // Đây là cách hiển thị "đã trả" cho từng lần, khớp với form xuất HĐ
@@ -1010,40 +1026,23 @@ export default function InHoaDonPage() {
                         : styles.statusBadgeTraHet
                     }`}
                   >
-                    {isCongNo
-                      ? isDaTatToan
-                        ? tienDuKyNay > 0
-                          ? "CÔNG NỢ (dư)"
-                          : "CÔNG NỢ (tất toán)"
-                        : "CÔNG NỢ"
-                      : hd.loaiThanhToan === "tra_het_du"
-                        ? "TRẢ HẾT (dư)"
-                        : "TRẢ HẾT"}
+                    {/* Chỉ hiển thị 2 trạng thái: CÔNG NỢ hoặc TRẢ HẾT
+                        (bỏ các biến thể "(tất toán)", "(dư)" theo yêu cầu). */}
+                    {isCongNo ? "CÔNG NỢ" : "TRẢ HẾT"}
                   </span>
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Công nợ còn lại:</span>
                   <span className={styles.infoValue}>
                     {formatCurrency(
-                      // Ưu tiên dùng snapshot congNoConLai (lưu cứng trong HĐ
-                      // tại thời điểm lập) để in lại hóa đơn cũ vẫn hiển thị
-                      // đúng số nợ của thời điểm đó, không bị ảnh hưởng bởi
-                      // DonHang.conLai sau này khi khách thanh toán hết.
-                      // Fallback: tính từ tongNghiaVu - (đã trả + kỳ này) nếu
-                      // HĐ cũ chưa có field snapshot này.
-                      isCongNoChuaTatToan
-                        ? Math.max(
-                            0,
-                            (hd.congNoConLai != null
-                              ? Number(hd.congNoConLai)
-                              : NaN) ??
-                              Math.max(
-                                0,
-                                tongNghiaVu -
-                                  (daThanhToanTruoc + soTienTraKyNay),
-                              ) ??
-                              0,
-                          )
+                      // Đồng bộ với ChiTietDonHangPage:
+                      // - Hiển thị khi là HĐ công nợ (bất kể đã tất toán hay
+                      //   chưa) — chỉ cần hdIsCongNo.
+                      // - Nguồn: snapshot congNoConLai (lưu cứng trong HĐ
+                      //   tại thời điểm lập).
+                      // - HĐ trả hết (không phải công nợ): hiển thị 0.
+                      isCongNo
+                        ? Math.max(0, Number(hd.congNoConLai) || 0)
                         : 0,
                     )}
                   </span>
