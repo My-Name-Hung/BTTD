@@ -847,10 +847,13 @@ export default function InHoaDonPage() {
                       const seenTram = new Set<string>();
                       danhSachTram.forEach((t, idx) => {
                         const tramLabel = t.tenTram || `Trạm ${idx + 1}`;
+                        // Lấy giờ đổ từ lịch sản xuất (thoiGianBatDauDo →
+                        // thoiGianTron), KHÔNG fallback sang hd.gioDo vì
+                        // hd.gioDo là giá trị cũ lưu trong HĐ có thể không
+                        // khớp với thời gian thực tế trong lịch sản xuất.
+                        // Logic đồng bộ với ChiTietDonHangPage.
                         const tg =
-                          (t as any).thoiGianBatDauDo ||
-                          (t as any).thoiGianTron ||
-                          hd.gioDo;
+                          t.thoiGianBatDauDo || t.thoiGianTron || null;
                         if (seenTram.has(tramLabel)) return;
                         seenTram.add(tramLabel);
                         if (tg) {
