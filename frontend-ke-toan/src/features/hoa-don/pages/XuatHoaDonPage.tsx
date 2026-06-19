@@ -208,19 +208,6 @@ export default function XuatHoaDonPage() {
           ? "cong_no"
           : "cong_no";
 
-  // Tự động chuyển tab "tra_het" → "cong_no" khi khách trả thiếu
-  // (khi đang ở tab trả hết mà số tiền trả < tổng cộng, hệ thống tự ghi nhận làm công nợ)
-  useEffect(() => {
-    if (
-      hinhThuc === "tra_het" &&
-      tongCong > 0 &&
-      soTienTraNum > 0 &&
-      chenhLech < 0
-    ) {
-      setHinhThuc("cong_no");
-    }
-  }, [hinhThuc, tongCong, soTienTraNum, chenhLech]);
-
   const loadData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -677,9 +664,7 @@ export default function XuatHoaDonPage() {
           <div className={styles.thanhToanGroup}>
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>
-                  Số tiền trả (đ)
-                </label>
+                <label className={styles.formLabel}>Số tiền trả (đ)</label>
                 <input
                   className={styles.formInput}
                   type="text"
@@ -769,15 +754,11 @@ export default function XuatHoaDonPage() {
             <div className={styles.trangThaiTTBadge}>
               {(trangThaiThanhToan === "tra_het" ||
                 trangThaiThanhToan === "tra_het_du") && (
-                <span style={{ color: "#16a34a" }}>
-                  Trạng thái: Trả hết
-                </span>
+                <span style={{ color: "#16a34a" }}>Trạng thái: Trả hết</span>
               )}
               {(trangThaiThanhToan === "cong_no" ||
                 trangThaiThanhToan === "cong_no_du") && (
-                <span style={{ color: "#d97706" }}>
-                  Trạng thái: Công nợ
-                </span>
+                <span style={{ color: "#d97706" }}>Trạng thái: Công nợ</span>
               )}
             </div>
           </div>

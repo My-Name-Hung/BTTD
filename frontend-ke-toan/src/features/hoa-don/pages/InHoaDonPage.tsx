@@ -14,6 +14,7 @@ import {
   layLichSanXuat,
   layNghiemThu,
 } from "../../../shared/services/api";
+import { formatDateVN } from "../../../shared/utils/dateUtils";
 import styles from "./InHoaDonPage.module.css";
 
 /* ── Helpers ─────────────────────────────────────────── */
@@ -33,8 +34,7 @@ function formatDate(d: string | Date | null | undefined): string {
 
 function formatDateTime(d: string | Date | null | undefined): string {
   if (!d) return "";
-  const dt = new Date(d);
-  return `${formatDate(dt)} lúc ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
+  return formatDateVN(d);
 }
 
 function sortHoaDonsByTime(items: HoaDonData[]) {

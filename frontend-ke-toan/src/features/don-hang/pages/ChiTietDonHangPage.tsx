@@ -2415,10 +2415,14 @@ export default function ChiTietDonHangPage() {
                 const tienBeTongHienThi = isCongNoChuaTatToan
                   ? soTienTraKyNay
                   : hd.tienBeTong || 0;
-                // Tổng cộng hiển thị: ưu tiên tongNghiaVuDon (snapshot chuẩn)
+                // Tổng cộng hiển thị:
+                // - Công nợ chưa tất toán: hiển thị số tiền trả kỳ này.
+                // - Công nợ đã tất toán / trả hết / trả hết dư: ƯU TIÊN
+                //   hd.tongCong (giá trị kế toán nhập thủ công từ XuatHoaDonPage),
+                //   fallback về tongNghiaVu (tính từ thành phần) nếu chưa có.
                 const tongCongHienThi = isCongNoChuaTatToan
                   ? soTienTraKyNay
-                  : tongNghiaVu || hd.tongCong || 0;
+                  : hd.tongCong || tongNghiaVu || 0;
                 // Công nợ còn lại: ưu tiên snapshot congNoConLai (lưu cứng)
                 const congNoConLaiHienThi = isCongNoChuaTatToan
                   ? Math.max(0, hd.congNoConLai || 0)
