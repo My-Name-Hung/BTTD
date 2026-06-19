@@ -625,7 +625,9 @@
   }
 
   /* Không page-break trong bảng */
-  table { page-break-inside: avoid; }
+  table {
+    page-break-inside: avoid;
+  }
 
   /* Signatures giữ ngang hàng */
   .signatures {

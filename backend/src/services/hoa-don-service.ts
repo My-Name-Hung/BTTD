@@ -228,10 +228,17 @@ function phanBoGiaTriHoaDon(params: {
   const soTienPhanBo = Math.min(soTienTheHienKyNay, tongNghiaVu);
   const tyLe = tongNghiaVu > 0 ? soTienPhanBo / tongNghiaVu : 0;
 
+  // Tiền bê tông phân bổ theo tỷ lệ (phần còn lại sau khi trừ đã trả trước đó)
   const tienBeTongHoaDon = Math.round(tienBeTongConLai * tyLe * 100) / 100;
-  const buuVanChuyenHoaDon = Math.round(buuVanChuyen * tyLe * 100) / 100;
-  const phiPhatSinhHoaDon = Math.round(phiPhatSinh * tyLe * 100) / 100;
-  const giamTruHoaDon = Math.round(giamTru * tyLe * 100) / 100;
+  // Bù vận chuyển, chi phí phát sinh, giảm trừ: LUÔN lưu giá trị GỐC
+  // (như kế toán đã nhập ở form Xuất hóa đơn), KHÔNG chia tỷ lệ theo kỳ.
+  // Lý do: bảng in hóa đơn cần hiển thị đúng giá trị user nhập (vd: 100.000)
+  // ở MỌI lần thanh toán, không bị auto scale thành 17.400 khi khách
+  // trả 1 phần. Tổng cộng vẫn đúng vì tongCongHoaDon = soTienTheHienKyNay
+  // (số tiền thực nhận kỳ này, không phụ thuộc tổng thành phần).
+  const buuVanChuyenHoaDon = buuVanChuyen;
+  const phiPhatSinhHoaDon = phiPhatSinh;
+  const giamTruHoaDon = giamTru;
 
   // tongCongHoaDon = soTienTheHienKyNay (so tien thuc nhan), khong phu thuoc vao tong cac thanh phan
   const tongCongHoaDon = Math.max(0, soTienTheHienKyNay);
@@ -272,9 +279,16 @@ export async function taoHoaDon(
     data.tienBeTong != null
       ? data.tienBeTong
       : (dh.khoiLuongDat || 0) * (dh.donGia || 0);
-  const buuVanChuyen = data.buuVanChuyen || 0;
-  const phiPhatSinh = data.phiPhatSinh || 0;
-  const giamTru = data.giamTru || 0;
+  const buuVanChuyen =
+    (data.buuVanChuyen || 0) > 0
+      ? data.buuVanChuyen || 0
+      : Number(goc.buuVanChuyen) || 0;
+  const phiPhatSinh =
+    (data.phiPhatSinh || 0) > 0
+      ? data.phiPhatSinh || 0
+      : Number(goc.phiPhatSinh) || 0;
+  const giamTru =
+    (data.giamTru || 0) > 0 ? data.giamTru || 0 : Number(goc.giamTru) || 0;
   const tongNghiaVu = await tinhTongNghiaVuDonHang(dh, data, goc);
   const tongDaThanhToanTruocDo = Math.max(0, dh.daThanhToan || 0);
   const tongConLaiTruocKhiLap = Math.max(

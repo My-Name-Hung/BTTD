@@ -9,11 +9,13 @@ import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
 import {
   layDanhSachMacBeTong,
+  layDonHang,
   layHoaDon,
   layHoaDonTheoDonHang,
   layLichSanXuat,
   layNghiemThu,
 } from "../../../shared/services/api";
+import { DonHang } from "../../../shared/types";
 import { formatDateVN } from "../../../shared/utils/dateUtils";
 import styles from "./InHoaDonPage.module.css";
 
@@ -209,6 +211,7 @@ export default function InHoaDonPage() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const [hoaDon, setHoaDon] = useState<HoaDonData | null>(null);
+  const [donHang, setDonHang] = useState<DonHang | null>(null);
   const [allHoaDons, setAllHoaDons] = useState<HoaDonData[]>([]);
   const [nghiemThu, setNghiemThu] = useState<NghiemThuData | null>(null);
   const [lichSX, setLichSX] = useState<LichSanXuatItem[]>([]);
@@ -304,7 +307,8 @@ export default function InHoaDonPage() {
         return;
       }
 
-      const [nt, lsArr, hdArr, macList] = await Promise.all([
+      const [dh, nt, lsArr, hdArr, macList] = await Promise.all([
+        layDonHang(hd.idDonHang).catch(() => null),
         layNghiemThu(hd.idDonHang).catch(() => null),
         layLichSanXuat(hd.idDonHang).catch(() => null),
         layHoaDonTheoDonHang(hd.idDonHang).catch(() => []),
@@ -312,6 +316,7 @@ export default function InHoaDonPage() {
       ]);
 
       setHoaDon(hd);
+      setDonHang(dh || null);
       setAllHoaDons(Array.isArray(hdArr) ? hdArr : []);
       setNghiemThu(nt || null);
       setLichSX(Array.isArray(lsArr) ? lsArr : []);
@@ -852,8 +857,7 @@ export default function InHoaDonPage() {
                         // hd.gioDo là giá trị cũ lưu trong HĐ có thể không
                         // khớp với thời gian thực tế trong lịch sản xuất.
                         // Logic đồng bộ với ChiTietDonHangPage.
-                        const tg =
-                          t.thoiGianBatDauDo || t.thoiGianTron || null;
+                        const tg = t.thoiGianBatDauDo || t.thoiGianTron || null;
                         if (seenTram.has(tramLabel)) return;
                         seenTram.add(tramLabel);
                         if (tg) {
@@ -899,9 +903,52 @@ export default function InHoaDonPage() {
                   {(hd.donHangDonGia || hd.donGia || 0).toLocaleString("vi-VN")}
                 </td>
                 <td className={styles.tdRight}>
-                  {tienBeTongHienThi.toLocaleString("vi-VN")}
+                  {(donHang?.thanhTien || 0).toLocaleString("vi-VN")}
                 </td>
               </tr>
+              {(Number(hd.buuVanChuyen) || 0) > 0 && (
+                <tr>
+                  <td className={styles.tdCenter}>2</td>
+                  <td>Bù vận chuyển</td>
+                  <td className={styles.tdCenter}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}>
+                    {Number(hd.buuVanChuyen).toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+              )}
+              {(Number(hd.phiPhatSinh) || 0) > 0 && (
+                <tr>
+                  <td className={styles.tdCenter}>
+                    {(Number(hd.buuVanChuyen) || 0) > 0 ? 3 : 2}
+                  </td>
+                  <td>Chi phí phát sinh</td>
+                  <td className={styles.tdCenter}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}>
+                    {Number(hd.phiPhatSinh).toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+              )}
+              {(Number(hd.giamTru) || 0) > 0 && (
+                <tr>
+                  <td className={styles.tdCenter}>
+                    {[
+                      (Number(hd.buuVanChuyen) || 0) > 0,
+                      (Number(hd.phiPhatSinh) || 0) > 0,
+                    ].filter(Boolean).length + 2}
+                  </td>
+                  <td>Giảm trừ</td>
+                  <td className={styles.tdCenter}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}></td>
+                  <td className={styles.tdRight}>
+                    {Number(hd.giamTru).toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+              )}
             </tbody>
             <tfoot>
               {isCongNo && currentDebtIndex > 0 && (
@@ -1044,9 +1091,7 @@ export default function InHoaDonPage() {
                       // - Nguồn: snapshot congNoConLai (lưu cứng trong HĐ
                       //   tại thời điểm lập).
                       // - HĐ trả hết (không phải công nợ): hiển thị 0.
-                      isCongNo
-                        ? Math.max(0, Number(hd.congNoConLai) || 0)
-                        : 0,
+                      isCongNo ? Math.max(0, Number(hd.congNoConLai) || 0) : 0,
                     )}
                   </span>
                 </div>
