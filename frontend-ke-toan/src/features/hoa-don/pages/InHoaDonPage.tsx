@@ -944,8 +944,16 @@ export default function InHoaDonPage() {
                   <td className={styles.tdCenter}></td>
                   <td className={styles.tdRight}></td>
                   <td className={styles.tdRight}></td>
-                  <td className={styles.tdRight}>
-                    {Number(hd.giamTru).toLocaleString("vi-VN")}
+                  <td
+                    className={styles.tdRight}
+                    style={{
+                      padding: "6px 8px",
+                      textAlign: "right",
+                      fontWeight: 600,
+                      color: "#dc2626",
+                    }}
+                  >
+                    - {Number(hd.giamTru).toLocaleString("vi-VN")}
                   </td>
                 </tr>
               )}

@@ -2743,6 +2743,118 @@ export default function ChiTietDonHangPage() {
                               {formatCurrency(tienBeTongHienThi)}
                             </td>
                           </tr>
+                          {(Number(hd.buuVanChuyen) || 0) > 0 && (
+                            <tr
+                              style={{
+                                borderBottom: "1px solid var(--color-border)",
+                              }}
+                            >
+                              <td style={{ padding: "6px 8px" }}>
+                                Bù vận chuyển
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                }}
+                              >
+                                —
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                }}
+                              >
+                                —
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {Number(hd.buuVanChuyen).toLocaleString(
+                                  "vi-VN",
+                                )}{" "}
+                                đ
+                              </td>
+                            </tr>
+                          )}
+                          {(Number(hd.phiPhatSinh) || 0) > 0 && (
+                            <tr
+                              style={{
+                                borderBottom: "1px solid var(--color-border)",
+                              }}
+                            >
+                              <td style={{ padding: "6px 8px" }}>
+                                Chi phí phát sinh
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                }}
+                              >
+                                —
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                }}
+                              >
+                                —
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {Number(hd.phiPhatSinh).toLocaleString("vi-VN")}{" "}
+                                đ
+                              </td>
+                            </tr>
+                          )}
+                          {(Number(hd.giamTru) || 0) > 0 && (
+                            <tr
+                              style={{
+                                borderBottom: "1px solid var(--color-border)",
+                              }}
+                            >
+                              <td style={{ padding: "6px 8px" }}>Giảm trừ</td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                }}
+                              >
+                                —
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                }}
+                              >
+                                —
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                  fontWeight: 600,
+                                  color: "#dc2626",
+                                }}
+                              >
+                                −
+                                {Number(hd.giamTru).toLocaleString("vi-VN")} đ
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                         <tfoot>
                           {/* Dòng "ĐÃ THANH TOÁN" nếu là HĐ lần 2+ của công nợ */}
