@@ -553,8 +553,9 @@ export async function taoHoaDon(
       maKhachHang: dh.maKhachHang || null,
       tenKhachHang: dh.tenKhachHang || data.khachHang || "",
       nhom: dh.nhom || null,
-      // phatSinhNo chỉ ghi nhận phần còn lại sau thanh toán, không phải toàn bộ tổng nghĩa vụ
-      phatSinhNoTang: conLaiMoi,
+      // phatSinhNo ghi nhận toàn bộ giá trị nghĩa vụ gốc phát sinh trong kỳ
+      // (đúng nguyên tắc sổ sách kế toán: phát sinh nợ = toàn bộ phát sinh)
+      phatSinhNoTang: tongNghiaVu,
       phatSinhCoTang: soTienThuMoi + soTienDuSuDung,
     });
   }
