@@ -20,7 +20,13 @@ import {
   layLichSanXuat,
   taoHoaDon,
 } from "../../../shared/services/api";
-import { DonHang, HoaDon, KhachHang, LichSanXuat, MacBeTong } from "../../../shared/types";
+import {
+  DonHang,
+  HoaDon,
+  KhachHang,
+  LichSanXuat,
+  MacBeTong,
+} from "../../../shared/types";
 import styles from "./XuatHoaDonPage.module.css";
 
 type HinhThucThanhToan = "tra_het" | "cong_no";
@@ -164,6 +170,8 @@ export default function XuatHoaDonPage() {
   const [hanTraCongNo, setHanTraCongNo] = useState("");
   // Cờ hiển thị cảnh báo hạn thanh toán dưới nút submit (khi user click submit mà chưa nhập)
   const [showHanTraWarning, setShowHanTraWarning] = useState(false);
+  // Cờ hiển thị cảnh báo số tiền trả dưới nút submit (khi user click submit mà chưa nhập)
+  const [showSoTienWarning, setShowSoTienWarning] = useState(false);
 
   // Nhân sự & xe (mảng theo từng trạm)
   const [kySu, setKySu] = useState("");
@@ -366,10 +374,13 @@ export default function XuatHoaDonPage() {
       return;
     }
     setShowHanTraWarning(false);
+    // Bắt buộc phải nhập số tiền trả khi tổng cộng > 0 — hiển thị banner dưới nút submit
     if (tongCong > 0 && soTienTraNum === 0) {
+      setShowSoTienWarning(true);
       showToast("Vui lòng nhập số tiền trả", "error");
       return;
     }
+    setShowSoTienWarning(false);
 
     const bvNum = parseCurrency(buuVanChuyen);
     const ppNum = parseCurrency(phiPhatSinh);
@@ -725,9 +736,10 @@ export default function XuatHoaDonPage() {
                   className={styles.formInput}
                   type="text"
                   value={soTienTra}
-                  onChange={(e) =>
-                    setSoTienTra(formatNumberInput(e.target.value))
-                  }
+                  onChange={(e) => {
+                    setSoTienTra(formatNumberInput(e.target.value));
+                    if (e.target.value) setShowSoTienWarning(false);
+                  }}
                   placeholder={formatNumberInput(tongCong)}
                 />
                 <span className={styles.formHint}>
@@ -853,9 +865,7 @@ export default function XuatHoaDonPage() {
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>
-                Khách hàng
-              </label>
+              <label className={styles.formLabel}>Khách hàng</label>
               <input
                 className={styles.formInput}
                 type="text"
@@ -877,9 +887,7 @@ export default function XuatHoaDonPage() {
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup} style={{ flex: 2 }}>
-              <label className={styles.formLabel}>
-                Địa chỉ
-              </label>
+              <label className={styles.formLabel}>Địa chỉ</label>
               <input
                 className={styles.formInput}
                 type="text"
@@ -889,9 +897,7 @@ export default function XuatHoaDonPage() {
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>
-                Mã Số Thuế / CCCD
-              </label>
+              <label className={styles.formLabel}>Mã Số Thuế / CCCD</label>
               <input
                 className={styles.formInput}
                 type="text"
@@ -1074,11 +1080,44 @@ export default function XuatHoaDonPage() {
                 lineHeight: 1.45,
               }}
             >
-              <FiAlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+              <FiAlertCircle
+                size={16}
+                style={{ flexShrink: 0, marginTop: 1 }}
+              />
               <span>
                 <strong>Bắt buộc nhập hạn thanh toán</strong> khi ghi công nợ.
-                Vui lòng chọn ngày hạn thanh toán ở mục phía trên trước khi
-                tiếp tục.
+                Vui lòng chọn ngày hạn thanh toán ở mục phía trên trước khi tiếp
+                tục.
+              </span>
+            </div>
+          )}
+          {/* Banner cảnh báo dưới nút khi chưa nhập số tiền trả */}
+          {showSoTienWarning && tongCong > 0 && (
+            <div
+              role="alert"
+              style={{
+                marginTop: 12,
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: "#fff7ed",
+                border: "1px solid #fdba74",
+                color: "#9a3412",
+                fontSize: 13,
+                lineHeight: 1.45,
+              }}
+            >
+              <FiAlertCircle
+                size={16}
+                style={{ flexShrink: 0, marginTop: 1 }}
+              />
+              <span>
+                <strong>Bắt buộc nhập số tiền trả</strong> trước khi xuất hóa
+                đơn. Tổng cộng phải trả hiện tại là{" "}
+                <strong>{formatCurrency(tongCong)}</strong>. Vui lòng nhập số
+                tiền khách đã thanh toán ở mục phía trên.
               </span>
             </div>
           )}
