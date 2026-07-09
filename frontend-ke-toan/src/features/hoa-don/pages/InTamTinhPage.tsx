@@ -7,7 +7,7 @@ import { useReactToPrint } from "react-to-print";
 import logo from "../../../assets/Logo.png";
 import { Loading } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
-import { layDonHang, layDanhSachMacBeTong } from "../../../shared/services/api";
+import { layDonHang, layDanhSachMacBeTong, layKhachHangTheoId } from "../../../shared/services/api";
 import { DonHang, MacBeTong } from "../../../shared/types";
 import styles from "./InTamTinhPage.module.css";
 
@@ -31,6 +31,8 @@ export default function InTamTinhPage() {
   const { showToast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
   const [donHang, setDonHang] = useState<DonHang | null>(null);
+  // MST/CCCD fallback từ KhachHang.mstCccd khi DonHang.mstCccdKh rỗng
+  const [mstCccdFromKh, setMstCccdFromKh] = useState<string>("");
   const [macBeTongs, setMacBeTongs] = useState<MacBeTong[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -100,6 +102,20 @@ export default function InTamTinhPage() {
       ]);
       setDonHang(dh);
       setMacBeTongs(Array.isArray(macList) ? macList : []);
+
+      // Fallback MST/CCCD: nếu DonHang.mstCccdKh rỗng, lấy từ bảng KhachHang
+      if (!dh?.mstCccdKh && dh?.idKhachHang != null) {
+        try {
+          const kh = await layKhachHangTheoId(dh.idKhachHang);
+          const mst =
+            (kh as any)?.data?.mstCccd || (kh as any)?.mstCccd || "";
+          setMstCccdFromKh(mst || "");
+        } catch {
+          setMstCccdFromKh("");
+        }
+      } else {
+        setMstCccdFromKh("");
+      }
     } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
     } finally {
@@ -217,6 +233,17 @@ export default function InTamTinhPage() {
                 <td className={styles.customerLabel}>Điện thoại:</td>
                 <td className={styles.customerValue}>{donHang.soDienThoai}</td>
               </tr>
+              {donHang.mstCccdKh ? (
+                <tr>
+                  <td className={styles.customerLabel}>Mã số thuế / CCCD:</td>
+                  <td className={styles.customerValue}>{donHang.mstCccdKh}</td>
+                </tr>
+              ) : mstCccdFromKh ? (
+                <tr>
+                  <td className={styles.customerLabel}>Mã số thuế / CCCD:</td>
+                  <td className={styles.customerValue}>{mstCccdFromKh}</td>
+                </tr>
+              ) : null}
               {donHang.nguoiNhanHang && (
                 <tr>
                   <td className={styles.customerLabel}>Người nhận hàng:</td>

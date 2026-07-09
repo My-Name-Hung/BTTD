@@ -519,6 +519,12 @@ async function initDatabase(): Promise<void> {
         "phuongThucThanhToan",
         `ALTER TABLE DonHang ADD phuongThucThanhToan NVARCHAR(50) DEFAULT N'tra_het'`,
       );
+      // Snapshot MST/CCCD của khách hàng tại thời điểm tạo đơn
+      // (để xuất hóa đơn luôn có MST/CCCD dù khách đổi sau này)
+      await safeAddColumn(
+        "mstCccdKh",
+        `ALTER TABLE DonHang ADD mstCccdKh NVARCHAR(50)`,
+      );
     }
 
     // Tạo bảng LichSanXuat
@@ -969,6 +975,17 @@ async function initDatabase(): Promise<void> {
         console.log("  ➕ Đã thêm cột nguoiDuyetGDKDId vào DonHang");
       } else {
         console.log("  ✅ Cột nguoiDuyetGDKDId đã tồn tại trong DonHang");
+      }
+
+      // 3b. DonHang: snapshot MST/CCCD của khách hàng tại thời điểm tạo đơn
+      const colMstCccdKh = await migReq.query<{ name: string }[]>(
+        `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('DonHang') AND name = 'mstCccdKh'`
+      );
+      if (colMstCccdKh.recordset.length === 0) {
+        await migReq.query(`ALTER TABLE DonHang ADD mstCccdKh NVARCHAR(50)`);
+        console.log("  ➕ Đã thêm cột mstCccdKh vào DonHang");
+      } else {
+        console.log("  ✅ Cột mstCccdKh đã tồn tại trong DonHang");
       }
 
       // 4. NghiemThu: đảm bảo bienBanFile là NVARCHAR(MAX)

@@ -476,6 +476,15 @@
   font-style: italic;
 }
 
+/* Chú thích inline bên cạnh label (vd: "(autofill từ đơn)") */
+.formHintInline {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+  font-style: italic;
+  margin-left: 6px;
+}
+
 /* ── Total Section ── */
 .totalRows {
   display: flex;

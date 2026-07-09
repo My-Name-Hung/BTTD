@@ -38,6 +38,7 @@ import {
   layDanhSachMacBeTong,
   layDonHang,
   layHoaDonTheoDonHang,
+  layKhachHangTheoId,
   layLichSanXuat,
   layLichSuTraLai,
   layNghiemThu,
@@ -202,6 +203,8 @@ export default function ChiTietDonHangPage() {
   ]);
 
   const [donHang, setDonHang] = useState<DonHang | null>(null);
+  // MST/CCCD fallback từ KhachHang.mstCccd khi DonHang.mstCccdKh rỗng
+  const [mstCccdFromKh, setMstCccdFromKh] = useState<string>("");
   const [lichSXs, setLichSXs] = useState<LichSanXuat[]>([]);
   const [nghiemThu, setNghiemThu] = useState<NghiemThu | null>(null);
   const [hoaDons, setHoaDons] = useState<HoaDon[]>([]);
@@ -364,6 +367,20 @@ export default function ChiTietDonHangPage() {
       setHoaDons(hdArr || []);
       setBangChungs(bcArr || []);
       setLichSuTraLai(lsTraLaiArr || []);
+
+      // Fallback MST/CCCD: nếu DonHang.mstCccdKh rỗng, lấy từ bảng KhachHang
+      if (!dh?.mstCccdKh && dh?.idKhachHang != null) {
+        try {
+          const kh = await layKhachHangTheoId(dh.idKhachHang);
+          const mst =
+            (kh as any)?.data?.mstCccd || (kh as any)?.mstCccd || "";
+          setMstCccdFromKh(mst || "");
+        } catch {
+          setMstCccdFromKh("");
+        }
+      } else {
+        setMstCccdFromKh("");
+      }
     } catch {
       showToast("Không tải được thông tin đơn hàng", "error");
     } finally {
@@ -902,6 +919,17 @@ export default function ChiTietDonHangPage() {
             <span className={styles.infoLabel}>Số điện thoại</span>
             <span className={styles.infoValue}>{donHang.soDienThoai}</span>
           </div>
+          {donHang.mstCccdKh ? (
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Mã số thuế / CCCD</span>
+              <span className={styles.infoValue}>{donHang.mstCccdKh}</span>
+            </div>
+          ) : mstCccdFromKh ? (
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Mã số thuế / CCCD</span>
+              <span className={styles.infoValue}>{mstCccdFromKh}</span>
+            </div>
+          ) : null}
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>Địa chỉ nhận</span>
             <span className={styles.infoValue} style={{ maxWidth: 220 }}>

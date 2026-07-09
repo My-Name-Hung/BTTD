@@ -118,7 +118,7 @@ export async function taoDonHang(
   const result = await query<DonHang>(
     `INSERT INTO DonHang (
       maDonHang, idKhachHang, idMacBeTong, idTramTron,
-      tenKhachHang, diaChiNhan, soDienThoai,
+      tenKhachHang, diaChiNhan, soDienThoai, mstCccdKh,
       tenMacBeTong, khoiLuongDat, donGia, chiPhiPhatSinh, buVanChuyen, thanhTien, conLai,
       thoiGianGiaoDuKien, trangThaiDon, trangThaiHoanThanh,
       nguoiTaoId, ghiChu,
@@ -126,7 +126,7 @@ export async function taoDonHang(
       nguoiNhanHang, giaTienTamTinh, phuongThucThanhToan
     ) VALUES (
       @maDonHang, @idKhachHang, @idMacBeTong, @idTramTron,
-      @tenKhachHang, @diaChiNhan, @soDienThoai,
+      @tenKhachHang, @diaChiNhan, @soDienThoai, @mstCccdKh,
       @tenMacBeTong, @khoiLuongDat, @donGia, @chiPhiPhatSinh, @buVanChuyen, @thanhTien, @conLai,
       @thoiGianGiaoDuKien, N'cho_duyet', N'chua_hoan_thanh',
       @nguoiTaoId, @ghiChu,
@@ -142,6 +142,7 @@ export async function taoDonHang(
       tenKhachHang: data.tenKhachHang || "",
       diaChiNhan: data.diaChiNhan || "",
       soDienThoai: data.soDienThoai || "",
+      mstCccdKh: data.mstCccdKh || null,
       tenMacBeTong: data.tenMacBeTong || "",
       khoiLuongDat: data.khoiLuongDat || 0,
       donGia: data.donGia || 0,
@@ -230,6 +231,7 @@ export async function suaDonHang(
     `UPDATE DonHang SET
       idKhachHang = @idKhachHang, idMacBeTong = @idMacBeTong, idTramTron = @idTramTron,
       tenKhachHang = @tenKhachHang, diaChiNhan = @diaChiNhan, soDienThoai = @soDienThoai,
+      mstCccdKh = @mstCccdKh,
       tenMacBeTong = @tenMacBeTong, khoiLuongDat = @khoiLuongDat, donGia = @donGia,
       chiPhiPhatSinh = @chiPhiPhatSinh, buVanChuyen = @buVanChuyen,
       thanhTien = @thanhTien, conLai = @conLai, thoiGianGiaoDuKien = @thoiGianGiaoDuKien,
@@ -248,6 +250,7 @@ export async function suaDonHang(
       tenKhachHang: data.tenKhachHang ?? existing.tenKhachHang,
       diaChiNhan: data.diaChiNhan ?? existing.diaChiNhan,
       soDienThoai: data.soDienThoai ?? existing.soDienThoai,
+      mstCccdKh: data.mstCccdKh ?? existing.mstCccdKh ?? null,
       tenMacBeTong: data.tenMacBeTong ?? existing.tenMacBeTong,
       khoiLuongDat: khoiLuong,
       donGia,
@@ -274,6 +277,7 @@ export async function suaDonHang(
     tenKhachHang: data.tenKhachHang ?? existing.tenKhachHang,
     diaChiNhan: data.diaChiNhan ?? existing.diaChiNhan,
     soDienThoai: data.soDienThoai ?? existing.soDienThoai,
+    mstCccdKh: data.mstCccdKh ?? existing.mstCccdKh ?? null,
     tenMacBeTong: data.tenMacBeTong ?? existing.tenMacBeTong,
     khoiLuongDat: khoiLuong,
     donGia,

@@ -12,6 +12,7 @@ import {
   layDonHang,
   layHoaDon,
   layHoaDonTheoDonHang,
+  layKhachHangTheoId,
   layLichSanXuat,
   layNghiemThu,
 } from "../../../shared/services/api";
@@ -111,6 +112,9 @@ interface HoaDonData {
   soHoaDon: string;
   ngayLap: string | null;
   khachHang: string;
+  // Địa chỉ + MST/CCCD trên hóa đơn (snapshot từ XuatHoaDonPage gửi lên)
+  diaChi?: string;
+  mstCccd?: string;
   loaiXiMang: string;
   gioDo: string;
   phuongThucThanhToan: string;
@@ -212,6 +216,8 @@ export default function InHoaDonPage() {
 
   const [hoaDon, setHoaDon] = useState<HoaDonData | null>(null);
   const [donHang, setDonHang] = useState<DonHang | null>(null);
+  // MST/CCCD fallback từ KhachHang.mstCccd khi hóa đơn và đơn hàng đều không có
+  const [mstCccdFromKh, setMstCccdFromKh] = useState<string>("");
   const [allHoaDons, setAllHoaDons] = useState<HoaDonData[]>([]);
   const [nghiemThu, setNghiemThu] = useState<NghiemThuData | null>(null);
   const [lichSX, setLichSX] = useState<LichSanXuatItem[]>([]);
@@ -321,6 +327,21 @@ export default function InHoaDonPage() {
       setNghiemThu(nt || null);
       setLichSX(Array.isArray(lsArr) ? lsArr : []);
       setMacBeTongs(Array.isArray(macList) ? macList : []);
+
+      // Fallback MST/CCCD: nếu HĐ và đơn đều chưa có, lấy từ bảng KhachHang
+      const hasMstOnInvoice = !!(hd.mstCccd || dh?.mstCccdKh);
+      if (!hasMstOnInvoice && dh?.idKhachHang != null) {
+        try {
+          const kh = await layKhachHangTheoId(dh.idKhachHang);
+          const mst =
+            (kh as any)?.data?.mstCccd || (kh as any)?.mstCccd || "";
+          setMstCccdFromKh(mst || "");
+        } catch {
+          setMstCccdFromKh("");
+        }
+      } else {
+        setMstCccdFromKh("");
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Không tải được thông tin hóa đơn",
@@ -767,9 +788,17 @@ export default function InHoaDonPage() {
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Địa chỉ giao hàng:</span>
                   <span className={styles.infoValue}>
-                    {hd.diaChiNhan || ""}
+                    {hd.diaChi || hd.diaChiNhan || ""}
                   </span>
                 </div>
+                {(hd.mstCccd || donHang?.mstCccdKh || mstCccdFromKh) && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Mã số thuế / CCCD:</span>
+                    <span className={styles.infoValue}>
+                      {hd.mstCccd || donHang?.mstCccdKh || mstCccdFromKh || ""}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className={styles.infoCol}>
                 <div className={styles.infoRow}>

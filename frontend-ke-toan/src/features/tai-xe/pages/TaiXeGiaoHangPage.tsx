@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  FiCalendar,
   FiCheck,
   FiChevronDown,
+  FiClock,
   FiMapPin,
   FiNavigation,
   FiPackage,
@@ -28,7 +30,7 @@ function formatCurrency(v: number) {
   return v?.toLocaleString("vi-VN") + " đ" || "0 đ";
 }
 function formatDate(d: string | null | undefined): string {
-  return d ? formatDateVN(d) : "";
+  return d ? formatDateVN(d) : "—";
 }
 
 type TabType = "dang_giao" | "da_giao";
@@ -51,6 +53,8 @@ interface DonHangTheoTram {
   thanhTien: number | null;
   trangThaiDon: string;
   ngayGiao: string | null;
+  ngayTaoDon: string | null;
+  thoiGianGiaoDuKien: string | null;
   // Trường lichSX bổ sung
   idLichSanXuat: number;
   idTramTron: number | null;
@@ -69,6 +73,7 @@ export default function TaiXeGiaoHangPage() {
   const { hasAnyRole } = usePageRole();
   const { toasts, showToast } = useToast();
   const isKyThuat = hasAnyRole(["ky_thuat"]);
+  const canChonNgayGiaoThucTe = hasAnyRole(["tai_xe", "admin"]);
 
   const [allDangGiao, setAllDangGiao] = useState<DonHangTheoTram[]>([]);
   const [allDaGiao, setAllDaGiao] = useState<DonHangTheoTram[]>([]);
@@ -84,6 +89,14 @@ export default function TaiXeGiaoHangPage() {
   // Confirm state
   const [updating, setUpdating] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<DonHangTheoTram | null>(null);
+
+  // Popup nhập ngày giờ giao thực tế (dành cho admin / tài xế)
+  const [ngayGiaoModalOpen, setNgayGiaoModalOpen] = useState(false);
+  const [ngayGiaoTarget, setNgayGiaoTarget] = useState<DonHangTheoTram | null>(
+    null,
+  );
+  const [ngayGiaoThucTe, setNgayGiaoThucTe] = useState("");
+  const [gioGiaoThucTe, setGioGiaoThucTe] = useState("");
 
   // Trộn lại modal state
   const [tronLaiModalOpen, setTronLaiModalOpen] = useState(false);
@@ -163,6 +176,62 @@ export default function TaiXeGiaoHangPage() {
 
     try {
       await taiXeCapNhatTrangThaiGiao(targetId, "da_giao", undefined, idLichSanXuat);
+      showToast("Xác nhận giao hàng thành công");
+      loadData();
+    } catch (err) {
+      loadData();
+      showToast(err instanceof Error ? err.message : "Lỗi xác nhận giao", "error");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  // Mở popup nhập ngày giờ giao thực tế (admin / tài xế)
+  const handleOpenNgayGiaoThucTe = (row: DonHangTheoTram) => {
+    setNgayGiaoTarget(row);
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mi = String(now.getMinutes()).padStart(2, "0");
+    setNgayGiaoThucTe(`${yyyy}-${mm}-${dd}`);
+    setGioGiaoThucTe(`${hh}:${mi}`);
+    setNgayGiaoModalOpen(true);
+  };
+
+  const handleCloseNgayGiaoThucTe = () => {
+    setNgayGiaoModalOpen(false);
+    setNgayGiaoTarget(null);
+    setNgayGiaoThucTe("");
+    setGioGiaoThucTe("");
+  };
+
+  // Xác nhận đã giao với ngày giờ thực tế (admin / tài xế)
+  const handleXacNhanDaGiaoVoiNgay = async () => {
+    if (!ngayGiaoTarget) return;
+    if (!ngayGiaoThucTe || !gioGiaoThucTe) {
+      showToast("Vui lòng chọn ngày và giờ giao thực tế", "error");
+      return;
+    }
+    const targetId = ngayGiaoTarget.id;
+    const idLichSanXuat = ngayGiaoTarget.idLichSanXuat;
+    const ngayGiaoFull = `${ngayGiaoThucTe}T${gioGiaoThucTe}:00`;
+
+    setUpdating(idLichSanXuat);
+    setAllDangGiao((prev) =>
+      prev.filter((d) => d.idLichSanXuat !== idLichSanXuat),
+    );
+    handleCloseNgayGiaoThucTe();
+
+    try {
+      await taiXeCapNhatTrangThaiGiao(
+        targetId,
+        "da_giao",
+        undefined,
+        idLichSanXuat,
+        ngayGiaoFull,
+      );
       showToast("Xác nhận giao hàng thành công");
       loadData();
     } catch (err) {
@@ -435,17 +504,25 @@ export default function TaiXeGiaoHangPage() {
                 )}
 
                 <div className={styles.orderFooter}>
-                  <span className={styles.orderDate}>
-                    Giao: {formatDate(
-                      (row.ngayXacNhanGiao as unknown as string) ||
-                        (row.ngayGiao as unknown as string)
-                    )}
-                  </span>
-                  {row.thanhTien && (
-                    <span className={styles.orderAmount}>
-                      {formatCurrency(row.thanhTien)}
+                  <div className={styles.orderDateList}>
+                    <span className={styles.orderDate}>
+                      <FiCalendar size={12} /> Tạo đơn: {formatDate(row.ngayTaoDon)}
                     </span>
-                  )}
+                    <span className={styles.orderDate}>
+                      <FiClock size={12} /> Dự kiến giao:{" "}
+                      {formatDate(
+                        (row.thoiGianGiaoDuKien as unknown as string) ||
+                          (row.ngayGiao as unknown as string),
+                      )}
+                    </span>
+                  </div>
+                  <div className={styles.orderFooterRight}>
+                    {row.thanhTien && (
+                      <span className={styles.orderAmount}>
+                        {formatCurrency(row.thanhTien)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Actions - theo từng trạm (idLichSanXuat) */}
@@ -467,7 +544,11 @@ export default function TaiXeGiaoHangPage() {
                       </button>
                       <button
                         className={styles.btnDaGiao}
-                        onClick={() => setConfirmTarget(row)}
+                        onClick={() =>
+                          canChonNgayGiaoThucTe
+                            ? handleOpenNgayGiaoThucTe(row)
+                            : setConfirmTarget(row)
+                        }
                         disabled={updating === row.idLichSanXuat}
                       >
                         {updating === row.idLichSanXuat ? (
@@ -565,6 +646,76 @@ export default function TaiXeGiaoHangPage() {
             }}
           >
             <strong>Lưu ý:</strong> Lịch sản xuất của trạm này sẽ được reset. Đơn hàng sẽ ở trạng thái <strong>đang sản xuất</strong> để kho/điều phối xác nhận SX lại tại trang lịch sản xuất. Các trạm khác giữ nguyên trạng thái.
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal nhập ngày giờ giao thực tế (admin / tài xế) */}
+      <Modal
+        isOpen={ngayGiaoModalOpen}
+        onClose={handleCloseNgayGiaoThucTe}
+        title={`Xác nhận đã giao - ${ngayGiaoTarget?.maDonHang || ""}`}
+        footer={
+          <>
+            <button
+              className="btn btn-cancel"
+              onClick={handleCloseNgayGiaoThucTe}
+              disabled={updating !== null}
+            >
+              Hủy
+            </button>
+            <button
+              className="btn btn-save"
+              onClick={handleXacNhanDaGiaoVoiNgay}
+              disabled={updating !== null || !ngayGiaoThucTe || !gioGiaoThucTe}
+            >
+              {updating !== null ? "Đang xử lý..." : "Xác nhận đã giao"}
+            </button>
+          </>
+        }
+      >
+        <div className={styles.ngayGiaoModalBody}>
+          <p className={styles.ngayGiaoModalDesc}>
+            Xác nhận giao đơn{" "}
+            <strong>
+              {ngayGiaoTarget?.maDonHang} - {ngayGiaoTarget?.tenTram || "trạm"}
+            </strong>{" "}
+            ({ngayGiaoTarget?.tenTaiXe || "tài xế"}) cho{" "}
+            <strong>{ngayGiaoTarget?.tenKhachHang}</strong>. Vui lòng chọn ngày
+            và giờ giao thực tế tại công trình.
+          </p>
+
+          <div className={styles.ngayGiaoModalRow}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>
+                Ngày giao thực tế <span style={{ color: "#dc2626" }}>*</span>
+              </label>
+              <input
+                type="date"
+                className={styles.formInput}
+                value={ngayGiaoThucTe}
+                max={
+                  new Date().toISOString().split("T")[0]
+                }
+                onChange={(e) => setNgayGiaoThucTe(e.target.value)}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>
+                Giờ giao thực tế <span style={{ color: "#dc2626" }}>*</span>
+              </label>
+              <input
+                type="time"
+                className={styles.formInput}
+                value={gioGiaoThucTe}
+                onChange={(e) => setGioGiaoThucTe(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className={styles.ngayGiaoModalHint}>
+            <strong>Lưu ý:</strong> Ngày giờ này sẽ được lưu làm ngày giao thực
+            tế của đơn hàng. Có thể chọn trong quá khứ để ghi nhận bù.
           </div>
         </div>
       </Modal>

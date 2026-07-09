@@ -359,6 +359,9 @@ export default function TaoDonHangPage() {
         tenKhachHang: form.tenKhachHang,
         diaChiNhan: form.diaChiNhan,
         soDienThoai: form.soDienThoai,
+        // Snapshot MST/CCCD của khách hàng tại thời điểm tạo đơn để
+        // xuất hóa đơn luôn có MST/CCCD dù khách hàng sau này đổi.
+        mstCccdKh: form.mstCccd || null,
         tenMacBeTong: form.tenMacBeTong,
         khoiLuongDat: parseFloat(form.khoiLuongDat) || 0,
         donGia: parseFloat(form.donGia.replace(/[^\d]/g, '')) || 0,

@@ -304,6 +304,11 @@ export async function taoKhachHang(
   });
 }
 
+// Lấy thông tin 1 khách hàng theo id — dùng để autofill mstCccd/diaChi trên hóa đơn
+export async function layKhachHangTheoId(id: number): Promise<KhachHang> {
+  return request<KhachHang>(`/tham-so/khach-hang/${id}`);
+}
+
 export async function suaKhachHang(
   id: number,
   data: Partial<KhachHang>,
@@ -1210,15 +1215,23 @@ export async function layDonHangDaGiao(): Promise<any[]> {
 }
 
 // Tài xế cập nhật trạng thái giao theo từng trạm (idLichSanXuat)
+// ngayGiaoThucTe: chuỗi ISO 'YYYY-MM-DDTHH:mm:ss' dùng cho admin/tài xế
+// xác nhận đã giao thủ công (override ngày giao hệ thống).
 export async function taiXeCapNhatTrangThaiGiao(
   idDonHang: number,
   trangThai: "dang_giao" | "da_giao",
   khoiLuongThucTe?: number,
   idLichSanXuat?: number,
+  ngayGiaoThucTe?: string,
 ): Promise<DonHang> {
   return request<DonHang>(`/tai-xe/cap-nhat-giao/${idDonHang}`, {
     method: "PUT",
-    body: JSON.stringify({ trangThai, khoiLuongThucTe, idLichSanXuat: idLichSanXuat ?? null }),
+    body: JSON.stringify({
+      trangThai,
+      khoiLuongThucTe,
+      idLichSanXuat: idLichSanXuat ?? null,
+      ngayGiaoThucTe: ngayGiaoThucTe ?? null,
+    }),
   });
 }
 
@@ -1562,6 +1575,10 @@ export async function taoHoaDon(data: {
   giamTru?: number;
   ngayLap?: string;
   khachHang?: string;
+  // Địa chỉ ghi trên hóa đơn (autofill theo địa chỉ đơn hàng)
+  diaChi?: string;
+  // MST/CCCD ghi trên hóa đơn (autofill theo KhachHang.mstCccd)
+  mstCccd?: string;
   loaiXiMang?: string;
   gioDo?: string;
   phuongThucThanhToan?: string;
@@ -1600,6 +1617,10 @@ export interface BatchLichSanXuatResponse {
     tenTaiXe: string | null;
     trangThai: string | null;
     ngayTao: string | null;
+    // Mở rộng: lấy thêm ngày giờ giao thực tế + trạng thái giao từng trạm
+    // để hiển thị ở trang NghiemThuPage (đơn đã giao nhưng chưa nghiệm thu).
+    ngayXacNhanGiao?: string | null;
+    trangThaiGiao?: string | null;
   } | null;
 }
 

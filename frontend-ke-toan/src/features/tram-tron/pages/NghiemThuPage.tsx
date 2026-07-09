@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FiAlertCircle,
+  FiCalendar,
   FiCamera,
   FiCheck,
   FiCheckCircle,
@@ -9,6 +10,7 @@ import {
   FiFile,
   FiImage,
   FiSearch,
+  FiTruck,
   FiUpload,
   FiX,
 } from "react-icons/fi";
@@ -16,6 +18,7 @@ import { EmptyState, Loading, Modal } from "../../../shared/components/Common";
 import { useToast } from "../../../shared/hooks";
 import {
   layDanhSachDonHang,
+  layLichSanXuatBatch,
   layNghiemThuBatch,
   layThanhToanBatch,
   uploadBienBanNghiemThu,
@@ -26,6 +29,7 @@ import {
   BatchThanhToanResponse,
 } from "../../../shared/services/api";
 import { buildFileUrl } from "../../../shared/utils";
+import { formatDateVN } from "../../../shared/utils/dateUtils";
 import { DonHang } from "../../../shared/types";
 import styles from "./NghiemThuPage.module.css";
 
@@ -91,6 +95,11 @@ export default function NghiemThuPage() {
   >({});
   const [lichSuTT, setLichSuTT] = useState<
     Record<number, BatchThanhToanResponse[number]>
+  >({});
+  // Map idDonHang → ngày giờ giao thực tế (lấy từ LichSanXuat.ngayXacNhanGiao qua batch)
+  // Hiển thị ở card nghiệm thu để kỹ thuật biết đơn đã được giao từ khi nào.
+  const [thoiGianGiaoMap, setThoiGianGiaoMap] = useState<
+    Record<number, string | null>
   >({});
   const [loading, setLoading] = useState(true);
   const [tuKhoa, setTuKhoa] = useState("");
@@ -167,22 +176,34 @@ export default function NghiemThuPage() {
 
       if (dhs.length > 0) {
         const donHangIds = dhs.map((dh: DonHang) => dh.id);
-        const [batchNT, batchTT] = await Promise.all([
+        const [batchNT, batchTT, batchLSX] = await Promise.all([
           layNghiemThuBatch(donHangIds),
           layThanhToanBatch(donHangIds),
+          // Lấy thời gian giao thực tế từng đơn (ngayXacNhanGiao của LichSanXuat)
+          // 1 đơn có thể có nhiều lịch sản xuất — lấy NGÀY GIAO MUỘN NHẤT
+          // (vì đơn chỉ vào tab "nghiệm thu" khi TẤT CẢ các trạm đã giao xong).
+          layLichSanXuatBatch(donHangIds).catch(() => ({})),
         ]);
 
         const ntMap: Record<number, BatchNghiemThuResponse[number]> = {};
         const ttMap: Record<number, BatchThanhToanResponse[number]> = {};
+        const tgMap: Record<number, string | null> = {};
         dhs.forEach((dh: DonHang) => {
           ntMap[dh.id] = batchNT[dh.id] || null;
           ttMap[dh.id] = batchTT[dh.id] || [];
+          // batchLSX trả theo từng LichSanXuat.id — lấy item có ngayXacNhanGiao mới nhất
+          // Nếu API không trả ngayXacNhanGiao (chưa nâng cấp backend) thì fallback null
+          // và hiển thị "—" trên UI thay vì crash.
+          const lsx = (batchLSX as any)[dh.id];
+          tgMap[dh.id] = lsx?.ngayXacNhanGiao || null;
         });
         setNghiemThus(ntMap);
         setLichSuTT(ttMap);
+        setThoiGianGiaoMap(tgMap);
       } else {
         setNghiemThus({});
         setLichSuTT({});
+        setThoiGianGiaoMap({});
       }
     } catch {
       showToast("Lỗi tải dữ liệu", "error");
@@ -602,6 +623,32 @@ export default function NghiemThuPage() {
                   </div>
                   <div className={styles.cardGridMetaSecondary}>
                     {dh.diaChiNhan}
+                  </div>
+
+                  <div className={styles.cardGridDateList}>
+                    <div className={styles.cardGridDateItem}>
+                      <FiCalendar size={12} />
+                      <span>Tạo đơn:</span>
+                      <strong>{formatDateVN(dh.ngayTaoDon)}</strong>
+                    </div>
+                    <div className={styles.cardGridDateItem}>
+                      <FiClock size={12} />
+                      <span>Dự kiến giao:</span>
+                      <strong>
+                        {formatDateVN(
+                          dh.thoiGianGiaoDuKien || dh.ngayGiao || null,
+                        )}
+                      </strong>
+                    </div>
+                    {thoiGianGiaoMap[dh.id] && (
+                      <div
+                        className={`${styles.cardGridDateItem} ${styles.cardGridDateItemActual}`}
+                      >
+                        <FiCheckCircle size={12} />
+                        <span>Đã giao thực tế:</span>
+                        <strong>{formatDateVN(thoiGianGiaoMap[dh.id])}</strong>
+                      </div>
+                    )}
                   </div>
 
                   <div className={styles.cardGridDivider} />

@@ -85,6 +85,7 @@ export interface DonHang {
   tenKhachHang: string;
   diaChiNhan: string;
   soDienThoai: string;
+  mstCccdKh?: string | null;
 
   tenMacBeTong: string | null;
   khoiLuongDat: number;

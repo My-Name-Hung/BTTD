@@ -358,14 +358,119 @@
 .orderFooter {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 10px;
   font-size: 12px;
   color: var(--color-text-secondary);
+  padding-top: 6px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.orderDateList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.orderDate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.orderDate svg {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.orderFooterRight {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .orderAmount {
   font-weight: 700;
   color: var(--color-primary);
+  font-size: 13px;
+}
+
+/* Modal nhập ngày giờ giao thực tế */
+.ngayGiaoModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ngayGiaoModalDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ngayGiaoModalDesc strong {
+  color: var(--color-text);
+}
+
+.ngayGiaoModalRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.formInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+  min-height: 44px;
+}
+
+.formInput:focus {
+  border-color: var(--color-primary);
+}
+
+.ngayGiaoModalHint {
+  padding: 10px 12px;
+  background: rgba(7, 60, 235, 0.06);
+  border: 1px solid rgba(7, 60, 235, 0.18);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--color-primary);
+  line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+  .ngayGiaoModalRow {
+    grid-template-columns: 1fr;
+  }
 }
 
 .actionRow {

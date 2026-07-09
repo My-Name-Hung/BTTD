@@ -16,10 +16,11 @@ import {
   layDanhSachMacBeTong,
   layDonHang,
   layHoaDonTheoDonHang,
+  layKhachHangTheoId,
   layLichSanXuat,
   taoHoaDon,
 } from "../../../shared/services/api";
-import { DonHang, HoaDon, LichSanXuat, MacBeTong } from "../../../shared/types";
+import { DonHang, HoaDon, KhachHang, LichSanXuat, MacBeTong } from "../../../shared/types";
 import styles from "./XuatHoaDonPage.module.css";
 
 type HinhThucThanhToan = "tra_het" | "cong_no";
@@ -134,7 +135,10 @@ export default function XuatHoaDonPage() {
     formatDate(new Date().toISOString()),
   );
   const [khachHang, setKhachHang] = useState("");
+  // Địa chỉ trên hóa đơn: autofill theo diaChiNhan của đơn hàng (có thể sửa tay)
   const [diaChiNhan, setDiaChiNhan] = useState("");
+  // MST/CCCD: autofill theo KhachHang.mstCccd (lấy từ API khách hàng)
+  const [mstCccd, setMstCccd] = useState("");
   const [hangMuc, setHangMuc] = useState("");
   const [phuongPhapDo, setPhuongPhapDo] = useState("");
   const [chieuDaiPhuongPhap, setChieuDaiPhuongPhap] = useState("");
@@ -158,6 +162,8 @@ export default function XuatHoaDonPage() {
 
   // Công nợ — hạn thanh toán (chỉ dùng cho tab công nợ)
   const [hanTraCongNo, setHanTraCongNo] = useState("");
+  // Cờ hiển thị cảnh báo hạn thanh toán dưới nút submit (khi user click submit mà chưa nhập)
+  const [showHanTraWarning, setShowHanTraWarning] = useState(false);
 
   // Nhân sự & xe (mảng theo từng trạm)
   const [kySu, setKySu] = useState("");
@@ -231,8 +237,49 @@ export default function XuatHoaDonPage() {
 
       // Pre-fill thông tin cơ bản
       setKhachHang(dh.tenKhachHang || "");
+      // Địa chỉ trên hóa đơn: autofill theo địa chỉ nhận hàng của đơn (có thể sửa tay).
       setDiaChiNhan(dh.diaChiNhan || "");
       setHangMuc(dh.hangMuc || "");
+
+      // ── Lấy MST/CCCD từ NHIỀU NGUỒN theo thứ tự ưu tiên ──
+      // Nguồn 1: DonHang.mstCccdKh (snapshot tại thời điểm tạo/sửa đơn — đáng tin cậy nhất)
+      // Nguồn 2: KhachHang.mstCccd (lấy trực tiếp từ bảng khách hàng)
+      // Nguồn 3: fallback rỗng
+      let mstFromKh = "";
+      let mstFromKhRaw: any = null;
+      if (dh.idKhachHang) {
+        try {
+          const kh = await layKhachHangTheoId(dh.idKhachHang);
+          // request<T> đã unwrap ApiResponse, nên kh là KhachHang
+          mstFromKhRaw = kh;
+          mstFromKh = (kh as any)?.data?.mstCccd || (kh as any)?.mstCccd || "";
+          // eslint-disable-next-line no-console
+          console.log("[XuatHoaDon] mstCccd sources:", {
+            dhMstCccdKh: dh.mstCccdKh,
+            idKhachHang: dh.idKhachHang,
+            khRaw: mstFromKhRaw,
+            mstFromKh,
+          });
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn("[XuatHoaDon] layKhachHangTheoId failed:", e);
+          mstFromKh = "";
+        }
+      }
+      const mstFinal = dh.mstCccdKh || mstFromKh || "";
+      setMstCccd(mstFinal);
+
+      // Địa chỉ: ưu tiên diaChiNhan của đơn; nếu trống thì lấy từ KhachHang.diaChi
+      if (!dh.diaChiNhan && dh.idKhachHang != null && mstFromKh) {
+        try {
+          const kh = await layKhachHangTheoId(dh.idKhachHang);
+          const diaChiFromKh =
+            (kh as any)?.data?.diaChi || (kh as KhachHang)?.diaChi || "";
+          if (diaChiFromKh) setDiaChiNhan(diaChiFromKh);
+        } catch {
+          // ignore
+        }
+      }
       // Nếu đã có hóa đơn cũ → "Tiền bê tông" tự động = số tiền còn lại phải trả
       // (thanhTien - daThanhToan) để TỔNG CỘNG khớp với số còn lại hiển thị ở ThanhToanPage
       // Nếu chưa có hóa đơn cũ → dùng thanhTien gốc của đơn
@@ -312,10 +359,13 @@ export default function XuatHoaDonPage() {
     if (!donHang) return;
 
     // Validate
+    // Công nợ bắt buộc phải có hạn thanh toán — hiển thị banner dưới nút submit
     if (hinhThuc === "cong_no" && !hanTraCongNo) {
+      setShowHanTraWarning(true);
       showToast("Vui lòng nhập hạn thanh toán công nợ", "error");
       return;
     }
+    setShowHanTraWarning(false);
     if (tongCong > 0 && soTienTraNum === 0) {
       showToast("Vui lòng nhập số tiền trả", "error");
       return;
@@ -351,6 +401,9 @@ export default function XuatHoaDonPage() {
         giamTru: gtNum,
         ngayLap: ngayLap,
         khachHang,
+        // Địa chỉ + MST/CCCD trên hóa đơn — lấy từ input form (đã autofill từ đơn/khách hàng)
+        diaChi: diaChiNhan || undefined,
+        mstCccd: mstCccd || undefined,
         loaiXiMang,
         phuongThucThanhToan: phuongThuc,
         // Ghi chú lưu DB = đúng ghi chú người dùng nhập trong textarea
@@ -544,7 +597,10 @@ export default function XuatHoaDonPage() {
               <button
                 key={ht.value}
                 className={`${styles.hinhThucCard} ${hinhThuc === ht.value ? styles.hinhThucCardActive : ""}`}
-                onClick={() => setHinhThuc(ht.value)}
+                onClick={() => {
+                  setHinhThuc(ht.value);
+                  if (ht.value !== "cong_no") setShowHanTraWarning(false);
+                }}
               >
                 <div className={styles.hinhThucCheck}>
                   {hinhThuc === ht.value && <FiCheck size={14} />}
@@ -700,12 +756,17 @@ export default function XuatHoaDonPage() {
               {/* Tab công nợ: hạn + nợ còn lại */}
               {hinhThuc === "cong_no" && (
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Hạn thanh toán</label>
+                  <label className={styles.formLabel}>
+                    Hạn thanh toán <span style={{ color: "#dc2626" }}>*</span>
+                  </label>
                   <input
                     className={styles.formInput}
                     type="date"
                     value={hanTraCongNo}
-                    onChange={(e) => setHanTraCongNo(e.target.value)}
+                    onChange={(e) => {
+                      setHanTraCongNo(e.target.value);
+                      if (e.target.value) setShowHanTraWarning(false);
+                    }}
                   />
                 </div>
               )}
@@ -792,7 +853,9 @@ export default function XuatHoaDonPage() {
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Khách hàng</label>
+              <label className={styles.formLabel}>
+                Khách hàng
+              </label>
               <input
                 className={styles.formInput}
                 type="text"
@@ -802,13 +865,39 @@ export default function XuatHoaDonPage() {
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Loại xi măng</label>
+              <label className={styles.formLabel}>Loại bê tông</label>
               <input
                 className={styles.formInput}
                 type="text"
                 value={loaiXiMang}
                 onChange={(e) => setLoaiXiMang(e.target.value)}
                 placeholder="VD: PCB40"
+              />
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup} style={{ flex: 2 }}>
+              <label className={styles.formLabel}>
+                Địa chỉ
+              </label>
+              <input
+                className={styles.formInput}
+                type="text"
+                value={diaChiNhan}
+                onChange={(e) => setDiaChiNhan(e.target.value)}
+                placeholder="Địa chỉ trên hóa đơn"
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>
+                Mã Số Thuế / CCCD
+              </label>
+              <input
+                className={styles.formInput}
+                type="text"
+                value={mstCccd}
+                onChange={(e) => setMstCccd(e.target.value)}
+                placeholder="VD: 0312345678 hoặc 012345678901"
               />
             </div>
           </div>
@@ -967,6 +1056,32 @@ export default function XuatHoaDonPage() {
               )}
             </button>
           </div>
+          {/* Banner cảnh báo dưới nút khi công nợ mà chưa nhập hạn thanh toán */}
+          {showHanTraWarning && hinhThuc === "cong_no" && (
+            <div
+              role="alert"
+              style={{
+                marginTop: 12,
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: "#fff7ed",
+                border: "1px solid #fdba74",
+                color: "#9a3412",
+                fontSize: 13,
+                lineHeight: 1.45,
+              }}
+            >
+              <FiAlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>
+                <strong>Bắt buộc nhập hạn thanh toán</strong> khi ghi công nợ.
+                Vui lòng chọn ngày hạn thanh toán ở mục phía trên trước khi
+                tiếp tục.
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
