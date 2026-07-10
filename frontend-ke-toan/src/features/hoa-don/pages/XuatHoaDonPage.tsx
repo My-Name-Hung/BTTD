@@ -374,8 +374,9 @@ export default function XuatHoaDonPage() {
       return;
     }
     setShowHanTraWarning(false);
-    // Bắt buộc phải nhập số tiền trả khi tổng cộng > 0 — hiển thị banner dưới nút submit
-    if (tongCong > 0 && soTienTraNum === 0) {
+    // Bắt buộc phải nhập số tiền trả khi tổng cộng > 0
+    // (riêng "cong_no" được phép nhập 0 = ghi công nợ toàn bộ)
+    if (tongCong > 0 && hinhThuc !== "cong_no" && soTienTraNum === 0) {
       setShowSoTienWarning(true);
       showToast("Vui lòng nhập số tiền trả", "error");
       return;
@@ -1091,8 +1092,8 @@ export default function XuatHoaDonPage() {
               </span>
             </div>
           )}
-          {/* Banner cảnh báo dưới nút khi chưa nhập số tiền trả */}
-          {showSoTienWarning && tongCong > 0 && (
+          {/* Banner cảnh báo dưới nút khi chưa nhập số tiền trả (riêng công nợ chấp nhận 0) */}
+          {showSoTienWarning && tongCong > 0 && hinhThuc !== "cong_no" && (
             <div
               role="alert"
               style={{
